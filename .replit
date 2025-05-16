@@ -1,0 +1,20 @@
+entrypoint = "main.py"
+modules = ["python-3.10:v18-20230807-322e88b"]
+
+hidden = [".pythonlibs"]
+
+[nix]
+channel = "stable-23_05"
+packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "libxcrypt", "pkg-config", "qhull", "tcl", "tk", "xsimd"]
+
+[deployment]
+run = ["python3", "main.py"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8000
+externalPort = 80
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
