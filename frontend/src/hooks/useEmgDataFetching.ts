@@ -3,6 +3,8 @@ import axios from 'axios';
 import type { EmgSignalData, StatsData, EMGAnalysisResult } from '../types/emg';
 import { DownsamplingControls } from './useDataDownsampling'; // Assuming useDataDownsampling exports this
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
 export interface EmgDataFetchingControls {
   plotChannel1Data: EmgSignalData | null;
   plotChannel2Data: EmgSignalData | null;
@@ -49,7 +51,7 @@ export const useEmgDataFetching = (
   const fetchChannelRawData = useCallback(async (fileId: string, channelName: string): Promise<EmgSignalData | null> => {
     if (!fileId || !channelName) return null;
     try {
-      const response = await axios.get<EmgSignalData>(`http://localhost:8080/raw-data/${fileId}/${channelName}`);
+      const response = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId}/${channelName}`);
       const fetchedData = response.data;
       if (!fetchedData.data || !Array.isArray(fetchedData.data)) {
         console.error(`Invalid raw data format for ${channelName}`);

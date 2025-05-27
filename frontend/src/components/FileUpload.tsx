@@ -4,6 +4,8 @@ import { Button } from '../components/ui/button'; // Assuming Shadcn Button
 import { Input } from '../components/ui/input';   // Assuming Shadcn Input for file
 import { EMGAnalysisResult } from '../types/emg'; // Adjust path as needed
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
 interface FileUploadProps {
   onUploadSuccess: (data: EMGAnalysisResult) => void;
   onUploadError: (error: string) => void;
@@ -40,7 +42,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploadError,
 
     try {
       // Corrected API URL
-      const response = await axios.post<EMGAnalysisResult>('http://localhost:8080/upload', formData, {
+      const response = await axios.post<EMGAnalysisResult>(`${API_BASE_URL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
