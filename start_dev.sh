@@ -19,7 +19,7 @@ echo "Backend errors will be logged to: $BACKEND_ERROR_LOG"
 # Check if virtual environment exists
 if [ ! -f "$VENV_PATH/bin/activate" ]; then
     echo "ERROR: Python virtual environment not found at $VENV_PATH."
-    echo "Please run a setup script (e.g., setup_project.sh) to create the venv and install dependencies."
+    echo "Please follow the setup instructions in README.md to create the virtual environment and install dependencies."
     exit 1
 fi
 

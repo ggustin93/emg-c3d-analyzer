@@ -75,7 +75,7 @@ Then run:
 1.  **Start Backend Server:**
     (From project root, after `poetry install`)
     ```bash
-    poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8080
+    poetry run uvicorn c3d_api:app --reload --host 0.0.0.0 --port 8080
     ```
     The backend API will be available at `http://localhost:8080`.
 
