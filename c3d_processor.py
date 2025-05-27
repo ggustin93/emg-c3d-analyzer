@@ -40,6 +40,7 @@ ACTIVITY_COLORS = {
     'shooting': '#e67e22'  # Orange
 }
 
+
 class GHOSTLYC3DProcessor:
     """Class for processing C3D files from the GHOSTLY game."""
 
@@ -81,15 +82,19 @@ class GHOSTLYC3DProcessor:
 
                 for c3d_field, output_field in field_mappings.items():
                     if c3d_field in info_params:
-                        metadata[output_field] = info_params[c3d_field]['value'][0]
+                        # Convert all values to string to prevent type errors
+                        metadata[output_field] = str(
+                            info_params[c3d_field]['value'][0])
 
             # Player information
             if 'SUBJECTS' in self.c3d['parameters']:
                 subject_params = self.c3d['parameters']['SUBJECTS']
                 if 'PLAYER_NAME' in subject_params:
-                    metadata['player_name'] = subject_params['PLAYER_NAME']['value'][0]
+                    metadata['player_name'] = str(
+                        subject_params['PLAYER_NAME']['value'][0])
                 if 'GAME_SCORE' in subject_params:
-                    metadata['score'] = subject_params['GAME_SCORE']['value'][0]
+                    metadata['score'] = str(
+                        subject_params['GAME_SCORE']['value'][0])
 
             # If we couldn't find a level, set a default
             if 'level' not in metadata:
@@ -127,13 +132,15 @@ class GHOSTLYC3DProcessor:
             labels = []
             if 'ANALOG' in self.c3d['parameters']:
                 if 'LABELS' in self.c3d['parameters']['ANALOG']:
-                    labels = self.c3d['parameters']['ANALOG']['LABELS']['value']
+                    labels = self.c3d['parameters']['ANALOG']['LABELS'][
+                        'value']
 
             # Get sampling rate
             sampling_rate = DEFAULT_SAMPLING_RATE
             if 'ANALOG' in self.c3d['parameters']:
                 if 'RATE' in self.c3d['parameters']['ANALOG']:
-                    sampling_rate = float(self.c3d['parameters']['ANALOG']['RATE']['value'][0])
+                    sampling_rate = float(
+                        self.c3d['parameters']['ANALOG']['RATE']['value'][0])
 
             # Extract each channel
             for i in range(analog_data.shape[1]):
@@ -173,10 +180,12 @@ class GHOSTLYC3DProcessor:
         except Exception as e:
             raise ValueError(f"Error extracting EMG data: {str(e)}")
 
-    def detect_contractions(self, 
-                           threshold_factor: float = DEFAULT_THRESHOLD_FACTOR, 
-                           min_duration_ms: int = DEFAULT_MIN_DURATION_MS,
-                           smoothing_window: int = DEFAULT_SMOOTHING_WINDOW) -> Dict[str, List]:
+    def detect_contractions(
+            self,
+            threshold_factor: float = DEFAULT_THRESHOLD_FACTOR,
+            min_duration_ms: int = DEFAULT_MIN_DURATION_MS,
+            smoothing_window: int = DEFAULT_SMOOTHING_WINDOW
+    ) -> Dict[str, List]:
         """Detect muscle contractions from EMG channels."""
         if not self.emg_data:
             self.extract_emg_data()
@@ -197,7 +206,10 @@ class GHOSTLYC3DProcessor:
 
             # Apply smoothing
             if smoothing_window > 0:
-                signal_data = np.convolve(signal_data, np.ones(smoothing_window)/smoothing_window, mode='same')
+                signal_data = np.convolve(signal_data,
+                                          np.ones(smoothing_window) /
+                                          smoothing_window,
+                                          mode='same')
 
             # Calculate threshold based on the signal
             signal_max = np.max(signal_data)
@@ -237,11 +249,16 @@ class GHOSTLYC3DProcessor:
                         max_amplitude = float(np.max(contraction_data))
 
                         contractions_list.append({
-                            'start_time_ms': float(start_time),
-                            'end_time_ms': float(end_time),
-                            'duration_ms': float(duration_ms),
-                            'mean_amplitude': mean_amplitude,
-                            'max_amplitude': max_amplitude
+                            'start_time_ms':
+                            float(start_time),
+                            'end_time_ms':
+                            float(end_time),
+                            'duration_ms':
+                            float(duration_ms),
+                            'mean_amplitude':
+                            mean_amplitude,
+                            'max_amplitude':
+                            max_amplitude
                         })
 
             # Only add to contractions if we found any
@@ -284,10 +301,10 @@ class GHOSTLYC3DProcessor:
         self.analytics = analytics
         return analytics
 
-    def plot_emg_with_contractions(self, 
-                                  channel: str, 
-                                  save_path: Optional[str] = None,
-                                  show_plot: bool = False) -> None:
+    def plot_emg_with_contractions(self,
+                                   channel: str,
+                                   save_path: Optional[str] = None,
+                                   show_plot: bool = False) -> None:
         """
         Plot EMG data with highlighted contractions.
 
@@ -317,7 +334,11 @@ class GHOSTLYC3DProcessor:
         plt.figure(figsize=(12, 6))
 
         # Plot the EMG signal
-        plt.plot(time_axis, signal_data, color=EMG_COLOR, linewidth=1, alpha=0.8)
+        plt.plot(time_axis,
+                 signal_data,
+                 color=EMG_COLOR,
+                 linewidth=1,
+                 alpha=0.8)
 
         # Highlight contractions if available
         contraction_key = None
@@ -344,13 +365,16 @@ class GHOSTLYC3DProcessor:
             info_text = (
                 f"Contractions: {analytics['contraction_count']}\n"
                 f"Avg Duration: {analytics['avg_duration_ms']:.2f} ms\n"
-                f"Max Amplitude: {analytics['max_amplitude']:.2f}"
-            )
-            plt.figtext(0.02, 0.02, info_text, fontsize=10, bbox=dict(facecolor='white', alpha=0.8))
+                f"Max Amplitude: {analytics['max_amplitude']:.2f}")
+            plt.figtext(0.02,
+                        0.02,
+                        info_text,
+                        fontsize=10,
+                        bbox=dict(facecolor='white', alpha=0.8))
 
         # Save if requested
         if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.savefig(save_path, dpi=600, bbox_inches='tight')
 
         # Show if requested
         if show_plot:
@@ -360,7 +384,9 @@ class GHOSTLYC3DProcessor:
 
         return save_path
 
-    def plot_ghostly_report(self, save_path: Optional[str] = None, show_plot: bool = False) -> str:
+    def plot_ghostly_report(self,
+                            save_path: Optional[str] = None,
+                            show_plot: bool = False) -> str:
         """
         Generate a GHOSTLY-style report with EMG data visualization.
 
@@ -375,27 +401,50 @@ class GHOSTLYC3DProcessor:
             self.calculate_analytics()
 
         # Setup the figure
-        fig = plt.figure(figsize=(12, 8))  # Reduced height since we're removing the level plot
+        fig = plt.figure(
+            figsize=(12,
+                     8))  # Reduced height since we're removing the level plot
 
-        # Add logo and title
-        plt.figtext(0.05, 0.93, "GHOSTLY", fontsize=28, fontweight='bold', color=EMG_COLOR)
-        plt.figtext(0.2, 0.93, "GAME", fontsize=28, fontweight='bold', color='#34495e')
-        plt.figtext(0.37, 0.93, "REPORT", fontsize=28, fontweight='bold', color='#7f8c8d')
+        # Add logo and title with a cleaner, more professional design
+        title_y = 0.93
+        title_font = {
+            'fontsize': 32,
+            'fontweight': 'bold',
+            'fontfamily': 'Arial'
+        }
+
+        # Create a single title with different colors for each word
+        fig.text(0.05, title_y, "GHOSTLY", color=EMG_COLOR, **title_font)
+        fig.text(0.27, title_y, "GAME", color='#34495e', **title_font)
+        fig.text(0.39, title_y, "REPORT", color='#2c3e50', **title_font)
+
+        # Add a subtle separator line below the title
+        fig.add_artist(
+            plt.Line2D([0.05, 0.95], [title_y - 0.03, title_y - 0.03],
+                       color='#bdc3c7',
+                       linewidth=1.5,
+                       alpha=0.8))
 
         # Add metadata
-        date_str = self.game_metadata.get('time', datetime.now().strftime('%d/%m/%Y %H:%M'))
+        date_str = self.game_metadata.get(
+            'time',
+            datetime.now().strftime('%d/%m/%Y %H:%M'))
         level_str = f"Level: {self.game_metadata.get('level', 'N/A')}"
 
         plt.figtext(0.75, 0.93, f"Date: {date_str}", fontsize=14)
         plt.figtext(0.75, 0.89, level_str, fontsize=14)
 
         # Determine available activities to plot
-        activities_to_plot = [act for act in self.analytics.keys() if act in ['jumping', 'shooting'] 
-                              or any(a in act.lower() for a in ['jump', 'shoot'])]
+        activities_to_plot = [
+            act for act in self.analytics.keys()
+            if act in ['jumping', 'shooting'] or any(
+                a in act.lower() for a in ['jump', 'shoot'])
+        ]
 
         if not activities_to_plot:
             # Use whatever we have
-            activities_to_plot = list(self.analytics.keys())[:min(2, len(self.analytics.keys()))]
+            activities_to_plot = list(
+                self.analytics.keys())[:min(2, len(self.analytics.keys()))]
 
         if not activities_to_plot:
             # If still no activities, use the channels directly
@@ -408,11 +457,13 @@ class GHOSTLYC3DProcessor:
                         break
 
         # Plot each activity - now using 1/2 instead of 1/3 of the figure space
-        for i, activity in enumerate(activities_to_plot[:min(2, len(activities_to_plot))]):
+        for i, activity in enumerate(
+                activities_to_plot[:min(2, len(activities_to_plot))]):
             # Get corresponding data
             channel_data = None
             for ch_name, data in self.emg_data.items():
-                if activity.lower() in ch_name.lower() and ('activated' in ch_name.lower() or not '_' in ch_name):
+                if activity.lower() in ch_name.lower() and (
+                        'activated' in ch_name.lower() or not '_' in ch_name):
                     channel_data = data
                     break
 
@@ -430,11 +481,15 @@ class GHOSTLYC3DProcessor:
             time_axis = np.array(channel_data['time_axis'])
 
             # Create subplot (using 1/2 of the figure instead of 1/3)
-            ax = plt.subplot(2, 1, i+1)
+            ax = plt.subplot(2, 1, i + 1)
 
             # Plot the EMG signal
             color = ACTIVITY_COLORS.get(activity, f'C{i}')
-            ax.plot(time_axis, signal_data, color=color, linewidth=1, alpha=0.8)
+            ax.plot(time_axis,
+                    signal_data,
+                    color=color,
+                    linewidth=1,
+                    alpha=0.8)
 
             # Add activity name and stats
             activity_stats = self.analytics.get(activity, {})
@@ -444,12 +499,23 @@ class GHOSTLYC3DProcessor:
             if avg_duration != 'N/A':
                 avg_duration = f"{avg_duration:.2f} ms"
 
-            ax.text(0.02, 0.85, activity, transform=ax.transAxes, fontsize=16, 
-                   fontweight='bold', color=color)
-            ax.text(0.25, 0.85, f"{contraction_count} contractions", 
-                   transform=ax.transAxes, fontsize=12)
-            ax.text(0.45, 0.85, f"{avg_duration} (avg. duration)", 
-                   transform=ax.transAxes, fontsize=12)
+            ax.text(0.02,
+                    0.85,
+                    activity,
+                    transform=ax.transAxes,
+                    fontsize=16,
+                    fontweight='bold',
+                    color=color)
+            ax.text(0.25,
+                    0.85,
+                    f"{contraction_count} contractions",
+                    transform=ax.transAxes,
+                    fontsize=12)
+            ax.text(0.45,
+                    0.85,
+                    f"{avg_duration} (avg. duration)",
+                    transform=ax.transAxes,
+                    fontsize=12)
 
             # Set x-axis ticks every 10 seconds
             max_time = time_axis[-1] if len(time_axis) > 0 else 60
@@ -462,7 +528,6 @@ class GHOSTLYC3DProcessor:
 
             # Add x-labels to all plots since we don't have the level plot anymore
             ax.set_xlabel('Time (seconds)')
-
         """
         # LEVEL LAYOUT PLOT - COMMENTED OUT 
         """
@@ -472,7 +537,7 @@ class GHOSTLYC3DProcessor:
 
         # Save if requested
         if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.savefig(save_path, dpi=600, bbox_inches='tight')
 
         if show_plot:
             plt.show()
@@ -481,10 +546,10 @@ class GHOSTLYC3DProcessor:
 
         return save_path if save_path else ""
 
-    def process_file(self, 
-                    threshold_factor: float = DEFAULT_THRESHOLD_FACTOR,
-                    min_duration_ms: int = DEFAULT_MIN_DURATION_MS,
-                    smoothing_window: int = DEFAULT_SMOOTHING_WINDOW) -> Dict:
+    def process_file(self,
+                     threshold_factor: float = DEFAULT_THRESHOLD_FACTOR,
+                     min_duration_ms: int = DEFAULT_MIN_DURATION_MS,
+                     smoothing_window: int = DEFAULT_SMOOTHING_WINDOW) -> Dict:
         """
         Process the C3D file and return complete analysis results.
 
@@ -499,11 +564,9 @@ class GHOSTLYC3DProcessor:
         self.load_file()
         self.extract_metadata()
         self.extract_emg_data()
-        self.detect_contractions(
-            threshold_factor=threshold_factor,
-            min_duration_ms=min_duration_ms,
-            smoothing_window=smoothing_window
-        )
+        self.detect_contractions(threshold_factor=threshold_factor,
+                                 min_duration_ms=min_duration_ms,
+                                 smoothing_window=smoothing_window)
         self.calculate_analytics()
 
         # Create result dictionary
