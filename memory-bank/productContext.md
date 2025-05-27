@@ -49,6 +49,10 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 - Signal smoothing and filtering
 - Peak detection and analysis
 - Duration and amplitude calculations
+- Calculation of Root Mean Square (RMS)
+- Calculation of Mean Absolute Value (MAV)
+- Calculation of spectral fatigue parameters (MPF, MDF)
+- Calculation of Dimitrov's Fatigue Index (FI_nsm5)
 
 ### Visualization
 - Individual channel plots

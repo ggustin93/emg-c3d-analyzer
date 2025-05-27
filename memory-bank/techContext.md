@@ -3,13 +3,14 @@
 ## Technology Stack
 
 ### Core Backend Technologies
-- Python 3.10
+- Python 3.10+ (Project configured for >=3.10,<3.12)
 - FastAPI
 - Poetry (Package Management)
 - ezc3d (C3D File Processing)
+- `python-multipart` (For FastAPI file uploads)
 
 ### Core Frontend Technologies
-- React (via Vite, assumed)
+- React (via Create React App - `react-scripts`)
 - TypeScript
 - Tailwind CSS (via shadcn/ui)
 - shadcn/ui (for UI components)
@@ -17,7 +18,7 @@
 ### Key Backend Dependencies
 ```toml
 [Dependencies]
-python = ">=3.10.0,<3.11"
+python = ">=3.10.0,<3.12" # Updated to allow Python 3.11 for Render compatibility
 ezc3d = "^1.5.18"
 fastapi = "^0.115.12"
 pydantic = "^2.11.4"
@@ -28,90 +29,86 @@ matplotlib = "^3.10.3"
 seaborn = "^0.13.2"
 uvicorn = "^0.34.2"
 requests = "^2.32.3"
-annotated-types = "^0.7.0"
-anyio = "^4.9.0"
-certifi = "^2025.4.26"
-charset-normalizer = "^3.4.2"
-# Note: Additional dependencies from poetry.lock (e.g., exceptiongroup, idna, sniffio, typing_extensions)
-# are often transitive dependencies pulled in by the ones listed above.
-# The lock file provides the exact resolved versions.
+python-multipart = "^0.0.9" # Added for FastAPI file uploads
+# Other dependencies are resolved by Poetry via poetry.lock
 ```
 
-### Key Frontend Dependencies (Managed via npm/yarn/pnpm - typically in `frontend/package.json`)
+### Key Frontend Dependencies (Managed via npm - `frontend/package.json`)
 - `react`
 - `react-dom`
 - `typescript`
 - `tailwindcss`
 - `lucide-react` (for icons)
-- Specific `shadcn/ui` components (e.g., `collapsible`, `button`, `card`) - these are added individually.
+- `axios` (for API calls)
+- Specific `shadcn/ui` components.
 
 ## Development Environment
 
 ### Required Tools
-- Python 3.10
-- Poetry package manager
-- Node.js and npm/yarn/pnpm (for frontend development)
-- Git version control
-- Code editor with Python support
-- C3D file viewer (optional)
+- Git
+- Python (3.10+ recommended)
+- Poetry (Python package manager)
+- Node.js (LTS version recommended, comes with npm)
+- Code editor with Python/TypeScript support
 
 ### Setup Instructions
-1. Install Python 3.10
-2. Install Poetry
-3. Clone repository
-4. Backend: Run `poetry install` in the project root.
-5. Frontend: Navigate to `frontend/` directory. Run `npm install` (or `yarn install` / `pnpm install`).
-6. Frontend: Initialize `shadcn/ui` if not already done: `npx shadcn-ui@latest init` (run from `frontend/` or project root depending on `components.json` configuration).
-7. Add required `shadcn/ui` components: e.g., `npx shadcn-ui@latest add button card collapsible` (run from where `components.json` is configured).
-8. Create data directories (for backend).
-9. Configure environment variables (if any).
+(Refer to `README.md` for the most current and detailed setup steps.)
+1. Clone repository.
+2. Configure Poetry for in-project virtual environment (optional but recommended): `poetry config virtualenvs.in-project true`
+3. Backend: Run `poetry install` in the project root.
+4. Frontend: Navigate to `frontend/` directory. Run `npm install`.
 
 ### Development Commands
+(Refer to `README.md` for primary instructions. `start_dev.sh` is the recommended way to run the full dev environment.)
 ```bash
-# Install backend dependencies (from project root)
+# Install/Update backend dependencies (from project root)
 poetry install
 
-# Run backend development server (from project root)
-poetry run uvicorn main:app --reload
-
-# Install frontend dependencies (from frontend/ directory)
+# Install/Update frontend dependencies (from frontend/ directory)
 cd frontend
-npm install # or yarn install / pnpm install
+npm install
+cd ..
+
+# Run the full development environment (backend & frontend)
+# Ensure start_dev.sh is executable: chmod +x start_dev.sh
+./start_dev.sh
+
+# --- Manual Start ---
+# Run backend development server (from project root)
+# poetry run uvicorn c3d_api:app --reload --host 0.0.0.0 --port 8080
+# (Note: main.py can also run the server via `python main.py` for local dev)
 
 # Run frontend development server (from frontend/ directory)
-npm run dev # or yarn dev / pnpm dev (actual command depends on frontend setup e.g. Vite)
-
-# Add a new shadcn/ui component (run from where components.json is configured - likely project root or frontend/)
-npx shadcn-ui@latest add <component-name>
-
-# Run backend tests (from project root)
-poetry run pytest
-
-# Format code (from project root)
-poetry run ruff format .
+# cd frontend
+# npm start
 ```
 
 ## Configuration
 
 ### Project Configuration
-- Backend: Poetry for dependency management (`pyproject.toml`).
-- Frontend: npm/yarn/pnpm for dependency management (`frontend/package.json`).
-- Frontend: `shadcn/ui` configured via `components.json` (typically in `frontend/` or project root).
+- Backend: Poetry for dependency management (`pyproject.toml`, `poetry.lock`).
+- Frontend: npm for dependency management (`frontend/package.json`).
+- Frontend: `shadcn/ui` configured via `components.json`.
 - Ruff for Python code formatting.
 - Pyright for Python type checking.
 
-### Path Aliases & Imports (Frontend)
-- Currently, path aliases like `@/*` are not configured for frontend imports.
-- Imports for `shadcn/ui` components (e.g., from `frontend/src/components/sessions/` to `frontend/src/components/ui/`) use relative paths: `../ui/<component-name>`.
-- Consider configuring path aliases in `frontend/tsconfig.json` and bundler settings (e.g., Vite) for cleaner imports if desired in the future.
+### Frontend API Endpoint Configuration
+- The frontend uses the `REACT_APP_API_URL` environment variable to determine the backend API URL.
+  - **Local Development:** Defaults to `http://localhost:8080`. Can be overridden by creating `frontend/.env` with `REACT_APP_API_URL=your_url`.
+  - **Production Deployment:** This variable **must** be set in the frontend hosting environment (e.g., Vercel) to the live backend URL.
+- The `frontend/.env` file is correctly ignored by Git.
 
-### Environment Variables
-- No sensitive environment variables currently required
-- Future additions may include:
-  - Database credentials
-  - API keys
-  - Storage paths
-  - Service endpoints
+## Deployment
+- **Backend (FastAPI):**
+    - Successfully deployed to Render.
+    - **Build Command on Render:** `poetry install --only main --no-root` (or `pip install poetry && poetry install --only main --no-root`)
+    - **Start Command on Render:** `uvicorn c3d_api:app --host 0.0.0.0 --port $PORT`
+    - Python version on Render aligned with project (`>=3.10,<3.12`).
+    - `python-multipart` added for file uploads.
+- **Frontend (React):**
+    - Successfully deployed to Vercel.
+    - Configured to point to the Render backend via the `REACT_APP_API_URL` environment variable set in Vercel project settings.
+    - Vercel "Root Directory" setting for the project is `frontend`.
 
 ### Code Style
 ```toml
@@ -143,39 +140,30 @@ ignore = ['W291', 'W292', 'W293']
 ## Infrastructure
 
 ### File Storage
-- Local file system structure
-- Organized by data type
-- Unique file identification
-- Regular cleanup required
+- Local file system structure for development (`data/` directory, gitignored).
+- Deployed backend on Render uses ephemeral storage for temporary processing if not configured otherwise.
 
 ### API Server
-- FastAPI application
-- CORS middleware enabled
-- Static file serving
-- Async request handling
+- FastAPI application (`c3d_api.py` contains the `app` instance).
+- CORS middleware enabled.
+- Async request handling.
 
 ### Processing Pipeline
 - EMG data extraction
-- Signal processing
-- Analytics calculation
+- Signal processing (filtering, etc.)
+- Analytics calculation (contractions, RMS, MAV, MPF, MDF, FI_nsm5)
 - Visualization generation
 
 ## Monitoring and Maintenance
 
 ### Logging
-- Standard Python logging
-- Error tracking
-- Performance metrics
-- API request logging
+- Backend logs to `backend.log` and `backend.error.log` during local development via `start_dev.sh`.
+- Render provides its own logging for the deployed backend.
+- Vercel provides logging for the deployed frontend.
 
 ### Testing
-- Unit tests with pytest
-- API integration tests
-- Performance benchmarks
-- Error case validation
+- Unit tests with pytest (current coverage may vary).
+- API integration tests (current coverage may vary).
 
-### Deployment
-- Local development setup
-- Production deployment TBD
-- Scaling considerations
-- Backup procedures 
+### Deprecated Scripts
+- `setup.sh` has been deleted as its functionality was outdated and is now covered by `README.md` manual setup instructions. `start_dev.sh` updated accordingly. 

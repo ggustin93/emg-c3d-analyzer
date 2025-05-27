@@ -1,14 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import React from 'react';
 
 interface MetricCardProps {
   title: string;
-  value: number;
+  value: number | string;
   unit: string;
   description: string;
   icon?: React.ReactNode;
   isInteger?: boolean;
   precision?: number;
   useScientificNotation?: boolean;
+  descriptionClassName?: string;
 }
 
 export default function MetricCard({
@@ -20,10 +22,15 @@ export default function MetricCard({
   isInteger,
   precision,
   useScientificNotation,
+  descriptionClassName,
 }: MetricCardProps) {
   let formattedValue: string;
 
-  if (isInteger) {
+  if (typeof value === 'string') {
+    formattedValue = value;
+  } else if (isNaN(value)) {
+    formattedValue = '---';
+  } else if (isInteger) {
     formattedValue = Math.round(value).toString();
   } else if (useScientificNotation) {
     formattedValue = value.toExponential(precision ?? 2);
@@ -39,9 +46,11 @@ export default function MetricCard({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">
-          {formattedValue} {unit}
+          {formattedValue} {typeof value === 'number' && !isNaN(value) ? unit : ''}
         </div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className={`text-xs text-muted-foreground ${descriptionClassName || ''}`}>
+          {description}
+        </p>
       </CardContent>
     </Card>
   );

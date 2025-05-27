@@ -11,9 +11,9 @@
 
 2. C3D Processor (`c3d_processor.py`)
    - EMG data extraction
-   - Signal processing
+   - Signal processing (filtering, segmentation)
    - Contraction detection
-   - Analytics calculation
+   - Analytics calculation (including RMS, MAV, MPF, MDF, FI_nsm5)
 
 3. Data Models (`models.py`)
    - Pydantic models

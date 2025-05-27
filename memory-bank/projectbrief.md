@@ -8,13 +8,15 @@ EMG C3D Analyzer is a specialized tool designed to process and analyze EMG (Elec
 ### Primary Goals
 1. Process C3D files containing EMG data from GHOSTLY game sessions
 2. Detect and analyze muscle contractions
-3. Generate visual analytics and reports
+3. Generate visual analytics and reports, including standard EMG amplitude and fatigue parameters.
 4. Track patient progress over time
 5. Provide a RESTful API for integration with other systems
 
 ### Key Features
 - C3D file upload and processing
 - EMG signal analysis and contraction detection
+- Calculation of EMG amplitude parameters (e.g., RMS, MAV)
+- Calculation of EMG fatigue indices (e.g., MPF, MDF, Dimitrov's FI_nsm5)
 - Real-time data visualization
 - Patient progress tracking
 - Multi-channel EMG analysis
@@ -29,7 +31,7 @@ EMG C3D Analyzer is a specialized tool designed to process and analyze EMG (Elec
 
 ## Technical Scope
 - FastAPI-based REST API
-- Python-based EMG signal processing
+- Python-based EMG signal processing, including RMS, MAV, MPF, MDF, and fatigue indices.
 - Data visualization with matplotlib/seaborn
 - C3D file handling with ezc3d
 - Patient data management
