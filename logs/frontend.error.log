@@ -1172,3 +1172,54 @@ TS2554: Expected 2 arguments, but got 1.
     42 |   const {
     43 |     plotChannel1Data,
 
+ERROR in src/index.tsx:14:7
+TS2322: Type '{ staleTime: number; cacheTime: number; retry: number; }' is not assignable to type 'OmitKeyof<QueryObserverOptions<unknown, Error, unknown, unknown, readonly unknown[], never>, "suspense" | "queryKey", "strictly">'.
+  Object literal may only specify known properties, and 'cacheTime' does not exist in type 'OmitKeyof<QueryObserverOptions<unknown, Error, unknown, unknown, readonly unknown[], never>, "suspense" | "queryKey", "strictly">'.
+    12 |     queries: {
+    13 |       staleTime: 1000 * 60 * 5, // 5 minutes
+  > 14 |       cacheTime: 1000 * 60 * 30, // 30 minutes
+       |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+    15 |       retry: 1, // Retry failed requests 1 time
+    16 |     },
+    17 |   },
+
+ERROR in src/hooks/useGameSessionData.ts:5:10
+TS2305: Module '"./useEmgDataFetching"' has no exported member 'EmgDataFetchingControls'.
+    3 | import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
+    4 | import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
+  > 5 | import { EmgDataFetchingControls } from './useEmgDataFetching';
+      |          ^^^^^^^^^^^^^^^^^^^^^^^
+    6 |
+    7 | export interface GameSessionDataControls {
+    8 |   currentGameSession: GameSession | null;
+
+ERROR in src/hooks/useGameSessionData.ts:5:10
+TS2305: Module '"./useEmgDataFetching"' has no exported member 'EmgDataFetchingControls'.
+    3 | import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
+    4 | import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
+  > 5 | import { EmgDataFetchingControls } from './useEmgDataFetching';
+      |          ^^^^^^^^^^^^^^^^^^^^^^^
+    6 |
+    7 | export interface GameSessionDataControls {
+    8 |   currentGameSession: GameSession | null;
+
+ERROR in src/hooks/useGameSessionData.ts:5:10
+TS2305: Module '"./useEmgDataFetching"' has no exported member 'EmgDataFetchingControls'.
+    3 | import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
+    4 | import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
+  > 5 | import { EmgDataFetchingControls } from './useEmgDataFetching';
+      |          ^^^^^^^^^^^^^^^^^^^^^^^
+    6 |
+    7 | export interface GameSessionDataControls {
+    8 |   currentGameSession: GameSession | null;
+
+ERROR in src/hooks/useGameSessionData.ts:5:10
+TS2305: Module '"./useEmgDataFetching"' has no exported member 'EmgDataFetchingControls'.
+    3 | import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
+    4 | import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
+  > 5 | import { EmgDataFetchingControls } from './useEmgDataFetching';
+      |          ^^^^^^^^^^^^^^^^^^^^^^^
+    6 |
+    7 | export interface GameSessionDataControls {
+    8 |   currentGameSession: GameSession | null;
+
