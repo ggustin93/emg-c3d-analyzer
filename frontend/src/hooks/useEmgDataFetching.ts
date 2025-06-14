@@ -1,10 +1,15 @@
 import { useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axios, { AxiosError } from 'axios';
 import type { EmgSignalData, StatsData, EMGAnalysisResult } from '../types/emg';
 import { DownsamplingControls } from './useDataDownsampling';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
+// Define a type for the API error response
+interface ApiError {
+  detail: string;
+}
 
 // The async function that fetches the data
 const fetchChannelRawData = async (
@@ -48,6 +53,7 @@ export const useEmgDataFetching = (
   downsamplingControls: DownsamplingControls
 ) => {
   const { dataPoints, downsampleData } = downsamplingControls;
+  const queryClient = useQueryClient();
 
   const fileId = analysisResult?.file_id;
 
@@ -56,7 +62,7 @@ export const useEmgDataFetching = (
     data: plotChannel1Data, 
     isLoading: isLoading1,
     error: error1 
-  } = useQuery({
+  } = useQuery<EmgSignalData, AxiosError<ApiError>>({
     queryKey: ['emgData', fileId, plotChannel1Name, dataPoints],
     queryFn: () => fetchChannelRawData(fileId!, plotChannel1Name!, downsampleData, dataPoints),
     enabled: !!fileId && !!plotChannel1Name, // Only run query if fileId and channelName are available
@@ -67,7 +73,7 @@ export const useEmgDataFetching = (
     data: plotChannel2Data,
     isLoading: isLoading2,
     error: error2
-  } = useQuery({
+  } = useQuery<EmgSignalData, AxiosError<ApiError>>({
     queryKey: ['emgData', fileId, plotChannel2Name, dataPoints],
     queryFn: () => fetchChannelRawData(fileId!, plotChannel2Name!, downsampleData, dataPoints),
     enabled: !!fileId && !!plotChannel2Name,
@@ -78,7 +84,7 @@ export const useEmgDataFetching = (
   const { 
     data: statsDataFull, 
     // We don't need loading/error for stats as it's a background-like task
-  } = useQuery({
+  } = useQuery<EmgSignalData, AxiosError<ApiError>>({
     queryKey: ['emgData', fileId, statsChannelName, 'full'], // 'full' indicates no downsampling
     queryFn: async () => {
         const { data } = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId!}/${statsChannelName!}`);
@@ -92,10 +98,11 @@ export const useEmgDataFetching = (
   const dataFetchingLoading = isLoading1 || isLoading2;
 
   // Combine errors from both queries
-  const getErrorMessage = (error: any): string | null => {
+  const getErrorMessage = (error: AxiosError<ApiError> | null): string | null => {
     if (!error) return null;
-    if (axios.isAxiosError(error)) {
-        return error.response?.data?.detail || error.message;
+    // Check if it's an Axios error with a response from our API
+    if (error.response && error.response.data && error.response.data.detail) {
+      return error.response.data.detail;
     }
     return error.message;
   }
@@ -115,10 +122,11 @@ export const useEmgDataFetching = (
   }, [downsampleData, dataPoints]);
 
   const resetPlotDataAndStats = useCallback(() => {
-    // With React Query, cache invalidation is the way to "reset".
-    // For now, a simple reset is not directly needed as queries refetch automatically on param change.
-    // If a manual reset button is desired, we would use queryClient.invalidateQueries(...).
-  }, []);
+    // Correct way to reset with React Query: invalidate or remove queries
+    // Removing is better for a full reset when a new file is uploaded
+    queryClient.removeQueries({ queryKey: ['emgData'] });
+    console.log("EMG data cache cleared.");
+  }, [queryClient]);
 
   return {
     plotChannel1Data: plotChannel1Data ?? null,
