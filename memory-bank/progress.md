@@ -52,6 +52,7 @@
     - ✅ Renamed "Overview" to "Game Stats" and reordered tabs.
     - ✅ `StatsPanel` refined to show only clinically relevant amplitude metrics.
     - ✅ Fixed number formatting to correctly display scientific notation.
+    - ✅ Finalized tab bar layout (removed redundant tab, restored full-width style).
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
 

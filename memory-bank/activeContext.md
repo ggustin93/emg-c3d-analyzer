@@ -30,6 +30,7 @@
 *   **Refined Analytics Display**: Removed "Min/Max Value" from the `StatsPanel` to improve clinical clarity and focus on contraction-specific metrics. Updated component descriptions accordingly.
 *   **Improved UX Flow**: Changed the default tab on upload to "Signal Plots" and added the filename to the session title.
 *   **Fixed Data Formatting**: Corrected the `formatMetricValue` utility to ensure very small numbers are displayed in scientific notation rather than being rounded to zero.
+*   **Finalized Tab Layout**: Removed a redundant "Debug" tab and restored the full-width tab layout, cleaning up the main user interface.
 
 ## Active Development Focus
 
