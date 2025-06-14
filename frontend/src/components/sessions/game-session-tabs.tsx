@@ -92,38 +92,10 @@ export default function GameSessionTabs({
   plotMode,
   setPlotMode,
 }: GameSessionTabsProps) {
-  const frontendDerivedData = {
-    note: "Data generated, defaulted, interpreted, or assumed by the frontend React components (primarily App.tsx unless otherwise specified).",
-    emgMetricsPlaceholdersAndInterpretations: {
-      description: "The following EMG-related metrics are currently frontend placeholders, interpretations of backend data, or simplified calculations. Specific items like RMS, MAV, Fatigue Index, and Force Estimation are awaiting full backend implementation or are currently simplified.",
-      rms_mV: selectedGameSession.metrics?.rms,
-      mav_mV: selectedGameSession.metrics?.mav,
-      fatigueIndex: selectedGameSession.metrics?.fatigueIndex, 
-      forceEstimation_N: selectedGameSession.metrics?.forceEstimation,
-      longContractionsLeft: selectedGameSession.metrics?.longContractionsLeft,
-      longContractionsRight: selectedGameSession.metrics?.longContractionsRight,
-      shortContractionsLeft: selectedGameSession.metrics?.shortContractionsLeft,
-      shortContractionsRight: selectedGameSession.metrics?.shortContractionsRight,
-    },
-    gameStatistics: {
-      description: "Populated in App.tsx. Fields like 'duration', 'levelsCompleted', 'activationPoints' (from score) map to backend metadata. 'inactivityPeriods' is a frontend default (0).",
-      data: selectedGameSession.statistics,
-    },
-    gameParameters: {
-      description: "Static default values set in frontend (App.tsx). These are not from the C3D file analysis.",
-      data: selectedGameSession.parameters,
-    },
-    sessionConstructionDetails: {
-      description: "Session object fields constructed in App.tsx.",
-      id: selectedGameSession.id,
-      gameType: selectedGameSession.gameType,
-      startTime: selectedGameSession.startTime,
-      endTime: selectedGameSession.endTime,
-    },
-    uiDisplayRelatedMetrics: {
-        description: "Metrics primarily used for UI display elements.",
-        peakContraction_targetMVC_percent: mvcPercentage
-    }
+
+  const getPerformanceScore = (metrics?: EMGMetrics) => {
+    if (!metrics) return 0;
+    // ... existing code ...
   };
 
   if (!analysisResult) return null;
@@ -135,6 +107,7 @@ export default function GameSessionTabs({
         <TabsTrigger value="overview">Game Stats</TabsTrigger>
         <TabsTrigger value="analytics">EMG Analytics</TabsTrigger>
         <TabsTrigger value="raw">Raw API</TabsTrigger>
+        <TabsTrigger value="debug">Debug</TabsTrigger>
       </TabsList>
 
       {/* --- Overview Tab --- */}
@@ -249,7 +222,21 @@ export default function GameSessionTabs({
           </CardHeader>
           <CardContent>
             <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
-              {JSON.stringify({ analysisResult, frontendDerivedData }, null, 2)}
+              {JSON.stringify(analysisResult, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="debug">
+        <Card>
+          <CardHeader>
+            <CardTitle>Debug Information</CardTitle>
+            <CardDescription>Raw JSON output from the analysis for debugging purposes.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
+              {JSON.stringify(analysisResult, null, 2)}
             </pre>
           </CardContent>
         </Card>
