@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { GameSession, EMGDataPoint, EMGMetrics, GameParameters as AppGameParameters } from '@/types/session'; // Assuming path alias or correct relative path
 import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
 import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
-import { EmgDataFetchingControls } from './useEmgDataFetching';
+
+// Define a local type for the fetching dependency
+interface FetcherControls {
+  fetchChannelRawData: (fileId: string, channelName: string) => Promise<EmgSignalData | null>;
+}
 
 export interface GameSessionDataControls {
   currentGameSession: GameSession | null;
@@ -21,7 +25,7 @@ export const useGameSessionData = (
   mainPlotChannel2Data: EmgSignalData | null, // From useEmgDataFetching
   mainPlotChannel1Name: string | null,      // From useChannelManagement
   mainPlotChannel2Name: string | null,      // From useChannelManagement
-  fetcherControls: Pick<EmgDataFetchingControls, 'fetchChannelRawData'>
+  fetcherControls: FetcherControls
 ): GameSessionDataControls => {
   const [currentGameSession, setCurrentGameSession] = useState<GameSession | null>(null);
   const [currentEMGTimeSeriesDataForTabs, setCurrentEMGTimeSeriesDataForTabs] = useState<CombinedChartDataPoint[]>([]);
