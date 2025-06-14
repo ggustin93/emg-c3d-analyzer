@@ -3,6 +3,7 @@ import sys
 import logging
 from pathlib import Path
 import traceback
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -38,8 +39,13 @@ except Exception as e:
 # If running directly (for development)
 if __name__ == "__main__":
     try:
-        logger.info("Starting uvicorn server on http://0.0.0.0:8080")
-        uvicorn.run(app, host="0.0.0.0", port=8080, reload=True, log_level="info")
+        # Get port from environment variable or use default
+        port = int(os.environ.get("PORT", 8080))
+        host = os.environ.get("HOST", "0.0.0.0")
+        
+        logger.info(f"Starting uvicorn server on http://{host}:{port}")
+        # Remove reload=True to avoid the warning in production
+        uvicorn.run(app, host=host, port=port, log_level="info")
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())
