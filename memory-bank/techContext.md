@@ -38,9 +38,9 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 - `react-dom`
 - `typescript`
 - `tailwindcss`
-- `lucide-react` (for icons)
+- `@radix-ui/react-icons` (for icons)
 - `axios` (for API calls)
-- Specific `shadcn/ui` components.
+- Specific `shadcn/ui` components. New components are added via `npx shadcn@latest add <component-name>`.
 
 ## Development Environment
 
@@ -70,17 +70,16 @@ npm install
 cd ..
 
 # Run the full development environment (backend & frontend)
-# Ensure start_dev.sh is executable: chmod +x start_dev.sh
+# This script handles starting both servers.
 ./start_dev.sh
 
 # --- Manual Start ---
 # Run backend development server (from project root)
-# poetry run uvicorn c3d_api:app --reload --host 0.0.0.0 --port 8080
-# (Note: main.py can also run the server via `python main.py` for local dev)
+poetry run python -m backend.main
 
 # Run frontend development server (from frontend/ directory)
-# cd frontend
-# npm start
+cd frontend
+npm start
 ```
 
 ## Configuration
@@ -98,11 +97,18 @@ cd ..
   - **Production Deployment:** This variable **must** be set in the frontend hosting environment (e.g., Vercel) to the live backend URL.
 - The `frontend/.env` file is correctly ignored by Git.
 
+### Troubleshooting Frontend Dependencies
+- On occasion, the local `node_modules` cache can become inconsistent, leading to module resolution errors even when code and package versions are correct (e.g., `Module '"lucide-react"' has no exported member '...'`).
+- **Solution**: Perform a clean reinstall of frontend dependencies from the `frontend/` directory:
+  ```bash
+  rm -rf node_modules package-lock.json && npm install
+  ```
+
 ## Deployment
 - **Backend (FastAPI):**
     - Successfully deployed to Render.
-    - **Build Command on Render:** `poetry install --only main --no-root` (or `pip install poetry && poetry install --only main --no-root`)
-    - **Start Command on Render:** `uvicorn c3d_api:app --host 0.0.0.0 --port $PORT`
+    - **Build Command on Render:** `poetry install --only main --no-root`
+    - **Start Command on Render:** `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
     - Python version on Render aligned with project (`>=3.10,<3.12`).
     - `python-multipart` added for file uploads.
 - **Frontend (React):**
@@ -144,7 +150,8 @@ ignore = ['W291', 'W292', 'W293']
 - Deployed backend on Render uses ephemeral storage for temporary processing if not configured otherwise.
 
 ### API Server
-- FastAPI application (`c3d_api.py` contains the `app` instance).
+- FastAPI application (the `app` instance is in `backend.api`).
+- The server is launched via `backend.main`.
 - CORS middleware enabled.
 - Async request handling.
 

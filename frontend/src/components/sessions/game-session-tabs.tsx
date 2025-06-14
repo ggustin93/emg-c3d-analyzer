@@ -101,28 +101,15 @@ export default function GameSessionTabs({
   if (!analysisResult) return null;
 
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4">
+    <Tabs defaultValue={activeTab} onValueChange={onTabChange} className="w-full">
+      <TabsList>
         <TabsTrigger value="plots">Signal Plots</TabsTrigger>
-        <TabsTrigger value="overview">Game Stats</TabsTrigger>
+        <TabsTrigger value="stats">Game Stats</TabsTrigger>
         <TabsTrigger value="analytics">EMG Analytics</TabsTrigger>
         <TabsTrigger value="raw">Raw API</TabsTrigger>
-        <TabsTrigger value="debug">Debug</TabsTrigger>
       </TabsList>
 
-      {/* --- Overview Tab --- */}
-      <TabsContent value="overview" className="space-y-4">
-        <PerformanceCard 
-          selectedGameSession={selectedGameSession}
-          emgTimeSeriesData={emgTimeSeriesData}
-          mvcPercentage={mvcPercentage}
-          leftQuadChannelName={leftQuadChannelName}
-          rightQuadChannelName={rightQuadChannelName}
-        />
-      </TabsContent>
-
-      {/* --- Signal Plots Tab --- */}
-      <TabsContent value="plots" className="space-y-4">
+      <TabsContent value="plots">
         <Card>
           <CardHeader>
              <Collapsible>
@@ -191,47 +178,42 @@ export default function GameSessionTabs({
         <GeneratedPlotsDisplay plots={analysisResult.plots} />
       </TabsContent>
 
-       {/* --- EMG Analytics Tab --- */}
-       <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>EMG Analytics</CardTitle>
-                  <CardDescription>Detailed metrics for the selected muscle group.</CardDescription>
-                </div>
+      <TabsContent value="stats">
+        <PerformanceCard 
+          selectedGameSession={selectedGameSession}
+          emgTimeSeriesData={emgTimeSeriesData}
+          mvcPercentage={mvcPercentage}
+          leftQuadChannelName={leftQuadChannelName}
+          rightQuadChannelName={rightQuadChannelName}
+        />
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>EMG Analytics</CardTitle>
+                <CardDescription>Detailed metrics for the selected muscle group.</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
-              <StatsPanel 
-                stats={currentStats}
-                channelAnalytics={currentChannelAnalyticsData}
-                selectedChannel={selectedChannelForStats}
-                availableChannels={muscleChannels}
-                onChannelSelect={setSelectedChannelForStats}
-              />
-            </CardContent>
-          </Card>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <StatsPanel 
+              stats={currentStats}
+              channelAnalytics={currentChannelAnalyticsData}
+              selectedChannel={selectedChannelForStats}
+              availableChannels={muscleChannels}
+              onChannelSelect={setSelectedChannelForStats}
+            />
+          </CardContent>
+        </Card>
       </TabsContent>
 
       <TabsContent value="raw">
         <Card>
           <CardHeader>
-            <CardTitle>Raw API Data</CardTitle>
-            <CardDescription>The raw JSON response from the backend analysis.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
-              {JSON.stringify(analysisResult, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="debug">
-        <Card>
-          <CardHeader>
-            <CardTitle>Debug Information</CardTitle>
+            <CardTitle>Raw API Response</CardTitle>
             <CardDescription>Raw JSON output from the analysis for debugging purposes.</CardDescription>
           </CardHeader>
           <CardContent>

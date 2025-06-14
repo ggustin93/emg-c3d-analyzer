@@ -3,6 +3,7 @@
 ## Completed Features
 
 ### Core Infrastructure
+✅ **Backend Codebase Refactoring** (Moved all backend logic into a dedicated `backend/` directory)
 ✅ FastAPI Application Setup (Backend)
 ✅ Poetry Project Configuration (Backend)
 ✅ React Application Setup (Frontend - Create React App)
@@ -13,23 +14,46 @@
 ✅ `README.md` significantly improved for professional open-source standards.
 ✅ Local setup process streamlined (deleted `setup.sh`, `README.md` is source of truth).
 
-### Data Processing (Backend)
+### Data Processing & Analytics (Backend)
 ✅ C3D File Upload
 ✅ EMG Data Extraction
-✅ Contraction Detection
-✅ Basic Analytics
+✅ **Intelligent Analysis Pipeline:**
+    - ✅ Correctly identifies "Raw" vs. "activated" signals.
+    - ✅ Applies contraction analysis *only* to activated signals.
+    - ✅ Applies full-signal metrics *only* to raw signals.
+✅ **Complete Analytics Suite:**
+    - ✅ RMS (Root Mean Square)
+    - ✅ MAV (Mean Absolute Value)
+    - ✅ MPF (Mean Power Frequency)
+    - ✅ MDF (Median Frequency)
+    - ✅ Dimitrov's Fatigue Index (FI_nsm5)
+✅ **Aggregated API Response:**
+    - ✅ API returns a clean, unified analytics object per muscle.
+    - ✅ API includes the `source_filename` in the response.
 ✅ Plot Generation (Backend logic)
 
 ### API Endpoints (Backend)
 ✅ File Upload (`/upload`)
-✅ Raw Data Access (`/raw-data/{file_id}/{channel_name}`)
-✅ Basic Results Retrieval (structure in place)
+✅ Raw Data Access (`/raw-data/{result_id}/{channel_name}`)
+✅ Results Retrieval
 
 ### Frontend Development
-✅ Initial UI for File Upload and basic data display.
-✅ Refactored `App.tsx` into custom hooks (`useDataDownsampling`, `useChannelManagement`, `useEmgDataFetching`, `useGameSessionData`).
-✅ Fixed UI issues (e.g., chart legend overlapping).
-✅ Configured to use `REACT_APP_API_URL` for backend communication.
+✅ **Major Refactoring & Component Stabilization:**
+    - ✅ Replaced `lucide-react` with `@radix-ui/react-icons` to solve build errors.
+    - ✅ Repaired and stabilized `GameSessionTabs` and child components.
+    - ✅ Established `shadcn/ui` with `@radix-ui/react-icons` as the core UI component stack.
+    - ✅ Refactored state management into custom hooks (`useChannelManagement`, `useGameSessionData`).
+✅ **Advanced Plotting Features**:
+    - ✅ Added a toggle switch to flip between "Raw" and "Activated" channel plots.
+    - ✅ Channel selection logic is now dynamic and centralized in `useChannelManagement`.
+✅ **Significant UI/UX Polish:**
+    - ✅ Default view is now "Signal Plots" tab after upload.
+    - ✅ Display uploaded filename in the session title.
+    - ✅ Renamed "Overview" to "Game Stats" and reordered tabs.
+    - ✅ `StatsPanel` refined to show only clinically relevant amplitude metrics.
+    - ✅ Fixed number formatting to correctly display scientific notation.
+✅ API Integration for all core features.
+✅ UI Components from `shadcn/ui`.
 
 ### Deployment
 ✅ **Backend (FastAPI) successfully deployed to Render.**
@@ -41,31 +65,10 @@
 
 ## In Progress Features
 
-### Backend Development (EMG Analysis) (🚧 10%)
-- [ ] Implement RMS (Root Mean Square) calculation.
-- [ ] Implement MAV (Mean Absolute Value) calculation.
-- [ ] Implement MPF (Mean Power Frequency) calculation.
-- [ ] Implement MDF (Median Frequency) calculation.
-- [ ] Implement Dimitrov's Fatigue Index (FI_nsm5) calculation.
-- [ ] Integrate new analytics into `c3d_processor.py`.
-- [ ] Update API models and responses in `c3d_api.py` and `models.py`.
-
-### Frontend Development (🚧 80% -> towards initial usable version)
-- [x] Component Design (Basic layout for `game-session-tabs.tsx` improved, `ChannelSelection` made flexible)
-- [x] UI Component Setup (`shadcn/ui` usage pattern established).
-- [x] Core UI Logic (`game-session-tabs.tsx`: collapsible plot options, channel/stats sync).
-- [x] Major refactoring of `App.tsx` completed.
-- [x] Chart legend display issue resolved.
-- [x] API Integration for core features (upload, data fetching for plots).
-- [ ] Comprehensive User Interface (Further refinements, more interactive elements, polished look & feel based on deployed version).
-- [ ] Robust real-time updates and feedback during processing.
-- [ ] Advanced interactive plots and analytics display.
-
-### Advanced Analytics (Backend & Frontend) (🚧 25%)
-- [ ] Add more detailed EMG metrics (RMS, MAV, MPF, MDF, FI_nsm5 now planned).
-- [ ] Implement trend analysis visualization (if applicable).
-- [ ] Design and implement custom reports.
-- [ ] Data export functionality.
+### Testing (🚧 20%)
+- [ ] Add unit and integration tests for the `GHOSTLYC3DProcessor` logic.
+- [ ] Add frontend tests for plot switching and data display logic.
+- [ ] Validate correctness of all calculated metrics with known data sets.
 
 ### User Management (🚧 5% - If pursued)
 - [ ] Requirements definition for authentication/authorization.
@@ -73,41 +76,9 @@
 ## Pending Features
 
 ### General
-- [ ] Comprehensive end-to-end testing of deployed versions.
-- [ ] Database integration for persistent storage (if required beyond current scope).
-- [ ] Cloud storage for C3D files (if required for scaling).
+- [ ] Database integration for persistent storage.
+- [ ] Cloud storage for C3D files.
 - [ ] CI/CD pipeline setup.
-
-### Security
-- [ ] Thorough input validation on all API endpoints.
-- [ ] Review security best practices for FastAPI and React.
-
-### Performance
-- [ ] Identify and optimize any slow backend processing steps.
-- [ ] Optimize frontend rendering performance for large datasets.
-
-## Testing Status
-
-### Unit Tests
-- Basic API Tests (Backend) ✅
-- Model Tests (Backend) ✅
-- Processor Tests (Backend) 🚧
-- Frontend component tests ❌
-
-### Integration Tests
-- File Upload Flow (Backend & Frontend) 🚧 (Works, but needs formal tests)
-- Processing Pipeline (Backend) 🚧
-- Error Handling (End-to-end) ❌
-
-## Known Issues
-
-### High Priority
-1.  Limited test coverage across the application.
-2.  Frontend needs more robust error display and user feedback for API operations.
-
-### Low Priority
-1.  Plot generation performance for very large datasets (frontend/backend).
-2.  Code documentation (docstrings, detailed comments).
 
 ## Milestones
 
@@ -115,18 +86,22 @@
 - Basic API structure and C3D processing (Backend).
 - Basic EMG analysis and plot generation (Backend).
 - Functional frontend for upload and basic visualization.
-- **Successful deployment of decoupled frontend (Vercel) and backend (Render).**
+- Successful deployment of decoupled frontend (Vercel) and backend (Render).
 
-### Milestone 2: Feature Enhancement & Polish 🚧
-- **Implement advanced EMG analytics (RMS, MAV, MPF, MDF, FI_nsm5) in backend.**
-- **Display new EMG analytics in frontend.**
-- Advanced frontend UI/UX and interactivity.
-- More comprehensive analytics and reporting.
-- Improved error handling and user feedback.
-- Increased test coverage.
+### Milestone 2: Intelligent Analysis & Frontend Refactor ✅
+- **Implemented intelligent, scientifically valid analysis pipeline in backend.**
+- **Implemented the full suite of advanced EMG analytics.**
+- **Refactored the frontend to correctly consume and display the new aggregated data.**
 
-### Milestone 3: Production Ready ❌
-- Robust security features (if applicable, e.g., auth).
-- Performance optimization and stress testing.
-- Comprehensive documentation.
-- CI/CD pipeline. 
+### Milestone 3: UI Polish, Stability & Feature Enhancement ✅
+- **Resolved critical frontend dependency and build issues.**
+- **Implemented advanced plot-switching feature.**
+- **Completed major UI/UX polish based on user feedback** (tab order, naming, default views, data formatting, clinical clarity).
+- The application is now a feature-complete and stable analysis tool from a user's perspective.
+
+### Milestone 4: Production Hardening & Automation 🚧
+- [ ] Achieve high test coverage.
+- [ ] Harden security (if applicable, e.g., auth).
+- [ ] Performance optimization and stress testing.
+- [ ] Comprehensive documentation.
+- [ ] CI/CD pipeline.

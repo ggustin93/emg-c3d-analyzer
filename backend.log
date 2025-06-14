@@ -1,6 +1,114 @@
-INFO:     127.0.0.1:52995 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52995 - "GET /raw-data/51cf61dd-9da1-47dd-b6d0-de0176efd9f2/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52997 - "GET /raw-data/51cf61dd-9da1-47dd-b6d0-de0176efd9f2/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52995 - "GET /raw-data/51cf61dd-9da1-47dd-b6d0-de0176efd9f2/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52999 - "GET /raw-data/51cf61dd-9da1-47dd-b6d0-de0176efd9f2/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52999 - "GET /raw-data/51cf61dd-9da1-47dd-b6d0-de0176efd9f2/CH2%20activated HTTP/1.1" 200 OK
+2025-06-14 08:35:39,534 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:35:39,534 - backend - INFO - Data directories verified
+2025-06-14 08:37:43,309 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:37:43,309 - backend - INFO - Data directories verified
+2025-06-14 08:38:33,126 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:38:33,126 - backend - INFO - Data directories verified
+2025-06-14 08:39:41,183 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:39:41,183 - backend - INFO - Data directories verified
+2025-06-14 08:39:58,564 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:39:58,564 - backend - INFO - Data directories verified
+2025-06-14 08:41:37,009 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:41:37,010 - backend - INFO - Data directories verified
+2025-06-14 08:41:54,709 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:41:54,709 - backend - INFO - Data directories verified
+2025-06-14 08:46:11,449 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:46:11,449 - backend - INFO - Data directories verified
+2025-06-14 08:49:24,320 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:49:24,320 - backend - INFO - Data directories verified
+2025-06-14 08:49:37,019 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:49:37,019 - backend - INFO - Data directories verified
+2025-06-14 08:50:11,007 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:50:11,008 - backend - INFO - Data directories verified
+2025-06-14 08:50:20,567 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:50:20,567 - backend - INFO - Data directories verified
+2025-06-14 08:54:05,764 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:54:05,764 - backend - INFO - Data directories verified
+2025-06-14 08:54:16,909 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:54:16,909 - backend - INFO - Data directories verified
+2025-06-14 08:54:26,164 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:54:26,164 - backend - INFO - Data directories verified
+2025-06-14 08:56:29,833 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:56:29,833 - backend - INFO - Data directories verified
+2025-06-14 08:56:32,200 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:56:32,200 - backend - INFO - Data directories verified
+2025-06-14 08:59:45,067 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 08:59:45,067 - backend - INFO - Data directories verified
+2025-06-14 09:01:02,409 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:01:02,409 - backend - INFO - Data directories verified
+2025-06-14 09:01:43,876 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:01:43,879 - backend - INFO - Data directories verified
+2025-06-14 09:03:48,996 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:03:48,997 - backend - INFO - Data directories verified
+2025-06-14 09:04:25,902 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:04:25,902 - backend - INFO - Data directories verified
+2025-06-14 09:05:40,908 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:05:40,908 - backend - INFO - Data directories verified
+2025-06-14 09:17:13,393 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:17:13,394 - backend - INFO - Data directories verified
+2025-06-14 09:21:18,034 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:21:18,034 - backend - INFO - Data directories verified
+2025-06-14 09:30:27,733 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:30:27,734 - backend - INFO - Data directories verified
+2025-06-14 09:30:42,922 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:30:42,922 - backend - INFO - Data directories verified
+2025-06-14 09:31:41,763 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:31:41,763 - backend - INFO - Data directories verified
+2025-06-14 09:33:56,540 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:33:56,540 - backend - INFO - Data directories verified
+2025-06-14 09:34:07,601 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:34:07,601 - backend - INFO - Data directories verified
+2025-06-14 09:35:02,808 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:35:02,808 - backend - INFO - Data directories verified
+2025-06-14 09:37:32,403 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:37:32,403 - backend - INFO - Data directories verified
+2025-06-14 09:37:46,624 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:37:46,624 - backend - INFO - Data directories verified
+2025-06-14 09:38:22,842 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:38:22,842 - backend - INFO - Data directories verified
+2025-06-14 09:38:34,475 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:38:34,475 - backend - INFO - Data directories verified
+2025-06-14 09:50:52,896 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:50:52,896 - backend - INFO - Data directories verified
+2025-06-14 09:51:11,268 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:51:11,268 - backend - INFO - Data directories verified
+2025-06-14 09:51:19,069 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:51:19,069 - backend - INFO - Data directories verified
+2025-06-14 09:52:39,124 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:52:39,125 - backend - INFO - Data directories verified
+2025-06-14 09:53:02,765 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:53:02,765 - backend - INFO - Data directories verified
+2025-06-14 09:54:06,230 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:54:06,230 - backend - INFO - Data directories verified
+2025-06-14 09:54:16,223 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:54:16,224 - backend - INFO - Data directories verified
+2025-06-14 09:54:31,509 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:54:31,509 - backend - INFO - Data directories verified
+2025-06-14 09:54:53,303 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:54:53,303 - backend - INFO - Data directories verified
+2025-06-14 09:56:07,221 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:56:07,221 - backend - INFO - Data directories verified
+2025-06-14 09:56:55,929 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:56:55,929 - backend - INFO - Data directories verified
+2025-06-14 09:56:59,855 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:56:59,855 - backend - INFO - Data directories verified
+2025-06-14 09:59:48,636 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:59:48,636 - backend - INFO - Data directories verified
+2025-06-14 09:59:55,522 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 09:59:55,522 - backend - INFO - Data directories verified
+2025-06-14 10:01:28,813 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:01:28,813 - backend - INFO - Data directories verified
+2025-06-14 10:03:43,286 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:03:43,286 - backend - INFO - Data directories verified
+2025-06-14 10:03:54,501 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:03:54,501 - backend - INFO - Data directories verified
+2025-06-14 10:04:12,323 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:04:12,323 - backend - INFO - Data directories verified
+2025-06-14 10:21:28,152 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:21:28,152 - backend - INFO - Data directories verified
+2025-06-14 10:23:54,145 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:23:54,145 - backend - INFO - Data directories verified
+2025-06-14 10:25:17,879 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:25:17,879 - backend - INFO - Data directories verified
+2025-06-14 10:48:09,028 - backend - INFO - Successfully imported FastAPI application
+2025-06-14 10:48:09,028 - backend - INFO - Data directories verified
