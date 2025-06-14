@@ -124,3 +124,21 @@ ModuleNotFoundError: No module named 'api'
     from api import app
 ModuleNotFoundError: No module named 'api'
 
+2025-06-14 15:27:28,661 - backend - ERROR - Failed to import API: No module named 'api'
+2025-06-14 15:27:28,661 - backend - ERROR - Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
+    from api import app
+ModuleNotFoundError: No module named 'api'
+
+2025-06-14 15:27:54,829 - backend - ERROR - Failed to import API: No module named 'api'
+2025-06-14 15:27:54,829 - backend - ERROR - Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
+    from api import app
+ModuleNotFoundError: No module named 'api'
+
+2025-06-14 15:30:59,539 - backend - ERROR - Failed to import API: No module named 'api'
+2025-06-14 15:30:59,539 - backend - ERROR - Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
+    from api import app
+ModuleNotFoundError: No module named 'api'
+

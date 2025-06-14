@@ -25,8 +25,8 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
-from .plotting import plot_emg_with_contractions, plot_ghostly_report
+from emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
+from plotting import plot_emg_with_contractions, plot_ghostly_report
 
 # Default parameters for EMG processing
 DEFAULT_SAMPLING_RATE = 1000  # Hz

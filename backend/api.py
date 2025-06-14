@@ -32,8 +32,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
-from .models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics
+from processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
+from models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics
 
 # Storage directories
 UPLOAD_DIR = Path("./data/uploads")
