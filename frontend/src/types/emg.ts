@@ -4,9 +4,9 @@ export interface EMGPoint {
 }
 
 export interface StatsData {
-  min: string; 
-  max: string; 
-  avg: string; 
+  min: number; 
+  max: number; 
+  avg: number; 
   duration: string; 
   samples: number;
 }
@@ -43,18 +43,26 @@ export interface GameMetadata {
 export interface ChannelAnalyticsData {
   contraction_count: number;
   avg_duration_ms: number;
-  total_duration_ms: number;
-  max_duration_ms: number;
   min_duration_ms: number;
+  max_duration_ms: number;
+  total_time_under_tension_ms: number;
   avg_amplitude: number;
   max_amplitude: number;
+  rms: number;
+  mav: number;
+  mpf?: number;
+  mdf?: number;
+  fatigue_index_fi_nsm5?: number;
+  errors?: { [metric: string]: string };
 }
 
 export interface EMGAnalysisResult {
   file_id: string;
   timestamp: string;
+  source_filename: string;
   metadata: GameMetadata;
   analytics: { [channelName: string]: ChannelAnalyticsData };
+  available_channels: string[];
   user_id?: string;
   session_id?: string;
   patient_id?: string;

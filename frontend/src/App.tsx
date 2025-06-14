@@ -6,6 +6,8 @@ import type {
 } from './types/emg'; // EmgSignalData, StatsData might be handled by hooks
 import FileUpload from "./components/FileUpload";
 import GameSessionTabs from "./components/sessions/game-session-tabs";
+import QuickSelect from "./components/QuickSelect"; // Import QuickSelect
+import Spinner from "./components/ui/Spinner"; // Using the new CSS spinner
 // GameSession, EMGDataPoint, EMGMetrics, GameParameters, BFRParameters are used by hooks or GameSessionTabs
 
 // Import hooks
@@ -17,9 +19,11 @@ import { CombinedChartDataPoint } from "./components/EMGChart"; // This type mig
 
 function App() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
-  const [appOverallError, setAppOverallError] = useState<string | null>(null); // For errors not from data fetching hooks
-  const [isUploading, setIsUploading] = useState<boolean>(false); // For FileUpload loading state
-
+  const [appError, setAppError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("plots");
+  const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('raw');
+  
   // Initialize hooks
   const downsamplingControls = useDataDownsampling(1000);
   const {
@@ -27,10 +31,13 @@ function App() {
     setPlotChannel1Name,
     plotChannel2Name,
     setPlotChannel2Name,
-    availableChannels,
+    selectedChannelForStats, 
+    setSelectedChannelForStats,
+    muscleChannels,
+    allAvailableChannels,
     updateChannelsAfterUpload,
     resetChannelSelections,
-  } = useChannelManagement(analysisResult);
+  } = useChannelManagement(analysisResult, plotMode);
 
   const {
     plotChannel1Data,
@@ -40,7 +47,13 @@ function App() {
     dataFetchingError,
     fetchChannelRawData,
     resetPlotDataAndStats,
-  } = useEmgDataFetching(analysisResult, plotChannel1Name, plotChannel2Name, downsamplingControls);
+  } = useEmgDataFetching(
+    analysisResult, 
+    plotChannel1Name, 
+    plotChannel2Name, 
+    selectedChannelForStats, 
+    downsamplingControls
+  );
 
   const {
     currentGameSession,
@@ -60,21 +73,63 @@ function App() {
     { fetchChannelRawData } // Pass the fetcher for tab-specific data
   );
 
-  const handleUploadSuccess = useCallback((data: EMGAnalysisResult) => {
-    setAnalysisResult(data);
-    setAppOverallError(null);
-    updateChannelsAfterUpload(data); // Update available channels and set initial plot channels
-    determineChannelsForTabs(data); // Determine channels for the session tabs muscle chart
-    // Data for plots and session will be fetched/derived by hooks based on new analysisResult and channel names
-  }, [updateChannelsAfterUpload, determineChannelsForTabs]);
-
-  const handleUploadError = useCallback((errorMsg: string) => {
-    setAppOverallError(errorMsg); 
-    setAnalysisResult(null); 
+  const resetState = useCallback(() => {
+    setAnalysisResult(null);
+    setAppError(null);
     resetChannelSelections();
     resetPlotDataAndStats();
     resetGameSessionData();
+    setSelectedChannelForStats(null);
+    setActiveTab("plots");
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
+
+  const handleSuccess = useCallback((data: EMGAnalysisResult) => {
+    resetState();
+    setAnalysisResult(data);
+    updateChannelsAfterUpload(data);
+    determineChannelsForTabs(data);
+    setActiveTab("plots");
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs]);
+  
+  const handleError = useCallback((errorMsg: string) => {
+    resetState();
+    setAppError(errorMsg);
+  }, [resetState]);
+
+  const handleQuickSelect = useCallback(async (filename: string) => {
+    setIsLoading(true);
+    setAppError(null);
+    resetState();
+
+    try {
+      const response = await fetch(`/samples/${filename}`);
+      if (!response.ok) throw new Error(`Could not fetch test file.`);
+      
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: 'application/octet-stream' });
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
+          method: 'POST',
+          body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.detail || 'File processing failed.');
+      }
+
+      const resultData = await uploadResponse.json();
+      handleSuccess(resultData);
+
+    } catch (error: any) {
+      handleError(error.message || 'An unknown error occurred while processing the test file.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleSuccess, handleError, resetState]);
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {
@@ -106,12 +161,10 @@ function App() {
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
   const currentChannelAnalytics: ChannelAnalyticsData | null = 
-    analysisResult && plotChannel1Name ? analysisResult.analytics[plotChannel1Name] : null;
+    analysisResult && selectedChannelForStats ? analysisResult.analytics[selectedChannelForStats] : null;
 
-  // Overall loading state considers FileUpload, main data fetching, and tabs data fetching
-  const appLoading = isUploading || dataFetchingLoading || tabsDataLoading;
-  // Combine error messages from different sources
-  const combinedError = [appOverallError, dataFetchingError, tabsDataError].filter(Boolean).join("; ");
+  const appIsLoading = isLoading || dataFetchingLoading || tabsDataLoading;
+  const combinedError = [appError, dataFetchingError, tabsDataError].filter(Boolean).join("; ");
 
   return (
     <div className="App p-5 font-sans max-w-[1200px] mx-auto">
@@ -119,18 +172,34 @@ function App() {
         EMG C3D Analyzer
       </h1>
 
-      <FileUpload 
-        onUploadSuccess={handleUploadSuccess} 
-        onUploadError={handleUploadError}
-        setIsLoading={setIsUploading} // FileUpload manages its own loading state for the upload process
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6 p-4 border rounded-lg bg-slate-50">
+        <FileUpload 
+          onUploadSuccess={handleSuccess}
+          onUploadError={handleError}
+          setIsLoading={setIsLoading}
+        />
+        <QuickSelect onSelect={handleQuickSelect} disabled={appIsLoading} />
+      </div>
 
-      {appLoading && <div className="text-center my-4">Loading data...</div>}
-      {combinedError && <div className="text-center my-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">Error: {combinedError}</div>}
+      {appIsLoading && (
+        <div className="flex flex-col items-center justify-center my-8 p-6 bg-slate-100 rounded-lg">
+          <Spinner />
+          <p className="mt-4 text-lg font-medium text-slate-600">Analyzing EMG Data...</p>
+          <p className="text-sm text-slate-500">Please wait, this may take a moment.</p>
+        </div>
+      )}
+
+      {combinedError && !appIsLoading && (
+          <div className="text-center my-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">
+            Error: {combinedError}
+          </div>
+      )}
       
-      {analysisResult && currentGameSession && (
+      {!appIsLoading && !combinedError && analysisResult && currentGameSession && (
         <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-3 text-slate-600">Session Analysis</h2>
+          <h2 className="text-xl font-semibold mb-3 text-slate-600">
+            Session Analysis: <span className="font-mono text-base bg-slate-200 px-2 py-1 rounded-md">{analysisResult.source_filename}</span>
+          </h2>
           
           <GameSessionTabs
             selectedGameSession={currentGameSession}
@@ -138,24 +207,33 @@ function App() {
             mvcPercentage={currentGameSession?.parameters?.targetMVC || 70} 
             leftQuadChannelName={leftQuadChannelForTabs}
             rightQuadChannelName={rightQuadChannelForTabs}
-            rawApiData={analysisResult} // Keep passing this for any direct needs in tabs
+            
+            analysisResult={analysisResult}
 
-            // Props for the "EMG Analysis" tab section (main chart and controls)
-            analysisResult={analysisResult} // For metadata, etc.
-            availableChannels={availableChannels}
+            muscleChannels={muscleChannels}
+            allAvailableChannels={allAvailableChannels}
             plotChannel1Name={plotChannel1Name}
             setPlotChannel1Name={setPlotChannel1Name}
             plotChannel2Name={plotChannel2Name}
             setPlotChannel2Name={setPlotChannel2Name}
-            selectedChannelForStats={plotChannel1Name} // Stats are based on plotChannel1Name
-            setSelectedChannelForStats={setPlotChannel1Name} // Setter for stats channel is tied to plotChannel1Name setter
+            
+            selectedChannelForStats={selectedChannelForStats}
+            setSelectedChannelForStats={setSelectedChannelForStats}
+
             currentStats={currentStats}
             currentChannelAnalyticsData={currentChannelAnalytics}
-            mainChartData={mainCombinedChartData} // Data for the main EMG chart in the tab
+
+            mainChartData={mainCombinedChartData}
+            
             dataPoints={downsamplingControls.dataPoints}
+            setDataPoints={downsamplingControls.setDataPoints}
             handleDataPointsChange={downsamplingControls.handleDataPointsChange}
-            mainPlotChannel1Data={plotChannel1Data} // Raw data for potential direct use or checks in tabs
+            mainPlotChannel1Data={plotChannel1Data}
             mainPlotChannel2Data={plotChannel2Data}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            plotMode={plotMode}
+            setPlotMode={setPlotMode}
           />
         </div>
       )}

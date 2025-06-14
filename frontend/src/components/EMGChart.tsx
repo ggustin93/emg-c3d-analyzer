@@ -36,10 +36,10 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({ chartData, channel
           <Tooltip formatter={(value: number, name: string) => [value.toFixed(4), name]} labelFormatter={(label: number) => `Time: ${label.toFixed(3)}s`} />
           <Legend verticalAlign="bottom" layout="horizontal" wrapperStyle={{ paddingTop: '30px',backgroundColor: 'transparent' }} />
           {channel1Name && (
-            <Line type="monotone" dataKey={channel1Name} name={channel1Name} stroke="#8884d8" dot={false} isAnimationActive={false}/>
+            <Line type="monotone" dataKey={channel1Name} name={channel1Name} stroke="#8884d8" dot={false} isAnimationActive={false} strokeWidth={2}/>
           )}
           {channel2Name && (
-            <Line type="monotone" dataKey={channel2Name} name={channel2Name} stroke="#82ca9d" dot={false} isAnimationActive={false}/>
+            <Line type="monotone" dataKey={channel2Name} name={channel2Name} stroke="#82ca9d" dot={false} isAnimationActive={false} strokeWidth={2}/>
           )}
         </LineChart>
       </ResponsiveContainer>

@@ -2,15 +2,19 @@ import { useState, useCallback, ChangeEvent } from "react";
 
 export interface DownsamplingControls {
   dataPoints: number;
-  handleDataPointsChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  setDataPoints: (points: number) => void;
+  handleDataPointsChange: (value: number) => void;
   downsampleData: (data: number[], timeAxis: number[], maxPoints: number) => { data: number[], timeAxis: number[] };
 }
 
 export const useDataDownsampling = (initialDataPoints: number = 1000): DownsamplingControls => {
   const [dataPoints, setDataPoints] = useState<number>(initialDataPoints);
 
-  const handleDataPointsChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    setDataPoints(Number(e.target.value));
+  const handleDataPointsChange = useCallback((value: number) => {
+    // Basic validation
+    if (!isNaN(value) && value > 0) {
+      setDataPoints(value);
+    }
   }, []);
 
   const downsampleData = useCallback((data: number[], timeAxis: number[], maxPoints: number): { data: number[], timeAxis: number[] } => {
@@ -40,5 +44,5 @@ export const useDataDownsampling = (initialDataPoints: number = 1000): Downsampl
     return { data: newData, timeAxis: newTimeAxis };
   }, []);
 
-  return { dataPoints, handleDataPointsChange, downsampleData };
+  return { dataPoints, setDataPoints, handleDataPointsChange, downsampleData };
 }; 

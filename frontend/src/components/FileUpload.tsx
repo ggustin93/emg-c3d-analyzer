@@ -62,7 +62,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploadError,
   };
 
   return (
-    <div className="my-4 p-4 border rounded-lg shadow-sm">
+    <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
       <h2 className="text-lg font-semibold mb-3">Upload C3D File</h2>
       <div className="flex items-center space-x-2">
         <Input
@@ -79,6 +79,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploadError,
           {isUploading ? 'Uploading...' : 'Upload'}
         </Button>
       </div>
+      {selectedFile && !isUploading && (
+        <p className="text-sm text-muted-foreground mt-2">
+          Selected: <strong>{selectedFile.name}</strong>
+        </p>
+      )}
     </div>
   );
 };

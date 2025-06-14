@@ -26,9 +26,9 @@ const calculateStats = (values: number[], timeAxis: number[]): StatsData | null 
     sum += val;
   }
   return {
-    min: minVal.toFixed(6),
-    max: maxVal.toFixed(6),
-    avg: (sum / values.length).toFixed(6),
+    min: minVal,
+    max: maxVal,
+    avg: sum / values.length,
     duration: timeAxis[timeAxis.length - 1]?.toFixed(2) || '0',
     samples: values.length,
   };
@@ -38,6 +38,7 @@ export const useEmgDataFetching = (
   analysisResult: EMGAnalysisResult | null,
   plotChannel1Name: string | null,
   plotChannel2Name: string | null,
+  selectedChannelForStats: string | null,
   downsamplingControls: DownsamplingControls
 ): EmgDataFetchingControls => {
   const [plotChannel1Data, setPlotChannel1Data] = useState<EmgSignalData | null>(null);
@@ -130,14 +131,42 @@ export const useEmgDataFetching = (
       }
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name, analysisResult?.file_id, dataFetchingLoading]);
 
-  // Effect to update currentStats from plotChannel1Data
+  // Effect to fetch data for the selected stats channel
   useEffect(() => {
-    if (plotChannel1Data && plotChannel1Data.data && plotChannel1Data.data.length > 0) {
-      setCurrentStats(calculateStats(plotChannel1Data.data, plotChannel1Data.time_axis));
+    if (analysisResult?.file_id && selectedChannelForStats) {
+      // For stats, we should always fetch the "Raw" signal if it exists.
+      const statsChannelName = `${selectedChannelForStats} Raw`;
+      
+      // We can reuse the fetchChannelRawData but we don't downsample for stats
+      // to get the real min/max/avg. We create a temporary non-downsampling fetcher.
+      const fetchFullRawData = async (fileId: string, channelName: string): Promise<EmgSignalData | null> => {
+          if (!fileId || !channelName) return null;
+          try {
+            const response = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId}/${channelName}`);
+            const fetchedData = response.data;
+            if (!fetchedData.data || !Array.isArray(fetchedData.data) || fetchedData.data.length === 0) {
+              console.error(`Invalid or empty raw data for stats channel ${channelName}`);
+              return null;
+            }
+            // Return full data, no downsampling
+            return { ...fetchedData, channel_name: channelName };
+          } catch (err) {
+            console.error(`Error fetching raw EMG data for stats channel ${channelName}:`, err);
+            return null;
+          }
+      };
+      
+      fetchFullRawData(analysisResult.file_id, statsChannelName).then(data => {
+        if (data) {
+            setCurrentStats(calculateStats(data.data, data.time_axis));
+        } else {
+            setCurrentStats(null);
+        }
+      });
     } else {
       setCurrentStats(null);
     }
-  }, [plotChannel1Data]);
+  }, [analysisResult?.file_id, selectedChannelForStats]);
 
   const resetPlotDataAndStats = useCallback(() => {
     setPlotChannel1Data(null);
