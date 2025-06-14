@@ -24,6 +24,7 @@ import json
 import uuid
 import shutil
 import traceback
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -40,8 +41,9 @@ from models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadat
 UPLOAD_DIR = Path("./data/uploads")
 RESULTS_DIR = Path("./data/results")
 PLOTS_DIR = Path("./data/plots")
+CACHE_DIR = Path("./data/cache_index")
 
-for directory in [UPLOAD_DIR, RESULTS_DIR, PLOTS_DIR]:
+for directory in [UPLOAD_DIR, RESULTS_DIR, PLOTS_DIR, CACHE_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 # Initialize FastAPI app
@@ -109,9 +111,35 @@ async def upload_file(file: UploadFile = File(...),
                       min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
                       smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
                       generate_plots: bool = Form(False)):
-    """Upload and process a C3D file."""
-    # Log the start of the upload process
-    print(f"Starting upload process for file: {file.filename}, size: {file.size if hasattr(file, 'size') else 'unknown'}")
+    """Upload and process a C3D file, with caching based on file content."""
+    
+    # --- Caching Mechanism: Start ---
+    # Read file content to compute hash
+    file_content = await file.read()
+    await file.seek(0)  # Reset file pointer to the beginning for subsequent reads
+    file_hash = hashlib.sha256(file_content).hexdigest()
+    
+    cache_link_path = CACHE_DIR / file_hash
+
+    # Check if the result is already in the cache
+    if cache_link_path.is_file():
+        try:
+            # Read the path to the original result file from the cache link
+            result_file_path = Path(os.readlink(cache_link_path))
+            if result_file_path.exists():
+                print(f"Cache hit for file hash: {file_hash}. Serving from {result_file_path}")
+                with open(result_file_path, "r") as f:
+                    cached_result_data = json.load(f)
+                return EMGAnalysisResult(**cached_result_data)
+            else:
+                print(f"Cache link for {file_hash} is stale. Removing.")
+                os.remove(cache_link_path)
+        except Exception as e:
+            print(f"Error reading from cache for hash {file_hash}: {e}")
+            # If there's an error, proceed with normal processing
+    # --- Caching Mechanism: End ---
+    
+    print(f"Cache miss for file hash: {file_hash}. Starting full processing.")
     
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
@@ -122,29 +150,16 @@ async def upload_file(file: UploadFile = File(...),
     unique_filename = f"{timestamp}_{file_id}_{file.filename}"
     file_path = UPLOAD_DIR / unique_filename
 
-    # Save uploaded file
+    # Save uploaded file from the content we already read
     try:
         print(f"Saving file to {file_path}")
-        # Ensure the directory exists
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        
-        # Check if we have write permissions
-        if not os.access(UPLOAD_DIR, os.W_OK):
-            print(f"Warning: No write permission to {UPLOAD_DIR}")
-        
-        # Save the file in chunks to avoid memory issues
         with open(file_path, "wb") as buffer:
-            # Read and write in 1MB chunks
-            chunk_size = 1024 * 1024  # 1MB
-            while chunk := await file.read(chunk_size):
-                buffer.write(chunk)
-                
+            buffer.write(file_content)
         print(f"File saved successfully to {file_path}")
     except Exception as e:
         print(f"Error saving file: {str(e)}")
         print(traceback.format_exc())
-        raise HTTPException(status_code=500,
-                            detail=f"Error saving file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 
     # Process the file
     try:
@@ -220,23 +235,32 @@ async def upload_file(file: UploadFile = File(...),
         print(f"Saving result to {result_path}")
 
         # Handle Pydantic serialization based on version
+        json_data_to_write = ""
         try:
             # Try Pydantic v2 serialization first
             if hasattr(result, "model_dump_json"):
-                json_data = result.model_dump_json(indent=2)
+                json_data_to_write = result.model_dump_json(indent=2)
             else:
                 # Fallback to Pydantic v1
-                json_data = result.json(indent=2)
-
-            with open(result_path, "w") as f:
-                f.write(json_data)
+                json_data_to_write = result.json(indent=2)
         except Exception as json_err:
             print(f"Error with Pydantic serialization: {json_err}")
             # Direct JSON serialization as final fallback
-            with open(result_path, "w") as f:
-                result_dict = result.dict() if hasattr(
-                    result, "dict") else result.model_dump()
-                json.dump(result_dict, f, indent=2, default=str)
+            result_dict = result.dict() if hasattr(result, "dict") else result.model_dump()
+            json_data_to_write = json.dumps(result_dict, indent=2, default=str)
+
+        with open(result_path, "w") as f:
+            f.write(json_data_to_write)
+            
+        # --- Caching Mechanism: Create Cache Link ---
+        try:
+            # Use relative path for the link to be more portable
+            relative_result_path = os.path.relpath(result_path, CACHE_DIR)
+            os.symlink(relative_result_path, cache_link_path)
+            print(f"Created cache link for {file_hash} pointing to {relative_result_path}")
+        except Exception as e:
+            print(f"Failed to create cache link for {file_hash}: {e}")
+        # --- Caching Mechanism: End ---
 
         print("Upload process completed successfully")
         return result
@@ -244,8 +268,7 @@ async def upload_file(file: UploadFile = File(...),
     except Exception as e:
         print(f"Error processing file: {str(e)}")
         print(traceback.format_exc())
-        raise HTTPException(status_code=500,
-                            detail=f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 @app.get("/results", response_model=List[str])
