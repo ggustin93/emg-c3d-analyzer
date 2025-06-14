@@ -108,7 +108,7 @@ npm start
 - **Backend (FastAPI):**
     - Successfully deployed to Render.
     - **Build Command on Render:** `poetry install --only main --no-root`
-    - **Start Command on Render:** `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+    - **Start Command on Render:** `uvicorn backend.api:app --host 0.0.0.0 --port $PORT`
     - Python version on Render aligned with project (`>=3.10,<3.12`).
     - `python-multipart` added for file uploads.
 - **Frontend (React):**
