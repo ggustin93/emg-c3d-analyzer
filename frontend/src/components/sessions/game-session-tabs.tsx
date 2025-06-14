@@ -102,7 +102,7 @@ export default function GameSessionTabs({
 
   return (
     <Tabs defaultValue={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList>
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="plots">Signal Plots</TabsTrigger>
         <TabsTrigger value="stats">Game Stats</TabsTrigger>
         <TabsTrigger value="analytics">EMG Analytics</TabsTrigger>
