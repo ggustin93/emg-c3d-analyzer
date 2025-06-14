@@ -112,3 +112,15 @@
 2025-06-14 10:25:17,879 - backend - INFO - Data directories verified
 2025-06-14 10:48:09,028 - backend - INFO - Successfully imported FastAPI application
 2025-06-14 10:48:09,028 - backend - INFO - Data directories verified
+2025-06-14 15:19:00,919 - backend - ERROR - Failed to import API: No module named 'api'
+2025-06-14 15:19:00,919 - backend - ERROR - Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
+    from api import app
+ModuleNotFoundError: No module named 'api'
+
+2025-06-14 15:19:07,773 - backend - ERROR - Failed to import API: No module named 'api'
+2025-06-14 15:19:07,774 - backend - ERROR - Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
+    from api import app
+ModuleNotFoundError: No module named 'api'
+

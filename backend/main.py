@@ -17,7 +17,7 @@ logger = logging.getLogger("backend")
 
 # Try to import the app with proper error handling
 try:
-    from backend.api import app
+    from api import app
     logger.info("Successfully imported FastAPI application")
 except ImportError as e:
     logger.error(f"Failed to import API: {e}")
