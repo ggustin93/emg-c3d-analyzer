@@ -23,6 +23,7 @@ import os
 import json
 import uuid
 import shutil
+import traceback
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -62,6 +63,12 @@ app.add_middleware(
 
 # Mount static files directory for serving plots
 app.mount("/static", StaticFiles(directory="data"), name="static")
+
+# Add a simple health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify the API is running."""
+    return {"status": "ok", "message": "API is running"}
 
 
 @app.get("/")
@@ -103,6 +110,9 @@ async def upload_file(file: UploadFile = File(...),
                       smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
                       generate_plots: bool = Form(False)):
     """Upload and process a C3D file."""
+    # Log the start of the upload process
+    print(f"Starting upload process for file: {file.filename}, size: {file.size if hasattr(file, 'size') else 'unknown'}")
+    
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
 
@@ -114,20 +124,38 @@ async def upload_file(file: UploadFile = File(...),
 
     # Save uploaded file
     try:
+        print(f"Saving file to {file_path}")
+        # Ensure the directory exists
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Check if we have write permissions
+        if not os.access(UPLOAD_DIR, os.W_OK):
+            print(f"Warning: No write permission to {UPLOAD_DIR}")
+        
+        # Save the file in chunks to avoid memory issues
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            # Read and write in 1MB chunks
+            chunk_size = 1024 * 1024  # 1MB
+            while chunk := await file.read(chunk_size):
+                buffer.write(chunk)
+                
+        print(f"File saved successfully to {file_path}")
     except Exception as e:
+        print(f"Error saving file: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500,
                             detail=f"Error saving file: {str(e)}")
 
     # Process the file
     try:
+        print(f"Starting to process file {file_path}")
         processor = GHOSTLYC3DProcessor(str(file_path))
         result_data = processor.process_file(
             threshold_factor=threshold_factor,
             min_duration_ms=min_duration_ms,
             smoothing_window=smoothing_window
         )
+        print("File processed successfully")
 
         # Ensure all metadata values are strings to prevent type errors
         for key, value in result_data['metadata'].items():
@@ -136,6 +164,7 @@ async def upload_file(file: UploadFile = File(...),
         # Generate plots if requested
         plots = {}
         if generate_plots:
+            print("Generating plots")
             # Create plot directory for this file
             plot_dir = PLOTS_DIR / file_id
             plot_dir.mkdir(parents=True, exist_ok=True)
@@ -159,6 +188,7 @@ async def upload_file(file: UploadFile = File(...),
                 print(f"Error generating report: {report_err}")
 
         # Create result object
+        print("Creating result object")
         result = EMGAnalysisResult(
             file_id=file_id,
             timestamp=timestamp,
@@ -187,6 +217,7 @@ async def upload_file(file: UploadFile = File(...),
             result_filename = f"{session_id}_{result_filename}"
 
         result_path = RESULTS_DIR / f"{result_filename}.json"
+        print(f"Saving result to {result_path}")
 
         # Handle Pydantic serialization based on version
         try:
@@ -200,15 +231,19 @@ async def upload_file(file: UploadFile = File(...),
             with open(result_path, "w") as f:
                 f.write(json_data)
         except Exception as json_err:
+            print(f"Error with Pydantic serialization: {json_err}")
             # Direct JSON serialization as final fallback
             with open(result_path, "w") as f:
                 result_dict = result.dict() if hasattr(
                     result, "dict") else result.model_dump()
                 json.dump(result_dict, f, indent=2, default=str)
 
+        print("Upload process completed successfully")
         return result
 
     except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500,
                             detail=f"Error processing file: {str(e)}")
 
@@ -560,3 +595,23 @@ async def debug_spectral_analysis():
     }
     
     return results
+
+
+@app.post("/test-upload")
+async def test_upload(file: UploadFile = File(...)):
+    """Test endpoint for file uploads with minimal processing."""
+    try:
+        # Log file details
+        content = await file.read(1024)  # Read just the first 1KB
+        file_size = len(content)
+        
+        return {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "first_bytes_size": file_size,
+            "status": "success"
+        }
+    except Exception as e:
+        print(f"Error in test upload: {str(e)}")
+        print(traceback.format_exc())
+        return {"error": str(e)}

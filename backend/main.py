@@ -44,8 +44,20 @@ if __name__ == "__main__":
         host = os.environ.get("HOST", "0.0.0.0")
         
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
-        # Remove reload=True to avoid the warning in production
-        uvicorn.run(app, host=host, port=port, log_level="info")
+        
+        # Configure Uvicorn with appropriate settings for handling large files
+        uvicorn_config = {
+            "host": host,
+            "port": port,
+            "log_level": "info",
+            # Increase timeouts for large file uploads
+            "timeout_keep_alive": 120,  # Keep-alive timeout (seconds)
+            "limit_concurrency": 10,    # Limit concurrent connections
+            "limit_max_requests": 0,    # No limit on max requests
+        }
+        
+        # Start Uvicorn with our configuration
+        uvicorn.run(app, **uvicorn_config)
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())
