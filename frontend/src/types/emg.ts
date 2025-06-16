@@ -48,11 +48,12 @@ export interface EMGChartProps {
 
 // For the session parameters from GUI
 export interface GameSessionParameters {
-  session_mvc_value?: number | null;
-  session_mvc_threshold_percentage?: number | null;
-  session_expected_contractions?: number | null;
+  session_mvc_value: number | null;
+  session_mvc_threshold_percentage: number | null;
+  session_expected_contractions: number | null;
   session_expected_contractions_ch1?: number | null;
   session_expected_contractions_ch2?: number | null;
+  [key: string]: number | string | null | undefined | Record<string, string>;
   
   // Detailed expected contractions by type
   session_expected_long_left?: number | null;
@@ -61,7 +62,10 @@ export interface GameSessionParameters {
   session_expected_short_right?: number | null;
   
   // Contraction classification threshold
-  contraction_duration_threshold?: number | null; // in milliseconds, default 1000ms
+  contraction_duration_threshold?: number | null; // in milliseconds, default 250ms
+  
+  // Channel to muscle name mapping
+  channel_muscle_mapping?: Record<string, string>;
 }
 
 // For the backend response structure
@@ -75,6 +79,12 @@ export interface GameMetadata {
   player_name?: string | null;
   score?: number | null;
   session_parameters_used?: GameSessionParameters | null;
+  game_title: string;
+  game_type: string;
+  game_version: string;
+  session_date: string;
+  session_duration: number;
+  session_notes: string | null;
 }
 
 export interface ChannelAnalyticsData {

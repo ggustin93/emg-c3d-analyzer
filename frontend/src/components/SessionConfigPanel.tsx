@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
@@ -6,6 +6,8 @@ import { GameSessionParameters } from '../types/emg';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import MuscleNameDisplay from "./MuscleNameDisplay";
 
 interface ScoringConfigPanelProps {
   sessionParams: GameSessionParameters;
@@ -23,6 +25,81 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   availableChannels = []
 }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    channels?: string;
+    types?: string;
+  }>({});
+  
+  // Set default values when component mounts
+  useEffect(() => {
+    // Skip if already initialized or disabled
+    if (
+      sessionParams.session_mvc_threshold_percentage !== undefined ||
+      sessionParams.session_expected_contractions !== undefined ||
+      disabled
+    ) {
+      return;
+    }
+    
+    // Only set defaults if values are not already set
+    const updatedParams = { ...sessionParams };
+    let hasUpdates = false;
+
+    // Set default MVC threshold if not set
+    if (updatedParams.session_mvc_threshold_percentage === undefined) {
+      updatedParams.session_mvc_threshold_percentage = 70;
+      hasUpdates = true;
+    }
+
+    // Set default expected contractions if not set
+    if (updatedParams.session_expected_contractions === undefined) {
+      updatedParams.session_expected_contractions = 10;
+      hasUpdates = true;
+    }
+
+    // Set default expected contractions per channel if not set
+    if (updatedParams.session_expected_contractions_ch1 === undefined) {
+      updatedParams.session_expected_contractions_ch1 = 5;
+      hasUpdates = true;
+    }
+
+    if (updatedParams.session_expected_contractions_ch2 === undefined) {
+      updatedParams.session_expected_contractions_ch2 = 5;
+      hasUpdates = true;
+    }
+
+    // Set default expected contractions by type if not set
+    if (updatedParams.session_expected_short_left === undefined) {
+      updatedParams.session_expected_short_left = 3;
+      hasUpdates = true;
+    }
+
+    if (updatedParams.session_expected_long_left === undefined) {
+      updatedParams.session_expected_long_left = 2;
+      hasUpdates = true;
+    }
+
+    if (updatedParams.session_expected_short_right === undefined) {
+      updatedParams.session_expected_short_right = 3;
+      hasUpdates = true;
+    }
+
+    if (updatedParams.session_expected_long_right === undefined) {
+      updatedParams.session_expected_long_right = 2;
+      hasUpdates = true;
+    }
+
+    // Set default contraction duration threshold if not set
+    if (updatedParams.contraction_duration_threshold === undefined) {
+      updatedParams.contraction_duration_threshold = 250;
+      hasUpdates = true;
+    }
+
+    // Apply updates if any defaults were set
+    if (hasUpdates) {
+      onParamsChange(updatedParams);
+    }
+  }, [sessionParams, onParamsChange]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,6 +114,36 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     });
   };
 
+  // Validate that the sum of channel contractions matches the total
+  useEffect(() => {
+    const errors: {
+      channels?: string;
+      types?: string;
+    } = {};
+    
+    // Validate channels
+    const ch1 = sessionParams.session_expected_contractions_ch1 || 0;
+    const ch2 = sessionParams.session_expected_contractions_ch2 || 0;
+    const total = sessionParams.session_expected_contractions || 0;
+    
+    if (ch1 + ch2 > 0 && ch1 + ch2 !== total) {
+      errors.channels = `Channel sum (${ch1 + ch2}) doesn't match total (${total})`;
+    }
+    
+    // Validate types
+    const longLeft = sessionParams.session_expected_long_left || 0;
+    const shortLeft = sessionParams.session_expected_short_left || 0;
+    const longRight = sessionParams.session_expected_long_right || 0;
+    const shortRight = sessionParams.session_expected_short_right || 0;
+    const typeSum = longLeft + shortLeft + longRight + shortRight;
+    
+    if (typeSum > 0 && typeSum !== total) {
+      errors.types = `Type sum (${typeSum}) doesn't match total (${total})`;
+    }
+    
+    setValidationErrors(errors);
+  }, [sessionParams]);
+
   // Filter channels to only include muscle channels (not raw/activated variants)
   const muscleChannels = availableChannels.filter(channel => 
     !channel.includes(' Raw') && !channel.includes(' activated')
@@ -45,6 +152,10 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   // Get channel names for display
   const channel1Name = muscleChannels[0] || 'Channel 1';
   const channel2Name = muscleChannels[1] || 'Channel 2';
+  
+  // Get muscle names for display
+  const muscle1Name = sessionParams.channel_muscle_mapping?.[channel1Name] || channel1Name;
+  const muscle2Name = sessionParams.channel_muscle_mapping?.[channel2Name] || channel2Name;
 
   return (
     <div className="space-y-4">
@@ -186,11 +297,17 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
             </TabsList>
             
             <TabsContent value="channels" className="space-y-4 pt-2">
+              {validationErrors.channels && (
+                <Alert variant="destructive" className="py-2 text-sm">
+                  <AlertDescription>{validationErrors.channels}</AlertDescription>
+                </Alert>
+              )}
+              
               {/* Channel 1 */}
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="session_expected_contractions_ch1" className="text-sm font-medium flex-grow">
-                    Expected for {channel1Name}
+                    Expected for <MuscleNameDisplay channelName={channel1Name} sessionParams={sessionParams} />
                   </Label>
                 </div>
                 <Input
@@ -199,7 +316,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                   name="session_expected_contractions_ch1"
                   value={sessionParams.session_expected_contractions_ch1 ?? ''}
                   onChange={handleChange}
-                  placeholder={`e.g., 10 for ${channel1Name}`}
+                  placeholder={`e.g., 10 for ${muscle1Name}`}
                   min="0" step="1"
                   disabled={disabled}
                 />
@@ -209,7 +326,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="session_expected_contractions_ch2" className="text-sm font-medium flex-grow">
-                    Expected for {channel2Name}
+                    Expected for <MuscleNameDisplay channelName={channel2Name} sessionParams={sessionParams} />
                   </Label>
                 </div>
                 <Input
@@ -218,7 +335,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                   name="session_expected_contractions_ch2"
                   value={sessionParams.session_expected_contractions_ch2 ?? ''}
                   onChange={handleChange}
-                  placeholder={`e.g., 10 for ${channel2Name}`}
+                  placeholder={`e.g., 10 for ${muscle2Name}`}
                   min="0" step="1"
                   disabled={disabled}
                 />
@@ -226,6 +343,12 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
             </TabsContent>
             
             <TabsContent value="types" className="space-y-4 pt-2">
+              {validationErrors.types && (
+                <Alert variant="destructive" className="py-2 text-sm">
+                  <AlertDescription>{validationErrors.types}</AlertDescription>
+                </Alert>
+              )}
+              
               {/* Long Left */}
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -333,10 +456,10 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                     type="number"
                     id="contraction_duration_threshold"
                     name="contraction_duration_threshold"
-                    value={sessionParams.contraction_duration_threshold ?? 1000}
+                    value={sessionParams.contraction_duration_threshold ?? 250}
                     onChange={handleChange}
-                    placeholder="e.g., 1000"
-                    min="100" step="100"
+                    placeholder="e.g., 250"
+                    min="100" step="50"
                     className="pr-8"
                     disabled={disabled}
                   />
@@ -352,7 +475,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
         <div className="pt-2">
           <Button 
             onClick={onRecalculate} 
-            disabled={disabled}
+            disabled={disabled || !!validationErrors.channels || !!validationErrors.types}
             className="w-full"
           >
             Re-calculate Scores

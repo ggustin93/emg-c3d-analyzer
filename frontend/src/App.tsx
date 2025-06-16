@@ -18,6 +18,8 @@ import { useChannelManagement } from "./hooks/useChannelManagement";
 import { useEmgDataFetching } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
 import { CombinedChartDataPoint } from "./components/EMGChart"; // This type might move later
+import SessionLoader from "./components/SessionLoader";
+import { Button } from "./components/ui/button";
 
 function App() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
@@ -32,7 +34,11 @@ function App() {
     session_mvc_threshold_percentage: 75,
     session_expected_contractions: 12,
     session_expected_contractions_ch1: null,
-    session_expected_contractions_ch2: null
+    session_expected_contractions_ch2: null,
+    channel_muscle_mapping: {
+      "CH1": "Left Quadriceps",
+      "CH2": "Right Quadriceps"
+    }
   });
   
   // Initialize hooks
@@ -144,6 +150,24 @@ function App() {
       if (sessionParams.session_expected_contractions_ch2 !== null && sessionParams.session_expected_contractions_ch2 !== undefined) {
         formData.append('session_expected_contractions_ch2', String(sessionParams.session_expected_contractions_ch2));
       }
+      if (sessionParams.session_expected_long_left !== null && sessionParams.session_expected_long_left !== undefined) {
+        formData.append('session_expected_long_left', String(sessionParams.session_expected_long_left));
+      }
+      if (sessionParams.session_expected_short_left !== null && sessionParams.session_expected_short_left !== undefined) {
+        formData.append('session_expected_short_left', String(sessionParams.session_expected_short_left));
+      }
+      if (sessionParams.session_expected_long_right !== null && sessionParams.session_expected_long_right !== undefined) {
+        formData.append('session_expected_long_right', String(sessionParams.session_expected_long_right));
+      }
+      if (sessionParams.session_expected_short_right !== null && sessionParams.session_expected_short_right !== undefined) {
+        formData.append('session_expected_short_right', String(sessionParams.session_expected_short_right));
+      }
+      if (sessionParams.contraction_duration_threshold !== null && sessionParams.contraction_duration_threshold !== undefined) {
+        formData.append('contraction_duration_threshold', String(sessionParams.contraction_duration_threshold));
+      }
+      if (sessionParams.channel_muscle_mapping) {
+        formData.append('channel_muscle_mapping', JSON.stringify(sessionParams.channel_muscle_mapping));
+      }
 
       // Send the request to recalculate scores
       const recalculateResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/recalculate-scores', {
@@ -158,6 +182,9 @@ function App() {
 
       const resultData = await recalculateResponse.json();
       handleSuccess(resultData);
+      
+      // Switch to the Game Stats tab after recalculation
+      setActiveTab("game-stats");
       
     } catch (error: any) {
       handleError(error.message || 'An unknown error occurred while recalculating scores.');
@@ -218,6 +245,39 @@ function App() {
     }
   }, [handleSuccess, handleError, resetState, sessionParams]);
 
+  const handleFileUpload = async (file: File) => {
+    setIsLoading(true);
+    setAppError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      Object.keys(sessionParams).forEach(key => {
+        const value = sessionParams[key];
+        if (value !== null && value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.detail || 'File processing failed.');
+      }
+
+      const resultData = await uploadResponse.json();
+      handleSuccess(resultData);
+    } catch (error: any) {
+      handleError(error.message || 'An unknown error occurred during upload.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {
     const series1 = plotChannel1Data;
@@ -264,144 +324,102 @@ function App() {
   }, [analysisResult]);
 
   return (
-    <div className="App min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 font-sans">
-      <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-[1200px] mx-auto p-5">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center">
-            <span className="text-teal-600 mr-2">EMG</span> C3D Analyzer
-            <span className="ml-3 text-xs font-normal px-2 py-1 bg-teal-100 text-teal-800 rounded-full">v1.0</span>
-          </h1>
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center space-x-3 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h1 className="text-3xl font-light text-slate-800 tracking-tight">EMG C3D Analyzer</h1>
+            </div>
+            {analysisResult && (
+              <div className="flex items-center mt-4 space-x-4">
+                <p className="text-sm text-slate-500">
+                  File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
+                </p>
+                <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
+                  Load Another File
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto p-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Upload C3D File
-            </h2>
-            <FileUpload 
-              onUploadSuccess={handleSuccess}
-              onUploadError={handleError}
-              setIsLoading={setIsLoading}
-              currentSessionParams={sessionParams}
-            />
-          </div>
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {!analysisResult ? (
+          <SessionLoader
+            onUploadSuccess={handleSuccess}
+            onUploadError={handleError}
+            setIsLoading={setIsLoading}
+            onQuickSelect={handleQuickSelect}
+            isLoading={isLoading}
+            sessionParams={sessionParams}
+          />
+        ) : (
+          <GameSessionTabs
+            analysisResult={analysisResult}
+            mvcThresholdForPlot={
+              plotMode === 'activated'
+                ? (sessionParams.session_mvc_value ?? 0) * (sessionParams.session_mvc_threshold_percentage ?? 0) / 100
+                : null
+            }
+            muscleChannels={muscleChannels}
+            allAvailableChannels={allAvailableChannels}
+            plotChannel1Name={plotChannel1Name}
+            setPlotChannel1Name={setPlotChannel1Name}
+            plotChannel2Name={plotChannel2Name}
+            setPlotChannel2Name={setPlotChannel2Name}
+            selectedChannelForStats={selectedChannelForStats}
+            setSelectedChannelForStats={setSelectedChannelForStats}
+            currentStats={currentStats}
+            currentChannelAnalyticsData={currentChannelAnalytics}
+            mainChartData={mainCombinedChartData}
+            dataPoints={downsamplingControls.dataPoints}
+            setDataPoints={downsamplingControls.setDataPoints}
+            handleDataPointsChange={downsamplingControls.handleDataPointsChange}
+            mainPlotChannel1Data={plotChannel1Data}
+            mainPlotChannel2Data={plotChannel2Data}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            plotMode={plotMode}
+            setPlotMode={setPlotMode}
+            sessionParams={sessionParams}
+            onSessionParamsChange={setSessionParams}
+            onRecalculateScores={handleRecalculateScores}
+            appIsLoading={isLoading}
+          />
+        )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Scoring Parameters
-            </h2>
-            <ScoringConfigPanel 
-              sessionParams={sessionParams}
-              onParamsChange={setSessionParams}
-              disabled={appIsLoading}
-              availableChannels={muscleChannels}
-            />
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              Quick Samples
-            </h2>
-            <QuickSelect onSelect={handleQuickSelect} disabled={appIsLoading} />
-          </div>
-        </div>
-
-        {appIsLoading && (
-          <div className="flex flex-col items-center justify-center my-8 p-8 bg-white rounded-xl shadow-sm border border-slate-200">
-            <Spinner />
-            <p className="mt-4 text-lg font-medium text-slate-700">Analyzing EMG Data...</p>
-            <p className="text-sm text-slate-500">Please wait, this may take a moment.</p>
+        {appError && (
+          <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-md">
+            <p><span className="font-medium">Error:</span> {appError}</p>
           </div>
         )}
 
-        {combinedError && !appIsLoading && (
-            <div className="my-8 p-5 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <p className="font-medium">Error</p>
-                <p className="text-sm">{combinedError}</p>
-              </div>
-            </div>
-        )}
-        
-        {!appIsLoading && !combinedError && analysisResult && currentGameSession && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Session Analysis
-              </h2>
-              <div className="px-3 py-1 bg-slate-100 rounded-lg text-sm font-mono text-slate-600 truncate max-w-[300px]">
-                {analysisResult.source_filename}
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
-              <GameSessionTabs
-                selectedGameSession={currentGameSession}
-                emgTimeSeriesData={currentEMGTimeSeriesDataForTabs} 
-                mvcPercentage={currentGameSession?.parameters?.targetMVC || 70} 
-                leftQuadChannelName={leftQuadChannelForTabs}
-                rightQuadChannelName={rightQuadChannelForTabs}
-                
-                analysisResult={analysisResult}
-                mvcThresholdForPlot={mvcThresholdForPlot}
-                sessionExpectedContractions={analysisResult.metadata.session_parameters_used?.session_expected_contractions ?? null}
-                
-                muscleChannels={muscleChannels}
-                allAvailableChannels={allAvailableChannels}
-                plotChannel1Name={plotChannel1Name}
-                setPlotChannel1Name={setPlotChannel1Name}
-                plotChannel2Name={plotChannel2Name}
-                setPlotChannel2Name={setPlotChannel2Name}
-                
-                selectedChannelForStats={selectedChannelForStats}
-                setSelectedChannelForStats={setSelectedChannelForStats}
-
-                currentStats={currentStats}
-                currentChannelAnalyticsData={currentChannelAnalytics}
-
-                mainChartData={mainCombinedChartData}
-                
-                dataPoints={downsamplingControls.dataPoints}
-                setDataPoints={downsamplingControls.setDataPoints}
-                handleDataPointsChange={downsamplingControls.handleDataPointsChange}
-                mainPlotChannel1Data={plotChannel1Data}
-                mainPlotChannel2Data={plotChannel2Data}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                plotMode={plotMode}
-                setPlotMode={setPlotMode}
-                sessionParams={sessionParams}
-                onSessionParamsChange={setSessionParams}
-                onRecalculateScores={handleRecalculateScores}
-                appIsLoading={appIsLoading}
-              />
-            </div>
-          </div>
+        {isLoading && !analysisResult && (
+           <div className="mt-6 flex flex-col items-center justify-center">
+             <Spinner />
+             <p className="text-teal-500 mt-2">Analyzing data, please wait...</p>
+           </div>
         )}
       </main>
       
-      <footer className="mt-12 py-6 border-t border-slate-200 bg-white">
-        <div className="max-w-[1200px] mx-auto px-5 text-center text-sm text-slate-500">
-          <p>EMG C3D Analyzer - A tool for analyzing electromyography data from C3D files</p>
-          <p className="mt-1">© {new Date().getFullYear()} GHOSTLY+ Research Team</p>
+      <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-sm text-slate-500">
+              GHOSTLY+ EMG C3D Analyzer | Research Project
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Developed for rehabilitation research and therapy assessment
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              © {new Date().getFullYear()} | Academic Research Tool
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
 import { Badge } from '../ui/badge';
-import type { StatsPanelProps as ExternalStatsPanelProps, ChannelAnalyticsData, StatsData } from '../../types/emg';
+import type { StatsPanelProps as ExternalStatsPanelProps, ChannelAnalyticsData, StatsData, GameSessionParameters } from '../../types/emg';
 import MetricCard from '../sessions/metric-card';
 import ChannelSelection from './ChannelSelection';
+import MuscleNameDisplay from '../MuscleNameDisplay';
 import { Progress } from "../ui/progress";
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
@@ -14,6 +15,7 @@ interface StatsPanelComponentProps extends ExternalStatsPanelProps {
   sessionExpectedContractions?: number | null;
   isEMGAnalyticsTab?: boolean;
   contractionDurationThreshold?: number; // ms threshold to distinguish short vs long contractions
+  sessionParams?: GameSessionParameters;
 }
 
 // Function to calculate performance score based on good contractions vs expected
@@ -34,7 +36,7 @@ const getScoreLabel = (score: number): { label: string; color: string } => {
 
 const CircularProgress: React.FC<{ value: number; label: string; color: string }> = ({ value, label, color }) => {
   // Calculate the circle's circumference and stroke-dasharray
-  const radius = 40;
+  const radius = 60;
   const circumference = 2 * Math.PI * radius;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (value / 100) * circumference;
@@ -94,7 +96,8 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   onChannelSelect, 
   sessionExpectedContractions,
   isEMGAnalyticsTab = false,
-  contractionDurationThreshold = 1000 // Default 1000ms (1 second) threshold
+  contractionDurationThreshold = 250, // Default 250ms threshold
+  sessionParams
 }) => {
 
   if (!channelAnalytics && !stats) {
@@ -161,7 +164,13 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   return (
     <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-        <h3 className="text-lg font-semibold text-primary mb-2 sm:mb-0">Channel Analytics: {selectedChannel || "Overview"}</h3>
+        <h3 className="text-lg font-semibold text-primary mb-2 sm:mb-0">
+          Channel Analytics: {selectedChannel && sessionParams ? (
+            <MuscleNameDisplay channelName={selectedChannel} sessionParams={sessionParams} />
+          ) : (
+            selectedChannel || "Overview"
+          )}
+        </h3>
         <div className="flex items-center space-x-2">
           <label htmlFor="stats-channel-select" className="text-sm font-medium text-muted-foreground">Analyze Muscle:</label>
           <ChannelSelection 
@@ -170,6 +179,8 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
             selectedChannel={selectedChannel ?? null}
             setSelectedChannel={onChannelSelect ?? (() => {})}
             label="Select Channel for Stats"
+            sessionParams={sessionParams}
+            showChannelNames={true}
           />
         </div>
       </div>
@@ -292,9 +303,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
 
       {/* --- Muscle Fatigue Analysis --- */}
       <div className="p-4 border rounded-lg bg-slate-100/80">
-          <div className="flex items-center gap-x-3 mb-4">
-              <h4 className="text-md font-semibold text-teal-600">Muscle Fatigue & Signal Characteristics</h4>
-          </div>
+          <h4 className="text-md font-semibold text-teal-600 mb-4">Muscle Fatigue & Signal Characteristics</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                <MetricCard
                   title="RMS"

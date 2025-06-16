@@ -200,3 +200,775 @@ TS2322: Type 'number | null' is not assignable to type 'number'.
     192 |               color={scoreDetails.color}
     193 |             />
 
+ERROR in src/components/sessions/performance/OverallPerformanceCard.tsx
+TS1208: 'OverallPerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance/ContractionTypeBreakdown.tsx
+TS1208: 'ContractionTypeBreakdown.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance/ContractionMetrics.tsx
+TS1208: 'ContractionMetrics.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance/ContractionMetrics.tsx:56:66
+TS2322: Type '{ value: number; className: string; indicatorClassName: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<HTMLDivElement>'.
+  Property 'indicatorClassName' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<HTMLDivElement>'.
+    54 |           <span className="text-sm font-bold" style={{ color }}>{goodContractionScore}%</span>
+    55 |         </div>
+  > 56 |         <Progress value={goodContractionScore} className="h-2.5" indicatorClassName={color.replace('text-', 'bg-')} />
+       |                                                                  ^^^^^^^^^^^^^^^^^^
+    57 |         <div className="flex items-center justify-between mt-1">
+    58 |           <p className="text-xs text-gray-500">
+    59 |             {goodContractions} good contractions out of {totalContractions} total
+
+ERROR in src/components/sessions/performance/ContractionMetrics.tsx:56:66
+TS2322: Type '{ value: number; className: string; indicatorClassName: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<HTMLDivElement>'.
+  Property 'indicatorClassName' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<HTMLDivElement>'.
+    54 |           <span className="text-sm font-bold" style={{ color }}>{goodContractionScore}%</span>
+    55 |         </div>
+  > 56 |         <Progress value={goodContractionScore} className="h-2.5" indicatorClassName={color.replace('text-', 'bg-')} />
+       |                                                                  ^^^^^^^^^^^^^^^^^^
+    57 |         <div className="flex items-center justify-between mt-1">
+    58 |           <p className="text-xs text-gray-500">
+    59 |             {goodContractions} good contractions out of {totalContractions} total
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx
+TS1208: 'MusclePerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:197:13
+TS2322: Type '{ selectedGameSession: GameSession; emgTimeSeriesData: CombinedChartDataPoint[]; mvcPercentage: number; leftQuadChannelName: string | null; rightQuadChannelName: string | null; analysisResult: EMGAnalysisResult; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & PerformanceCardProps'.
+  Property 'emgTimeSeriesData' does not exist on type 'IntrinsicAttributes & PerformanceCardProps'.
+    195 |           <PerformanceCard 
+    196 |             selectedGameSession={selectedGameSession}
+  > 197 |             emgTimeSeriesData={emgTimeSeriesData}
+        |             ^^^^^^^^^^^^^^^^^
+    198 |             mvcPercentage={mvcPercentage}
+    199 |             leftQuadChannelName={leftQuadChannelName}
+    200 |             rightQuadChannelName={rightQuadChannelName}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:196:13
+TS2322: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & PerformanceCardProps'.
+  Property 'selectedGameSession' does not exist on type 'IntrinsicAttributes & PerformanceCardProps'.
+    194 |         <div className="space-y-6">
+    195 |           <PerformanceCard 
+  > 196 |             selectedGameSession={selectedGameSession}
+        |             ^^^^^^^^^^^^^^^^^^^
+    197 |             analysisResult={analysisResult}
+    198 |             contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
+    199 |           />
+
+ERROR in src/components/sessions/game-session-tabs.tsx:196:13
+TS2322: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & PerformanceCardProps'.
+  Property 'selectedGameSession' does not exist on type 'IntrinsicAttributes & PerformanceCardProps'.
+    194 |         <div className="space-y-6">
+    195 |           <PerformanceCard 
+  > 196 |             selectedGameSession={selectedGameSession}
+        |             ^^^^^^^^^^^^^^^^^^^
+    197 |             analysisResult={analysisResult}
+    198 |             contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
+    199 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:133:9
+TS2322: Type '{ score: number; label: string; textColor: string; hexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'textColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    131 |         score={overallScore}
+    132 |         label={overallLabel}
+  > 133 |         textColor={overallTextColor}
+        |         ^^^^^^^^^
+    134 |         hexColor={overallHexColor}
+    135 |         muscleCount={muscleScores.length}
+    136 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:133:9
+TS2322: Type '{ score: number; label: string; textColor: string; hexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'textColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    131 |         score={overallScore}
+    132 |         label={overallLabel}
+  > 133 |         textColor={overallTextColor}
+        |         ^^^^^^^^^
+    134 |         hexColor={overallHexColor}
+    135 |         muscleCount={muscleScores.length}
+    136 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/SessionLoader.tsx
+TS1208: 'SessionLoader.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/SessionLoader.tsx:69:11
+TS2322: Type '{ onSuccess: (data: any) => void; onError: (message: string) => void; setIsLoading: (isLoading: boolean) => void; sessionParams: any; }' is not assignable to type 'IntrinsicAttributes & FileUploadProps'.
+  Property 'onSuccess' does not exist on type 'IntrinsicAttributes & FileUploadProps'.
+    67 |       <CardContent className="space-y-6">
+    68 |         <FileUpload
+  > 69 |           onSuccess={onSuccess}
+       |           ^^^^^^^^^
+    70 |           onError={onError}
+    71 |           setIsLoading={setIsLoading}
+    72 |           sessionParams={sessionParams}
+
+ERROR in src/components/SessionLoader.tsx:82:10
+TS2741: Property 'disabled' is missing in type '{ onSelect: (filename: string) => Promise<void>; }' but required in type 'QuickSelectProps'.
+    80 |           </div>
+    81 |         </div>
+  > 82 |         <QuickSelect onSelect={handleQuickSelect} />
+       |          ^^^^^^^^^^^
+    83 |       </CardContent>
+    84 |     </Card>
+    85 |   );
+
+ERROR in src/components/SessionLoader.tsx:69:11
+TS2322: Type '{ onSuccess: (data: any) => void; onError: (message: string) => void; setIsLoading: (isLoading: boolean) => void; sessionParams: any; }' is not assignable to type 'IntrinsicAttributes & FileUploadProps'.
+  Property 'onSuccess' does not exist on type 'IntrinsicAttributes & FileUploadProps'.
+    67 |       <CardContent className="space-y-6">
+    68 |         <FileUpload
+  > 69 |           onSuccess={onSuccess}
+       |           ^^^^^^^^^
+    70 |           onError={onError}
+    71 |           setIsLoading={setIsLoading}
+    72 |           sessionParams={sessionParams}
+
+ERROR in src/components/SessionLoader.tsx:82:10
+TS2741: Property 'disabled' is missing in type '{ onSelect: (filename: string) => Promise<void>; }' but required in type 'QuickSelectProps'.
+    80 |           </div>
+    81 |         </div>
+  > 82 |         <QuickSelect onSelect={handleQuickSelect} />
+       |          ^^^^^^^^^^^
+    83 |       </CardContent>
+    84 |     </Card>
+    85 |   );
+
+ERROR in src/components/SessionLoader.tsx:2:22
+TS2614: Module '"./FileUpload"' has no exported member 'FileUploadProps'. Did you mean to use 'import FileUploadProps from "./FileUpload"' instead?
+    1 | import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  > 2 | import FileUpload, { FileUploadProps } from './FileUpload';
+      |                      ^^^^^^^^^^^^^^^
+    3 | import QuickSelect, { QuickSelectProps } from './QuickSelect';
+    4 |
+    5 | type SessionLoaderProps = {
+
+ERROR in src/components/SessionLoader.tsx:3:23
+TS2614: Module '"./QuickSelect"' has no exported member 'QuickSelectProps'. Did you mean to use 'import QuickSelectProps from "./QuickSelect"' instead?
+    1 | import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    2 | import FileUpload, { FileUploadProps } from './FileUpload';
+  > 3 | import QuickSelect, { QuickSelectProps } from './QuickSelect';
+      |                       ^^^^^^^^^^^^^^^^
+    4 |
+    5 | type SessionLoaderProps = {
+    6 |   onFileUpload: FileUploadProps['onUpload'];
+
+ERROR in src/components/SessionLoader.tsx:28:11
+TS2322: Type '{ onUpload: FileUploadProps; sessionParams: any; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & FileUploadProps'.
+  Property 'onUpload' does not exist on type 'IntrinsicAttributes & FileUploadProps'.
+    26 |       <CardContent className="space-y-6">
+    27 |         <FileUpload
+  > 28 |           onUpload={onFileUpload}
+       |           ^^^^^^^^
+    29 |           sessionParams={sessionParams}
+    30 |           disabled={isUploading}
+    31 |         />
+
+ERROR in src/App.tsx:230:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    228 |
+    229 |       Object.keys(sessionParams).forEach(key => {
+  > 230 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    231 |         if (value !== null && value !== undefined) {
+    232 |           formData.append(key, String(value));
+    233 |         }
+
+ERROR in src/App.tsx:312:76
+TS2339: Property 'filename' does not exist on type 'GameMetadata'.
+    310 |           {analysisResult && (
+    311 |             <p className="text-sm text-gray-500 mt-1">
+  > 312 |               File: <span className="font-medium">{analysisResult.metadata.filename}</span>
+        |                                                                            ^^^^^^^^
+    313 |             </p>
+    314 |           )}
+    315 |         </div>
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:329:12
+TS2739: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is missing the following properties from type 'GameSessionTabsProps': emgTimeSeriesData, mvcPercentage, leftQuadChannelName, rightQuadChannelName
+    327 |           />
+    328 |         ) : (
+  > 329 |           <GameSessionTabs
+        |            ^^^^^^^^^^^^^^^
+    330 |             selectedGameSession={currentGameSession!}
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+
+ERROR in src/App.tsx:330:13
+TS2322: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'selectedGameSession' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    328 |         ) : (
+    329 |           <GameSessionTabs
+  > 330 |             selectedGameSession={currentGameSession!}
+        |             ^^^^^^^^^^^^^^^^^^^
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+    333 |               plotMode === 'activated'
+
+ERROR in src/components/sessions/game-session-tabs.tsx:208:15
+TS2322: Type 'string | number | null | undefined' is not assignable to type 'number | null | undefined'.
+  Type 'string' is not assignable to type 'number'.
+    206 |               availableChannels={muscleChannels}
+    207 |               onChannelSelect={setSelectedChannelForStats}
+  > 208 |               sessionExpectedContractions={sessionParams.sessionExpectedContractions}
+        |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    209 |               isEMGAnalyticsTab={true}
+    210 |               contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
+    211 |             />
+
+ERROR in src/App.tsx:330:13
+TS2322: Type '{ selectedGameSession: GameSession; analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; ... 21 more ...; appIsLoading: boolean; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'selectedGameSession' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    328 |         ) : (
+    329 |           <GameSessionTabs
+  > 330 |             selectedGameSession={currentGameSession!}
+        |             ^^^^^^^^^^^^^^^^^^^
+    331 |             analysisResult={analysisResult}
+    332 |             mvcThresholdForPlot={
+    333 |               plotMode === 'activated'
+
+(node:31992) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:31992) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/App.tsx:312:76
+TS2339: Property 'filename' does not exist on type 'GameMetadata'.
+    310 |           {analysisResult && (
+    311 |             <p className="text-sm text-gray-500 mt-1">
+  > 312 |               File: <span className="font-medium">{analysisResult.metadata.filename}</span>
+        |                                                                            ^^^^^^^^
+    313 |             </p>
+    314 |           )}
+    315 |         </div>
+
+ERROR in src/App.tsx:312:76
+TS2339: Property 'filename' does not exist on type 'GameMetadata'.
+    310 |           {analysisResult && (
+    311 |             <p className="text-sm text-gray-500 mt-1">
+  > 312 |               File: <span className="font-medium">{analysisResult.metadata.filename}</span>
+        |                                                                            ^^^^^^^^
+    313 |             </p>
+    314 |           )}
+    315 |         </div>
+
+ERROR in src/App.tsx:312:76
+TS2339: Property 'filename' does not exist on type 'GameMetadata'.
+    310 |           {analysisResult && (
+    311 |             <p className="text-sm text-gray-500 mt-1">
+  > 312 |               File: <span className="font-medium">{analysisResult.metadata.filename}</span>
+        |                                                                            ^^^^^^^^
+    313 |             </p>
+    314 |           )}
+    315 |         </div>
+
+ERROR in src/components/Footer.tsx
+TS1208: 'Footer.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/App.tsx:24:10
+TS2305: Module '"lucide-react"' has no exported member 'Ghost'.
+    22 | import { Button } from "./components/ui/button";
+    23 | import Footer from "./components/Footer"; // Import the new Footer component
+  > 24 | import { Ghost } from "lucide-react"; // Import a suitable icon
+       |          ^^^^^
+    25 |
+    26 | function App() {
+    27 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+
+ERROR in src/App.tsx:24:10
+TS2305: Module '"lucide-react"' has no exported member 'Ghost'.
+    22 | import { Button } from "./components/ui/button";
+    23 | import Footer from "./components/Footer"; // Import the new Footer component
+  > 24 | import { Ghost } from "lucide-react"; // Import a suitable icon
+       |          ^^^^^
+    25 |
+    26 | function App() {
+    27 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+
+ERROR in src/App.tsx:24:10
+TS2305: Module '"lucide-react"' has no exported member 'Ghost'.
+    22 | import { Button } from "./components/ui/button";
+    23 | import Footer from "./components/Footer"; // Import the new Footer component
+  > 24 | import { Ghost } from "lucide-react"; // Import a suitable icon
+       |          ^^^^^
+    25 |
+    26 | function App() {
+    27 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+
+ERROR in src/App.tsx:238:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    236 |
+    237 |       Object.keys(sessionParams).forEach(key => {
+  > 238 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    239 |         if (value !== null && value !== undefined) {
+    240 |           formData.append(key, String(value));
+    241 |         }
+
+ERROR in src/App.tsx:24:10
+TS2305: Module '"lucide-react"' has no exported member 'FlaskConical'.
+    22 | import { Button } from "./components/ui/button";
+    23 | import Footer from "./components/Footer"; // Import the new Footer component
+  > 24 | import { FlaskConical } from "lucide-react"; // Import a suitable icon
+       |          ^^^^^^^^^^^^
+    25 |
+    26 | function App() {
+    27 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+
+ERROR in src/App.tsx:238:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    236 |
+    237 |       Object.keys(sessionParams).forEach(key => {
+  > 238 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    239 |         if (value !== null && value !== undefined) {
+    240 |           formData.append(key, String(value));
+    241 |         }
+
+ERROR in src/App.tsx:24:28
+TS2307: Cannot find module '@heroicons/react/24/solid' or its corresponding type declarations.
+    22 | import { Button } from "./components/ui/button";
+    23 | import Footer from "./components/Footer"; // Import the new Footer component
+  > 24 | import { BeakerIcon } from "@heroicons/react/24/solid";
+       |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    25 |
+    26 | function App() {
+    27 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+
+ERROR in src/App.tsx:238:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    236 |
+    237 |       Object.keys(sessionParams).forEach(key => {
+  > 238 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    239 |         if (value !== null && value !== undefined) {
+    240 |           formData.append(key, String(value));
+    241 |         }
+
+ERROR in src/App.tsx:23:20
+TS2307: Cannot find module './components/Footer' or its corresponding type declarations.
+    21 | import SessionLoader from "./components/SessionLoader";
+    22 | import { Button } from "./components/ui/button";
+  > 23 |
+       | ^^^^^^^^^^^^^^^^^^^^^
+    24 | function App() {
+    25 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+    26 |   const [appError, setAppError] = useState<string | null>(null);
+
+ERROR in src/App.tsx:24:28
+TS2307: Cannot find module '@heroicons/react/24/solid' or its corresponding type declarations.
+    22 | import { Button } from "./components/ui/button";
+    23 |
+  > 24 | function App() {
+       |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    25 |   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
+    26 |   const [appError, setAppError] = useState<string | null>(null);
+    27 |   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+ERROR in src/App.tsx:238:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    236 |
+    237 |       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
+  > 238 |         method: 'POST',
+        |                       ^^^^^^^^^^^^^^^^^^
+    239 |         body: formData,
+    240 |       });
+    241 |
+
+ERROR in src/components/SessionConfigPanel.tsx:9:41
+TS2307: Cannot find module './ui/alert' or its corresponding type declarations.
+     7 | import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+     8 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+  >  9 | import { Alert, AlertDescription } from "./ui/alert";
+       |                                         ^^^^^^^^^^^^
+    10 |
+    11 | interface ScoringConfigPanelProps {
+    12 |   sessionParams: GameSessionParameters;
+
+ERROR in src/components/SessionConfigPanel.tsx:9:41
+TS2307: Cannot find module './ui/alert' or its corresponding type declarations.
+     7 | import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+     8 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+  >  9 | import { Alert, AlertDescription } from "./ui/alert";
+       |                                         ^^^^^^^^^^^^
+    10 |
+    11 | interface ScoringConfigPanelProps {
+    12 |   sessionParams: GameSessionParameters;
+
+ERROR in src/components/SessionConfigPanel.tsx:9:41
+TS2307: Cannot find module './ui/alert' or its corresponding type declarations.
+     7 | import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+     8 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+  >  9 | import { Alert, AlertDescription } from "./ui/alert";
+       |                                         ^^^^^^^^^^^^
+    10 |
+    11 | interface ScoringConfigPanelProps {
+    12 |   sessionParams: GameSessionParameters;
+
+ERROR in src/components/ui/alert.tsx
+TS1208: 'alert.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/SettingsPanel.tsx
+TS1208: 'SettingsPanel.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/MuscleNameDisplay.tsx
+TS1208: 'MuscleNameDisplay.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:188:11
+TS2322: Type '{ analysisResult: EMGAnalysisResult; contractionDurationThreshold: number; sessionParams: GameSessionParameters; }' is not assignable to type 'IntrinsicAttributes & PerformanceCardProps'.
+  Property 'sessionParams' does not exist on type 'IntrinsicAttributes & PerformanceCardProps'.
+    186 |           analysisResult={analysisResult}
+    187 |           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+  > 188 |           sessionParams={sessionParams}
+        |           ^^^^^^^^^^^^^
+    189 |         />
+    190 |       </TabsContent>
+    191 |
+
+ERROR in src/components/sessions/performance-card.tsx:1:23
+TS2724: '"@/types/session"' has no exported member named 'GameSessionParameters'. Did you mean 'GameParameters'?
+  > 1 | import { GameSession, GameSessionParameters } from '@/types/session';
+      |                       ^^^^^^^^^^^^^^^^^^^^^
+    2 | import { EMGAnalysisResult } from '@/types/emg';
+    3 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+
+ERROR in src/components/sessions/performance-card.tsx:137:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'totalScore' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    135 |     <div className="space-y-6">
+    136 |       <OverallPerformanceCard
+  > 137 |         totalScore={overallScore}
+        |         ^^^^^^^^^^
+    138 |         scoreLabel={overallScoreLabel.label}
+    139 |         scoreTextColor={overallScoreLabel.textColor}
+    140 |         scoreBgColor={overallScoreLabel.bgColor}
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:137:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'totalScore' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    135 |     <div className="space-y-6">
+    136 |       <OverallPerformanceCard
+  > 137 |         totalScore={overallScore}
+        |         ^^^^^^^^^^
+    138 |         scoreLabel={overallScoreLabel.label}
+    139 |         scoreTextColor={overallScoreLabel.textColor}
+    140 |         scoreBgColor={overallScoreLabel.bgColor}
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:147:17
+TS2322: Type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; durationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+  Property 'durationThreshold' does not exist on type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+    145 |                 longContractions={longContractions}
+    146 |                 longGoodContractions={longGoodContractions}
+  > 147 |                 durationThreshold={contractionDurationThreshold}
+        |                 ^^^^^^^^^^^^^^^^^
+    148 |               />
+    149 |             </CollapsibleContent>
+    150 |           </Collapsible>
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:147:17
+TS2322: Type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; durationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+  Property 'durationThreshold' does not exist on type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+    145 |                 longContractions={longContractions}
+    146 |                 longGoodContractions={longGoodContractions}
+  > 147 |                 durationThreshold={contractionDurationThreshold}
+        |                 ^^^^^^^^^^^^^^^^^
+    148 |               />
+    149 |             </CollapsibleContent>
+    150 |           </Collapsible>
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:142:16
+TS2741: Property 'color' is missing in type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; durationThreshold: number; }' but required in type 'ContractionTypeBreakdownProps'.
+    140 |             </CollapsibleTrigger>
+    141 |             <CollapsibleContent className="pt-4">
+  > 142 |               <ContractionTypeBreakdown
+        |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    143 |                 shortContractions={shortContractions}
+    144 |                 shortGoodContractions={shortGoodContractions}
+    145 |                 longContractions={longContractions}
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:164:13
+TS2322: Type '{ key: any; channel: any; totalScore: any; scoreLabel: any; scoreTextColor: any; scoreBgColor: any; scoreHexColor: any; totalContractions: any; expectedContractions: any; contractionScore: any; ... 8 more ...; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & MusclePerformanceCardProps'.
+  Property 'goodContractionScore' does not exist on type 'IntrinsicAttributes & MusclePerformanceCardProps'. Did you mean 'contractionScore'?
+    162 |             longContractions={data.longContractions}
+    163 |             longGoodContractions={data.longGoodContractions}
+  > 164 |             goodContractionScore={data.goodContractionScore}
+        |             ^^^^^^^^^^^^^^^^^^^^
+    165 |             sessionParams={sessionParams}
+    166 |             contractionDurationThreshold={durationThreshold}
+    167 |           />
+
+ERROR in src/components/sessions/performance-card.tsx:78:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+    76 |       // Extract expected short/long contractions based on channel
+    77 |       if (index === 0) { // Left channel (ch1)
+  > 78 |         expectedShortContractions = params.session_expected_short_left;
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    79 |         expectedLongContractions = params.session_expected_long_left;
+    80 |       } else if (index === 1) { // Right channel (ch2)
+    81 |         expectedShortContractions = params.session_expected_short_right;
+
+ERROR in src/components/sessions/performance-card.tsx:79:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+    77 |       if (index === 0) { // Left channel (ch1)
+    78 |         expectedShortContractions = params.session_expected_short_left;
+  > 79 |         expectedLongContractions = params.session_expected_long_left;
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^
+    80 |       } else if (index === 1) { // Right channel (ch2)
+    81 |         expectedShortContractions = params.session_expected_short_right;
+    82 |         expectedLongContractions = params.session_expected_long_right;
+
+ERROR in src/components/sessions/performance-card.tsx:81:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+    79 |         expectedLongContractions = params.session_expected_long_left;
+    80 |       } else if (index === 1) { // Right channel (ch2)
+  > 81 |         expectedShortContractions = params.session_expected_short_right;
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    82 |         expectedLongContractions = params.session_expected_long_right;
+    83 |       }
+    84 |     }
+
+ERROR in src/components/sessions/performance-card.tsx:82:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+    80 |       } else if (index === 1) { // Right channel (ch2)
+    81 |         expectedShortContractions = params.session_expected_short_right;
+  > 82 |         expectedLongContractions = params.session_expected_long_right;
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^
+    83 |       }
+    84 |     }
+    85 |     
+
+ERROR in src/components/SettingsPanel.tsx:7:10
+TS2724: '"@radix-ui/react-icons"' has no exported member named 'EditIcon'. Did you mean 'ExitIcon'?
+     5 | import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+     6 | import { GameSessionParameters } from '../types/emg';
+  >  7 | import { EditIcon, CheckIcon } from '@radix-ui/react-icons';
+       |          ^^^^^^^^
+     8 |
+     9 | interface SettingsPanelProps {
+    10 |   sessionParams: GameSessionParameters;
+
+ERROR in src/components/SettingsPanel.tsx:7:10
+TS2724: '"@radix-ui/react-icons"' has no exported member named 'EditIcon'. Did you mean 'ExitIcon'?
+     5 | import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+     6 | import { GameSessionParameters } from '../types/emg';
+  >  7 | import { EditIcon, CheckIcon } from '@radix-ui/react-icons';
+       |          ^^^^^^^^
+     8 |
+     9 | interface SettingsPanelProps {
+    10 |   sessionParams: GameSessionParameters;
+
+ERROR in src/components/SettingsPanel.tsx:80:16
+TS2304: Cannot find name 'EditIcon'.
+    78 |           ) : (
+    79 |             <>
+  > 80 |               <EditIcon className="h-4 w-4" />
+       |                ^^^^^^^^
+    81 |               <span>Edit</span>
+    82 |             </>
+    83 |           )}
+
+ERROR in src/components/SettingsPanel.tsx:80:16
+TS2304: Cannot find name 'EditIcon'.
+    78 |           ) : (
+    79 |             <>
+  > 80 |               <EditIcon className="h-4 w-4" />
+       |                ^^^^^^^^
+    81 |               <span>Edit</span>
+    82 |             </>
+    83 |           )}
+
+ERROR in src/components/SettingsPanel.tsx:88:10
+TS17008: JSX element 'div' has no corresponding closing tag.
+    86 |     <Card>
+    87 |       <CardHeader>
+  > 88 |         <div className="flex items-center justify-between">
+       |          ^^^
+    89 |           <CardTitle className="text-lg">Channel to Muscle Mapping</CardTitle>
+    90 |         <Button 
+    91 |           onClick={toggleEditMode} 
+
+ERROR in src/components/SettingsPanel.tsx:88:10
+TS17008: JSX element 'div' has no corresponding closing tag.
+    86 |     <Card>
+    87 |       <CardHeader>
+  > 88 |         <div className="flex items-center justify-between">
+       |          ^^^
+    89 |           <CardTitle className="text-lg">Channel to Muscle Mapping</CardTitle>
+    90 |         <Button 
+    91 |           onClick={toggleEditMode} 
+

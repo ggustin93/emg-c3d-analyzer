@@ -3,11 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { GameSession, EMGMetrics as FrontendEMGMetrics } from '@/types/session';
 import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EmgSignalData, GameSessionParameters } from '../../types/emg';
-import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon } from '@radix-ui/react-icons';
+import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon, GearIcon } from '@radix-ui/react-icons';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
 import MetricCard from './metric-card';
 import EMGChart, { CombinedChartDataPoint } from '../EMGChart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
 
 import MetadataDisplay from "@/components/app/MetadataDisplay";
 import ChannelSelection from "@/components/app/ChannelSelection";
@@ -19,6 +20,7 @@ import PerformanceCard from './performance-card';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import ScoringConfigPanel from '../SessionConfigPanel';
+import SettingsPanel from '../SettingsPanel';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -30,15 +32,8 @@ declare module '@/types/session' {
 }
 
 interface GameSessionTabsProps {
-  selectedGameSession: GameSession;
-  emgTimeSeriesData: CombinedChartDataPoint[];
-  mvcPercentage: number;
-  leftQuadChannelName: string | null;
-  rightQuadChannelName: string | null;
-
   analysisResult: EMGAnalysisResult | null;
   mvcThresholdForPlot?: number | null;
-  sessionExpectedContractions?: number | null;
   
   muscleChannels: string[];
   allAvailableChannels: string[];
@@ -71,14 +66,8 @@ interface GameSessionTabsProps {
 }
 
 export default function GameSessionTabs({
-  selectedGameSession,
-  emgTimeSeriesData,
-  mvcPercentage,
-  leftQuadChannelName,
-  rightQuadChannelName,
   analysisResult,
   mvcThresholdForPlot,
-  sessionExpectedContractions,
   muscleChannels,
   allAvailableChannels,
   plotChannel1Name,
@@ -113,13 +102,15 @@ export default function GameSessionTabs({
   if (!analysisResult) return null;
 
   return (
-    <Tabs defaultValue={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="plots">Signal Plots</TabsTrigger>
-        <TabsTrigger value="stats">Game Stats</TabsTrigger>
-        <TabsTrigger value="analytics">EMG Analytics</TabsTrigger>
-        <TabsTrigger value="raw">Raw API</TabsTrigger>
-      </TabsList>
+    <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange}>
+      <div className="border-b mb-4">
+        <TabsList className="w-full flex justify-between overflow-x-auto">
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
+          <TabsTrigger value="game-stats" className="flex-1 flex-shrink-0">Game Stats</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex-1 flex-shrink-0">EMG Analytics</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="plots">
         <Card>
@@ -190,33 +181,12 @@ export default function GameSessionTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="stats">
-        <div className="space-y-6">
-          <PerformanceCard 
-            selectedGameSession={selectedGameSession}
-            emgTimeSeriesData={emgTimeSeriesData}
-            mvcPercentage={mvcPercentage}
-            leftQuadChannelName={leftQuadChannelName}
-            rightQuadChannelName={rightQuadChannelName}
-            analysisResult={analysisResult}
-            contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
-          />
-          <Card>
-            <CardHeader>
-              <CardTitle>Scoring Parameters</CardTitle>
-              <CardDescription>Adjust MVC and expected contractions to recalculate scores.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScoringConfigPanel
-                sessionParams={sessionParams}
-                onParamsChange={onSessionParamsChange}
-                onRecalculate={onRecalculateScores}
-                disabled={appIsLoading}
-                availableChannels={muscleChannels}
-              />
-            </CardContent>
-          </Card>
-        </div>
+      <TabsContent value="game-stats" className="bg-gray-50/50 p-4 rounded-b-lg">
+        <PerformanceCard 
+          analysisResult={analysisResult}
+          contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+          sessionParams={sessionParams}
+        />
       </TabsContent>
 
       <TabsContent value="analytics">
@@ -236,26 +206,62 @@ export default function GameSessionTabs({
               selectedChannel={selectedChannelForStats}
               availableChannels={muscleChannels}
               onChannelSelect={setSelectedChannelForStats}
-              sessionExpectedContractions={sessionExpectedContractions}
+              sessionExpectedContractions={sessionParams.session_expected_contractions ? parseInt(String(sessionParams.session_expected_contractions), 10) : null}
               isEMGAnalyticsTab={true}
-              contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
+              contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+              sessionParams={sessionParams}
             />
           </CardContent>
         </Card>
       </TabsContent>
 
-      <TabsContent value="raw">
-        <Card>
-          <CardHeader>
-            <CardTitle>Raw API Response</CardTitle>
-            <CardDescription>Raw JSON output from the analysis for debugging purposes.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
-              {JSON.stringify(analysisResult, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+      <TabsContent value="settings">
+        <div className="grid grid-cols-1 gap-4">
+         
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Configuration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScoringConfigPanel
+                sessionParams={sessionParams}
+                onParamsChange={onSessionParamsChange}
+                onRecalculate={onRecalculateScores}
+                disabled={appIsLoading}
+                availableChannels={muscleChannels}
+              />
+            </CardContent>
+          </Card>
+          <SettingsPanel 
+            sessionParams={sessionParams}
+            onParamsChange={onSessionParamsChange}
+            muscleChannels={muscleChannels}
+            disabled={appIsLoading}
+          />
+          
+          <Collapsible>
+            <CollapsibleTrigger className="w-full text-left group flex items-center justify-between p-3 bg-white rounded-lg shadow-sm border hover:bg-slate-50 transition-colors">
+              <div className="flex items-center">
+                <CodeIcon className="h-5 w-5 mr-3 text-slate-600" />
+                <div>
+                  <h4 className="font-semibold text-slate-800">Raw API Response</h4>
+                  <p className="text-xs text-slate-500">Click to view the raw JSON output for debugging</p>
+                </div>
+              </div>
+              <ChevronDownIcon className="h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <Card>
+                <CardContent className="p-0">
+                  <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
+                    {JSON.stringify(analysisResult, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </TabsContent>
     </Tabs>
   );

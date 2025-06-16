@@ -252,7 +252,13 @@ async def recalculate_scores(
     session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
     session_expected_contractions: Optional[int] = Form(None),
     session_expected_contractions_ch1: Optional[int] = Form(None),
-    session_expected_contractions_ch2: Optional[int] = Form(None)):
+    session_expected_contractions_ch2: Optional[int] = Form(None),
+    session_expected_long_left: Optional[int] = Form(None),
+    session_expected_short_left: Optional[int] = Form(None),
+    session_expected_long_right: Optional[int] = Form(None),
+    session_expected_short_right: Optional[int] = Form(None),
+    contraction_duration_threshold: Optional[int] = Form(250),
+    channel_muscle_mapping: Optional[str] = Form(None)):
     """Recalculate scores for an existing result with updated parameters."""
     
     # Find the result file
@@ -272,13 +278,27 @@ async def recalculate_scores(
         with open(raw_emg_data_path, "r") as f:
             emg_data = json.load(f)
         
+        # Parse the channel_muscle_mapping JSON string if provided
+        parsed_channel_muscle_mapping = None
+        if channel_muscle_mapping:
+            try:
+                parsed_channel_muscle_mapping = json.loads(channel_muscle_mapping)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid channel_muscle_mapping JSON format")
+        
         # Create session parameters object
         session_game_params = GameSessionParameters(
             session_mvc_value=session_mvc_value,
             session_mvc_threshold_percentage=session_mvc_threshold_percentage,
             session_expected_contractions=session_expected_contractions,
             session_expected_contractions_ch1=session_expected_contractions_ch1,
-            session_expected_contractions_ch2=session_expected_contractions_ch2
+            session_expected_contractions_ch2=session_expected_contractions_ch2,
+            session_expected_long_left=session_expected_long_left,
+            session_expected_short_left=session_expected_short_left,
+            session_expected_long_right=session_expected_long_right,
+            session_expected_short_right=session_expected_short_right,
+            contraction_duration_threshold=contraction_duration_threshold,
+            channel_muscle_mapping=parsed_channel_muscle_mapping
         )
         
         # Create a processor instance

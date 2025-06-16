@@ -8,7 +8,7 @@ and serialize/deserialize data.
 """
 
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
 
 # Default parameters
@@ -47,12 +47,24 @@ class ChannelAnalytics(BaseModel):
     good_contraction_count: Optional[int] = None
 
 
-class GameSessionParameters(BaseModel): # New model for clarity
+class GameSessionParameters(BaseModel):
     session_mvc_value: Optional[float] = Field(None, description="Patient's MVC for this session/muscle, input by therapist")
     session_mvc_threshold_percentage: Optional[float] = Field(DEFAULT_MVC_THRESHOLD_PERCENTAGE, ge=0, le=100, description="Percentage of session_mvc_value to consider a contraction 'good'")
     session_expected_contractions: Optional[int] = Field(None, ge=0, description="Target number of contractions for the session")
     session_expected_contractions_ch1: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 1")
     session_expected_contractions_ch2: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 2")
+    
+    # Detailed expected contractions by type
+    session_expected_long_left: Optional[int] = Field(None, ge=0, description="Target number of long contractions for left muscle")
+    session_expected_short_left: Optional[int] = Field(None, ge=0, description="Target number of short contractions for left muscle")
+    session_expected_long_right: Optional[int] = Field(None, ge=0, description="Target number of long contractions for right muscle")
+    session_expected_short_right: Optional[int] = Field(None, ge=0, description="Target number of short contractions for right muscle")
+    
+    # Contraction classification threshold
+    contraction_duration_threshold: Optional[int] = Field(250, ge=0, description="Threshold in milliseconds to classify contractions as short or long")
+    
+    # Channel to muscle name mapping
+    channel_muscle_mapping: Optional[Dict[str, str]] = Field(None, description="Mapping of channel names to muscle names")
 
 class GameMetadata(BaseModel):
     game_name: Optional[str] = None
