@@ -1,44 +1,342 @@
 INFO:     Will watch for changes in these directories: ['/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
-INFO:     Started reloader process [12366] using StatReload
-INFO:     Started server process [12389]
+INFO:     Started reloader process [22103] using StatReload
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+    await self._serve(sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+    config.load()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/api.py", line 37, in <module>
+    from processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
+ModuleNotFoundError: No module named 'processor'
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+    await self._serve(sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+    config.load()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/api.py", line 37, in <module>
+    from processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
+ModuleNotFoundError: No module named 'processor'
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Started server process [22489]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22489]
+INFO:     Started server process [22513]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [12389]
-INFO:     Started server process [12734]
+INFO:     Finished server process [22513]
+INFO:     Started server process [22523]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22523]
+INFO:     Started server process [22527]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22527]
+INFO:     Started server process [22554]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22554]
+INFO:     Started server process [22561]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22561]
+INFO:     Started server process [22682]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22682]
+INFO:     Started server process [22700]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22700]
+INFO:     Started server process [22731]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22731]
+INFO:     Started server process [22767]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22767]
+INFO:     Started server process [22992]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [12734]
-INFO:     Started server process [12760]
+INFO:     Finished server process [22992]
+INFO:     Started server process [23063]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [12760]
-INFO:     Started server process [12809]
+INFO:     Finished server process [23063]
+INFO:     Started server process [23092]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23092]
+INFO:     Started server process [23151]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23151]
+INFO:     Started server process [23172]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23172]
+INFO:     Started server process [23181]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [12809]
-INFO:     Started server process [12939]
+INFO:     Finished server process [23181]
+INFO:     Started server process [23216]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Will watch for changes in these directories: ['/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
-INFO:     Started reloader process [12979] using StatReload
-INFO:     Started server process [12998]
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23216]
+INFO:     Started server process [23250]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23250]
+INFO:     Started server process [23923]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23923]
+INFO:     Started server process [23950]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23950]
+INFO:     Started server process [23968]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23968]
+INFO:     Started server process [23999]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23999]
+INFO:     Started server process [24030]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24030]
+INFO:     Started server process [24157]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24157]
+Process SpawnProcess-27:
+Traceback (most recent call last):
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+    await self._serve(sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+    config.load()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/api.py", line 39, in <module>
+    from processor import GHOSTLYC3DProcessor
+ModuleNotFoundError: No module named 'processor'
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+Process SpawnProcess-28:
+Traceback (most recent call last):
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+    return asyncio.run(self.serve(sockets=sockets))
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+    await self._serve(sockets)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+    config.load()
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+    self.loaded_app = import_from_string(self.app)
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/Users/pwablo/.pyenv/versions/3.10.14/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/api.py", line 39, in <module>
+    from processor import GHOSTLYC3DProcessor
+ModuleNotFoundError: No module named 'processor'
+WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Started server process [24378]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.

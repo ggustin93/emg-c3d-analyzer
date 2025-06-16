@@ -18,28 +18,963 @@ webpack compiled successfully
 Files successfully emitted, waiting for typecheck results...
 Issues checking in progress...
 No issues found.
+Compiling...
+Compiled with warnings.
 
-                    The build failed because the process exited too early.
-                    This probably means the system ran out of memory or someone called
-                    `kill -9` on the process.
-                
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
-> emg-c3d-analyzer@0.1.0 start
-> craco start
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
 
-Starting the development server...
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
-Compiled successfully!
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
 
-You can now view emg-c3d-analyzer in the browser.
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
-  Local:            http://localhost:3000
-  On Your Network:  http://10.240.79.190:3000
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
-Note that the development build is not optimized.
-To create a production build, use npm run build.
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
 
-webpack compiled successfully
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
 Files successfully emitted, waiting for typecheck results...
 Issues checking in progress...
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Failed to compile.
+
+Module not found: Error: Can't resolve '@/components/app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+ERROR in ./src/components/sessions/game-session-tabs.tsx 11:0-75
+Module not found: Error: Can't resolve '@/components/app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+
+webpack compiled with 1 error and 1 warning
+Compiling...
+Failed to compile.
+
+Module not found: Error: Can't resolve '../app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+ERROR in ./src/components/sessions/game-session-tabs.tsx 11:0-69
+Module not found: Error: Can't resolve '../app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+
+webpack compiled with 1 error and 1 warning
+Compiling...
+Failed to compile.
+
+Module not found: Error: Can't resolve '../app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+ERROR in ./src/components/sessions/game-session-tabs.tsx 11:0-69
+Module not found: Error: Can't resolve '../app/GeneratedPlotsDisplay' in '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/sessions'
+
+webpack compiled with 1 error and 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameMetadata' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 15:10:  'GeneratedPlotsDisplay' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 17:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 22:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 101:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 5:77:   'GameSessionParameters' is defined but never used         @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 100:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 21:8:   'SessionConfigPanel' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+No issues found.
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src/components/sessions/performance-card.tsx
+  Line 4:64:  'CodeIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 5:10:  'ResponsiveContainer' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 5:31:  'PieChart' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 5:41:  'Pie' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 5:46:  'Cell' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 5:63:  'PieTooltip' is defined but never used           @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src/components/sessions/performance-card.tsx
+  Line 4:64:  'CodeIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 5:10:  'ResponsiveContainer' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 5:31:  'PieChart' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 5:41:  'Pie' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 5:46:  'Cell' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 5:63:  'PieTooltip' is defined but never used           @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src/components/sessions/performance-card.tsx
+  Line 5:64:  'CodeIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:10:  'ResponsiveContainer' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 6:31:  'PieChart' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:41:  'Pie' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:46:  'Cell' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 6:63:  'PieTooltip' is defined but never used           @typescript-eslint/no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/App.tsx
+  Line 94:6:  React Hook useCallback has a missing dependency: 'setSelectedChannelForStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/sessions/game-session-tabs.tsx
+  Line 3:10:   'Progress' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 4:37:   'FrontendEMGMetrics' is defined but never used            @typescript-eslint/no-unused-vars
+  Line 6:10:   'StarIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 6:30:   'LightningBoltIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:49:   'ClockIcon' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 6:60:   'BarChartIcon' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:74:   'ActivityLogIcon' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 7:10:   'ResponsiveContainer' is defined but never used           @typescript-eslint/no-unused-vars
+  Line 7:31:   'PieChart' is defined but never used                      @typescript-eslint/no-unused-vars
+  Line 7:41:   'Pie' is defined but never used                           @typescript-eslint/no-unused-vars
+  Line 7:46:   'Cell' is defined but never used                          @typescript-eslint/no-unused-vars
+  Line 7:63:   'PieTooltip' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 8:8:    'MetricCard' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 12:8:   'MetadataDisplay' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 16:10:  'useEffect' is defined but never used                     @typescript-eslint/no-unused-vars
+  Line 106:9:  'getPerformanceScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src/components/sessions/performance-card.tsx
+  Line 5:64:  'CodeIcon' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:10:  'ResponsiveContainer' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 6:31:  'PieChart' is defined but never used             @typescript-eslint/no-unused-vars
+  Line 6:41:  'Pie' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 6:46:  'Cell' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 6:63:  'PieTooltip' is defined but never used           @typescript-eslint/no-unused-vars
+
+webpack compiled with 1 warning
 No issues found.

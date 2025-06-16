@@ -28,6 +28,10 @@
     - ✅ MPF (Mean Power Frequency)
     - ✅ MDF (Median Frequency)
     - ✅ Dimitrov's Fatigue Index (FI_nsm5)
+✅ **Game-Specific Analysis:**
+    - ✅ MVC (Maximum Voluntary Contraction) threshold analysis
+    - ✅ Good contraction flagging based on MVC threshold
+    - ✅ Expected contractions count for performance tracking
 ✅ **Optimized API Response:**
     - ✅ API returns a clean, unified analytics object per muscle.
     - ✅ API includes detailed contraction data in the response.
@@ -49,6 +53,12 @@
 ✅ **Advanced Plotting Features**:
     - ✅ Added a toggle switch to flip between "Raw" and "Activated" channel plots.
     - ✅ Channel selection logic is now dynamic and centralized in `useChannelManagement`.
+    - ✅ Implemented zoom/pan functionality using Recharts Brush component.
+    - ✅ Added MVC threshold reference line for visual feedback.
+✅ **Game Session Analysis UI**:
+    - ✅ Created SessionConfigPanel for inputting game session parameters.
+    - ✅ Updated StatsPanel to display good contractions count.
+    - ✅ Added visual MVC threshold indicator on EMG charts.
 ✅ **Significant UI/UX Polish:**
     - ✅ Default view is now "Signal Plots" tab after upload.
     - ✅ Display uploaded filename in the session title.
@@ -74,6 +84,7 @@
 - [ ] Add unit and integration tests for the `GHOSTLYC3DProcessor` logic.
 - [ ] Add frontend tests for plot switching and data display logic.
 - [ ] Validate correctness of all calculated metrics with known data sets.
+- [ ] Test game-specific analysis features with real rehabilitation scenarios.
 
 ### User Management (🚧 5% - If pursued)
 - [ ] Requirements definition for authentication/authorization.
@@ -84,6 +95,7 @@
 - [ ] Database integration for persistent storage.
 - [ ] Cloud storage for C3D files.
 - [ ] CI/CD pipeline setup.
+- [ ] Additional game-specific analysis features based on user feedback.
 
 ## Milestones
 
@@ -110,13 +122,20 @@
 - **Optimized backend processing** by moving blocking operations into a thread pool.
 - **Streamlined the development startup script** for faster, more reliable execution.
 
-### Milestone 5: Production Hardening & Automation 🚧
+### Milestone 5: Enhanced Analysis & Interactive Features ✅
+- **Implemented game-specific analysis features** including MVC threshold and good contraction tracking.
+- **Added interactive chart features** with zoom/pan functionality for better data exploration.
+- **Created dedicated configuration UI** for inputting game session parameters.
+- **Fixed TypeScript issues** for better type safety and code reliability.
+
+### Milestone 6: Production Hardening & Automation 🚧
 - [ ] Achieve high test coverage for caching and processing logic.
 - [ ] Harden security (if applicable, e.g., auth).
 - [ ] Comprehensive documentation.
 - [ ] CI/CD pipeline.
 
 ## Recent Progress
-- Successfully implemented caching and async operations in the backend.
-- Resolved Python import errors with standardized imports.
-- Improved `start_dev.sh` for better startup and dependency management.
+- Successfully implemented zoom/pan functionality for EMG charts.
+- Added game-specific analysis features (MVC threshold, expected contractions).
+- Created SessionConfigPanel for inputting game parameters.
+- Fixed TypeScript error in useGameSessionData.ts related to nullable duration.

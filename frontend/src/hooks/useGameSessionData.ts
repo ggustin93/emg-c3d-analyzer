@@ -186,7 +186,7 @@ export const useGameSessionData = (
       emgMetrics.forceEstimation = metadata.score ? metadata.score * 2 : 100;
 
       const gameStats: GameSession['statistics'] = {
-        duration: metadata.duration,
+        duration: metadata.duration ?? 0,
         levelsCompleted: metadata.level ? parseInt(metadata.level.toString(), 10) : 1,
         inactivityPeriods: 0, 
         activationPoints: metadata.score || 0,

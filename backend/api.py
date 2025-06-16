@@ -34,8 +34,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
-from .models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics
+from .processor import GHOSTLYC3DProcessor
+from .models import (
+    EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics,
+    GameSessionParameters, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS,
+    DEFAULT_SMOOTHING_WINDOW, DEFAULT_MVC_THRESHOLD_PERCENTAGE
+)
 
 # Storage directories
 UPLOAD_DIR = Path("./data/uploads")
@@ -92,10 +96,14 @@ async def upload_file(file: UploadFile = File(...),
                       user_id: Optional[str] = Form(None),
                       patient_id: Optional[str] = Form(None),
                       session_id: Optional[str] = Form(None),
+                      # Standard processing options
                       threshold_factor: float = Form(DEFAULT_THRESHOLD_FACTOR),
                       min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
                       smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
-                      generate_plots: bool = Form(False)):
+                      # New game-specific session parameters from GUI
+                      session_mvc_value: Optional[float] = Form(None),
+                      session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
+                      session_expected_contractions: Optional[int] = Form(None)):
     """Upload and process a C3D file."""
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
@@ -111,11 +119,14 @@ async def upload_file(file: UploadFile = File(...),
     hasher.update(str(threshold_factor).encode())
     hasher.update(str(min_duration_ms).encode())
     hasher.update(str(smoothing_window).encode())
-    hasher.update(str(generate_plots).encode())
     # Include identifiers in hash to ensure distinct cache entries
     if patient_id: hasher.update(patient_id.encode())
     if user_id: hasher.update(user_id.encode())
     if session_id: hasher.update(session_id.encode())
+    # Add new game parameters to hash
+    if session_mvc_value is not None: hasher.update(str(session_mvc_value).encode())
+    if session_mvc_threshold_percentage is not None: hasher.update(str(session_mvc_threshold_percentage).encode())
+    if session_expected_contractions is not None: hasher.update(str(session_expected_contractions).encode())
     
     request_hash = hasher.hexdigest()
     cache_marker_path = CACHE_DIR / request_hash
@@ -154,105 +165,75 @@ async def upload_file(file: UploadFile = File(...),
     # Process the file
     try:
         processor = GHOSTLYC3DProcessor(str(file_path))
-
-        # Wrap the CPU-bound processing in run_in_threadpool
-        result_data = await run_in_threadpool(
-            processor.process_file,
+        
+        # Create processing options and session parameters objects
+        processing_opts = ProcessingOptions(
             threshold_factor=threshold_factor,
             min_duration_ms=min_duration_ms,
             smoothing_window=smoothing_window
         )
+        
+        session_game_params = GameSessionParameters(
+            session_mvc_value=session_mvc_value,
+            session_mvc_threshold_percentage=session_mvc_threshold_percentage,
+            session_expected_contractions=session_expected_contractions
+        )
 
-        # Ensure all metadata values are strings to prevent type errors
-        for key, value in result_data['metadata'].items():
-            result_data['metadata'][key] = str(value)
-
-        # Generate plots if requested
-        plots = {}
-        if generate_plots:
-            # This part involves IO and could also be in a threadpool if complex
-            plot_dir = PLOTS_DIR / file_id
-            plot_dir.mkdir(parents=True, exist_ok=True)
-
-            # Generate individual channel plots
-            for channel in result_data['analytics'].keys():
-                try:
-                    plot_path = plot_dir / f"{channel}.png"
-                    await run_in_threadpool(
-                        processor.plot_emg_with_contractions,
-                        channel=channel, save_path=str(plot_path)
-                    )
-                    plots[channel] = f"/static/plots/{file_id}/{channel}.png"
-                except Exception as plot_err:
-                    print(f"Error generating plot for {channel}: {plot_err}")
-
-            # Generate summary report
-            try:
-                report_path = plot_dir / "report.png"
-                await run_in_threadpool(
-                    processor.plot_ghostly_report,
-                    save_path=str(report_path)
-                )
-                plots["report"] = f"/static/plots/{file_id}/report.png"
-            except Exception as report_err:
-                print(f"Error generating report: {report_err}")
+        # Wrap the CPU-bound processing in run_in_threadpool
+        result_data = await run_in_threadpool(
+            processor.process_file,
+            processing_opts=processing_opts,
+            session_game_params=session_game_params
+        )
 
         # Create result object
+        game_metadata = GameMetadata(**result_data['metadata'])
+        
+        analytics = {
+            k: ChannelAnalytics(**v)
+            for k, v in result_data['analytics'].items()
+        }
+
         result = EMGAnalysisResult(
             file_id=file_id,
             timestamp=timestamp,
             source_filename=file.filename,
-            metadata=GameMetadata(**result_data['metadata']),
-            analytics={
-                k: ChannelAnalytics(**v)
-                for k, v in result_data['analytics'].items()
-            },
+            metadata=game_metadata,
+            analytics=analytics,
             available_channels=result_data['available_channels'],
-            plots=plots)
+            plots={},
+            user_id=user_id,
+            patient_id=patient_id,
+            session_id=session_id
+        )
 
-        # Add optional fields if provided
-        if user_id:
-            result.user_id = user_id
-        if patient_id:
-            result.patient_id = patient_id
-        if session_id:
-            result.session_id = session_id
-
-        # --- Save results and update cache ---
-
-        # Define result paths
-        result_filename_base = f"{file_id}_result"
-        result_path = RESULTS_DIR / f"{result_filename_base}.json"
-        raw_emg_data_path = RESULTS_DIR / f"{result_filename_base}_raw_emg.json"
-
-        # Save the main analysis result JSON
+        # Save result to file
+        result_filename = f"{file_id}_result.json"
+        result_path = RESULTS_DIR / result_filename
+        
+        # Save raw EMG data to separate file for efficient retrieval
+        raw_emg_data_path = RESULTS_DIR / f"{file_id}_result_raw_emg.json"
+        
         try:
-            json_data = result.model_dump_json(indent=2)
             with open(result_path, "w") as f:
-                f.write(json_data)
-        except Exception as json_err:
-            raise HTTPException(status_code=500, detail=f"Error saving result JSON: {json_err}")
-
-        # Save the raw EMG data to a separate file
-        try:
+                f.write(result.model_dump_json(indent=2))
+                
+            # Save raw EMG data separately for efficient retrieval
             with open(raw_emg_data_path, "w") as f:
                 json.dump(processor.emg_data, f, indent=2)
-        except Exception as raw_data_err:
-            # This is not fatal, but should be logged
-            print(f"Warning: Could not save raw EMG data for {file_id}: {raw_data_err}")
-
-        # Update the cache
-        try:
+                
+            # Write cache marker pointing to the result file
             cache_marker_path.write_text(str(result_path.resolve()))
-        except Exception as cache_err:
-            # Not a fatal error, but log it
-            print(f"Warning: Could not write to cache for hash {request_hash}: {cache_err}")
+        except Exception as e:
+            print(f"Warning: Error saving result or cache marker: {e}")
 
         return result
 
     except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail=f"Error processing file: {str(e)}")
+        import traceback
+        print(f"ERROR in /upload: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 @app.get("/results", response_model=List[str])

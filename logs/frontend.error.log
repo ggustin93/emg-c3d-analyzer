@@ -1,6 +1,128 @@
-(node:12422) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:22172) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:12422) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-(node:13034) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:13034) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:22172) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/app/GeneratedPlotsDisplay.tsx
+TS1208: 'GeneratedPlotsDisplay.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:35
+TS2306: File '/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/app/GeneratedPlotsDisplay.tsx' is not a module.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import GeneratedPlotsDisplay from "@/components/app/GeneratedPlotsDisplay";
+       |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:35
+TS2307: Cannot find module '@/components/app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import GeneratedPlotsDisplay from "@/components/app/GeneratedPlotsDisplay";
+       |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:39
+TS2307: Cannot find module '../app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import { GeneratedPlotsDisplay } from '../app/GeneratedPlotsDisplay';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:39
+TS2307: Cannot find module '../app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import { GeneratedPlotsDisplay } from '../app/GeneratedPlotsDisplay';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:39
+TS2307: Cannot find module '../app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import { GeneratedPlotsDisplay } from '../app/GeneratedPlotsDisplay';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:39
+TS2307: Cannot find module '../app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import { GeneratedPlotsDisplay } from '../app/GeneratedPlotsDisplay';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:35:22
+TS2304: Cannot find name 'CombinedChartDataPoint'.
+    33 | interface GameSessionTabsProps {
+    34 |   selectedGameSession: GameSession;
+  > 35 |   emgTimeSeriesData: CombinedChartDataPoint[];
+       |                      ^^^^^^^^^^^^^^^^^^^^^^
+    36 |   mvcPercentage: number;
+    37 |   leftQuadChannelName: string | null;
+    38 |   rightQuadChannelName: string | null;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:57:18
+TS2304: Cannot find name 'CombinedChartDataPoint'.
+    55 |   currentChannelAnalyticsData: ChannelAnalyticsData | null;
+    56 |   
+  > 57 |   mainChartData: CombinedChartDataPoint[];
+       |                  ^^^^^^^^^^^^^^^^^^^^^^
+    58 |
+    59 |   dataPoints: number;
+    60 |   setDataPoints: (points: number) => void;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:15:39
+TS2307: Cannot find module '../app/GeneratedPlotsDisplay' or its corresponding type declarations.
+    13 | import ChannelSelection from "@/components/app/ChannelSelection";
+    14 | import DownsamplingControl from "@/components/app/DownsamplingControl";
+  > 15 | import { GeneratedPlotsDisplay } from '../app/GeneratedPlotsDisplay';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 | import StatsPanel from '@/components/app/StatsPanel';
+    17 | import { useEffect } from 'react';
+    18 | import type { EMGMetrics } from '@/types/session';
+
+ERROR in src/App.tsx:329:17
+TS2322: Type '{ selectedGameSession: GameSession; emgTimeSeriesData: CombinedChartDataPoint[]; mvcPercentage: number; leftQuadChannelName: string | null; ... 26 more ...; appIsLoading: false; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'sessionParams' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    327 |                 plotMode={plotMode}
+    328 |                 setPlotMode={setPlotMode}
+  > 329 |                 sessionParams={sessionParams}
+        |                 ^^^^^^^^^^^^^
+    330 |                 onSessionParamsChange={setSessionParams}
+    331 |                 appIsLoading={appIsLoading}
+    332 |               />
+
+ERROR in src/components/sessions/game-session-tabs.tsx:199:13
+TS2322: Type '{ selectedGameSession: GameSession; emgTimeSeriesData: CombinedChartDataPoint[]; mvcPercentage: number; leftQuadChannelName: string | null; rightQuadChannelName: string | null; analysisResult: EMGAnalysisResult; }' is not assignable to type 'IntrinsicAttributes & PerformanceCardProps'.
+  Property 'analysisResult' does not exist on type 'IntrinsicAttributes & PerformanceCardProps'.
+    197 |             leftQuadChannelName={leftQuadChannelName}
+    198 |             rightQuadChannelName={rightQuadChannelName}
+  > 199 |             analysisResult={analysisResult}
+        |             ^^^^^^^^^^^^^^
+    200 |           />
+    201 |           <Card>
+    202 |             <CardHeader>
+
+ERROR in src/components/sessions/performance-card.tsx:3:10
+TS2305: Module '"@/types/emg"' has no exported member 'CombinedChartDataPoint'.
+    1 | import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    2 | import { GameSession } from '@/types/session';
+  > 3 | import { CombinedChartDataPoint, EMGAnalysisResult } from '@/types/emg';
+      |          ^^^^^^^^^^^^^^^^^^^^^^
+    4 | import { StarIcon, ClockIcon, BarChartIcon, LightningBoltIcon, CodeIcon } from '@radix-ui/react-icons';
+    5 | import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
+    6 | import MetricCard from './metric-card';
+

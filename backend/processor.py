@@ -20,13 +20,12 @@ ASSUMPTIONS & PARAMETERS:
 
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
 from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
-from .plotting import plot_emg_with_contractions, plot_ghostly_report
+from .models import GameSessionParameters
 
 # Default parameters for EMG processing
 DEFAULT_SAMPLING_RATE = 1000  # Hz
@@ -53,6 +52,7 @@ class GHOSTLYC3DProcessor:
         self.game_metadata = {}
         self.analytics = {}
         self.analysis_functions = analysis_functions if analysis_functions is not None else ANALYSIS_FUNCTIONS
+        self.session_game_params_used: Optional[GameSessionParameters] = None
 
     def load_file(self) -> None:
         """Load the C3D file using ezc3d library."""
@@ -175,10 +175,11 @@ class GHOSTLYC3DProcessor:
             raise ValueError(f"An unexpected error occurred during EMG data extraction: {str(e)}")
 
     def calculate_analytics(self,
-                            threshold_factor: float,
-                            min_duration_ms: int,
-                            smoothing_window: int
-                            ) -> Dict:
+                           threshold_factor: float,
+                           min_duration_ms: int,
+                           smoothing_window: int,
+                           session_params: GameSessionParameters
+                          ) -> Dict:
         """
         Calculate summary analytics by applying the correct analysis to the correct signal type.
         - Contraction analysis is run on "activated" signals.
@@ -188,6 +189,11 @@ class GHOSTLYC3DProcessor:
             self.extract_emg_data()
 
         all_analytics = {}
+        
+        # Determine actual MVC amplitude threshold if session MVC value is provided
+        actual_mvc_threshold: Optional[float] = None
+        if session_params.session_mvc_value is not None and session_params.session_mvc_threshold_percentage is not None:
+            actual_mvc_threshold = session_params.session_mvc_value * (session_params.session_mvc_threshold_percentage / 100.0)
         
         # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
         base_names = sorted(list(set(
@@ -199,109 +205,114 @@ class GHOSTLYC3DProcessor:
             channel_analytics = {}
             channel_errors = {}
 
-            # Define potential channel names
-            raw_channel_name = f"{base_name} Raw"
-            activated_channel_name = f"{base_name} activated"
-
             # --- Full-Signal Analysis on RAW data ---
+            raw_channel_name = f"{base_name} Raw"
             if raw_channel_name in self.emg_data:
-                raw_signal_data = np.array(self.emg_data[raw_channel_name]['data'])
+                raw_signal = np.array(self.emg_data[raw_channel_name]['data'])
                 sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
                 
-                if raw_signal_data.size > 0:
-                    for func_name, func in self.analysis_functions.items():
-                        try:
-                            result = func(raw_signal_data, sampling_rate)
-                            channel_analytics.update(result)
-                        except Exception as e:
-                            channel_analytics[func_name] = None
-                            channel_errors[func_name] = f"Calculation failed: {e}"
-                else:
-                    channel_errors['raw_signal'] = "Empty raw signal"
-
-            # --- Contraction Analysis on ACTIVATED data ---
-            if activated_channel_name in self.emg_data:
-                activated_signal_data = np.array(self.emg_data[activated_channel_name]['data'])
-                sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
-
-                if activated_signal_data.size > 0:
+                # Apply all registered analysis functions to the raw signal
+                for func_name, func in self.analysis_functions.items():
                     try:
-                        contraction_stats = analyze_contractions(
-                            signal=activated_signal_data,
-                            sampling_rate=sampling_rate,
-                            threshold_factor=threshold_factor,
-                            min_duration_ms=min_duration_ms,
-                            smoothing_window=smoothing_window
-                        )
-                        channel_analytics.update(contraction_stats)
+                        result = func(raw_signal, sampling_rate)
+                        channel_analytics.update(result)
                     except Exception as e:
-                        channel_errors['contractions'] = f"Contraction analysis failed: {e}"
-                else:
-                    channel_errors['activated_signal'] = "Empty activated signal"
+                        channel_errors[func_name] = f"Analysis failed: {str(e)}"
+                        channel_analytics[func_name] = None
 
-            # Fallback for channels that are neither "Raw" nor "activated"
-            if not raw_channel_name in self.emg_data and not activated_channel_name in self.emg_data and base_name in self.emg_data:
-                 # This is a standalone channel, run all analytics on it.
-                signal_data = np.array(self.emg_data[base_name]['data'])
-                sampling_rate = self.emg_data[base_name]['sampling_rate']
-                if signal_data.size > 0:
-                    # Contractions
-                    try:
-                        contraction_stats = analyze_contractions(
-                            signal=signal_data,
-                            sampling_rate=sampling_rate,
-                            threshold_factor=threshold_factor,
-                            min_duration_ms=min_duration_ms,
-                            smoothing_window=smoothing_window
-                        )
-                        channel_analytics.update(contraction_stats)
-                    except Exception as e:
-                        channel_errors['contractions'] = f"Contraction analysis failed: {e}"
-                    # Full signal
-                    for func_name, func in self.analysis_functions.items():
-                        try:
-                            result = func(signal_data, sampling_rate)
-                            channel_analytics.update(result)
-                        except Exception as e:
-                            channel_analytics[func_name] = None
-                            channel_errors[func_name] = f"Calculation failed for {func_name}: {e}"
-
-            # Add any collected errors to the final output
-            if channel_errors:
-                # Ensure values are initialized even if calculations fail
-                channel_analytics.setdefault('contraction_count', 0)
-                channel_analytics.setdefault('avg_duration_ms', 0)
-                channel_analytics.setdefault('rms', 0)
-                # ... etc for other key metrics ...
-                channel_analytics['errors'] = channel_errors
+            # --- Contraction Analysis ---
+            # Prefer activated signal for contraction analysis, fall back to raw if needed
+            signal_for_contraction = None
+            activated_channel_name = f"{base_name} activated"
             
+            if activated_channel_name in self.emg_data:
+                signal_for_contraction = np.array(self.emg_data[activated_channel_name]['data'])
+                sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
+            elif raw_channel_name in self.emg_data:
+                signal_for_contraction = np.array(self.emg_data[raw_channel_name]['data'])
+                sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
+                channel_errors['contractions_source'] = "Used Raw signal for contractions (Activated not found)"
+            else:
+                # Try the base name itself as a fallback
+                if base_name in self.emg_data:
+                    signal_for_contraction = np.array(self.emg_data[base_name]['data'])
+                    sampling_rate = self.emg_data[base_name]['sampling_rate']
+                    channel_errors['contractions_source'] = f"Used {base_name} signal for contractions"
+
+            if signal_for_contraction is not None:
+                try:
+                    contraction_stats = analyze_contractions(
+                        signal=signal_for_contraction,
+                        sampling_rate=sampling_rate,
+                        threshold_factor=threshold_factor,
+                        min_duration_ms=min_duration_ms,
+                        smoothing_window=smoothing_window,
+                        mvc_amplitude_threshold=actual_mvc_threshold
+                    )
+                    channel_analytics.update(contraction_stats)
+                except Exception as e:
+                    channel_errors['contractions'] = f"Contraction analysis failed: {str(e)}"
+                    # Provide default values for required fields
+                    channel_analytics.update({
+                        'contraction_count': 0,
+                        'avg_duration_ms': 0.0,
+                        'min_duration_ms': 0.0,
+                        'max_duration_ms': 0.0,
+                        'total_time_under_tension_ms': 0.0,
+                        'avg_amplitude': 0.0,
+                        'max_amplitude': 0.0,
+                        'contractions': [],
+                        'good_contraction_count': 0 if actual_mvc_threshold is not None else None,
+                        'mvc_threshold_actual_value': actual_mvc_threshold
+                    })
+            else:
+                channel_errors['contractions'] = "No suitable signal found for contraction analysis"
+                # Provide default values for required fields
+                channel_analytics.update({
+                    'contraction_count': 0,
+                    'avg_duration_ms': 0.0,
+                    'min_duration_ms': 0.0,
+                    'max_duration_ms': 0.0,
+                    'total_time_under_tension_ms': 0.0,
+                    'avg_amplitude': 0.0,
+                    'max_amplitude': 0.0,
+                    'contractions': [],
+                    'good_contraction_count': 0 if actual_mvc_threshold is not None else None,
+                    'mvc_threshold_actual_value': actual_mvc_threshold
+                })
+
+            if channel_errors:
+                channel_analytics['errors'] = channel_errors
+
             all_analytics[base_name] = channel_analytics
 
         self.analytics = all_analytics
-        return self.analytics
+        return all_analytics
 
     def process_file(self,
-                     threshold_factor: float = DEFAULT_THRESHOLD_FACTOR,
-                     min_duration_ms: int = DEFAULT_MIN_DURATION_MS,
-                     smoothing_window: int = DEFAULT_SMOOTHING_WINDOW) -> Dict:
+                     processing_opts,
+                     session_game_params: GameSessionParameters
+                    ) -> Dict:
         """
         Process the C3D file and return complete analysis results.
-
-        Args:
-            threshold_factor: Factor of max amplitude to use as threshold
-            min_duration_ms: Minimum duration of a contraction in milliseconds
-            smoothing_window: Window size for smoothing the signal
-
-        Returns:
-            Dictionary with analysis results
         """
         self.load_file()
-        self.extract_metadata()
+        c3d_metadata = self.extract_metadata()
+        
+        # Store the session game parameters that were used for this processing run
+        self.session_game_params_used = session_game_params
+        
+        # Combine C3D metadata with session game parameters for the final metadata object
+        final_metadata_dict = {**c3d_metadata, "session_parameters_used": session_game_params.model_dump()}
+        self.game_metadata = final_metadata_dict
+
         self.extract_emg_data()
+        
         self.calculate_analytics(
-            threshold_factor=threshold_factor,
-            min_duration_ms=min_duration_ms,
-            smoothing_window=smoothing_window
+            threshold_factor=processing_opts.threshold_factor,
+            min_duration_ms=processing_opts.min_duration_ms,
+            smoothing_window=processing_opts.smoothing_window,
+            session_params=session_game_params
         )
 
         return {
@@ -332,21 +343,28 @@ class GHOSTLYC3DProcessor:
         if channel not in self.emg_data:
             raise ValueError(f"Channel {channel} not found in EMG data")
 
+        # Get base channel name without 'Raw' or 'activated' suffix
+        base_name = channel.replace(' Raw', '').replace(' activated', '')
+        
+        # Get signal data
         signal_data = np.array(self.emg_data[channel]['data'])
         time_axis = np.array(self.emg_data[channel]['time_axis'])
-        sampling_rate = self.emg_data[channel]['sampling_rate']
-
-        plt.figure(figsize=(12, 4))
-        plt.plot(time_axis, signal_data, label='EMG Signal', color=EMG_COLOR)
-        plt.title(f'EMG Signal for {channel}')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Amplitude')
-        plt.legend()
-
-        # Plot identified contractions
-        contractions = analyze_contractions(signal_data, sampling_rate)
-        for contraction in contractions:
-            plt.axvspan(contraction['start_time'], contraction['end_time'], color=CONTRACTION_COLOR, alpha=0.3)
-
-        plt.savefig(save_path)
-        plt.close()
+        
+        # Get contractions from analytics if available
+        contractions = []
+        if base_name in self.analytics and 'contractions' in self.analytics[base_name]:
+            contractions = self.analytics[base_name]['contractions']
+        
+        # Get analytics for the channel
+        analytics = self.analytics.get(base_name, None)
+        
+        # Use the imported plotting function
+        return plot_emg_with_contractions(
+            channel_name=channel,
+            signal_data=signal_data,
+            time_axis=time_axis,
+            contractions=contractions,
+            analytics=analytics,
+            save_path=save_path,
+            show_plot=False
+        )

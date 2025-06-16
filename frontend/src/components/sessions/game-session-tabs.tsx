@@ -2,23 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { GameSession, EMGMetrics as FrontendEMGMetrics } from '@/types/session';
-import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EmgSignalData, GameMetadata } from '@/types/emg';
+import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EmgSignalData, GameSessionParameters } from '../../types/emg';
 import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon } from '@radix-ui/react-icons';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
 import MetricCard from './metric-card';
-import EMGChart, { CombinedChartDataPoint } from '@/components/EMGChart';
+import EMGChart, { CombinedChartDataPoint } from '../EMGChart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 import MetadataDisplay from "@/components/app/MetadataDisplay";
 import ChannelSelection from "@/components/app/ChannelSelection";
 import DownsamplingControl from "@/components/app/DownsamplingControl";
-import GeneratedPlotsDisplay from "@/components/app/GeneratedPlotsDisplay";
 import StatsPanel from '@/components/app/StatsPanel';
 import { useEffect } from 'react';
 import type { EMGMetrics } from '@/types/session';
 import PerformanceCard from './performance-card';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import SessionConfigPanel from '../SessionConfigPanel';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -37,6 +37,8 @@ interface GameSessionTabsProps {
   rightQuadChannelName: string | null;
 
   analysisResult: EMGAnalysisResult | null;
+  mvcThresholdForPlot?: number | null;
+  sessionExpectedContractions?: number | null;
   
   muscleChannels: string[];
   allAvailableChannels: string[];
@@ -62,6 +64,9 @@ interface GameSessionTabsProps {
   onTabChange: (value: string) => void;
   plotMode: 'raw' | 'activated';
   setPlotMode: (mode: 'raw' | 'activated') => void;
+  sessionParams: GameSessionParameters;
+  onSessionParamsChange: (params: GameSessionParameters) => void;
+  appIsLoading: boolean;
 }
 
 export default function GameSessionTabs({
@@ -71,6 +76,8 @@ export default function GameSessionTabs({
   leftQuadChannelName,
   rightQuadChannelName,
   analysisResult,
+  mvcThresholdForPlot,
+  sessionExpectedContractions,
   muscleChannels,
   allAvailableChannels,
   plotChannel1Name,
@@ -91,6 +98,9 @@ export default function GameSessionTabs({
   onTabChange,
   plotMode,
   setPlotMode,
+  sessionParams,
+  onSessionParamsChange,
+  appIsLoading,
 }: GameSessionTabsProps) {
 
   const getPerformanceScore = (metrics?: EMGMetrics) => {
@@ -172,20 +182,36 @@ export default function GameSessionTabs({
               chartData={mainChartData} 
               channel1Name={plotChannel1Name}
               channel2Name={plotChannel2Name}
+              mvcThresholdForPlot={mvcThresholdForPlot}
             />
           </CardContent>
         </Card>
-        <GeneratedPlotsDisplay plots={analysisResult.plots} />
       </TabsContent>
 
       <TabsContent value="stats">
-        <PerformanceCard 
-          selectedGameSession={selectedGameSession}
-          emgTimeSeriesData={emgTimeSeriesData}
-          mvcPercentage={mvcPercentage}
-          leftQuadChannelName={leftQuadChannelName}
-          rightQuadChannelName={rightQuadChannelName}
-        />
+        <div className="space-y-6">
+          <PerformanceCard 
+            selectedGameSession={selectedGameSession}
+            emgTimeSeriesData={emgTimeSeriesData}
+            mvcPercentage={mvcPercentage}
+            leftQuadChannelName={leftQuadChannelName}
+            rightQuadChannelName={rightQuadChannelName}
+            analysisResult={analysisResult}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Parameters</CardTitle>
+              <CardDescription>Adjust MVC and other parameters for this session's analysis.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SessionConfigPanel
+                sessionParams={sessionParams}
+                onParamsChange={onSessionParamsChange}
+                disabled={appIsLoading}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </TabsContent>
 
       <TabsContent value="analytics">
@@ -205,6 +231,7 @@ export default function GameSessionTabs({
               selectedChannel={selectedChannelForStats}
               availableChannels={muscleChannels}
               onChannelSelect={setSelectedChannelForStats}
+              sessionExpectedContractions={sessionExpectedContractions}
             />
           </CardContent>
         </Card>

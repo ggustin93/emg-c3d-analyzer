@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameSession } from '@/types/session';
+import { EMGAnalysisResult } from '@/types/emg';
 import { CombinedChartDataPoint } from '@/components/EMGChart';
 import { StarIcon, ClockIcon, BarChartIcon, LightningBoltIcon, CodeIcon } from '@radix-ui/react-icons';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
 import MetricCard from './metric-card';
+import { Progress } from '../ui/progress';
 
 interface PerformanceCardProps {
   selectedGameSession: GameSession;
@@ -11,7 +13,22 @@ interface PerformanceCardProps {
   mvcPercentage: number;
   leftQuadChannelName: string | null;
   rightQuadChannelName: string | null;
+  analysisResult: EMGAnalysisResult | null;
 }
+
+const calculatePerformanceScore = (goodCount: number, expectedCount: number | null): number => {
+  if (!expectedCount || expectedCount <= 0) return 0;
+  const ratio = goodCount / expectedCount;
+  return Math.min(Math.round(ratio * 100), 100);
+};
+
+const getScoreLabel = (score: number): { label: string; color: string } => {
+  if (score >= 90) return { label: "Excellent", color: "text-green-600" };
+  if (score >= 75) return { label: "Good", color: "text-emerald-500" };
+  if (score >= 60) return { label: "Satisfactory", color: "text-amber-500" };
+  if (score >= 40) return { label: "Needs Improvement", color: "text-orange-500" };
+  return { label: "Insufficient", color: "text-red-500" };
+};
 
 export default function PerformanceCard({
   selectedGameSession,
@@ -19,115 +36,47 @@ export default function PerformanceCard({
   mvcPercentage,
   leftQuadChannelName,
   rightQuadChannelName,
+  analysisResult,
 }: PerformanceCardProps) {
+  const goodContractions = analysisResult?.analytics[leftQuadChannelName || '']?.good_contraction_count ?? 0;
+  const expectedContractions = analysisResult?.metadata.session_parameters_used?.session_expected_contractions ?? null;
+  const performanceScore = calculatePerformanceScore(goodContractions, expectedContractions);
+  const scoreDetails = getScoreLabel(performanceScore);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base font-medium flex items-center">
-            <StarIcon className="h-4 w-4 mr-2" /> Activation Points
+            <StarIcon className="h-4 w-4 mr-2" /> Performance Score
           </CardTitle>
-          <CardDescription>Total points earned and contraction breakdown for the game session.</CardDescription>
+          <CardDescription>Score based on good contractions vs. expected contractions.</CardDescription>
         </CardHeader>
-        <CardContent className="pt-0 flex flex-col items-center">
-          <div className="h-[250px] w-full flex items-center justify-center mb-3">
-            {selectedGameSession.statistics && selectedGameSession.metrics && selectedGameSession.parameters ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Achieved', value: selectedGameSession.statistics.activationPoints || 0 },
-                      { name: 'Remaining', value: 100 - (selectedGameSession.statistics.activationPoints || 0) }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={90}
-                    innerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    <Cell key={`cell-achieved`} fill="hsl(var(--chart-1))" />
-                    <Cell key={`cell-remaining`} fill="hsl(var(--muted))" />
-                  </Pie>
-                  <PieTooltip formatter={(value: number, name: string) => [`${value} pts`, name]} />
-                  <text
-                    x="50%"
-                    y="48%"
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    style={{ fontSize: '28px', fontWeight: 'bold', fill: 'hsl(var(--foreground))' }}
-                  >
-                    {selectedGameSession.statistics.activationPoints || 0}
-                  </text>
-                  <text
-                    x="50%"
-                    y="60%"
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    style={{ fontSize: '12px', fill: 'hsl(var(--muted-foreground))' }}
-                  >
-                    points
-                  </text>
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                No performance data available
-              </div>
-            )}
-          </div>
-          {selectedGameSession.metrics && (
-            <div className="text-center">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-4">Contraction Breakdown</h4>
-              <div className="relative p-4 rounded-lg bg-slate-50 border overflow-hidden">
-                <div className="absolute top-1 left-1 z-10">
-                    <span className="text-xs font-semibold text-slate-500 bg-slate-200/80 px-2 py-1 rounded">
-                        Coming soon?
-                    </span>
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 opacity-50">
-                    <MetricCard
-                        icon={<CodeIcon className="h-5 w-5" />}
-                        title="Long (L)"
-                        description="Long contractions, left"
-                        value={selectedGameSession.metrics.longContractionsLeft ?? 0}
-                        unit=""
-                        isInteger={true}
-                    />
-                    <MetricCard
-                        icon={<CodeIcon className="h-5 w-5" />}
-                        title="Long (R)"
-                        description="Long contractions, right"
-                        value={selectedGameSession.metrics.longContractionsRight ?? 0}
-                        unit=""
-                        isInteger={true}
-                    />
-                    <MetricCard
-                        icon={<LightningBoltIcon className="h-5 w-5" />}
-                        title="Short (L)"
-                        description="Short contractions, left"
-                        value={selectedGameSession.metrics.shortContractionsLeft ?? 0}
-                        unit=""
-                        isInteger={true}
-                    />
-                    <MetricCard
-                        icon={<LightningBoltIcon className="h-5 w-5" />}
-                        title="Short (R)"
-                        description="Short contractions, right"
-                        value={selectedGameSession.metrics.shortContractionsRight ?? 0}
-                        unit=""
-                        isInteger={true}
-                    />
-                </div>
-              </div>
+        <CardContent className="pt-0">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+            <div className="mb-3 md:mb-0">
+              <h4 className="text-lg font-semibold">{scoreDetails.label}</h4>
+              <p className="text-sm text-muted-foreground">
+                {goodContractions} good contractions out of {expectedContractions} expected
+              </p>
             </div>
-          )}
+            <div className="flex items-center space-x-2">
+              <div className="text-3xl font-bold">{performanceScore}%</div>
+            </div>
+          </div>
+          <Progress value={performanceScore} className="h-2" />
         </CardContent>
       </Card>
 
       <div className="lg:col-span-1 space-y-4">
+        <MetricCard
+          title="Good Contractions"
+          value={goodContractions}
+          unit={`/ ${expectedContractions}`}
+          isInteger={true}
+          description="Contractions meeting MVC threshold"
+          icon={<LightningBoltIcon className="h-4 w-4" />}
+        />
         <MetricCard
           title="Duration"
           value={(selectedGameSession.statistics?.duration || 0) / 60}
@@ -143,23 +92,6 @@ export default function PerformanceCard({
           unit=""
           isInteger
         />
-        <div className="relative p-1 rounded-lg bg-slate-50/50">
-          <div className="absolute top-2 left-2 z-10">
-            <span className="text-xs font-semibold text-slate-500 bg-slate-200/80 px-2 py-1 rounded">
-              Coming soon?
-            </span>
-          </div>
-          <div className="opacity-50">
-            <MetricCard
-                title="Inactivity"
-                description="Rest or disengagement"
-                value={selectedGameSession.statistics?.inactivityPeriods ?? 0}
-                unit="periods"
-                isInteger={true}
-                icon={<ClockIcon className="h-4 w-4" />}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
