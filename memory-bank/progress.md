@@ -115,3 +115,8 @@
 - [ ] Harden security (if applicable, e.g., auth).
 - [ ] Comprehensive documentation.
 - [ ] CI/CD pipeline.
+
+## Recent Progress
+- Successfully implemented caching and async operations in the backend.
+- Resolved Python import errors with standardized imports.
+- Improved `start_dev.sh` for better startup and dependency management.

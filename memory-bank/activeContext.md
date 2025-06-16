@@ -70,4 +70,11 @@
 ### Future Considerations
 1.  A more robust cache-clearing mechanism or TTL (Time To Live) policy.
 2.  Database integration remains a valid future step for more complex querying and data management.
-3.  CI/CD pipeline for automated testing and deployment. 
+3.  CI/CD pipeline for automated testing and deployment.
+
+## Current Focus
+- Optimize backend performance with caching and async operations.
+- Resolve Python import errors with standardized import strategy.
+
+## Recent Changes
+- Updated `start_dev.sh` for improved dependency handling and server startup. 

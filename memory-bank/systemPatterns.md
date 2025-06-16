@@ -130,4 +130,11 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - Integration tests for API
 - Performance benchmarks
 - Error case validation
-- Security testing 
+- Security testing
+
+## Caching Mechanism
+- Use file content and parameter hashes for cache keys.
+- Store cache markers in `data/cache/` for robustness.
+
+## Async Processing
+- Utilize `run_in_threadpool` for CPU-bound operations to maintain API responsiveness. 

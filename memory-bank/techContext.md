@@ -173,4 +173,10 @@ ignore = ['W291', 'W292', 'W293']
 - API integration tests (current coverage may vary).
 
 ### Deprecated Scripts
-- `setup.sh` has been deleted as its functionality was outdated and is now covered by `README.md` manual setup instructions. `start_dev.sh` updated accordingly. 
+- `setup.sh` has been deleted as its functionality was outdated and is now covered by `README.md` manual setup instructions. `start_dev.sh` updated accordingly.
+
+## Project Structure
+- Poetry files moved to the root directory for better management.
+
+## Import Strategy
+- Standardized relative imports within the backend module to resolve import errors. 

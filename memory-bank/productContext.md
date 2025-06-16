@@ -16,6 +16,8 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 - Easy access to patient progress
 - Automated report generation
 - Intuitive interface for data analysis
+- Ensure fast and reliable data retrieval for users.
+- Improve server responsiveness to enhance user interaction.
 
 ### For Researchers
 - Access to raw EMG data
