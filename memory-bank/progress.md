@@ -10,9 +10,10 @@
 ✅ Directory Structure Established
 ✅ Basic Error Handling (Initial versions)
 ✅ CORS Support (Backend)
-✅ `start_dev.sh` for unified local development server start.
+✅ **Optimized `start_dev.sh`**: The script now performs conditional `npm install` and includes a `--clean` flag.
 ✅ `README.md` significantly improved for professional open-source standards.
 ✅ Local setup process streamlined (deleted `setup.sh`, `README.md` is source of truth).
+✅ **Robust Caching & Performance Overhaul**: Implemented a stable, multi-layered performance strategy.
 
 ### Data Processing & Analytics (Backend)
 ✅ C3D File Upload
@@ -27,14 +28,16 @@
     - ✅ MPF (Mean Power Frequency)
     - ✅ MDF (Median Frequency)
     - ✅ Dimitrov's Fatigue Index (FI_nsm5)
-✅ **Aggregated API Response:**
+✅ **Optimized API Response:**
     - ✅ API returns a clean, unified analytics object per muscle.
-    - ✅ API includes the `source_filename` in the response.
+    - ✅ API includes detailed contraction data in the response.
+    - ✅ `/upload` endpoint is now cached based on file content and parameters.
+    - ✅ `/raw-data` endpoint now reads from pre-serialized data for high performance.
 ✅ Plot Generation (Backend logic)
 
 ### API Endpoints (Backend)
 ✅ File Upload (`/upload`)
-✅ Raw Data Access (`/raw-data/{result_id}/{channel_name}`)
+✅ High-Performance Raw Data Access (`/raw-data/{result_id}/{channel_name}`)
 ✅ Results Retrieval
 
 ### Frontend Development
@@ -53,6 +56,7 @@
     - ✅ `StatsPanel` refined to show only clinically relevant amplitude metrics.
     - ✅ Fixed number formatting to correctly display scientific notation.
     - ✅ Finalized tab bar layout (removed redundant tab, restored full-width style).
+✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
 
@@ -100,9 +104,14 @@
 - **Completed major UI/UX polish based on user feedback** (tab order, naming, default views, data formatting, clinical clarity).
 - The application is now a feature-complete and stable analysis tool from a user's perspective.
 
-### Milestone 4: Production Hardening & Automation 🚧
-- [ ] Achieve high test coverage.
+### Milestone 4: Performance & Caching Overhaul ✅
+- **Implemented a robust, multi-layered caching system** on both the backend (request hashing) and frontend (in-memory).
+- **Pre-serialized all EMG data** during initial processing to make subsequent data retrieval for plots near-instantaneous.
+- **Optimized backend processing** by moving blocking operations into a thread pool.
+- **Streamlined the development startup script** for faster, more reliable execution.
+
+### Milestone 5: Production Hardening & Automation 🚧
+- [ ] Achieve high test coverage for caching and processing logic.
 - [ ] Harden security (if applicable, e.g., auth).
-- [ ] Performance optimization and stress testing.
 - [ ] Comprehensive documentation.
 - [ ] CI/CD pipeline.

@@ -1,15 +1,44 @@
 INFO:     Will watch for changes in these directories: ['/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
-INFO:     Started reloader process [24383] using StatReload
-INFO:     Started server process [24386]
+INFO:     Started reloader process [12366] using StatReload
+INFO:     Started server process [12389]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-WARNING:  StatReload detected changes in 'backend/main.py'. Reloading...
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [24386]
-WARNING:  StatReload detected changes in 'backend/main.py'. Reloading...
+INFO:     Finished server process [12389]
+INFO:     Started server process [12734]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
 WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
-WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
-WARNING:  StatReload detected changes in 'backend/processor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12734]
+INFO:     Started server process [12760]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12760]
+INFO:     Started server process [12809]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'backend/api.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12809]
+INFO:     Started server process [12939]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+INFO:     Started reloader process [12979] using StatReload
+INFO:     Started server process [12998]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.

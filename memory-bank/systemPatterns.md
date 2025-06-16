@@ -80,12 +80,18 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 ## Component Relationships
 
 ### Data Flow
-1.  **File Upload**: Frontend sends C3D file to Backend API.
-2.  **Processing**: Backend's `GHOSTLYC3DProcessor` extracts "Raw" and "Activated" channels.
-3.  **Targeted Analysis**: Runs contraction analysis on "Activated" signals and full-signal analysis on "Raw" signals.
-4.  **Aggregation**: Merges results into a clean analytics object.
-5.  **API Response**: Backend sends the aggregated results, a list of all available channels, and the source filename back to the Frontend.
-6.  **UI Display**: Frontend uses the clean analytics keys to populate the "Analyse Muscle" dropdown. It uses the `available_channels` list to request the correct "Raw" data for plotting.
+1.  **File Upload**: Frontend sends C3D file and processing parameters to Backend API (`/upload`).
+2.  **Caching Check**: The backend calculates a hash of the file content + parameters and checks if a result already exists in the `data/cache` directory. If so, it returns the cached result immediately.
+3.  **Processing (Cache Miss)**: If no cache entry is found, the backend's `GHOSTLYC3DProcessor` extracts "Raw" and "Activated" channels. This heavy processing is run in a thread pool to avoid blocking the server.
+4.  **Targeted Analysis**: Runs contraction analysis on "Activated" signals and full-signal analysis on "Raw" signals.
+5.  **Result Persistence**:
+    *   The main analysis object (containing aggregated results) is saved to a JSON file in `data/results`.
+    *   All raw and activated signal data is serialized to a separate `_raw_emg.json` file in `data/results`.
+    *   A marker file containing the path to the main result is created in `data/cache`.
+6.  **API Response**: Backend sends the aggregated results, a list of all available channels, and the source filename back to the Frontend.
+7.  **UI Display**: Frontend uses the clean analytics keys to populate the "Analyse Muscle" dropdown. It uses the `available_channels` list to request the correct data for plotting.
+8.  **Plot Data Fetching**: When a plot is requested, the frontend calls the `/raw-data` endpoint.
+9.  **Optimized Data Retrieval**: The `/raw-data` endpoint reads directly from the pre-serialized `_raw_emg.json` file, providing near-instant access without reprocessing the C3D file.
 
 ### Dependencies
 - FastAPI ← Pydantic Models
@@ -103,7 +109,10 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - User feedback
 
 ### Performance Optimization
-- Async operations
+- Async operations with `FastAPI.concurrency.run_in_threadpool`.
+- **Backend Request Caching**: The `/upload` endpoint uses a sha256 hash of file content and processing parameters for robust caching.
+- **Data Pre-serialization**: All EMG data is extracted and saved to a dedicated file during initial processing to accelerate subsequent reads.
+- **Frontend In-Memory Caching**: A simple `Map` caches downsampled plot data in the `useEmgDataFetching` hook to prevent redundant API calls.
 - Result caching
 - Efficient file handling
 - Memory management

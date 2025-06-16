@@ -36,6 +36,7 @@ class ChannelAnalytics(BaseModel):
     mpf: Optional[float] = None
     mdf: Optional[float] = None
     fatigue_index_fi_nsm5: Optional[float] = None
+    contractions: Optional[List[Contraction]] = None
     errors: Optional[Dict[str, str]] = None
 
 class GameMetadata(BaseModel):
@@ -72,4 +73,5 @@ class EMGRawData(BaseModel):
     sampling_rate: float
     data: List[float]
     time_axis: List[float]
+    activated_data: Optional[List[float]] = None
     contractions: Optional[List[Contraction]] = None

@@ -5,6 +5,9 @@ import { DownsamplingControls } from './useDataDownsampling'; // Assuming useDat
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
+// Simple in-memory cache
+const cache = new Map<string, EmgSignalData>();
+
 export interface EmgDataFetchingControls {
   plotChannel1Data: EmgSignalData | null;
   plotChannel2Data: EmgSignalData | null;
@@ -51,6 +54,12 @@ export const useEmgDataFetching = (
 
   const fetchChannelRawData = useCallback(async (fileId: string, channelName: string): Promise<EmgSignalData | null> => {
     if (!fileId || !channelName) return null;
+    
+    const cacheKey = `${fileId}-${channelName}-${dataPoints}`;
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!;
+    }
+
     try {
       const response = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId}/${channelName}`);
       const fetchedData = response.data;
@@ -63,7 +72,10 @@ export const useEmgDataFetching = (
         return { ...fetchedData, data: [], time_axis: [] };
       }
       const { data: optimizedData, timeAxis: optimizedTimeAxis } = downsampleData(fetchedData.data, fetchedData.time_axis, dataPoints);
-      return { ...fetchedData, channel_name: channelName, data: optimizedData, time_axis: optimizedTimeAxis };
+      const result = { ...fetchedData, channel_name: channelName, data: optimizedData, time_axis: optimizedTimeAxis };
+      
+      cache.set(cacheKey, result); // Store the processed (downsampled) data in cache
+      return result;
     } catch (err: any) {
       console.error(`Error fetching raw EMG data for ${channelName}:`, err);
       return null;

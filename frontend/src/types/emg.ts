@@ -3,6 +3,14 @@ export interface EMGPoint {
   value: number;
 }
 
+export interface Contraction {
+  start_time_ms: number;
+  end_time_ms: number;
+  duration_ms: number;
+  mean_amplitude: number;
+  max_amplitude: number;
+}
+
 export interface StatsData {
   min: number; 
   max: number; 
@@ -16,6 +24,8 @@ export interface EmgSignalData {
   sampling_rate: number;
   data: number[];
   time_axis: number[];
+  activated_data?: number[];
+  contractions?: Contraction[];
   original_length: number;
   url?: string; 
 }
@@ -53,6 +63,7 @@ export interface ChannelAnalyticsData {
   mpf?: number;
   mdf?: number;
   fatigue_index_fi_nsm5?: number;
+  contractions?: Contraction[];
   errors?: { [metric: string]: string };
 }
 

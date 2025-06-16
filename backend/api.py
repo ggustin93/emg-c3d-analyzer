@@ -23,24 +23,27 @@ import os
 import json
 import uuid
 import shutil
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Form
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
-from models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics
+from .processor import GHOSTLYC3DProcessor, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW
+from .models import EMGAnalysisResult, EMGRawData, ProcessingOptions, GameMetadata, ChannelAnalytics
 
 # Storage directories
 UPLOAD_DIR = Path("./data/uploads")
 RESULTS_DIR = Path("./data/results")
 PLOTS_DIR = Path("./data/plots")
+CACHE_DIR = Path("./data/cache")
 
-for directory in [UPLOAD_DIR, RESULTS_DIR, PLOTS_DIR]:
+for directory in [UPLOAD_DIR, RESULTS_DIR, PLOTS_DIR, CACHE_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 # Initialize FastAPI app
@@ -67,30 +70,21 @@ app.mount("/static", StaticFiles(directory="data"), name="static")
 @app.get("/")
 async def root():
     """Root endpoint returning API information."""
-    return {
+    return JSONResponse(content={
         "name": "GHOSTLY+ EMG Analysis API",
         "version": "1.0.0",
-        "description":
-        "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
+        "description": "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
         "endpoints": {
-            "upload":
-            "POST /upload - Upload and process a C3D file",
-            "results":
-            "GET /results - List all available result files",
-            "result_detail":
-            "GET /results/{result_id} - Get processing results for a specific file",
-            "raw_data":
-            "GET /raw-data/{result_id}/{channel} - Get raw EMG data for a specific channel",
-            "plot":
-            "GET /plot/{result_id}/{channel} - Generate and return a plot image for a specific channel",
-            "report":
-            "GET /report/{result_id} - Generate and return a full report image",
-            "patients":
-            "GET /patients - List all patient IDs",
-            "patient_results":
-            "GET /patients/{patient_id}/results - Get all results for a specific patient"
+            "upload": "POST /upload - Upload and process a C3D file",
+            "results": "GET /results - List all available result files",
+            "result_detail": "GET /results/{result_id} - Get processing results for a specific file",
+            "raw_data": "GET /raw-data/{result_id}/{channel} - Get raw EMG data for a specific channel",
+            "plot": "GET /plot/{result_id}/{channel} - Generate and return a plot image for a specific channel",
+            "report": "GET /report/{result_id} - Generate and return a full report image",
+            "patients": "GET /patients - List all patient IDs",
+            "patient_results": "GET /patients/{patient_id}/results - Get all results for a specific patient"
         }
-    }
+    })
 
 
 @app.post("/upload", response_model=EMGAnalysisResult)
@@ -106,6 +100,43 @@ async def upload_file(file: UploadFile = File(...),
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
 
+    # --- Caching Logic ---
+    # Read file content for hashing
+    file_content = await file.read()
+    await file.seek(0)  # Reset file pointer after reading
+
+    # Create a hash of the file content and processing parameters
+    hasher = hashlib.sha256()
+    hasher.update(file_content)
+    hasher.update(str(threshold_factor).encode())
+    hasher.update(str(min_duration_ms).encode())
+    hasher.update(str(smoothing_window).encode())
+    hasher.update(str(generate_plots).encode())
+    # Include identifiers in hash to ensure distinct cache entries
+    if patient_id: hasher.update(patient_id.encode())
+    if user_id: hasher.update(user_id.encode())
+    if session_id: hasher.update(session_id.encode())
+    
+    request_hash = hasher.hexdigest()
+    cache_marker_path = CACHE_DIR / request_hash
+
+    # Check for cache hit
+    if cache_marker_path.exists():
+        try:
+            result_path_str = cache_marker_path.read_text()
+            result_path = Path(result_path_str)
+            if result_path.exists():
+                with open(result_path, "r") as f:
+                    return json.load(f)
+            else:
+                # Stale cache marker, remove it and proceed
+                cache_marker_path.unlink()
+        except Exception:
+            # Handle potential errors reading marker or JSON
+            pass # Proceed to process as a cache miss
+
+    # --- End Caching Logic ---
+
     # Create unique filename to avoid collisions
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_id = str(uuid.uuid4())
@@ -115,7 +146,7 @@ async def upload_file(file: UploadFile = File(...),
     # Save uploaded file
     try:
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(file_content) # Use the content we already read
     except Exception as e:
         raise HTTPException(status_code=500,
                             detail=f"Error saving file: {str(e)}")
@@ -123,7 +154,10 @@ async def upload_file(file: UploadFile = File(...),
     # Process the file
     try:
         processor = GHOSTLYC3DProcessor(str(file_path))
-        result_data = processor.process_file(
+
+        # Wrap the CPU-bound processing in run_in_threadpool
+        result_data = await run_in_threadpool(
+            processor.process_file,
             threshold_factor=threshold_factor,
             min_duration_ms=min_duration_ms,
             smoothing_window=smoothing_window
@@ -136,7 +170,7 @@ async def upload_file(file: UploadFile = File(...),
         # Generate plots if requested
         plots = {}
         if generate_plots:
-            # Create plot directory for this file
+            # This part involves IO and could also be in a threadpool if complex
             plot_dir = PLOTS_DIR / file_id
             plot_dir.mkdir(parents=True, exist_ok=True)
 
@@ -144,8 +178,10 @@ async def upload_file(file: UploadFile = File(...),
             for channel in result_data['analytics'].keys():
                 try:
                     plot_path = plot_dir / f"{channel}.png"
-                    processor.plot_emg_with_contractions(
-                        channel=channel, save_path=str(plot_path))
+                    await run_in_threadpool(
+                        processor.plot_emg_with_contractions,
+                        channel=channel, save_path=str(plot_path)
+                    )
                     plots[channel] = f"/static/plots/{file_id}/{channel}.png"
                 except Exception as plot_err:
                     print(f"Error generating plot for {channel}: {plot_err}")
@@ -153,7 +189,10 @@ async def upload_file(file: UploadFile = File(...),
             # Generate summary report
             try:
                 report_path = plot_dir / "report.png"
-                processor.plot_ghostly_report(save_path=str(report_path))
+                await run_in_threadpool(
+                    processor.plot_ghostly_report,
+                    save_path=str(report_path)
+                )
                 plots["report"] = f"/static/plots/{file_id}/report.png"
             except Exception as report_err:
                 print(f"Error generating report: {report_err}")
@@ -179,32 +218,35 @@ async def upload_file(file: UploadFile = File(...),
         if session_id:
             result.session_id = session_id
 
-        # Save result to JSON file
-        result_filename = f"{timestamp}_{file_id}"
-        if patient_id:
-            result_filename = f"{patient_id}_{result_filename}"
-        if session_id:
-            result_filename = f"{session_id}_{result_filename}"
+        # --- Save results and update cache ---
 
-        result_path = RESULTS_DIR / f"{result_filename}.json"
+        # Define result paths
+        result_filename_base = f"{file_id}_result"
+        result_path = RESULTS_DIR / f"{result_filename_base}.json"
+        raw_emg_data_path = RESULTS_DIR / f"{result_filename_base}_raw_emg.json"
 
-        # Handle Pydantic serialization based on version
+        # Save the main analysis result JSON
         try:
-            # Try Pydantic v2 serialization first
-            if hasattr(result, "model_dump_json"):
-                json_data = result.model_dump_json(indent=2)
-            else:
-                # Fallback to Pydantic v1
-                json_data = result.json(indent=2)
-
+            json_data = result.model_dump_json(indent=2)
             with open(result_path, "w") as f:
                 f.write(json_data)
         except Exception as json_err:
-            # Direct JSON serialization as final fallback
-            with open(result_path, "w") as f:
-                result_dict = result.dict() if hasattr(
-                    result, "dict") else result.model_dump()
-                json.dump(result_dict, f, indent=2, default=str)
+            raise HTTPException(status_code=500, detail=f"Error saving result JSON: {json_err}")
+
+        # Save the raw EMG data to a separate file
+        try:
+            with open(raw_emg_data_path, "w") as f:
+                json.dump(processor.emg_data, f, indent=2)
+        except Exception as raw_data_err:
+            # This is not fatal, but should be logged
+            print(f"Warning: Could not save raw EMG data for {file_id}: {raw_data_err}")
+
+        # Update the cache
+        try:
+            cache_marker_path.write_text(str(result_path.resolve()))
+        except Exception as cache_err:
+            # Not a fatal error, but log it
+            print(f"Warning: Could not write to cache for hash {request_hash}: {cache_err}")
 
         return result
 
@@ -245,76 +287,127 @@ async def get_result(result_id: str):
                             detail=f"Error retrieving result: {str(e)}")
 
 
+# backend/api.py
+
 @app.get("/raw-data/{result_id}/{channel}", response_model=EMGRawData)
 async def get_raw_data(result_id: str, channel: str):
-    """Get raw EMG data for a specific channel and its corresponding activated signal."""
+    """
+    Get raw EMG data for a specific channel.
+    The 'channel' parameter can be a base name (e.g., "CH1"),
+    a raw name (e.g., "CH1 Raw"), or an activated name (e.g., "CH1 activated").
+    The endpoint will return the data for the specifically requested channel in the 'data' field,
+    and if the requested channel was "Raw", its "activated" counterpart will be in 'activated_data'.
+    If the requested channel was "activated", its "Raw" counterpart could also be returned if needed
+    (though the current EMGRawData model has only one 'activated_data' field).
+    """
+    result_filename_base = f"{result_id}_result" # This was from your /upload
+    raw_emg_data_path = RESULTS_DIR / f"{result_filename_base}_raw_emg.json"
+    result_json_path = RESULTS_DIR / f"{result_filename_base}.json" # For contractions
+
+    if not raw_emg_data_path.exists():
+        # Fallback for older results that might not have split raw EMG data
+        # This part requires careful thought: if you *always* expect _raw_emg.json, remove this fallback.
+        # If fallback is needed, it must re-process the C3D, which is slow.
+        # For this fix, we'll assume _raw_emg.json *should* exist.
+        error_detail = f"Raw EMG data file not found: {raw_emg_data_path}. C3D reprocessing fallback not implemented in this version for get_raw_data."
+        print(f"ERROR: {error_detail}") # Log this
+        # To make the frontend work even if this happens, you might return empty data or re-process.
+        # For now, strict:
+        raise HTTPException(status_code=404, detail=f"Raw EMG data file not found for result ID: {result_id}. File expected: {raw_emg_data_path.name}")
+
+    if not result_json_path.exists():
+         raise HTTPException(status_code=404, detail=f"Result JSON file not found for result ID: {result_id}")
+
     try:
-        # Find the result file
-        result_file = None
-        for f in RESULTS_DIR.glob(f"*{result_id}*.json"):
-            result_file = f
-            break
+        with open(raw_emg_data_path, "r") as f:
+            all_emg_data_from_file = json.load(f) # This is the dict from processor.emg_data
+        
+        with open(result_json_path, "r") as f:
+            main_result_data = json.load(f) # This is the EMGAnalysisResult model data
 
-        if not result_file:
-            raise HTTPException(status_code=404, detail="Result not found")
-
-        # Load result JSON
-        with open(result_file, "r") as f:
-            result_data = json.load(f)
-
-        # Find the original uploaded C3D file by its unique file_id
-        upload_file = None
-        for f in UPLOAD_DIR.glob(f"*{result_id}*.c3d"):
-            upload_file = f
-            break
-
-        if not upload_file:
-            raise HTTPException(
-                status_code=404,
-                detail=
-                f"Original C3D file not found for result ID {result_id}")
-
-        # Re-process the C3D file to get all raw data
-        processor = GHOSTLYC3DProcessor(str(upload_file))
-        emg_data = processor.extract_emg_data()
-
-        # The `channel` parameter can be a base name ("CH1") or a full name ("CH1 Raw").
-        # The API needs to be flexible enough to handle both.
-        main_channel_data = emg_data.get(channel)
+        # --- Smart Channel Detection Logic ---
+        # The `channel` parameter from the URL.
         requested_channel_name = channel
 
-        # If the exact channel name isn't found, assume it's a base name and try appending " Raw".
-        if not main_channel_data:
-            raw_channel_guess = f"{channel} Raw"
-            main_channel_data = emg_data.get(raw_channel_guess)
-            if main_channel_data:
-                requested_channel_name = raw_channel_guess # Update to the name that was actually found
+        # Try to find the exact requested_channel_name first.
+        primary_channel_dict = all_emg_data_from_file.get(requested_channel_name)
         
-        # If we still haven't found data, the channel doesn't exist.
-        if not main_channel_data:
+        # If not found, and if `requested_channel_name` looks like a base name (e.g., "CH1"),
+        # try appending " Raw" as a common default for the primary signal.
+        if not primary_channel_dict and not (" Raw" in requested_channel_name or " activated" in requested_channel_name):
+            potential_raw_name = f"{requested_channel_name} Raw"
+            primary_channel_dict = all_emg_data_from_file.get(potential_raw_name)
+            if primary_channel_dict:
+                # If we found "CH1 Raw" when "CH1" was requested, update what we consider the "primary"
+                requested_channel_name = potential_raw_name 
+        
+        # If still not found, the channel truly doesn't exist in any common form.
+        if not primary_channel_dict:
+            # For debugging, list available channels if the requested one is not found.
+            available_keys_in_raw_file = list(all_emg_data_from_file.keys())
             raise HTTPException(
-                status_code=404,
-                detail=f"Channel '{channel}' not found in the C3D file."
+                status_code=404, 
+                detail=f"Channel '{channel}' (or its variants like '{channel} Raw') not found in pre-extracted raw data for result_id '{result_id}'. Available channels in raw file: {available_keys_in_raw_file}"
             )
 
-        # Now, determine the base name from the channel we found, and get its "activated" counterpart.
-        base_channel_name = requested_channel_name.replace(' Raw', '').replace(' activated', '')
-        activated_channel_name = f"{base_channel_name} activated"
-        activated_channel_data = emg_data.get(activated_channel_name)
+        # At this point, `primary_channel_dict` is the data for `requested_channel_name`
+        # `requested_channel_name` is the actual key found in the raw EMG data file (e.g., "CH1 Raw" or "CH1 activated")
+
+        # Now, determine the `activated_data` to return based on what `requested_channel_name` is.
+        # The `EMGRawData` model has `data` (for primary) and `activated_data` (for its activated counterpart).
+        final_activated_data_list = None
+        base_name_of_primary = requested_channel_name.replace(" Raw", "").replace(" activated", "")
+
+        if requested_channel_name.endswith(" Raw"):
+            # If primary is "CH1 Raw", then activated_data should be "CH1 activated"
+            activated_counterpart_key = f"{base_name_of_primary} activated"
+            activated_counterpart_dict = all_emg_data_from_file.get(activated_counterpart_key)
+            if activated_counterpart_dict and 'data' in activated_counterpart_dict:
+                final_activated_data_list = [float(x) for x in activated_counterpart_dict['data']]
+        elif requested_channel_name.endswith(" activated"):
+            # If primary is "CH1 activated", then `data` field gets "CH1 activated"
+            # and `activated_data` field in the response model should also get "CH1 activated".
+            # This seems a bit redundant by model design, but we'll fulfill it.
+            # OR, if the model implies `activated_data` is *always* the '.activated' version
+            # regardless of what was requested, then we just ensure it's populated.
+            if primary_channel_dict and 'data' in primary_channel_dict: # primary_channel_dict is the activated one
+                 final_activated_data_list = [float(x) for x in primary_channel_dict['data']]
+        else:
+            # If `requested_channel_name` is a base name (e.g., "EMG1" from C3D without suffix)
+            # or some other name that doesn't end with " Raw" or " activated".
+            # We should still look for its ".activated" counterpart.
+            activated_counterpart_key = f"{base_name_of_primary} activated"
+            activated_counterpart_dict = all_emg_data_from_file.get(activated_counterpart_key)
+            if activated_counterpart_dict and 'data' in activated_counterpart_dict:
+                final_activated_data_list = [float(x) for x in activated_counterpart_dict['data']]
+
+
+        # Get contractions if they exist for the base muscle analytics
+        # The `main_result_data` is the EMGAnalysisResult structure.
+        # Analytics are keyed by base muscle names (e.g., "CH1").
+        muscle_analytics_for_contractions = main_result_data.get("analytics", {}).get(base_name_of_primary, {})
+        contractions_from_analytics = muscle_analytics_for_contractions.get("contractions") # This was your previous logic
 
         return EMGRawData(
-            channel_name=requested_channel_name,
-            data=main_channel_data['data'],
-            time_axis=main_channel_data['time_axis'],
-            sampling_rate=main_channel_data['sampling_rate'],
-            activated_data=activated_channel_data['data'] if activated_channel_data else None
+            channel_name=requested_channel_name, # The actual key found and being returned in 'data'
+            sampling_rate=float(primary_channel_dict['sampling_rate']),
+            data=[float(x) for x in primary_channel_dict['data']],
+            time_axis=[float(x) for x in primary_channel_dict['time_axis']],
+            activated_data=final_activated_data_list,
+            contractions=contractions_from_analytics # This might be None if not present
         )
 
-    except HTTPException as http_exc:
-        raise http_exc # Re-raise HTTPException
+    except FileNotFoundError: # More specific than generic Exception for this case
+        raise HTTPException(status_code=404, detail=f"A required data file for result ID '{result_id}' was not found.")
+    except HTTPException as http_exc: # Re-raise known HTTP exceptions
+        raise http_exc
     except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail=f"Error retrieving raw data: {str(e)}")
+        # Log the full error for debugging on the server
+        import traceback
+        print(f"ERROR in get_raw_data for result_id='{result_id}', channel='{channel}': {str(e)}")
+        print(traceback.format_exc())
+        # Return a generic 500 to the client
+        raise HTTPException(status_code=500, detail=f"Internal server error while retrieving raw EMG data. Details: {str(e)}")
 
 
 @app.get("/plot/{result_id}/{channel}")
@@ -325,46 +418,52 @@ async def generate_plot(
         False,
         description="Force regeneration of plot even if it already exists")):
     """Generate and return a plot image for a specific channel."""
+    # Find the original C3D file path from the result JSON
+    result_json_path = None
+    for f in RESULTS_DIR.glob(f"*{result_id}*.json"):
+        result_json_path = f
+        break
+
+    if not result_json_path:
+        raise HTTPException(status_code=404, detail="Result JSON file not found.")
+
+    with open(result_json_path, "r") as f:
+        result_data = json.load(f)
+        source_filename = result_data.get("source_filename")
+        if not source_filename:
+            raise HTTPException(status_code=500, detail="Source filename not in result JSON.")
+
+    # Find the uploaded C3D file
+    # This logic might need to be more robust if original filenames aren't unique
+    c3d_file_path = None
+    for f in UPLOAD_DIR.glob(f"*{result_id}*{source_filename}"):
+        c3d_file_path = f
+        break
+
+    if not c3d_file_path or not c3d_file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Original C3D file not found for result ID: {result_id}")
+
+    # Create plot directory
+    plot_dir = PLOTS_DIR / result_id
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = plot_dir / f"{channel}.png"
+
+    # If plot exists and not regenerating, return it
+    if plot_path.exists() and not regenerate:
+        return FileResponse(plot_path)
+
+    # Generate the plot
     try:
-        plot_dir = PLOTS_DIR / result_id
-        plot_path = plot_dir / f"{channel}.png"
-
-        if plot_path.exists() and not regenerate:
-            return FileResponse(plot_path)
-
-        # Find the result file to get the original C3D path
-        result_file = None
-        for f in RESULTS_DIR.glob(f"*{result_id}*.json"):
-            result_file = f
-            break
-
-        if not result_file:
-            raise HTTPException(status_code=404, detail="Result not found")
-
-        # Find the original uploaded C3D file by its unique file_id
-        upload_file = None
-        for f in UPLOAD_DIR.glob(f"*{result_id}*.c3d"):
-            upload_file = f
-            break
-
-        if not upload_file:
-            raise HTTPException(
-                status_code=404,
-                detail=
-                f"Original C3D file not found for result ID {result_id}")
-
-        processor = GHOSTLYC3DProcessor(str(upload_file))
-        processor.process_file()
-
-        plot_dir.mkdir(parents=True, exist_ok=True)
-        saved_path = processor.plot_emg_with_contractions(
-            channel=channel, save_path=str(plot_path))
-
-        if saved_path and os.path.exists(saved_path):
-            return FileResponse(saved_path)
-        else:
-            raise HTTPException(status_code=500,
-                                detail="Error generating plot")
+        processor = GHOSTLYC3DProcessor(str(c3d_file_path))
+        
+        # Use run_in_threadpool for the potentially long-running plotting operation
+        await run_in_threadpool(
+            processor.plot_emg_with_contractions,
+            channel=channel,
+            save_path=str(plot_path)
+        )
+        
+        return FileResponse(plot_path)
     except Exception as e:
         raise HTTPException(status_code=500,
                             detail=f"Error generating plot: {str(e)}")
@@ -376,45 +475,51 @@ async def generate_report(
     regenerate: bool = Query(
         False,
         description="Force regeneration of report even if it already exists")):
-    """Generate and return a full report image."""
+    """Generate and return a full report for a specific result."""
+    # Find the original C3D file path from the result JSON
+    result_json_path = None
+    for f in RESULTS_DIR.glob(f"*{result_id}*.json"):
+        result_json_path = f
+        break
+
+    if not result_json_path:
+        raise HTTPException(status_code=404, detail="Result JSON file not found.")
+
+    with open(result_json_path, "r") as f:
+        result_data = json.load(f)
+        source_filename = result_data.get("source_filename")
+        if not source_filename:
+            raise HTTPException(status_code=500, detail="Source filename not in result JSON.")
+
+    # Find the uploaded C3D file
+    c3d_file_path = None
+    for f in UPLOAD_DIR.glob(f"*{result_id}*{source_filename}"):
+        c3d_file_path = f
+        break
+
+    if not c3d_file_path or not c3d_file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Original C3D file not found for result ID: {result_id}")
+
+    # Create plot directory
+    plot_dir = PLOTS_DIR / result_id
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    report_path = plot_dir / "report.png"
+
+    # If report exists and not regenerating, return it
+    if report_path.exists() and not regenerate:
+        return FileResponse(report_path)
+
+    # Generate the report
     try:
-        plot_dir = PLOTS_DIR / result_id
-        report_path = plot_dir / "report.png"
+        processor = GHOSTLYC3DProcessor(str(c3d_file_path))
 
-        if report_path.exists() and not regenerate:
-            return FileResponse(report_path)
+        # Use run_in_threadpool for the potentially long-running plotting operation
+        await run_in_threadpool(
+             processor.plot_ghostly_report,
+             save_path=str(report_path)
+        )
 
-        result_file = None
-        for f in RESULTS_DIR.glob(f"*{result_id}*.json"):
-            result_file = f
-            break
-        
-        if not result_file:
-            raise HTTPException(status_code=404, detail="Result not found")
-
-        # Find the original uploaded C3D file by its unique file_id
-        upload_file = None
-        for f in UPLOAD_DIR.glob(f"*{result_id}*.c3d"):
-            upload_file = f
-            break
-
-        if not upload_file:
-            raise HTTPException(
-                status_code=404,
-                detail=
-                f"Original C3D file not found for result ID {result_id}")
-
-        processor = GHOSTLYC3DProcessor(str(upload_file))
-        processor.process_file()
-
-        plot_dir.mkdir(parents=True, exist_ok=True)
-        saved_path = processor.plot_ghostly_report(save_path=str(report_path))
-
-        if saved_path and os.path.exists(saved_path):
-            return FileResponse(saved_path)
-        else:
-            raise HTTPException(status_code=500,
-                                detail="Error generating report")
+        return FileResponse(report_path)
     except Exception as e:
         raise HTTPException(status_code=500,
                             detail=f"Error generating report: {str(e)}")

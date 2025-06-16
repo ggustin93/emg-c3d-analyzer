@@ -18,7 +18,7 @@ logger = logging.getLogger("backend")
 
 # Try to import the app with proper error handling
 try:
-    from api import app
+    from .api import app
     logger.info("Successfully imported FastAPI application")
 except ImportError as e:
     logger.error(f"Failed to import API: {e}")
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
         # Remove reload=True to avoid the warning in production
-        uvicorn.run(app, host=host, port=port, log_level="info")
+        uvicorn.run("backend.api:app", host=host, port=port, log_level="info")
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())

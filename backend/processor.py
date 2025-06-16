@@ -25,8 +25,8 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
-from plotting import plot_emg_with_contractions, plot_ghostly_report
+from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
+from .plotting import plot_emg_with_contractions, plot_ghostly_report
 
 # Default parameters for EMG processing
 DEFAULT_SAMPLING_RATE = 1000  # Hz
@@ -248,8 +248,10 @@ class GHOSTLYC3DProcessor:
                     # Contractions
                     try:
                         contraction_stats = analyze_contractions(
-                            signal=signal_data, sampling_rate=sampling_rate,
-                            threshold_factor=threshold_factor, min_duration_ms=min_duration_ms,
+                            signal=signal_data,
+                            sampling_rate=sampling_rate,
+                            threshold_factor=threshold_factor,
+                            min_duration_ms=min_duration_ms,
                             smoothing_window=smoothing_window
                         )
                         channel_analytics.update(contraction_stats)

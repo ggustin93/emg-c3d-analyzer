@@ -239,104 +239,85 @@ def analyze_contractions(
         smoothing_window: The size of the moving average window to smooth the signal.
 
     Returns:
-        A dictionary containing contraction statistics.
+        A dictionary containing contraction statistics and a list of contractions.
     """
     if len(signal) < smoothing_window:
         return {
             'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
             'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
-            'avg_amplitude': 0.0, 'max_amplitude': 0.0
+            'avg_amplitude': 0.0, 'max_amplitude': 0.0,
+            'contractions': []
         }
 
-    # Note: Rectification is commented out as the input signal is expected to be
-    # pre-processed (e.g., already rectified or an envelope). For raw EMG,
-    # rectification would be a necessary first step.
-    # rectified_signal = np.abs(signal)
+    # 1. Rectify the signal
+    rectified_signal = np.abs(signal)
 
-    # 1. Smooth the signal (without rectifying first, to match reference)
-    smoothed_signal = np.convolve(signal, np.ones(smoothing_window)/smoothing_window, mode='same')
+    # 2. Smooth the signal with a moving average
+    smoothed_signal = np.convolve(rectified_signal, np.ones(smoothing_window)/smoothing_window, mode='same')
 
-    # 2. Determine threshold based on peak amplitude of the smoothed signal.
-    signal_max = np.max(smoothed_signal)
-    if signal_max <= 1e-10: # Check for near-zero signal to avoid issues
-        return {
-            'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
-            'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
-            'avg_amplitude': 0.0, 'max_amplitude': 0.0
-        }
+    # 3. Set threshold
+    threshold = np.max(smoothed_signal) * threshold_factor
+
+    # 4. Detect activity above threshold
+    above_threshold = smoothed_signal > threshold
     
-    activation_threshold = threshold_factor * signal_max
+    # Find start and end points of contractions
+    diff = np.diff(above_threshold.astype(int))
+    starts = np.where(diff == 1)[0]
+    ends = np.where(diff == -1)[0]
     
-    # 4. Detect periods above the threshold
-    is_active = smoothed_signal > activation_threshold
-    min_samples = int((min_duration_ms / 1000) * sampling_rate)
-
-    # Find start and end points of activations
-    diff = np.diff(is_active.astype(int))
-    starts = np.where(diff == 1)[0] + 1
-    ends = np.where(diff == -1)[0] + 1
-
-    # Handle cases where activation starts at the beginning or ends at the end
-    if is_active[0]:
+    # Handle cases where activity starts or ends at the file boundaries
+    if above_threshold[0]:
         starts = np.insert(starts, 0, 0)
-    if is_active[-1]:
-        ends = np.append(ends, len(is_active))
-
-    if len(starts) == 0 or len(ends) == 0:
-        return {
-            'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
-            'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
-            'avg_amplitude': 0.0, 'max_amplitude': 0.0
-        }
-
-    # Ensure starts and ends align
-    if ends[0] < starts[0]:
-        ends = ends[1:]
+    if above_threshold[-1]:
+        ends = np.append(ends, len(above_threshold) - 1)
+        
+    # Ensure starts and ends pair up
     if len(starts) > len(ends):
         starts = starts[:len(ends)]
+    elif len(ends) > len(starts):
+        ends = ends[len(starts):]
 
-    # 5. Filter for valid contractions based on duration
-    durations_samples = ends - starts
-    valid_indices = np.where(durations_samples >= min_samples)[0]
+    # 5. Filter contractions by minimum duration
+    min_duration_samples = int((min_duration_ms / 1000) * sampling_rate)
+    
+    contractions = []
+    for start, end in zip(starts, ends):
+        duration_samples = end - start
+        if duration_samples >= min_duration_samples:
+            # Get the segment from the *original* rectified signal for amplitude calculation
+            segment = rectified_signal[start:end]
+            
+            contractions.append({
+                'start_time_ms': (start / sampling_rate) * 1000,
+                'end_time_ms': (end / sampling_rate) * 1000,
+                'duration_ms': (duration_samples / sampling_rate) * 1000,
+                'mean_amplitude': np.mean(segment),
+                'max_amplitude': np.max(segment)
+            })
 
-    if len(valid_indices) == 0:
+    # 6. Calculate summary statistics
+    if not contractions:
         return {
             'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
             'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
-            'avg_amplitude': 0.0, 'max_amplitude': 0.0
-        }
-
-    valid_starts = starts[valid_indices]
-    valid_ends = ends[valid_indices]
-    valid_durations_samples = durations_samples[valid_indices]
-    valid_durations_ms = (valid_durations_samples / sampling_rate) * 1000
-
-    # 6. Calculate statistics from valid contractions
-    if not valid_starts.any():
-        return {
-            'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
-            'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
-            'avg_amplitude': 0.0, 'max_amplitude': 0.0
+            'avg_amplitude': 0.0, 'max_amplitude': 0.0,
+            'contractions': []
         }
         
-    contraction_peak_amplitudes = [np.max(smoothed_signal[s:e]) for s, e in zip(valid_starts, valid_ends)]
-    
-    contraction_count = len(valid_durations_ms)
-    avg_duration_ms = np.mean(valid_durations_ms)
-    min_duration_ms_val = np.min(valid_durations_ms)
-    max_duration_ms_val = np.max(valid_durations_ms)
-    total_time_under_tension_ms = np.sum(valid_durations_ms)
-    avg_amplitude = np.mean(contraction_peak_amplitudes)
-    max_amplitude = np.max(contraction_peak_amplitudes)
+    durations = [c['duration_ms'] for c in contractions]
+    amplitudes = [c['mean_amplitude'] for c in contractions]
+    max_amplitudes = [c['max_amplitude'] for c in contractions]
 
     return {
-        'contraction_count': int(contraction_count),
-        'avg_duration_ms': float(avg_duration_ms),
-        'min_duration_ms': float(min_duration_ms_val),
-        'max_duration_ms': float(max_duration_ms_val),
-        'total_time_under_tension_ms': float(total_time_under_tension_ms),
-        'avg_amplitude': float(avg_amplitude),
-        'max_amplitude': float(max_amplitude)
+        'contraction_count': len(contractions),
+        'avg_duration_ms': np.mean(durations),
+        'min_duration_ms': np.min(durations),
+        'max_duration_ms': np.max(durations),
+        'total_time_under_tension_ms': np.sum(durations),
+        'avg_amplitude': np.mean(amplitudes),
+        'max_amplitude': np.max(max_amplitudes),
+        'contractions': contractions
     }
 
 # --- Registry of Analysis Functions ---

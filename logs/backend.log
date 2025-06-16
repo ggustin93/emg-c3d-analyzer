@@ -1,173 +1,59 @@
-2025-06-14 10:48:09,028 - backend - INFO - Successfully imported FastAPI application
-2025-06-14 10:48:09,028 - backend - INFO - Data directories verified
-INFO:     127.0.0.1:54451 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54516 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54516 - "GET /raw-data/b2d86a72-0eb5-4e49-abf8-605bb55395d9/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54517 - "GET /raw-data/b2d86a72-0eb5-4e49-abf8-605bb55395d9/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54516 - "GET /raw-data/b2d86a72-0eb5-4e49-abf8-605bb55395d9/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54591 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54591 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54592 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54591 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54594 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54594 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54598 - "GET /raw-data/dd09e61d-e377-4f37-965b-8f700b2e56e5/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54714 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54714 - "GET /raw-data/f75a93e0-e199-4edc-a364-f6e1921b4a5d/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54715 - "GET /raw-data/f75a93e0-e199-4edc-a364-f6e1921b4a5d/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54714 - "GET /raw-data/f75a93e0-e199-4edc-a364-f6e1921b4a5d/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54733 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54733 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/5d8eaad0-7667-41ed-a026-7477cb317361/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54738 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54739 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54731 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54732 - "GET /raw-data/d39b3807-59ef-4652-8cfd-63bc2b2a0352/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54796 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54796 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54797 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54798 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54796 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54798 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54800 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54800 - "GET /raw-data/26e01163-ddca-4ee7-8a6e-eab7f3fe1931/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54815 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54815 - "GET /raw-data/73334305-ddf7-4a1e-bb5e-bdf65a73a8ae/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54816 - "GET /raw-data/73334305-ddf7-4a1e-bb5e-bdf65a73a8ae/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54817 - "GET /raw-data/73334305-ddf7-4a1e-bb5e-bdf65a73a8ae/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54815 - "GET /raw-data/73334305-ddf7-4a1e-bb5e-bdf65a73a8ae/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54817 - "GET /raw-data/73334305-ddf7-4a1e-bb5e-bdf65a73a8ae/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54816 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54815 - "GET /raw-data/912dc0c2-2056-4318-a7b0-ae4cd34c01d4/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54817 - "GET /raw-data/912dc0c2-2056-4318-a7b0-ae4cd34c01d4/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54816 - "GET /raw-data/912dc0c2-2056-4318-a7b0-ae4cd34c01d4/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54815 - "GET /raw-data/912dc0c2-2056-4318-a7b0-ae4cd34c01d4/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54841 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54841 - "GET /raw-data/43ec1724-dd49-407c-8803-8d7f2b27cce5/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54842 - "GET /raw-data/43ec1724-dd49-407c-8803-8d7f2b27cce5/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54843 - "GET /raw-data/43ec1724-dd49-407c-8803-8d7f2b27cce5/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54841 - "GET /raw-data/43ec1724-dd49-407c-8803-8d7f2b27cce5/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54842 - "GET /raw-data/43ec1724-dd49-407c-8803-8d7f2b27cce5/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /raw-data/fd9be39a-e392-49b6-9c43-21ad94cd4b9c/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54851 - "GET /raw-data/fd9be39a-e392-49b6-9c43-21ad94cd4b9c/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54852 - "GET /raw-data/fd9be39a-e392-49b6-9c43-21ad94cd4b9c/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /raw-data/fd9be39a-e392-49b6-9c43-21ad94cd4b9c/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54851 - "GET /raw-data/fd9be39a-e392-49b6-9c43-21ad94cd4b9c/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54852 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /raw-data/096632c2-95b8-4f5e-9d13-8780db17b9ff/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54851 - "GET /raw-data/096632c2-95b8-4f5e-9d13-8780db17b9ff/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54852 - "GET /raw-data/096632c2-95b8-4f5e-9d13-8780db17b9ff/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /raw-data/096632c2-95b8-4f5e-9d13-8780db17b9ff/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54851 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54852 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54850 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54851 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54852 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/f7d90e27-9377-4433-976f-9c4c02f65541/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54886 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/d96ec734-c88c-496b-93d0-73b306c0df56/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54886 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54875 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54876 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54886 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54887 - "GET /raw-data/e4634797-1384-4afe-9e72-6358ce62320f/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54953 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54953 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54954 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54955 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54956 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54953 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54956 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54955 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54954 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54953 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54960 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54962 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55011 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55012 - "GET /raw-data/5c7c82cb-d899-4558-99a2-5e9078767e00/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55147 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55147 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55148 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55149 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55147 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55168 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55168 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55168 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55170 - "GET /raw-data/c75d3056-04d2-423c-b43c-67d27b3dd87d/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55266 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55266 - "GET /raw-data/55406792-1d4d-482d-89c7-563ab2107be2/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55267 - "GET /raw-data/55406792-1d4d-482d-89c7-563ab2107be2/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55268 - "GET /raw-data/55406792-1d4d-482d-89c7-563ab2107be2/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55266 - "GET /raw-data/55406792-1d4d-482d-89c7-563ab2107be2/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55268 - "GET /raw-data/55406792-1d4d-482d-89c7-563ab2107be2/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55312 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55312 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55313 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55314 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55312 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55314 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55324 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55325 - "GET /raw-data/6848ad67-f1bd-4127-95c3-5273dcfecfa3/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55361 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55361 - "GET /raw-data/1a470741-ce2a-4954-bea4-cabc870d73ff/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55362 - "GET /raw-data/1a470741-ce2a-4954-bea4-cabc870d73ff/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55363 - "GET /raw-data/1a470741-ce2a-4954-bea4-cabc870d73ff/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55361 - "GET /raw-data/1a470741-ce2a-4954-bea4-cabc870d73ff/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55362 - "GET /raw-data/1a470741-ce2a-4954-bea4-cabc870d73ff/CH2%20Raw HTTP/1.1" 200 OK
-2025-06-14 15:19:00,919 - backend - ERROR - Failed to import API: No module named 'api'
-2025-06-14 15:19:00,919 - backend - ERROR - Traceback (most recent call last):
-  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
-    from api import app
-ModuleNotFoundError: No module named 'api'
-
-2025-06-14 15:19:07,773 - backend - ERROR - Failed to import API: No module named 'api'
-2025-06-14 15:19:07,774 - backend - ERROR - Traceback (most recent call last):
-  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
-    from api import app
-ModuleNotFoundError: No module named 'api'
-
-2025-06-14 15:27:28,661 - backend - ERROR - Failed to import API: No module named 'api'
-2025-06-14 15:27:28,661 - backend - ERROR - Traceback (most recent call last):
-  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
-    from api import app
-ModuleNotFoundError: No module named 'api'
-
-2025-06-14 15:27:54,829 - backend - ERROR - Failed to import API: No module named 'api'
-2025-06-14 15:27:54,829 - backend - ERROR - Traceback (most recent call last):
-  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
-    from api import app
-ModuleNotFoundError: No module named 'api'
-
-2025-06-14 15:30:59,539 - backend - ERROR - Failed to import API: No module named 'api'
-2025-06-14 15:30:59,539 - backend - ERROR - Traceback (most recent call last):
-  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/main.py", line 20, in <module>
-    from api import app
-ModuleNotFoundError: No module named 'api'
-
+INFO:     127.0.0.1:52250 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52252 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52252 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52258 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52258 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52259 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52260 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52258 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52266 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52266 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52267 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52266 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52266 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52266 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52267 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52269 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52266 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52282 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52305 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52338 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52338 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52359 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52359 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52394 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52394 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52395 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52396 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52394 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52401 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52402 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52403 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52403 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52404 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52400 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52413 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52413 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52419 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52419 - "GET /raw-data/08194164-f5f2-4556-9ffd-943280110d33/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52419 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52419 - "GET /raw-data/91839bf3-835c-4316-9add-822144ff90f2/CH1%20Raw HTTP/1.1" 200 OK
