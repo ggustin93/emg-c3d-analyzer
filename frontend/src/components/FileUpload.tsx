@@ -53,6 +53,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (currentSessionParams.session_expected_contractions !== null && currentSessionParams.session_expected_contractions !== undefined) {
       formData.append('session_expected_contractions', String(currentSessionParams.session_expected_contractions));
     }
+    if (currentSessionParams.session_expected_contractions_ch1 !== null && currentSessionParams.session_expected_contractions_ch1 !== undefined) {
+      formData.append('session_expected_contractions_ch1', String(currentSessionParams.session_expected_contractions_ch1));
+    }
+    if (currentSessionParams.session_expected_contractions_ch2 !== null && currentSessionParams.session_expected_contractions_ch2 !== undefined) {
+      formData.append('session_expected_contractions_ch2', String(currentSessionParams.session_expected_contractions_ch2));
+    }
     
     try {
       const response = await axios.post<EMGAnalysisResult>(`${API_BASE_URL}/upload`, formData, {

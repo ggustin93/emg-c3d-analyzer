@@ -9,6 +9,7 @@ ENDPOINTS:
 ==========
 - GET / - Root endpoint with API information
 - POST /upload - Upload and process C3D file
+- GET /recalculate-scores - Recalculate scores for an existing result with updated parameters
 - GET /results - List all available result files
 - GET /results/{result_id} - Get processing results for a specific file
 - GET /raw-data/{result_id}/{channel} - Get raw EMG data for a specific channel
@@ -80,6 +81,7 @@ async def root():
         "description": "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
         "endpoints": {
             "upload": "POST /upload - Upload and process a C3D file",
+            "recalculate-scores": "POST /recalculate-scores - Recalculate scores for an existing result with updated parameters",
             "results": "GET /results - List all available result files",
             "result_detail": "GET /results/{result_id} - Get processing results for a specific file",
             "raw_data": "GET /raw-data/{result_id}/{channel} - Get raw EMG data for a specific channel",
@@ -103,7 +105,9 @@ async def upload_file(file: UploadFile = File(...),
                       # New game-specific session parameters from GUI
                       session_mvc_value: Optional[float] = Form(None),
                       session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
-                      session_expected_contractions: Optional[int] = Form(None)):
+                      session_expected_contractions: Optional[int] = Form(None),
+                      session_expected_contractions_ch1: Optional[int] = Form(None),
+                      session_expected_contractions_ch2: Optional[int] = Form(None)):
     """Upload and process a C3D file."""
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
@@ -127,6 +131,8 @@ async def upload_file(file: UploadFile = File(...),
     if session_mvc_value is not None: hasher.update(str(session_mvc_value).encode())
     if session_mvc_threshold_percentage is not None: hasher.update(str(session_mvc_threshold_percentage).encode())
     if session_expected_contractions is not None: hasher.update(str(session_expected_contractions).encode())
+    if session_expected_contractions_ch1 is not None: hasher.update(str(session_expected_contractions_ch1).encode())
+    if session_expected_contractions_ch2 is not None: hasher.update(str(session_expected_contractions_ch2).encode())
     
     request_hash = hasher.hexdigest()
     cache_marker_path = CACHE_DIR / request_hash
@@ -176,7 +182,9 @@ async def upload_file(file: UploadFile = File(...),
         session_game_params = GameSessionParameters(
             session_mvc_value=session_mvc_value,
             session_mvc_threshold_percentage=session_mvc_threshold_percentage,
-            session_expected_contractions=session_expected_contractions
+            session_expected_contractions=session_expected_contractions,
+            session_expected_contractions_ch1=session_expected_contractions_ch1,
+            session_expected_contractions_ch2=session_expected_contractions_ch2
         )
 
         # Wrap the CPU-bound processing in run_in_threadpool
@@ -234,6 +242,88 @@ async def upload_file(file: UploadFile = File(...),
         print(f"ERROR in /upload: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+
+@app.post("/recalculate-scores", response_model=EMGAnalysisResult)
+async def recalculate_scores(
+    result_id: str = Form(...),
+    # Game-specific session parameters from GUI
+    session_mvc_value: Optional[float] = Form(None),
+    session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
+    session_expected_contractions: Optional[int] = Form(None),
+    session_expected_contractions_ch1: Optional[int] = Form(None),
+    session_expected_contractions_ch2: Optional[int] = Form(None)):
+    """Recalculate scores for an existing result with updated parameters."""
+    
+    # Find the result file
+    result_filename = f"{result_id}_result.json"
+    result_path = RESULTS_DIR / result_filename
+    raw_emg_data_path = RESULTS_DIR / f"{result_id}_result_raw_emg.json"
+    
+    if not result_path.exists() or not raw_emg_data_path.exists():
+        raise HTTPException(status_code=404, detail="Result not found")
+    
+    try:
+        # Load the existing result
+        with open(result_path, "r") as f:
+            result_data = json.load(f)
+        
+        # Load the raw EMG data
+        with open(raw_emg_data_path, "r") as f:
+            emg_data = json.load(f)
+        
+        # Create session parameters object
+        session_game_params = GameSessionParameters(
+            session_mvc_value=session_mvc_value,
+            session_mvc_threshold_percentage=session_mvc_threshold_percentage,
+            session_expected_contractions=session_expected_contractions,
+            session_expected_contractions_ch1=session_expected_contractions_ch1,
+            session_expected_contractions_ch2=session_expected_contractions_ch2
+        )
+        
+        # Create a processor instance
+        processor = GHOSTLYC3DProcessor(None)  # No file path needed for recalculation
+        processor.emg_data = emg_data  # Set the EMG data directly
+        
+        # Recalculate the scores
+        updated_result_data = await run_in_threadpool(
+            processor.recalculate_scores,
+            result_data=result_data,
+            session_game_params=session_game_params
+        )
+        
+        # Create result object
+        game_metadata = GameMetadata(**updated_result_data['metadata'])
+        
+        analytics = {
+            k: ChannelAnalytics(**v)
+            for k, v in updated_result_data['analytics'].items()
+        }
+        
+        result = EMGAnalysisResult(
+            file_id=result_id,
+            timestamp=result_data.get('timestamp', datetime.now().strftime("%Y%m%d_%H%M%S")),
+            source_filename=result_data.get('source_filename', 'unknown.c3d'),
+            metadata=game_metadata,
+            analytics=analytics,
+            available_channels=updated_result_data['available_channels'],
+            plots={},
+            user_id=result_data.get('user_id'),
+            patient_id=result_data.get('patient_id'),
+            session_id=result_data.get('session_id')
+        )
+        
+        # Save updated result to file
+        with open(result_path, "w") as f:
+            f.write(result.model_dump_json(indent=2))
+        
+        return result
+        
+    except Exception as e:
+        import traceback
+        print(f"ERROR in /recalculate-scores: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error recalculating scores: {str(e)}")
 
 
 @app.get("/results", response_model=List[str])

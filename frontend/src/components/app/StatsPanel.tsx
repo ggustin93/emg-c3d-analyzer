@@ -12,6 +12,8 @@ interface StatsPanelComponentProps extends ExternalStatsPanelProps {
   availableChannels?: string[];
   onChannelSelect?: (channel: string | null) => void;
   sessionExpectedContractions?: number | null;
+  isEMGAnalyticsTab?: boolean;
+  contractionDurationThreshold?: number; // ms threshold to distinguish short vs long contractions
 }
 
 // Function to calculate performance score based on good contractions vs expected
@@ -30,7 +32,70 @@ const getScoreLabel = (score: number): { label: string; color: string } => {
   return { label: "Insufficient", color: "text-red-500" };
 };
 
-const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAnalytics, selectedChannel, availableChannels = [], onChannelSelect, sessionExpectedContractions }) => {
+const CircularProgress: React.FC<{ value: number; label: string; color: string }> = ({ value, label, color }) => {
+  // Calculate the circle's circumference and stroke-dasharray
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div className="relative w-28 h-28">
+        {/* Background circle */}
+        <svg className="w-full h-full" viewBox="0 0 100 100">
+          <circle 
+            cx="50" cy="50" r={radius} 
+            fill="transparent" 
+            stroke="#e5e7eb" 
+            strokeWidth="8"
+          />
+          {/* Progress circle */}
+          <circle 
+            cx="50" cy="50" r={radius} 
+            fill="transparent" 
+            stroke="currentColor" 
+            strokeWidth="8" 
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className={color}
+            transform="rotate(-90 50 50)"
+          />
+          {/* Percentage text */}
+          <text 
+            x="50" y="45" 
+            textAnchor="middle" 
+            fontSize="18" 
+            fontWeight="bold"
+            fill="currentColor"
+          >
+            {value}%
+          </text>
+          <text 
+            x="50" y="65" 
+            textAnchor="middle" 
+            fontSize="12"
+            className={color}
+          >
+            {label}
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ 
+  stats, 
+  channelAnalytics, 
+  selectedChannel, 
+  availableChannels = [], 
+  onChannelSelect, 
+  sessionExpectedContractions,
+  isEMGAnalyticsTab = false,
+  contractionDurationThreshold = 1000 // Default 1000ms (1 second) threshold
+}) => {
 
   if (!channelAnalytics && !stats) {
     return (
@@ -66,12 +131,32 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
   
   const performanceScore = hasPerformanceData 
     ? calculatePerformanceScore(displayAnalytics.good_contraction_count!, sessionExpectedContractions!)
-    : null;
+    : 0; // Default to 0 instead of null
   
-  const scoreDetails = performanceScore !== null ? getScoreLabel(performanceScore) : null;
+  const scoreDetails = performanceScore > 0 ? getScoreLabel(performanceScore) : getScoreLabel(0);
 
   const minValue = stats ? stats.min : NaN;
   const maxValue = stats ? stats.max : NaN;
+
+  // Categorize contractions as short or long if available
+  let shortContractions = 0;
+  let longContractions = 0;
+  let shortGoodContractions = 0;
+  let longGoodContractions = 0;
+
+  if (displayAnalytics.contractions && Array.isArray(displayAnalytics.contractions)) {
+    displayAnalytics.contractions.forEach(contraction => {
+      if (contraction.duration_ms < contractionDurationThreshold) {
+        shortContractions++;
+        if (contraction.is_good) shortGoodContractions++;
+      } else {
+        longContractions++;
+        if (contraction.is_good) longGoodContractions++;
+      }
+    });
+  }
+
+  const hasContractionTypeData = shortContractions > 0 || longContractions > 0;
 
   return (
     <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
@@ -89,8 +174,8 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
         </div>
       </div>
       
-      {/* Performance Score Card - New Component */}
-      {hasPerformanceData && scoreDetails && (
+      {/* Performance Score Card - Only show in Game Stats tab, not EMG Analytics */}
+      {hasPerformanceData && !isEMGAnalyticsTab && (
         <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-3 md:mb-0">
@@ -99,14 +184,34 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                 Based on {displayAnalytics.good_contraction_count} good contractions out of {sessionExpectedContractions} expected
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="text-3xl font-bold">{performanceScore}%</div>
-              <div className={`text-lg font-medium ${scoreDetails.color}`}>{scoreDetails.label}</div>
+            
+            {/* Circular progress indicator */}
+            <CircularProgress 
+              value={performanceScore} 
+              label={scoreDetails.label}
+              color={scoreDetails.color}
+            />
+          </div>
+          
+          {/* Contraction type breakdown if available */}
+          {hasContractionTypeData && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3 bg-slate-50 rounded-md">
+                <h5 className="text-sm font-medium mb-1">Short Contractions (&lt;{contractionDurationThreshold}ms)</h5>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total: {shortContractions}</span>
+                  <span className="text-sm text-muted-foreground">Good: {shortGoodContractions}</span>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-md">
+                <h5 className="text-sm font-medium mb-1">Long Contractions (≥{contractionDurationThreshold}ms)</h5>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total: {longContractions}</span>
+                  <span className="text-sm text-muted-foreground">Good: {longGoodContractions}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <Progress value={performanceScore} className="h-2" />
-          </div>
+          )}
         </div>
       )}
       
@@ -120,15 +225,17 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           description="Total muscle contractions detected based on signal amplitude and duration criteria."
           error={displayAnalytics.errors?.contractions}
         />
-        {/* New Card for Good Contractions */}
-        {displayAnalytics.good_contraction_count !== null && displayAnalytics.good_contraction_count !== undefined && (
+        {/* Only show Good Contractions in Game Stats tab, not EMG Analytics */}
+        {displayAnalytics.good_contraction_count !== null && 
+         displayAnalytics.good_contraction_count !== undefined && 
+         !isEMGAnalyticsTab && (
           <MetricCard
             title="Good Contractions"
             value={displayAnalytics.good_contraction_count}
             unit={sessionExpectedContractions !== null ? `/ ${sessionExpectedContractions}` : ""}
             isInteger={true}
-            description={`Contractions meeting MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(3)}). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
-            error={displayAnalytics.errors?.contractions} // Error likely applies to all contraction metrics
+            description={`Contractions meeting MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(1)}). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
+            error={displayAnalytics.errors?.contractions}
           />
         )}
         <MetricCard
@@ -136,7 +243,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.avg_duration_ms}
           unit="ms"
           description="Average contraction length."
-          precision={1}
+          precision={1} // Limit to 1 decimal place
           error={displayAnalytics.errors?.contractions}
         />
         <MetricCard
@@ -144,7 +251,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.total_time_under_tension_ms}
           unit="ms"
           description="Total time muscle was contracting."
-          precision={0}
+          precision={0} // No decimal places for total duration
           error={displayAnalytics.errors?.contractions}
         />
          <MetricCard
@@ -152,7 +259,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.max_duration_ms}
           unit="ms"
           description="Longest contraction detected."
-          precision={1}
+          precision={1} // Limit to 1 decimal place
           error={displayAnalytics.errors?.contractions}
         />
         <MetricCard
@@ -160,7 +267,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.min_duration_ms}
           unit="ms"
           description="Shortest contraction detected."
-          precision={1}
+          precision={1} // Limit to 1 decimal place
           error={displayAnalytics.errors?.contractions}
         />
         <MetricCard
@@ -168,7 +275,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.avg_amplitude}
           unit="mV"
           description="Average signal strength during contractions."
-          precision={3}
+          precision={1} // Limit to 1 decimal place
           useScientificNotation={Math.abs(displayAnalytics.avg_amplitude ?? 0) < 0.001}
           error={displayAnalytics.errors?.contractions}
         />
@@ -177,7 +284,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
           value={displayAnalytics.max_amplitude}
           unit="mV"
           description="Peak signal strength during contractions."
-          precision={3}
+          precision={1} // Limit to 1 decimal place
           useScientificNotation={Math.abs(displayAnalytics.max_amplitude ?? 0) < 0.001}
           error={displayAnalytics.errors?.contractions}
         />
@@ -194,7 +301,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                   value={displayAnalytics.rms}
                   unit="mV"
                   description="Root Mean Square of the raw signal."
-                  precision={3}
+                  precision={1} // Limit to 1 decimal place
                   useScientificNotation={Math.abs(displayAnalytics.rms ?? 0) < 0.001}
                   error={displayAnalytics.errors?.rms}
               />
@@ -203,7 +310,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                   value={displayAnalytics.mav}
                   unit="mV"
                   description="Mean Absolute Value of the raw signal."
-                  precision={3}
+                  precision={1} // Limit to 1 decimal place
                   useScientificNotation={Math.abs(displayAnalytics.mav ?? 0) < 0.001}
                   error={displayAnalytics.errors?.mav}
               />
@@ -212,7 +319,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                   value={displayAnalytics.mpf ?? null}
                   unit="Hz"
                   description="Mean Power Frequency - decreases with fatigue."
-                  precision={2}
+                  precision={1} // Limit to 1 decimal place
                   error={displayAnalytics.errors?.mpf}
                   validationStatus="strong-assumption"
               />
@@ -221,7 +328,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                   value={displayAnalytics.mdf ?? null}
                   unit="Hz"
                   description="Median Frequency - robust indicator, decreases with fatigue."
-                  precision={2}
+                  precision={1} // Limit to 1 decimal place
                   error={displayAnalytics.errors?.mdf}
                   validationStatus="strong-assumption"
               />
@@ -230,7 +337,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ stats, channelAna
                   value={displayAnalytics.fatigue_index_fi_nsm5 ?? null}
                   unit=""
                   description="Dimitrov's Index (FI_nsm5) - increases with fatigue."
-                  precision={3}
+                  precision={1} // Limit to 1 decimal place
                   useScientificNotation
                   error={displayAnalytics.errors?.fatigue_index_fi_nsm5}
                   validationStatus="strong-assumption"

@@ -51,6 +51,8 @@ class GameSessionParameters(BaseModel): # New model for clarity
     session_mvc_value: Optional[float] = Field(None, description="Patient's MVC for this session/muscle, input by therapist")
     session_mvc_threshold_percentage: Optional[float] = Field(DEFAULT_MVC_THRESHOLD_PERCENTAGE, ge=0, le=100, description="Percentage of session_mvc_value to consider a contraction 'good'")
     session_expected_contractions: Optional[int] = Field(None, ge=0, description="Target number of contractions for the session")
+    session_expected_contractions_ch1: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 1")
+    session_expected_contractions_ch2: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 2")
 
 class GameMetadata(BaseModel):
     game_name: Optional[str] = None

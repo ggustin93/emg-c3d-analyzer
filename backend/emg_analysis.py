@@ -218,11 +218,19 @@ def analyze_contractions(
     threshold_factor: float,
     min_duration_ms: int,
     smoothing_window: int,
-    mvc_amplitude_threshold: Optional[float] = None
+    mvc_amplitude_threshold: Optional[float] = None,
+    merge_threshold_ms: int = 200,
+    refractory_period_ms: int = 0
 ) -> Dict:
     """
     Analyzes a signal to detect contractions and calculate related stats.
     If mvc_amplitude_threshold is provided, contractions are also flagged as 'good'.
+
+    Biomedical Hypothesis: EMG signals during muscle contractions can exhibit oscillatory patterns
+    due to motor unit firing synchronization, tremor, or mechanical artifacts. These oscillations
+    may cause the signal to briefly drop below the detection threshold during what is physiologically
+    a single contraction event. The merge_threshold_ms parameter addresses this by treating closely
+    spaced contractions as a single physiological event, better reflecting the actual muscle activity.
 
     Args:
         signal: A numpy array of the EMG signal (can be raw, not rectified).
@@ -234,6 +242,11 @@ def analyze_contractions(
         smoothing_window: The size of the moving average window to smooth the signal.
         mvc_amplitude_threshold: Optional. If provided, contractions with max_amplitude
                                  at or above this value are considered 'good'.
+        merge_threshold_ms: The maximum time gap in milliseconds between two detected contractions
+                           to consider them as a single physiological contraction. Default is 200ms,
+                           which is based on typical motor unit firing rates and muscle response times.
+        refractory_period_ms: The minimum time in milliseconds after a contraction ends before
+                             a new contraction can be detected. Default is 0ms (disabled).
 
     Returns:
         A dictionary containing contraction statistics, a list of contractions (with 'is_good' flag if mvc_threshold_used),
@@ -306,33 +319,66 @@ def analyze_contractions(
     # 5. Filter contractions by minimum duration
     min_duration_samples = int((min_duration_ms / 1000) * sampling_rate)
     
+    # Convert merge_threshold to samples
+    merge_threshold_samples = int((merge_threshold_ms / 1000) * sampling_rate)
+    refractory_period_samples = int((refractory_period_ms / 1000) * sampling_rate)
+    
+    # Filter by minimum duration and apply refractory period
+    valid_contractions = []
+    for i, (start_idx, end_idx) in enumerate(zip(starts, ends)):
+        duration_samples = end_idx - start_idx
+        if duration_samples >= min_duration_samples:
+            # Apply refractory period if specified
+            if refractory_period_samples > 0 and i > 0:
+                last_end = valid_contractions[-1][1] if valid_contractions else 0
+                if start_idx - last_end < refractory_period_samples:
+                    continue  # Skip this contraction as it's within refractory period
+            
+            valid_contractions.append((start_idx, end_idx))
+    
+    # 6. Merge contractions that are close together
+    if merge_threshold_samples > 0 and valid_contractions:
+        merged_contractions = [valid_contractions[0]]
+        for current_start, current_end in valid_contractions[1:]:
+            prev_start, prev_end = merged_contractions[-1]
+            
+            # If current contraction starts soon after previous one ends, merge them
+            if current_start - prev_end <= merge_threshold_samples:
+                # Update the end time of the previous contraction to include this one
+                merged_contractions[-1] = (prev_start, current_end)
+            else:
+                # Add as a new contraction
+                merged_contractions.append((current_start, current_end))
+        
+        valid_contractions = merged_contractions
+    
+    # 7. Create contraction objects with detailed information
     contractions_list = []
     good_contraction_count = 0
 
-    for start_idx, end_idx in zip(starts, ends):
-        duration_samples = end_idx - start_idx
-        if duration_samples >= min_duration_samples:
-            segment = rectified_signal[start_idx:end_idx+1] # Inclusive end for segment analysis
-            if len(segment) == 0: continue
+    for start_idx, end_idx in valid_contractions:
+        segment = rectified_signal[start_idx:end_idx+1]  # Inclusive end for segment analysis
+        if len(segment) == 0: 
+            continue
 
-            max_amp_in_segment = np.max(segment)
-            
-            is_good = None
-            if mvc_amplitude_threshold is not None:
-                is_good = max_amp_in_segment >= mvc_amplitude_threshold
-                if is_good:
-                    good_contraction_count += 1
-            
-            contractions_list.append({
-                'start_time_ms': (start_idx / sampling_rate) * 1000,
-                'end_time_ms': (end_idx / sampling_rate) * 1000, # end_idx is the last sample *in* the contraction
-                'duration_ms': (duration_samples / sampling_rate) * 1000,
-                'mean_amplitude': np.mean(segment),
-                'max_amplitude': max_amp_in_segment,
-                'is_good': is_good
-            })
+        max_amp_in_segment = np.max(segment)
+        
+        is_good = None
+        if mvc_amplitude_threshold is not None:
+            is_good = max_amp_in_segment >= mvc_amplitude_threshold
+            if is_good:
+                good_contraction_count += 1
+        
+        contractions_list.append({
+            'start_time_ms': (start_idx / sampling_rate) * 1000,
+            'end_time_ms': (end_idx / sampling_rate) * 1000,  # end_idx is the last sample *in* the contraction
+            'duration_ms': ((end_idx - start_idx) / sampling_rate) * 1000,
+            'mean_amplitude': np.mean(segment),
+            'max_amplitude': max_amp_in_segment,
+            'is_good': is_good
+        })
 
-    # 6. Calculate summary statistics
+    # 8. Calculate summary statistics
     if not contractions_list:
         base_return['good_contraction_count'] = 0 if mvc_amplitude_threshold is not None else None
         return base_return

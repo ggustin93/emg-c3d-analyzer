@@ -10,6 +10,7 @@ export interface Contraction {
   mean_amplitude: number;
   max_amplitude: number;
   is_good?: boolean;
+  is_long?: boolean; // true for long, false for short
 }
 
 export interface StatsData {
@@ -50,6 +51,17 @@ export interface GameSessionParameters {
   session_mvc_value?: number | null;
   session_mvc_threshold_percentage?: number | null;
   session_expected_contractions?: number | null;
+  session_expected_contractions_ch1?: number | null;
+  session_expected_contractions_ch2?: number | null;
+  
+  // Detailed expected contractions by type
+  session_expected_long_left?: number | null;
+  session_expected_short_left?: number | null;
+  session_expected_long_right?: number | null;
+  session_expected_short_right?: number | null;
+  
+  // Contraction classification threshold
+  contraction_duration_threshold?: number | null; // in milliseconds, default 1000ms
 }
 
 // For the backend response structure
@@ -83,6 +95,12 @@ export interface ChannelAnalyticsData {
   
   mvc_threshold_actual_value?: number | null;
   good_contraction_count?: number | null;
+  
+  // Additional counts for long and short contractions
+  long_contraction_count?: number | null;
+  short_contraction_count?: number | null;
+  good_long_contraction_count?: number | null;
+  good_short_contraction_count?: number | null;
 }
 
 export interface EMGAnalysisResult {

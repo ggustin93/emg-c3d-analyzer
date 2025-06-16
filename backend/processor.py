@@ -368,3 +368,79 @@ class GHOSTLYC3DProcessor:
             save_path=save_path,
             show_plot=False
         )
+
+    def recalculate_scores(self, result_data: Dict, session_game_params: GameSessionParameters) -> Dict:
+        """
+        Recalculate scores for an existing result with updated session parameters.
+        
+        Args:
+            result_data: The existing result data
+            session_game_params: Updated session parameters
+            
+        Returns:
+            Updated result data with recalculated scores
+        """
+        # Store the session game parameters that were used for this processing run
+        self.session_game_params_used = session_game_params
+        
+        # Update the metadata with the new session parameters
+        updated_metadata = result_data.get('metadata', {})
+        updated_metadata['session_parameters_used'] = session_game_params.model_dump()
+        
+        # Get the existing analytics
+        existing_analytics = result_data.get('analytics', {})
+        updated_analytics = {}
+        
+        # Determine actual MVC threshold if session MVC value is provided
+        actual_mvc_threshold: Optional[float] = None
+        if session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
+            actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
+        
+        # Get available channels
+        available_channels = result_data.get('available_channels', [])
+        
+        # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
+        base_names = sorted(list(set(
+            name.replace(' Raw', '').replace(' activated', '') 
+            for name in available_channels
+        )))
+        
+        # Process each channel
+        for i, base_name in enumerate(base_names):
+            # Get the existing analytics for this channel
+            channel_analytics = existing_analytics.get(base_name, {})
+            
+            # Get the contractions for this channel
+            contractions = channel_analytics.get('contractions', [])
+            
+            # Determine which expected contractions count to use
+            expected_contractions = session_game_params.session_expected_contractions
+            if i == 0 and session_game_params.session_expected_contractions_ch1 is not None:
+                expected_contractions = session_game_params.session_expected_contractions_ch1
+            elif i == 1 and session_game_params.session_expected_contractions_ch2 is not None:
+                expected_contractions = session_game_params.session_expected_contractions_ch2
+            
+            # Count good contractions based on MVC threshold
+            good_contraction_count = 0
+            if actual_mvc_threshold is not None:
+                for contraction in contractions:
+                    if contraction.get('max_amplitude', 0) >= actual_mvc_threshold:
+                        contraction['is_good'] = True
+                        good_contraction_count += 1
+                    else:
+                        contraction['is_good'] = False
+            
+            # Update the channel analytics
+            channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+            channel_analytics['good_contraction_count'] = good_contraction_count
+            channel_analytics['contractions'] = contractions
+            
+            # Add the updated analytics to the result
+            updated_analytics[base_name] = channel_analytics
+        
+        # Return the updated result
+        return {
+            "metadata": updated_metadata,
+            "analytics": updated_analytics,
+            "available_channels": available_channels
+        }

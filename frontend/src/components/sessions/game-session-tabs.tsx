@@ -18,7 +18,7 @@ import type { EMGMetrics } from '@/types/session';
 import PerformanceCard from './performance-card';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import SessionConfigPanel from '../SessionConfigPanel';
+import ScoringConfigPanel from '../SessionConfigPanel';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -66,6 +66,7 @@ interface GameSessionTabsProps {
   setPlotMode: (mode: 'raw' | 'activated') => void;
   sessionParams: GameSessionParameters;
   onSessionParamsChange: (params: GameSessionParameters) => void;
+  onRecalculateScores?: () => void;
   appIsLoading: boolean;
 }
 
@@ -100,6 +101,7 @@ export default function GameSessionTabs({
   setPlotMode,
   sessionParams,
   onSessionParamsChange,
+  onRecalculateScores,
   appIsLoading,
 }: GameSessionTabsProps) {
 
@@ -197,17 +199,20 @@ export default function GameSessionTabs({
             leftQuadChannelName={leftQuadChannelName}
             rightQuadChannelName={rightQuadChannelName}
             analysisResult={analysisResult}
+            contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
           />
           <Card>
             <CardHeader>
-              <CardTitle>Session Parameters</CardTitle>
-              <CardDescription>Adjust MVC and other parameters for this session's analysis.</CardDescription>
+              <CardTitle>Scoring Parameters</CardTitle>
+              <CardDescription>Adjust MVC and expected contractions to recalculate scores.</CardDescription>
             </CardHeader>
             <CardContent>
-              <SessionConfigPanel
+              <ScoringConfigPanel
                 sessionParams={sessionParams}
                 onParamsChange={onSessionParamsChange}
+                onRecalculate={onRecalculateScores}
                 disabled={appIsLoading}
+                availableChannels={muscleChannels}
               />
             </CardContent>
           </Card>
@@ -232,6 +237,8 @@ export default function GameSessionTabs({
               availableChannels={muscleChannels}
               onChannelSelect={setSelectedChannelForStats}
               sessionExpectedContractions={sessionExpectedContractions}
+              isEMGAnalyticsTab={true}
+              contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 1000}
             />
           </CardContent>
         </Card>

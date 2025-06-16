@@ -63,3 +63,77 @@ INFO:     127.0.0.1:50516 - "GET /raw-data/e9419661-9e84-4339-80bb-67c06ca421e7/
 INFO:     127.0.0.1:50518 - "GET /raw-data/e9419661-9e84-4339-80bb-67c06ca421e7/CH2%20Raw HTTP/1.1" 200 OK
 INFO:     127.0.0.1:50520 - "GET /raw-data/e9419661-9e84-4339-80bb-67c06ca421e7/CH1%20Raw HTTP/1.1" 200 OK
 INFO:     127.0.0.1:50520 - "GET /raw-data/e9419661-9e84-4339-80bb-67c06ca421e7/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50997 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50997 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50999 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51001 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51007 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51007 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52452 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52475 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52536 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52536 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53233 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53234 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53796 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53796 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53796 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54402 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54402 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+ERROR in /recalculate-scores: 'GHOSTLYC3DProcessor' object has no attribute 'recalculate_scores'
+Traceback (most recent call last):
+  File "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/api.py", line 286, in recalculate_scores
+    processor.recalculate_scores,
+AttributeError: 'GHOSTLYC3DProcessor' object has no attribute 'recalculate_scores'
+
+INFO:     127.0.0.1:54726 - "POST /recalculate-scores HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:54764 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54764 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54766 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54770 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54770 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55369 - "POST /recalculate-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55411 - "POST /recalculate-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55459 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55460 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56487 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56526 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56526 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57810 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57810 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57812 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57814 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57820 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57820 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57972 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57973 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58218 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58219 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58221 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58221 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58509 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59873 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60879 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60879 - "GET /raw-data/7064e2a1-7b3a-4f83-9ddd-323ae32e4dfd/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60904 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60904 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60906 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60909 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60910 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60906 - "GET /raw-data/09fa204f-a943-4b28-be78-ca650dbfa677/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60940 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60940 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60942 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60949 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60950 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60942 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60950 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61346 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61347 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62701 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH2%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62809 - "POST /recalculate-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62809 - "GET /raw-data/5ce029c7-7280-47b6-a394-978fb0af729c/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63655 - "POST /recalculate-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63714 - "POST /recalculate-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63780 - "POST /recalculate-scores HTTP/1.1" 200 OK

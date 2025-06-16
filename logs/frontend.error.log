@@ -126,3 +126,77 @@ TS2305: Module '"@/types/emg"' has no exported member 'CombinedChartDataPoint'.
     5 | import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
     6 | import MetricCard from './metric-card';
 
+ERROR in src/components/sessions/performance-card.tsx:58:42
+TS2339: Property 'contraction_count' does not exist on type '"" | ChannelAnalyticsData'.
+  Property 'contraction_count' does not exist on type '""'.
+    56 |   
+    57 |   // Get contraction counts
+  > 58 |   const totalContractions = channelData?.contraction_count ?? 0;
+       |                                          ^^^^^^^^^^^^^^^^^
+    59 |   const goodContractions = channelData?.good_contraction_count ?? 0;
+    60 |   const expectedContractions = analysisResult?.metadata.session_parameters_used?.session_expected_contractions ?? null;
+    61 |   
+
+ERROR in src/components/sessions/performance-card.tsx:59:41
+TS2339: Property 'good_contraction_count' does not exist on type '"" | ChannelAnalyticsData'.
+  Property 'good_contraction_count' does not exist on type '""'.
+    57 |   // Get contraction counts
+    58 |   const totalContractions = channelData?.contraction_count ?? 0;
+  > 59 |   const goodContractions = channelData?.good_contraction_count ?? 0;
+       |                                         ^^^^^^^^^^^^^^^^^^^^^^
+    60 |   const expectedContractions = analysisResult?.metadata.session_parameters_used?.session_expected_contractions ?? null;
+    61 |   
+    62 |   // Calculate scores
+
+ERROR in src/components/sessions/performance-card.tsx:141:7
+TS2345: Argument of type 'number | null | undefined' is not assignable to parameter of type 'number | null'.
+  Type 'undefined' is not assignable to type 'number | null'.
+    139 |     const leftContractionScore = calculateContractionScore(
+    140 |       leftChannelData.contraction_count || 0, 
+  > 141 |       leftExpectedContractions
+        |       ^^^^^^^^^^^^^^^^^^^^^^^^
+    142 |     );
+    143 |     const leftGoodContractionScore = calculateGoodContractionScore(
+    144 |       leftChannelData.good_contraction_count || 0, 
+
+ERROR in src/components/sessions/performance-card.tsx:153:7
+TS2345: Argument of type 'number | null | undefined' is not assignable to parameter of type 'number | null'.
+    151 |     const rightContractionScore = calculateContractionScore(
+    152 |       rightChannelData.contraction_count || 0, 
+  > 153 |       rightExpectedContractions
+        |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+    154 |     );
+    155 |     const rightGoodContractionScore = calculateGoodContractionScore(
+    156 |       rightChannelData.good_contraction_count || 0, 
+
+ERROR in src/components/sessions/performance-card.tsx:201:15
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | null'.
+    199 |               channelName={leftQuadChannelName}
+    200 |               channelData={leftChannelData}
+  > 201 |               expectedContractions={leftExpectedContractions}
+        |               ^^^^^^^^^^^^^^^^^^^^
+    202 |             />
+    203 |           </div>
+    204 |         )}
+
+ERROR in src/components/sessions/performance-card.tsx:212:15
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | null'.
+    210 |               channelName={rightQuadChannelName}
+    211 |               channelData={rightChannelData}
+  > 212 |               expectedContractions={rightExpectedContractions}
+        |               ^^^^^^^^^^^^^^^^^^^^
+    213 |             />
+    214 |           </div>
+    215 |         )}
+
+ERROR in src/components/app/StatsPanel.tsx:190:15
+TS2322: Type 'number | null' is not assignable to type 'number'.
+  Type 'null' is not assignable to type 'number'.
+    188 |             {/* Circular progress indicator */}
+    189 |             <CircularProgress 
+  > 190 |               value={performanceScore} 
+        |               ^^^^^
+    191 |               label={scoreDetails.label}
+    192 |               color={scoreDetails.color}
+    193 |             />
+

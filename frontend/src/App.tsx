@@ -9,7 +9,7 @@ import FileUpload from "./components/FileUpload";
 import GameSessionTabs from "./components/sessions/game-session-tabs";
 import QuickSelect from "./components/QuickSelect"; // Import QuickSelect
 import Spinner from "./components/ui/Spinner"; // Using the new CSS spinner
-import SessionConfigPanel from "./components/SessionConfigPanel"; // Import the new component
+import ScoringConfigPanel from "./components/SessionConfigPanel"; // Import the new component
 // GameSession, EMGDataPoint, EMGMetrics, GameParameters, BFRParameters are used by hooks or GameSessionTabs
 
 // Import hooks
@@ -30,7 +30,9 @@ function App() {
   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
     session_mvc_value: 0.00015,
     session_mvc_threshold_percentage: 75,
-    session_expected_contractions: 12
+    session_expected_contractions: 12,
+    session_expected_contractions_ch1: null,
+    session_expected_contractions_ch2: null
   });
   
   // Initialize hooks
@@ -102,14 +104,67 @@ function App() {
     
     // Update sessionParams from the response if available
     if (data.metadata.session_parameters_used) {
-      setSessionParams(data.metadata.session_parameters_used);
+      setSessionParams({
+        ...sessionParams,
+        ...data.metadata.session_parameters_used
+      });
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs]);
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
     setAppError(errorMsg);
   }, [resetState]);
+
+  // Function to handle recalculating scores with updated parameters
+  const handleRecalculateScores = useCallback(async () => {
+    if (!analysisResult) return;
+    
+    setIsLoading(true);
+    setAppError(null);
+    
+    try {
+      // Create FormData for the recalculation request
+      const formData = new FormData();
+      formData.append('result_id', analysisResult.file_id);
+      
+      // Add session parameters to the form data
+      if (sessionParams.session_mvc_value !== null && sessionParams.session_mvc_value !== undefined) {
+        formData.append('session_mvc_value', String(sessionParams.session_mvc_value));
+      }
+      if (sessionParams.session_mvc_threshold_percentage !== null && sessionParams.session_mvc_threshold_percentage !== undefined) {
+        formData.append('session_mvc_threshold_percentage', String(sessionParams.session_mvc_threshold_percentage));
+      }
+      if (sessionParams.session_expected_contractions !== null && sessionParams.session_expected_contractions !== undefined) {
+        formData.append('session_expected_contractions', String(sessionParams.session_expected_contractions));
+      }
+      if (sessionParams.session_expected_contractions_ch1 !== null && sessionParams.session_expected_contractions_ch1 !== undefined) {
+        formData.append('session_expected_contractions_ch1', String(sessionParams.session_expected_contractions_ch1));
+      }
+      if (sessionParams.session_expected_contractions_ch2 !== null && sessionParams.session_expected_contractions_ch2 !== undefined) {
+        formData.append('session_expected_contractions_ch2', String(sessionParams.session_expected_contractions_ch2));
+      }
+
+      // Send the request to recalculate scores
+      const recalculateResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/recalculate-scores', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!recalculateResponse.ok) {
+        const errorData = await recalculateResponse.json();
+        throw new Error(errorData.detail || 'Score recalculation failed.');
+      }
+
+      const resultData = await recalculateResponse.json();
+      handleSuccess(resultData);
+      
+    } catch (error: any) {
+      handleError(error.message || 'An unknown error occurred while recalculating scores.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [analysisResult, sessionParams, handleSuccess, handleError]);
 
   const handleQuickSelect = useCallback(async (filename: string) => {
     setIsLoading(true);
@@ -135,6 +190,12 @@ function App() {
       }
       if (sessionParams.session_expected_contractions !== null && sessionParams.session_expected_contractions !== undefined) {
         formData.append('session_expected_contractions', String(sessionParams.session_expected_contractions));
+      }
+      if (sessionParams.session_expected_contractions_ch1 !== null && sessionParams.session_expected_contractions_ch1 !== undefined) {
+        formData.append('session_expected_contractions_ch1', String(sessionParams.session_expected_contractions_ch1));
+      }
+      if (sessionParams.session_expected_contractions_ch2 !== null && sessionParams.session_expected_contractions_ch2 !== undefined) {
+        formData.append('session_expected_contractions_ch2', String(sessionParams.session_expected_contractions_ch2));
       }
 
       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
@@ -236,12 +297,13 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Session Parameters
+              Scoring Parameters
             </h2>
-            <SessionConfigPanel 
+            <ScoringConfigPanel 
               sessionParams={sessionParams}
               onParamsChange={setSessionParams}
               disabled={appIsLoading}
+              availableChannels={muscleChannels}
             />
           </div>
 
@@ -328,6 +390,7 @@ function App() {
                 setPlotMode={setPlotMode}
                 sessionParams={sessionParams}
                 onSessionParamsChange={setSessionParams}
+                onRecalculateScores={handleRecalculateScores}
                 appIsLoading={appIsLoading}
               />
             </div>
