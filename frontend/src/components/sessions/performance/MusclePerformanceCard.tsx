@@ -59,6 +59,12 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   ];
 
   const COLORS = [scoreHexColor, '#e5e7eb'];
+  
+  // Create a custom progress bar class with lighter color
+  const getProgressBarClass = () => {
+    // Use a custom class for the indicator
+    return "bg-opacity-70";
+  };
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
@@ -118,7 +124,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               <Progress 
                 value={totalContractions > 0 ? (goodContractionCount / totalContractions) * 100 : 0} 
                 className="h-2.5" 
-                indicatorClassName={scoreBgColor} 
+                indicatorClassName={`${scoreBgColor} opacity-70`}
               />
               <p className="text-xs text-gray-500 mt-1">{goodContractionCount} good out of {totalContractions} total</p>
               
@@ -150,7 +156,11 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                   )}
                 </div>
                 {contractionScore !== null ? (
-                  <Progress value={contractionScore} className="h-2.5" indicatorClassName={scoreBgColor} />
+                  <Progress 
+                    value={contractionScore} 
+                    className="h-2.5" 
+                    indicatorClassName={`${scoreBgColor} opacity-70`}
+                  />
                 ) : (
                   <div className="h-2.5 bg-gray-200 rounded-full w-full" />
                 )}

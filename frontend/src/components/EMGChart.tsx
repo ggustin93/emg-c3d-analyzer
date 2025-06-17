@@ -113,54 +113,23 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     }
   };
 
-  // Create a map of unique muscle names to their colors
-  const uniqueMuscleColors = new Map<string, string>();
-  finalDisplayDataKeys.forEach((dataKey, index) => {
-    // Find the base channel name (without activated/Raw suffix)
-    const baseChannelName = displayChannels.find(ch => dataKey.startsWith(ch)) || dataKey.split(' ')[0];
-    const muscleName = channel_muscle_mapping[baseChannelName] || baseChannelName;
-    
-    // Get color from mapping or use default colors
-    const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
-    
-    // If no custom color is set, use distinct default colors for the first two channels
-    let color = colorStyle.stroke;
-    if (!muscle_color_mapping[muscleName] && index < 2) {
-      const defaultColors = ['#3b82f6', '#ef4444']; // Blue for first, Red for second
-      color = defaultColors[index];
-    }
-    
-    uniqueMuscleColors.set(muscleName, color);
-  });
+  // MVC threshold color - using orange
+  const mvcThresholdColor = '#f97316'; // orange-500
 
-  // Custom legend formatter to include MVC threshold and deduplicate muscle entries
+  // Custom legend formatter to only show MVC threshold
   const renderLegend = (props: any) => {
-    // Instead of using the payload directly, we'll create our own based on unique muscles
-    const uniqueLegendItems = Array.from(uniqueMuscleColors.entries()).map(([muscleName, color]) => ({
-      value: muscleName,
-      color: color,
-      type: 'line'
-    }));
-    
     return (
       <div className="recharts-default-legend" style={{ padding: '0 10px' }}>
         <ul className="flex flex-wrap items-center gap-x-6">
-          {uniqueLegendItems.map((entry, index) => (
-            <li key={`item-${index}`} className="flex items-center">
-              <span 
-                className="inline-block w-3 h-3 mr-2" 
-                style={{ backgroundColor: entry.color }}
-              />
-              <span>{`${entry.value} ${plotMode === 'raw' ? 'Raw' : 'Activated'}`}</span>
-            </li>
-          ))}
           {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
             <li className="flex items-center">
               <span 
                 className="inline-block w-6 h-0 mr-2 border-t-2 border-dashed" 
-                style={{ borderColor: '#dc2626' }}
+                style={{ borderColor: mvcThresholdColor }}
               />
-              <span style={{ color: '#dc2626' }}>MVC Threshold ({mvcThresholdForPlot.toExponential(3)} mV)</span>
+              <span style={{ color: mvcThresholdColor, fontWeight: 500 }}>
+                MVC ({mvcThresholdForPlot.toExponential(3)} mV)
+              </span>
             </li>
           )}
         </ul>
@@ -218,18 +187,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
           />
           
           {/* Render lines for each display channel */}
-          {finalDisplayDataKeys.map((dataKey, index) => {
+          {finalDisplayDataKeys.map((dataKey) => {
             // Find the base channel name (without activated/Raw suffix)
-            const baseChannelName = displayChannels.find(ch => dataKey.startsWith(ch)) || dataKey;
-            const muscleName = channel_muscle_mapping[baseChannelName] || baseChannelName;
-            const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+            const baseChannelName = displayChannels.find(ch => dataKey.startsWith(ch)) || dataKey.split(' ')[0];
             
-            // Use the same color logic as above for consistency
-            let color = colorStyle.stroke;
-            if (!muscle_color_mapping[muscleName] && index < 2) {
-              const defaultColors = ['#3b82f6', '#ef4444']; // Blue for first, Red for second
-              color = defaultColors[index];
-            }
+            // Get color directly using getColorForChannel for consistency with ChannelSelection
+            const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
             
             return (
               <Line 
@@ -237,7 +200,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 type="monotone" 
                 dataKey={dataKey} 
                 name={dataKey} 
-                stroke={color} 
+                stroke={colorStyle.stroke} 
                 dot={false} 
                 isAnimationActive={false} 
                 strokeWidth={2.5}
@@ -249,7 +212,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
           {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
             <ReferenceLine 
               y={mvcThresholdForPlot} 
-              stroke="#dc2626" // Red color for threshold
+              stroke={mvcThresholdColor} // Use the same color as in the legend
               strokeDasharray="3 3" 
               strokeWidth={2.5}
             />

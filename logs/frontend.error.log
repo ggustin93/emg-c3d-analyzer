@@ -4360,3 +4360,525 @@ TS2454: Variable 'handleFilterChange' is used before being assigned.
     111 |   // Update the all channels data when current analytics changes
     112 |   useEffect(() => {
 
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:127:17
+TS2322: Type '{ value: number; className: string; indicatorStyle: { backgroundColor: string; opacity: number; }; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+  Property 'indicatorStyle' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+    125 |                 value={totalContractions > 0 ? (goodContractionCount / totalContractions) * 100 : 0} 
+    126 |                 className="h-2.5" 
+  > 127 |                 indicatorStyle={progressBarStyle}
+        |                 ^^^^^^^^^^^^^^
+    128 |               />
+    129 |               <p className="text-xs text-gray-500 mt-1">{goodContractionCount} good out of {totalContractions} total</p>
+    130 |               
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:159:72
+TS2322: Type '{ value: number; className: string; indicatorStyle: { backgroundColor: string; opacity: number; }; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+  Property 'indicatorStyle' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+    157 |                 </div>
+    158 |                 {contractionScore !== null ? (
+  > 159 |                   <Progress value={contractionScore} className="h-2.5" indicatorStyle={progressBarStyle} />
+        |                                                                        ^^^^^^^^^^^^^^
+    160 |                 ) : (
+    161 |                   <div className="h-2.5 bg-gray-200 rounded-full w-full" />
+    162 |                 )}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:127:17
+TS2322: Type '{ value: number; className: string; indicatorStyle: { backgroundColor: string; opacity: number; }; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+  Property 'indicatorStyle' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+    125 |                 value={totalContractions > 0 ? (goodContractionCount / totalContractions) * 100 : 0} 
+    126 |                 className="h-2.5" 
+  > 127 |                 indicatorStyle={progressBarStyle}
+        |                 ^^^^^^^^^^^^^^
+    128 |               />
+    129 |               <p className="text-xs text-gray-500 mt-1">{goodContractionCount} good out of {totalContractions} total</p>
+    130 |               
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:159:72
+TS2322: Type '{ value: number; className: string; indicatorStyle: { backgroundColor: string; opacity: number; }; }' is not assignable to type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+  Property 'indicatorStyle' does not exist on type 'IntrinsicAttributes & Omit<ProgressProps & RefAttributes<HTMLDivElement>, "ref"> & { indicatorClassName?: string | undefined; } & RefAttributes<...>'.
+    157 |                 </div>
+    158 |                 {contractionScore !== null ? (
+  > 159 |                   <Progress value={contractionScore} className="h-2.5" indicatorStyle={progressBarStyle} />
+        |                                                                        ^^^^^^^^^^^^^^
+    160 |                 ) : (
+    161 |                   <div className="h-2.5 bg-gray-200 rounded-full w-full" />
+    162 |                 )}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:129:24
+TS2322: Type '{ children: string; jsx: true; }' is not assignable to type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+  Property 'jsx' does not exist on type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+    127 |                   className="h-2.5"
+    128 |                 />
+  > 129 |                 <style jsx>{`
+        |                        ^^^
+    130 |                   :global(.progress-indicator) {
+    131 |                     background-color: ${scoreHexColor};
+    132 |                     opacity: 0.7;
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:168:28
+TS2322: Type '{ children: string; jsx: true; }' is not assignable to type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+  Property 'jsx' does not exist on type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+    166 |                   <div className="relative w-full">
+    167 |                     <Progress value={contractionScore} className="h-2.5" />
+  > 168 |                     <style jsx>{`
+        |                            ^^^
+    169 |                       :global(.progress-indicator) {
+    170 |                         background-color: ${scoreHexColor};
+    171 |                         opacity: 0.7;
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:129:24
+TS2322: Type '{ children: string; jsx: true; }' is not assignable to type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+  Property 'jsx' does not exist on type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+    127 |                   className="h-2.5"
+    128 |                 />
+  > 129 |                 <style jsx>{`
+        |                        ^^^
+    130 |                   :global(.progress-indicator) {
+    131 |                     background-color: ${scoreHexColor};
+    132 |                     opacity: 0.7;
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:168:28
+TS2322: Type '{ children: string; jsx: true; }' is not assignable to type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+  Property 'jsx' does not exist on type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+    166 |                   <div className="relative w-full">
+    167 |                     <Progress value={contractionScore} className="h-2.5" />
+  > 168 |                     <style jsx>{`
+        |                            ^^^
+    169 |                       :global(.progress-indicator) {
+    170 |                         background-color: ${scoreHexColor};
+    171 |                         opacity: 0.7;
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/lib/utils.ts:3:10
+TS2395: Individual declarations in merged declaration 'getScoreLabelAndColor' must be all exported or all local.
+    1 | import { type ClassValue, clsx } from "clsx"
+    2 | import { twMerge } from "tailwind-merge"
+  > 3 | import { getScoreLabelAndColor } from '@/lib/utils';
+      |          ^^^^^^^^^^^^^^^^^^^^^
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+
+ERROR in src/lib/utils.ts:3:10
+TS2440: Import declaration conflicts with local declaration of 'getScoreLabelAndColor'.
+    1 | import { type ClassValue, clsx } from "clsx"
+    2 | import { twMerge } from "tailwind-merge"
+  > 3 | import { getScoreLabelAndColor } from '@/lib/utils';
+      |          ^^^^^^^^^^^^^^^^^^^^^
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+
+ERROR in src/lib/utils.ts:4:35
+TS2307: Cannot find module './performance/MusclePerformanceCard' or its corresponding type declarations.
+    2 | import { twMerge } from "tailwind-merge"
+    3 | import { getScoreLabelAndColor } from '@/lib/utils';
+  > 4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+      |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+    7 |
+
+ERROR in src/lib/utils.ts:5:36
+TS2307: Cannot find module './performance/OverallPerformanceCard' or its corresponding type declarations.
+    3 | import { getScoreLabelAndColor } from '@/lib/utils';
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+  > 5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+    7 |
+    8 | export function cn(...inputs: ClassValue[]) {
+
+ERROR in src/lib/utils.ts:6:33
+TS2305: Module '"@/types/emg"' has no exported member 'MuscleScore'.
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+  > 6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+      |                                 ^^^^^^^^^^^
+    7 |
+    8 | export function cn(...inputs: ClassValue[]) {
+    9 |   return twMerge(clsx(inputs))
+
+ERROR in src/lib/utils.ts:12:14
+TS2395: Individual declarations in merged declaration 'getScoreLabelAndColor' must be all exported or all local.
+    10 | }
+    11 |
+  > 12 | export const getScoreLabelAndColor = (score: number) => {
+       |              ^^^^^^^^^^^^^^^^^^^^^
+    13 |   if (score >= 90) {
+    14 |     return { 
+    15 |       label: "Excellent", 
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/lib/utils.ts:3:10
+TS2395: Individual declarations in merged declaration 'getScoreLabelAndColor' must be all exported or all local.
+    1 | import { type ClassValue, clsx } from "clsx"
+    2 | import { twMerge } from "tailwind-merge"
+  > 3 | import { getScoreLabelAndColor } from '@/lib/utils';
+      |          ^^^^^^^^^^^^^^^^^^^^^
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+
+ERROR in src/lib/utils.ts:3:10
+TS2440: Import declaration conflicts with local declaration of 'getScoreLabelAndColor'.
+    1 | import { type ClassValue, clsx } from "clsx"
+    2 | import { twMerge } from "tailwind-merge"
+  > 3 | import { getScoreLabelAndColor } from '@/lib/utils';
+      |          ^^^^^^^^^^^^^^^^^^^^^
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+
+ERROR in src/lib/utils.ts:4:35
+TS2307: Cannot find module './performance/MusclePerformanceCard' or its corresponding type declarations.
+    2 | import { twMerge } from "tailwind-merge"
+    3 | import { getScoreLabelAndColor } from '@/lib/utils';
+  > 4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+      |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+    7 |
+
+ERROR in src/lib/utils.ts:5:36
+TS2307: Cannot find module './performance/OverallPerformanceCard' or its corresponding type declarations.
+    3 | import { getScoreLabelAndColor } from '@/lib/utils';
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+  > 5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+    7 |
+    8 | export function cn(...inputs: ClassValue[]) {
+
+ERROR in src/lib/utils.ts:6:33
+TS2305: Module '"@/types/emg"' has no exported member 'MuscleScore'.
+    4 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    5 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+  > 6 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+      |                                 ^^^^^^^^^^^
+    7 |
+    8 | export function cn(...inputs: ClassValue[]) {
+    9 |   return twMerge(clsx(inputs))
+
+ERROR in src/lib/utils.ts:12:14
+TS2395: Individual declarations in merged declaration 'getScoreLabelAndColor' must be all exported or all local.
+    10 | }
+    11 |
+  > 12 | export const getScoreLabelAndColor = (score: number) => {
+       |              ^^^^^^^^^^^^^^^^^^^^^
+    13 |   if (score >= 75) {
+    14 |     return { 
+    15 |       label: "Good", 
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx
+TS1208: 'PerformanceCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx:3:33
+TS2304: Cannot find name 'PerformanceCardProps'.
+    1 | import { getScoreLabelAndColor } from '@/lib/utils';
+    2 |
+  > 3 | const PerformanceCard: React.FC<PerformanceCardProps> = ({ sessionData, sessionParams }) => {
+      |                                 ^^^^^^^^^^^^^^^^^^^^
+    4 |
+    5 |   const { muscle_scores: muscleScores, symmetry_score: symmetryScore } = sessionData.performance_metrics;
+    6 |
+
+ERROR in src/components/sessions/PerformanceCard.tsx:48:42
+TS2304: Cannot find name 'MuscleScore'.
+    46 |   };
+    47 |
+  > 48 |   const renderMuscleCard = (muscleScore: MuscleScore) => {
+       |                                          ^^^^^^^^^^^
+    49 |     const { 
+    50 |       channel,
+    51 |       expected_short_contractions: expectedShortContractions,
+
+ERROR in src/components/sessions/PerformanceCard.tsx:55:31
+TS2552: Cannot find name 'shortContractions'. Did you mean 'totalContractions'?
+    53 |     } = muscleScore;
+    54 |     
+  > 55 |     const totalContractions = shortContractions + longContractions;
+       |                               ^^^^^^^^^^^^^^^^^
+    56 |     const goodContractions = shortGoodContractions + longGoodContractions;
+    57 |     
+    58 |     const expectedContractions = (expectedShortContractions ?? 0) + (expectedLongContractions ?? 0);
+
+ERROR in src/components/sessions/PerformanceCard.tsx:55:51
+TS2552: Cannot find name 'longContractions'. Did you mean 'goodContractions'?
+    53 |     } = muscleScore;
+    54 |     
+  > 55 |     const totalContractions = shortContractions + longContractions;
+       |                                                   ^^^^^^^^^^^^^^^^
+    56 |     const goodContractions = shortGoodContractions + longGoodContractions;
+    57 |     
+    58 |     const expectedContractions = (expectedShortContractions ?? 0) + (expectedLongContractions ?? 0);
+
+ERROR in src/components/sessions/PerformanceCard.tsx:56:30
+TS2552: Cannot find name 'shortGoodContractions'. Did you mean 'goodContractions'?
+    54 |     
+    55 |     const totalContractions = shortContractions + longContractions;
+  > 56 |     const goodContractions = shortGoodContractions + longGoodContractions;
+       |                              ^^^^^^^^^^^^^^^^^^^^^
+    57 |     
+    58 |     const expectedContractions = (expectedShortContractions ?? 0) + (expectedLongContractions ?? 0);
+    59 |     const contractionScore = expectedContractions > 0 ? Math.round((totalContractions / expectedContractions) * 100) : null;
+
+ERROR in src/components/sessions/PerformanceCard.tsx:56:54
+TS2552: Cannot find name 'longGoodContractions'. Did you mean 'goodContractions'?
+    54 |     
+    55 |     const totalContractions = shortContractions + longContractions;
+  > 56 |     const goodContractions = shortGoodContractions + longGoodContractions;
+       |                                                      ^^^^^^^^^^^^^^^^^^^^
+    57 |     
+    58 |     const expectedContractions = (expectedShortContractions ?? 0) + (expectedLongContractions ?? 0);
+    59 |     const contractionScore = expectedContractions > 0 ? Math.round((totalContractions / expectedContractions) * 100) : null;
+
+ERROR in src/components/sessions/PerformanceCard.tsx:66:8
+TS2552: Cannot find name 'MusclePerformanceCard'. Did you mean 'PerformanceCard'?
+    64 |
+    65 |     return (
+  > 66 |       <MusclePerformanceCard
+       |        ^^^^^^^^^^^^^^^^^^^^^
+    67 |         channel={channel}
+    68 |         totalScore={totalScore}
+    69 |         scoreLabel={scoreLabel.label}
+
+ERROR in src/components/sessions/PerformanceCard.tsx:80:39
+TS7006: Parameter 'acc' implicitly has an 'any' type.
+    78 |
+    79 |   const overallScore = muscleScores.length > 0
+  > 80 |     ? Math.round(muscleScores.reduce((acc, score) => acc + score.total_score, 0) / muscleScores.length)
+       |                                       ^^^
+    81 |     : 0;
+    82 |
+    83 |   const overallScoreLabel = getScoreLabelAndColor(overallScore);
+
+ERROR in src/components/sessions/PerformanceCard.tsx:80:44
+TS7006: Parameter 'score' implicitly has an 'any' type.
+    78 |
+    79 |   const overallScore = muscleScores.length > 0
+  > 80 |     ? Math.round(muscleScores.reduce((acc, score) => acc + score.total_score, 0) / muscleScores.length)
+       |                                            ^^^^^
+    81 |     : 0;
+    82 |
+    83 |   const overallScoreLabel = getScoreLabelAndColor(overallScore);
+
+ERROR in src/components/sessions/PerformanceCard.tsx:87:8
+TS2552: Cannot find name 'OverallPerformanceCard'. Did you mean 'PerformanceCard'?
+    85 |   return (
+    86 |     <div className="space-y-6">
+  > 87 |       <OverallPerformanceCard
+       |        ^^^^^^^^^^^^^^^^^^^^^^
+    88 |         totalScore={overallScore}
+    89 |         scoreLabel={overallScoreLabel.label}
+    90 |         scoreTextColor={overallScoreLabel.textColor}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx:5:33
+TS2305: Module '"@/types/emg"' has no exported member 'MuscleScore'.
+    3 | import MusclePerformanceCard from './performance/MusclePerformanceCard';
+    4 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+  > 5 | import { GameSessionParameters, MuscleScore } from '@/types/emg';
+      |                                 ^^^^^^^^^^^
+    6 |
+    7 | interface PerformanceCardProps {
+    8 |   sessionData: any;
+
+ERROR in src/components/sessions/PerformanceCard.tsx:95:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+    93 |         expectedShortContractions={expectedShortContractions}
+    94 |         expectedLongContractions={expectedLongContractions}
+  > 95 |         contractionDurationThreshold={sessionParams?.contraction_duration_threshold}
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    96 |         sessionParams={sessionParams}
+    97 |       />
+    98 |     );
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/PerformanceCard.tsx:6:29
+TS2307: Cannot find module '@/types/results' or its corresponding type declarations.
+    4 | import OverallPerformanceCard from './performance/OverallPerformanceCard';
+    5 | import { GameSessionParameters } from '@/types/emg';
+  > 6 | import { MuscleScore } from '@/types/results';
+      |                             ^^^^^^^^^^^^^^^^^
+    7 |
+    8 | interface PerformanceCardProps {
+    9 |   sessionData: any;
+
+ERROR in src/components/sessions/PerformanceCard.tsx:96:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+    94 |         expectedShortContractions={expectedShortContractions}
+    95 |         expectedLongContractions={expectedLongContractions}
+  > 96 |         contractionDurationThreshold={sessionParams?.contraction_duration_threshold}
+       |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    97 |         sessionParams={sessionParams}
+    98 |       />
+    99 |     );
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
