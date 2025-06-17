@@ -291,7 +291,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
+      <div className={viewMode === 'comparison' ? "my-4" : "my-4 p-4 border rounded-lg shadow-sm bg-slate-50"}>
         <div className="flex flex-col mb-4">
           {viewMode === 'comparison' ? (
             <MuscleComparisonTable 
