@@ -24,6 +24,11 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
     - Communicates with the backend via HTTP requests to the FastAPI endpoints.
     - New `SessionConfigPanel` component for inputting game session parameters.
     - Enhanced `EMGChart` component with zoom/pan functionality and MVC threshold visualization.
+    - **UI Enhancement Components**:
+        - `ViewSelector`: Reusable component for switching between single and comparison views.
+        - `colorMappings.ts`: Centralized color system for consistent styling across components.
+        - Enhanced `MuscleSelector`: Updated to work with the view mode system.
+        - Improved `SettingsPanel`: Added structured dropdowns for muscle groups and sides.
 
 ### Directory Structure
 ```
@@ -42,6 +47,14 @@ emg-c3d-analyzer/
 │   ├── cache/
 ├── frontend/
 │   └── src/
+│       ├── components/
+│       │   ├── app/
+│       │   │   ├── ViewSelector.tsx
+│       │   │   ├── MuscleSelector.tsx
+│       │   ├── EMGChart.tsx
+│       │   ├── SettingsPanel.tsx
+│       ├── lib/
+│       │   ├── colorMappings.ts
 ├── pyproject.toml
 └── start_dev.sh
 ```
@@ -83,6 +96,11 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - **Path Aliases**: The frontend is configured via `craco.config.js` to use the `@/` path alias, which maps to the `src/` directory. This allows for cleaner imports (e.g., `import MyComponent from '@/components/MyComponent'`).
 - **Interactive Chart Components**: The `EMGChart` component now includes Brush for zoom/pan functionality and ReferenceLine for MVC threshold visualization.
 - **Configuration UI**: The new `SessionConfigPanel` component provides a dedicated interface for inputting game session parameters.
+- **UI Enhancement Patterns**:
+  - **Centralized Color System**: The `colorMappings.ts` file provides a single source of truth for component colors, ensuring consistency across the application.
+  - **View Mode Management**: The `ViewSelector` component and `ViewMode` type provide a reusable way to switch between single and comparison views.
+  - **Tooltip Structure**: The application now follows a pattern of using a single `TooltipProvider` at the root level of components to avoid nesting issues.
+  - **Structured Muscle Naming**: The `SettingsPanel` now uses dropdowns for muscle groups and sides, providing a more structured and user-friendly way to name muscles.
 
 ## Component Relationships
 
@@ -101,6 +119,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 9.  **Plot Data Fetching**: When a plot is requested, the frontend calls the `/raw-data` endpoint.
 10. **Optimized Data Retrieval**: The `/raw-data` endpoint reads directly from the pre-serialized `_raw_emg.json` file, providing near-instant access without reprocessing the C3D file.
 11. **Interactive Chart Rendering**: The `EMGChart` component renders the data with zoom/pan functionality via Brush and displays the MVC threshold via ReferenceLine.
+12. **View Mode Management**: The `ViewSelector` component allows users to switch between single and comparison views, which affects both the `MuscleSelector` and `EMGChart` components.
 
 ### Dependencies
 - FastAPI ← Pydantic Models
@@ -108,6 +127,8 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - API ← File Storage
 - Frontend Hooks ← API Service
 - `EMGChart` ← Recharts (Brush, ReferenceLine)
+- `MuscleSelector` ← `ViewSelector` (view mode)
+- `EMGChart` ← `colorMappings.ts` (consistent colors)
 
 ## Technical Patterns
 
@@ -118,6 +139,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - Logging and monitoring
 - User feedback
 - Type safety with proper handling of nullable fields
+- **Tooltip Structure**: Proper structuring of `TooltipProvider` components to avoid runtime errors.
 
 ### Performance Optimization
 - Async operations with `FastAPI.concurrency.run_in_threadpool`.
@@ -143,6 +165,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - Error case validation
 - Security testing
 - Game-specific feature validation
+- UI component testing with different view modes and datasets
 
 ## Caching Mechanism
 - Use file content and parameter hashes for cache keys.
@@ -154,4 +177,6 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 ## Interactive Features
 - Zoom/pan functionality using Recharts Brush component for better data exploration.
 - Visual MVC threshold reference line for clear feedback on contraction quality.
-- Game session configuration panel for easy parameter input. 
+- Game session configuration panel for easy parameter input.
+- View mode switching for comparing multiple muscles or focusing on a single muscle.
+- Consistent color system for better visual association between UI elements. 

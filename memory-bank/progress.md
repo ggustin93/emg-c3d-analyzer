@@ -66,6 +66,13 @@
     - ✅ `StatsPanel` refined to show only clinically relevant amplitude metrics.
     - ✅ Fixed number formatting to correctly display scientific notation.
     - ✅ Finalized tab bar layout (removed redundant tab, restored full-width style).
+    - ✅ **Enhanced UI Components**:
+        - ✅ Created a centralized color system in `colorMappings.ts` for consistent styling.
+        - ✅ Implemented a reusable `ViewSelector` component for view mode switching.
+        - ✅ Fixed tooltip rendering issues by properly structuring `TooltipProvider` components.
+        - ✅ Improved muscle naming with structured dropdowns in `SettingsPanel`.
+        - ✅ Enhanced `MuscleSelector` to work with the view mode system.
+        - ✅ Updated `EMGChart` to support both single and comparison views with consistent colors.
 ✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
@@ -128,14 +135,23 @@
 - **Created dedicated configuration UI** for inputting game session parameters.
 - **Fixed TypeScript issues** for better type safety and code reliability.
 
-### Milestone 6: Production Hardening & Automation 🚧
+### Milestone 6: UI Consistency & Component Improvements ✅
+- **Created a centralized color system** for consistent styling across all components.
+- **Implemented a reusable view mode selector** for switching between single and comparison views.
+- **Enhanced muscle selection** with a more intuitive interface that respects the view mode.
+- **Fixed tooltip rendering issues** by properly structuring `TooltipProvider` components.
+- **Improved muscle naming** with structured dropdowns in `SettingsPanel`.
+
+### Milestone 7: Production Hardening & Automation 🚧
 - [ ] Achieve high test coverage for caching and processing logic.
 - [ ] Harden security (if applicable, e.g., auth).
 - [ ] Comprehensive documentation.
 - [ ] CI/CD pipeline.
 
 ## Recent Progress
-- Successfully implemented zoom/pan functionality for EMG charts.
-- Added game-specific analysis features (MVC threshold, expected contractions).
-- Created SessionConfigPanel for inputting game parameters.
-- Fixed TypeScript error in useGameSessionData.ts related to nullable duration.
+- Created a centralized color system for consistent styling across all components.
+- Implemented a reusable ViewSelector component for switching between single and comparison views.
+- Enhanced MuscleSelector to work with the view mode system and use consistent colors.
+- Fixed tooltip rendering issues by properly structuring TooltipProvider components.
+- Improved muscle naming with structured dropdowns in SettingsPanel.
+- Updated EMGChart to support both single and comparison views with consistent colors.

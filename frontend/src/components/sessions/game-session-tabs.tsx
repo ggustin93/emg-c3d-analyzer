@@ -9,18 +9,20 @@ import MetricCard from './metric-card';
 import EMGChart, { CombinedChartDataPoint } from '../EMGChart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
+import { useState, useEffect } from 'react';
+import { FilterMode } from '../app/ChannelFilter';
 
 import MetadataDisplay from "@/components/app/MetadataDisplay";
 import ChannelSelection from "@/components/app/ChannelSelection";
 import DownsamplingControl from "@/components/app/DownsamplingControl";
 import StatsPanel from '@/components/app/StatsPanel';
-import { useEffect } from 'react';
 import type { EMGMetrics } from '@/types/session';
 import PerformanceCard from './performance-card';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import ScoringConfigPanel from '../SessionConfigPanel';
 import SettingsPanel from '../SettingsPanel';
+import ChannelFilter from '../app/ChannelFilter';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -94,6 +96,94 @@ export default function GameSessionTabs({
   appIsLoading,
 }: GameSessionTabsProps) {
 
+  // Add state to store analytics data for all channels
+  const [allChannelsData, setAllChannelsData] = useState<Record<string, ChannelAnalyticsData | null>>({});
+  const [viewMode, setViewMode] = useState<FilterMode>('comparison');
+  
+  // Initialize to comparison mode when component mounts or when data changes
+  useEffect(() => {
+    console.log('Setting up comparison mode');
+    handleFilterChange('comparison');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Update the all channels data when current analytics changes
+  useEffect(() => {
+    if (currentChannelAnalyticsData && selectedChannelForStats) {
+      setAllChannelsData(prev => ({
+        ...prev,
+        [selectedChannelForStats]: currentChannelAnalyticsData
+      }));
+    }
+  }, [currentChannelAnalyticsData, selectedChannelForStats]);
+  
+  // Reset all channels data when analysis result changes
+  useEffect(() => {
+    if (analysisResult) {
+      setAllChannelsData({});
+    }
+  }, [analysisResult]);
+
+  const handleFilterChange = (mode: FilterMode, channel?: string) => {
+    setViewMode(mode);
+    if (mode === 'single' && channel) {
+      setSelectedChannelForStats(channel);
+      // Automatically select the corresponding plot channel, respecting plotMode
+      const desiredSuffix = plotMode === 'activated' ? ' activated' : ' Raw';
+      let plotChannel = allAvailableChannels.find(c => c === channel + desiredSuffix);
+      // Fallback if the specific mode doesn't exist for some reason
+      if (!plotChannel) {
+          plotChannel = allAvailableChannels.find(c => c.startsWith(channel));
+      }
+      setPlotChannel1Name(plotChannel || null);
+      setPlotChannel2Name(null);
+
+    } else if (mode === 'comparison') {
+        setSelectedChannelForStats(null);
+        const desiredSuffix = plotMode === 'activated' ? ' activated' : ' Raw';
+        const baseChannels = allAvailableChannels
+            .map(c => c.replace(/ (Raw|activated)$/, ''))
+            .filter((v, i, a) => a.indexOf(v) === i);
+
+        if (baseChannels.length > 0) {
+            let firstPlotChannel = allAvailableChannels.find(c => c === baseChannels[0] + desiredSuffix);
+            if (!firstPlotChannel) {
+                firstPlotChannel = allAvailableChannels.find(c => c.startsWith(baseChannels[0]));
+            }
+            setPlotChannel1Name(firstPlotChannel || null);
+        } else {
+            setPlotChannel1Name(null);
+        }
+        
+        if (baseChannels.length > 1) {
+            let secondPlotChannel = allAvailableChannels.find(c => c === baseChannels[1] + desiredSuffix);
+            if (!secondPlotChannel) {
+                secondPlotChannel = allAvailableChannels.find(c => c.startsWith(baseChannels[1]));
+            }
+            setPlotChannel2Name(secondPlotChannel || null);
+        } else {
+            setPlotChannel2Name(null);
+        }
+    }
+  };
+
+  // Update chart view mode based on selected channels
+  useEffect(() => {
+    if (plotChannel1Name && plotChannel2Name) {
+      // setChartViewMode('comparison'); // This is now controlled by handleFilterChange
+    } else {
+      // setChartViewMode('single'); // This is now controlled by handleFilterChange
+    }
+  }, [plotChannel1Name, plotChannel2Name]);
+  
+  // Keep plotMode and sessionParams.show_raw_signals in sync
+  useEffect(() => {
+    const rawSignalsEnabled = sessionParams.show_raw_signals === true;
+    if ((rawSignalsEnabled && plotMode !== 'raw') || (!rawSignalsEnabled && plotMode !== 'activated')) {
+      setPlotMode(rawSignalsEnabled ? 'raw' : 'activated');
+    }
+  }, [sessionParams.show_raw_signals, plotMode, setPlotMode]);
+
   const getPerformanceScore = (metrics?: EMGMetrics) => {
     if (!metrics) return 0;
     // ... existing code ...
@@ -107,7 +197,6 @@ export default function GameSessionTabs({
         <TabsList className="w-full flex justify-between overflow-x-auto">
           <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
           <TabsTrigger value="game-stats" className="flex-1 flex-shrink-0">Game Stats</TabsTrigger>
-          <TabsTrigger value="analytics" className="flex-1 flex-shrink-0">EMG Analytics</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
         </TabsList>
       </div>
@@ -115,70 +204,51 @@ export default function GameSessionTabs({
       <TabsContent value="plots">
         <Card>
           <CardHeader>
-             <Collapsible>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center space-x-2 text-sm text-primary hover:underline my-2">
-                  <CodeIcon className="h-4 w-4" />
-                  <span>Plot Configuration</span>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 pt-4 border-t">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="plot-channel-1" className="block text-sm font-medium text-gray-700 mb-1">Plot Channel 1:</label>
-                      <ChannelSelection
-                          id="plot-channel-1-selection"
-                          availableChannels={allAvailableChannels}
-                          selectedChannel={plotChannel1Name}
-                          setSelectedChannel={setPlotChannel1Name}
-                          label="Select Channel 1"
-                        />
-                    </div>
-                    <div>
-                      <label htmlFor="plot-channel-2" className="block text-sm font-medium text-gray-700 mb-1">Plot Channel 2:</label>
-                      <ChannelSelection
-                          id="plot-channel-2-selection"
-                          availableChannels={allAvailableChannels}
-                          selectedChannel={plotChannel2Name}
-                          setSelectedChannel={setPlotChannel2Name}
-                          label="Select Channel 2"
-                        />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="plot-mode-switch">Raw</Label>
-                      <Switch
-                        id="plot-mode-switch"
-                        checked={plotMode === 'activated'}
-                        onCheckedChange={(checked: boolean) => setPlotMode(checked ? 'activated' : 'raw')}
-                      />
-                      <Label htmlFor="plot-mode-switch">Activated</Label>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
-                        <DownsamplingControl 
-                          dataPoints={dataPoints}
-                          setDataPoints={setDataPoints}
-                          plotChannel1Data={mainPlotChannel1Data}
-                          plotChannel2Data={mainPlotChannel2Data}
-                        />
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
           </CardHeader>
           <CardContent className="pt-2">
+            {sessionParams && muscleChannels.length > 0 && (
+              <ChannelFilter
+                availableChannels={muscleChannels}
+                sessionParams={sessionParams}
+                activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+                onFilterChange={handleFilterChange}
+              />
+            )}
             <EMGChart 
-              chartData={mainChartData} 
-              channel1Name={plotChannel1Name}
-              channel2Name={plotChannel2Name}
+              chartData={mainChartData}
+              availableChannels={muscleChannels}
+              selectedChannel={selectedChannelForStats}
+              viewMode={viewMode}
               mvcThresholdForPlot={mvcThresholdForPlot}
               channel_muscle_mapping={sessionParams.channel_muscle_mapping}
-              plotMode={plotMode}
+              muscle_color_mapping={sessionParams.muscle_color_mapping}
+              sessionParams={sessionParams}
             />
+            
+            {/* Analytics Panel - Integrated from the EMG Analytics tab */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-medium">EMG Analytics</h3>
+                  <p className="text-sm text-muted-foreground">Detailed metrics for the selected muscle group.</p>
+                </div>
+              </div>
+              
+              <StatsPanel 
+                stats={currentStats}
+                channelAnalytics={currentChannelAnalyticsData}
+                selectedChannel={selectedChannelForStats}
+                availableChannels={muscleChannels}
+                onChannelSelect={setSelectedChannelForStats}
+                sessionExpectedContractions={sessionParams.session_expected_contractions ? parseInt(String(sessionParams.session_expected_contractions), 10) : null}
+                isEMGAnalyticsTab={true}
+                contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+                sessionParams={sessionParams}
+                allChannelsData={allChannelsData}
+                viewMode={viewMode}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -191,39 +261,13 @@ export default function GameSessionTabs({
         />
       </TabsContent>
 
-      <TabsContent value="analytics">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>EMG Analytics</CardTitle>
-                <CardDescription>Detailed metrics for the selected muscle group.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <StatsPanel 
-              stats={currentStats}
-              channelAnalytics={currentChannelAnalyticsData}
-              selectedChannel={selectedChannelForStats}
-              availableChannels={muscleChannels}
-              onChannelSelect={setSelectedChannelForStats}
-              sessionExpectedContractions={sessionParams.session_expected_contractions ? parseInt(String(sessionParams.session_expected_contractions), 10) : null}
-              isEMGAnalyticsTab={true}
-              contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
-              sessionParams={sessionParams}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
       <TabsContent value="settings">
         <div className="grid grid-cols-1 gap-4">
-         
           
+
           <Card>
             <CardHeader>
-              <CardTitle>Session Configuration</CardTitle>
+              <CardTitle className="text-lg"> Session Parameters</CardTitle>
             </CardHeader>
             <CardContent>
               <ScoringConfigPanel
@@ -233,6 +277,44 @@ export default function GameSessionTabs({
                 disabled={appIsLoading}
                 availableChannels={muscleChannels}
               />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Plot Configuration</CardTitle>
+              <CardDescription>Configure EMG plot display options</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="plot-mode-switch">Raw</Label>
+                    <Switch
+                      id="plot-mode-switch"
+                      checked={plotMode === 'activated'}
+                      onCheckedChange={(checked: boolean) => {
+                        const newMode = checked ? 'activated' : 'raw';
+                        setPlotMode(newMode);
+                        // Sync with session params
+                        onSessionParamsChange({
+                          ...sessionParams,
+                          show_raw_signals: newMode === 'raw'
+                        });
+                      }}
+                    />
+                    <Label htmlFor="plot-mode-switch">Activated</Label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+                    <DownsamplingControl 
+                      dataPoints={dataPoints}
+                      setDataPoints={setDataPoints}
+                      plotChannel1Data={mainPlotChannel1Data}
+                      plotChannel2Data={mainPlotChannel2Data}
+                    />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
           <SettingsPanel 

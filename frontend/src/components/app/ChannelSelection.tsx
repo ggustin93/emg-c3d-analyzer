@@ -8,6 +8,7 @@ import {
 } from '../ui/select';
 import MuscleNameDisplay from '../MuscleNameDisplay';
 import { GameSessionParameters } from '../../types/emg';
+import { getColorForChannel } from '../../lib/colorMappings';
 
 interface ChannelSelectionProps {
   availableChannels: string[];
@@ -32,6 +33,8 @@ const ChannelSelection: React.FC<ChannelSelectionProps> = ({
     return null;
   }
   
+  const selectedColorStyle = selectedChannel ? getColorForChannel(selectedChannel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping) : null;
+
   return (
     <Select
       value={selectedChannel || ''}
@@ -40,11 +43,14 @@ const ChannelSelection: React.FC<ChannelSelectionProps> = ({
       <SelectTrigger id={id} className="w-full">
         <SelectValue placeholder={`-- ${label} --`}>
           {selectedChannel && sessionParams ? (
-            <MuscleNameDisplay 
-              channelName={selectedChannel} 
-              sessionParams={sessionParams} 
-              showChannelName={showChannelNames} 
-            />
+            <div className="flex items-center">
+              {selectedColorStyle && <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: selectedColorStyle.stroke }} />}
+              <MuscleNameDisplay 
+                channelName={selectedChannel} 
+                sessionParams={sessionParams} 
+                showChannelName={showChannelNames} 
+              />
+            </div>
           ) : (
             `-- ${label} --`
           )}
@@ -52,19 +58,25 @@ const ChannelSelection: React.FC<ChannelSelectionProps> = ({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="none">-- Select a Channel --</SelectItem>
-        {availableChannels.map(channelName => (
-          <SelectItem key={`${id}-${channelName}`} value={channelName}>
-            {sessionParams ? (
-              <MuscleNameDisplay 
-                channelName={channelName} 
-                sessionParams={sessionParams} 
-                showChannelName={showChannelNames} 
-              />
-            ) : (
-              channelName
-            )}
-          </SelectItem>
-        ))}
+        {availableChannels.map(channelName => {
+          const colorStyle = getColorForChannel(channelName, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);
+          return (
+            <SelectItem key={`${id}-${channelName}`} value={channelName}>
+              <div className="flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colorStyle.stroke }} />
+                {sessionParams ? (
+                  <MuscleNameDisplay 
+                    channelName={channelName} 
+                    sessionParams={sessionParams} 
+                    showChannelName={showChannelNames} 
+                  />
+                ) : (
+                  channelName
+                )}
+              </div>
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

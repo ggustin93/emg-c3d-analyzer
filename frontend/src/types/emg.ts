@@ -48,24 +48,28 @@ export interface EMGChartProps {
 
 // For the session parameters from GUI
 export interface GameSessionParameters {
-  session_mvc_value: number | null;
-  session_mvc_threshold_percentage: number | null;
-  session_expected_contractions: number | null;
+  channel_muscle_mapping: Record<string, string>;
+  muscle_color_mapping: Record<string, string>;
+  show_raw_signals?: boolean;
+  
+  // Session configuration
+  session_mvc_value?: number | null;
+  session_mvc_threshold_percentage?: number | null;
+  session_expected_contractions?: number | null;
   session_expected_contractions_ch1?: number | null;
   session_expected_contractions_ch2?: number | null;
-  [key: string]: number | string | null | undefined | Record<string, string>;
   
-  // Detailed expected contractions by type
+  // Contraction expectations
   session_expected_long_left?: number | null;
   session_expected_short_left?: number | null;
   session_expected_long_right?: number | null;
   session_expected_short_right?: number | null;
   
-  // Contraction classification threshold
-  contraction_duration_threshold?: number | null; // in milliseconds, default 250ms
+  // Thresholds
+  contraction_duration_threshold?: number | null;
   
-  // Channel to muscle name mapping
-  channel_muscle_mapping?: Record<string, string>;
+  // Allow string indexing for dynamic access
+  [key: string]: Record<string, string> | boolean | number | null | undefined;
 }
 
 // For the backend response structure

@@ -997,3 +997,3366 @@ TS2351: This expression is not constructable.
     32 |
     33 | function App() {
 
+ERROR in src/components/app/StatsPanel.tsx:393:15
+TS2322: Type '{ title: string; value: number; unit: string; description: string; precision: number; useScientificNotation: boolean; error: string | undefined; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    391 |               useScientificNotation={Math.abs(displayAnalytics.rms ?? 0) < 0.001}
+    392 |               error={displayAnalytics.errors?.rms}
+  > 393 |               tooltipContent={expertTooltips.rms}
+        |               ^^^^^^^^^^^^^^
+    394 |             />
+    395 |             <MetricCard
+    396 |               title="MAV"
+
+ERROR in src/components/app/StatsPanel.tsx:403:15
+TS2322: Type '{ title: string; value: number; unit: string; description: string; precision: number; useScientificNotation: boolean; error: string | undefined; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    401 |               useScientificNotation={Math.abs(displayAnalytics.mav ?? 0) < 0.001}
+    402 |               error={displayAnalytics.errors?.mav}
+  > 403 |               tooltipContent={expertTooltips.mav}
+        |               ^^^^^^^^^^^^^^
+    404 |             />
+    405 |           </div>
+    406 |         </div>
+
+ERROR in src/components/app/StatsPanel.tsx:423:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    421 |               error={displayAnalytics.errors?.mpf}
+    422 |               validationStatus="strong-assumption"
+  > 423 |               tooltipContent={expertTooltips.mpf}
+        |               ^^^^^^^^^^^^^^
+    424 |             />
+    425 |             <MetricCard
+    426 |               title="MDF"
+
+ERROR in src/components/app/StatsPanel.tsx:433:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    431 |               error={displayAnalytics.errors?.mdf}
+    432 |               validationStatus="strong-assumption"
+  > 433 |               tooltipContent={expertTooltips.mdf}
+        |               ^^^^^^^^^^^^^^
+    434 |             />
+    435 |             <MetricCard
+    436 |               title="Fatigue Index (FI)"
+
+ERROR in src/components/app/StatsPanel.tsx:444:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; useScientificNotation: true; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    442 |               error={displayAnalytics.errors?.fatigue_index_fi_nsm5}
+    443 |               validationStatus="strong-assumption"
+  > 444 |               tooltipContent={expertTooltips.fatigueIndex}
+        |               ^^^^^^^^^^^^^^
+    445 |             />
+    446 |           </div>
+    447 |         </div>
+
+ERROR in src/components/app/StatsPanel.tsx:393:15
+TS2322: Type '{ title: string; value: number; unit: string; description: string; precision: number; useScientificNotation: boolean; error: string | undefined; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    391 |               useScientificNotation={Math.abs(displayAnalytics.rms ?? 0) < 0.001}
+    392 |               error={displayAnalytics.errors?.rms}
+  > 393 |               tooltipContent={expertTooltips.rms}
+        |               ^^^^^^^^^^^^^^
+    394 |             />
+    395 |             <MetricCard
+    396 |               title="MAV"
+
+ERROR in src/components/app/StatsPanel.tsx:403:15
+TS2322: Type '{ title: string; value: number; unit: string; description: string; precision: number; useScientificNotation: boolean; error: string | undefined; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    401 |               useScientificNotation={Math.abs(displayAnalytics.mav ?? 0) < 0.001}
+    402 |               error={displayAnalytics.errors?.mav}
+  > 403 |               tooltipContent={expertTooltips.mav}
+        |               ^^^^^^^^^^^^^^
+    404 |             />
+    405 |           </div>
+    406 |         </div>
+
+ERROR in src/components/app/StatsPanel.tsx:423:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    421 |               error={displayAnalytics.errors?.mpf}
+    422 |               validationStatus="strong-assumption"
+  > 423 |               tooltipContent={expertTooltips.mpf}
+        |               ^^^^^^^^^^^^^^
+    424 |             />
+    425 |             <MetricCard
+    426 |               title="MDF"
+
+ERROR in src/components/app/StatsPanel.tsx:433:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    431 |               error={displayAnalytics.errors?.mdf}
+    432 |               validationStatus="strong-assumption"
+  > 433 |               tooltipContent={expertTooltips.mdf}
+        |               ^^^^^^^^^^^^^^
+    434 |             />
+    435 |             <MetricCard
+    436 |               title="Fatigue Index (FI)"
+
+ERROR in src/components/app/StatsPanel.tsx:444:15
+TS2322: Type '{ title: string; value: number | null; unit: string; description: string; precision: number; useScientificNotation: true; error: string | undefined; validationStatus: "strong-assumption"; tooltipContent: string; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'tooltipContent' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+    442 |               error={displayAnalytics.errors?.fatigue_index_fi_nsm5}
+    443 |               validationStatus="strong-assumption"
+  > 444 |               tooltipContent={expertTooltips.fatigueIndex}
+        |               ^^^^^^^^^^^^^^
+    445 |             />
+    446 |           </div>
+    447 |         </div>
+
+ERROR in src/components/app/MuscleSelector.tsx
+TS1208: 'MuscleSelector.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/main.tsx
+TS1208: 'main.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/main.tsx
+TS1208: 'main.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/app/MuscleComparisonTable.tsx
+TS1208: 'MuscleComparisonTable.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/app/MuscleComparisonTable.tsx:132:34
+TS2339: Property 'scientific' does not exist on type '{ key: string; label: string; unit: string; precision: number; } | { key: string; label: string; unit: string; precision: number; scientific: boolean; }'.
+  Property 'scientific' does not exist on type '{ key: string; label: string; unit: string; precision: number; }'.
+    130 |                           value as number | null | undefined, 
+    131 |                           metric.unit, 
+  > 132 |                           metric.scientific, 
+        |                                  ^^^^^^^^^^
+    133 |                           metric.precision
+    134 |                         )}
+    135 |                       </td>
+
+ERROR in src/components/app/MuscleComparisonTable.tsx:132:34
+TS2339: Property 'scientific' does not exist on type '{ key: string; label: string; unit: string; precision: number; } | { key: string; label: string; unit: string; precision: number; scientific: boolean; }'.
+  Property 'scientific' does not exist on type '{ key: string; label: string; unit: string; precision: number; }'.
+    130 |                           value as number | null | undefined, 
+    131 |                           metric.unit, 
+  > 132 |                           metric.scientific, 
+        |                                  ^^^^^^^^^^
+    133 |                           metric.precision
+    134 |                         )}
+    135 |                       </td>
+
+(node:47583) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:47583) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:49539) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:49539) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/SettingsPanel.tsx:134:25
+TS2322: Type 'string | ChannelDetails' is not assignable to type 'string | number | readonly string[] | undefined'.
+  Type 'ChannelDetails' is not assignable to type 'string | number | readonly string[] | undefined'.
+    132 |                       <Input
+    133 |                         id={`muscle-${channel}`}
+  > 134 |                         value={channelMuscleMapping[channel] || ''}
+        |                         ^^^^^
+    135 |                         onChange={(e) => handleMuscleNameChange(channel, e.target.value)}
+    136 |                         placeholder={`e.g., Left Quadriceps`}
+    137 |                         disabled={disabled || !isEditing}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/SettingsPanel.tsx:134:25
+TS2322: Type 'string | ChannelDetails' is not assignable to type 'string | number | readonly string[] | undefined'.
+  Type 'ChannelDetails' is not assignable to type 'string | number | readonly string[] | undefined'.
+    132 |                       <Input
+    133 |                         id={`muscle-${channel}`}
+  > 134 |                         value={channelMuscleMapping[channel] || ''}
+        |                         ^^^^^
+    135 |                         onChange={(e) => handleMuscleNameChange(channel, e.target.value)}
+    136 |                         placeholder={`e.g., Left Quadriceps`}
+    137 |                         disabled={disabled || !isEditing}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/app/ViewSelector.tsx
+TS1208: 'ViewSelector.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/app/ViewSelector.tsx
+TS1208: 'ViewSelector.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/app/ViewSelector.tsx:4:10
+TS2724: '"@radix-ui/react-icons"' has no exported member named 'LayoutGridIcon'. Did you mean 'LayoutIcon'?
+    2 | import { Button } from '../ui/button';
+    3 | import { cn } from '../../lib/utils';
+  > 4 | import { LayoutGridIcon, RowsIcon, ColumnsIcon } from '@radix-ui/react-icons';
+      |          ^^^^^^^^^^^^^^
+    5 |
+    6 | export type ViewMode = 'comparison' | 'left' | 'right';
+    7 |
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:15
+TS2322: Type 'Record<string, string | ChannelDetails>' is not assignable to type 'Record<string, string>'.
+  'string' index signatures are incompatible.
+    Type 'string | ChannelDetails' is not assignable to type 'string'.
+      Type 'ChannelDetails' is not assignable to type 'string'.
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+  > 198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+        |               ^^^^^^^^^^^^^^^^^^^^^^
+    199 |               plotMode={plotMode}
+    200 |             />
+    201 |             
+
+ERROR in src/components/sessions/game-session-tabs.tsx:195:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; channel1Name: string | null; channel2Name: string | null; mvcThresholdForPlot: number | null | undefined; channel_muscle_mapping: Record<...>; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'channel1Name' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    193 |             <EMGChart 
+    194 |               chartData={mainChartData} 
+  > 195 |               channel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+    198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+
+ERROR in src/App.tsx:392:15
+TS2322: Type '{ analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; plotChannel1Name: string | null; ... 20 more ...; appIsLoading: boolean; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'plotChannel1Name' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    390 |               muscleChannels={muscleChannels}
+    391 |               allAvailableChannels={allAvailableChannels}
+  > 392 |               plotChannel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^^^^^
+    393 |               setPlotChannel1Name={setPlotChannel1Name}
+    394 |               plotChannel2Name={plotChannel2Name}
+    395 |               setPlotChannel2Name={setPlotChannel2Name}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:25:10
+TS2614: Module '"../SettingsPanel"' has no exported member 'getChannelDetails'. Did you mean to use 'import getChannelDetails from "../SettingsPanel"' instead?
+    23 | import SettingsPanel from '../SettingsPanel';
+    24 | import ViewSelector, { ViewMode } from '@/components/app/ViewSelector';
+  > 25 | import { getChannelDetails } from '@/components/SettingsPanel';
+       |          ^^^^^^^^^^^^^^^^^
+    26 |
+    27 | declare module '@/types/session' {
+    28 |   interface EMGMetrics {
+
+ERROR in src/App.tsx:392:15
+TS2322: Type '{ analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; plotChannel1Name: string | null; ... 20 more ...; appIsLoading: boolean; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'plotChannel1Name' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    390 |               muscleChannels={muscleChannels}
+    391 |               allAvailableChannels={allAvailableChannels}
+  > 392 |               plotChannel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^^^^^
+    393 |               setPlotChannel1Name={setPlotChannel1Name}
+    394 |               plotChannel2Name={plotChannel2Name}
+    395 |               setPlotChannel2Name={setPlotChannel2Name}
+
+ERROR in src/App.tsx:56:5
+TS2339: Property 'plotChannel1Name' does not exist on type 'ChannelManagementControls'.
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+    55 |   const {
+  > 56 |     plotChannel1Name,
+       |     ^^^^^^^^^^^^^^^^
+    57 |     setPlotChannel1Name,
+    58 |     plotChannel2Name,
+    59 |     setPlotChannel2Name,
+
+ERROR in src/App.tsx:57:5
+TS2339: Property 'setPlotChannel1Name' does not exist on type 'ChannelManagementControls'.
+    55 |   const {
+    56 |     plotChannel1Name,
+  > 57 |     setPlotChannel1Name,
+       |     ^^^^^^^^^^^^^^^^^^^
+    58 |     plotChannel2Name,
+    59 |     setPlotChannel2Name,
+    60 |     selectedChannelForStats, 
+
+ERROR in src/App.tsx:58:5
+TS2339: Property 'plotChannel2Name' does not exist on type 'ChannelManagementControls'.
+    56 |     plotChannel1Name,
+    57 |     setPlotChannel1Name,
+  > 58 |     plotChannel2Name,
+       |     ^^^^^^^^^^^^^^^^
+    59 |     setPlotChannel2Name,
+    60 |     selectedChannelForStats, 
+    61 |     setSelectedChannelForStats,
+
+ERROR in src/App.tsx:59:5
+TS2339: Property 'setPlotChannel2Name' does not exist on type 'ChannelManagementControls'.
+    57 |     setPlotChannel1Name,
+    58 |     plotChannel2Name,
+  > 59 |     setPlotChannel2Name,
+       |     ^^^^^^^^^^^^^^^^^^^
+    60 |     selectedChannelForStats, 
+    61 |     setSelectedChannelForStats,
+    62 |     muscleChannels,
+
+ERROR in src/App.tsx:66:44
+TS2554: Expected 1 arguments, but got 2.
+    64 |     updateChannelsAfterUpload,
+    65 |     resetChannelSelections,
+  > 66 |   } = useChannelManagement(analysisResult, plotMode);
+       |                                            ^^^^^^^^
+    67 |
+    68 |   const {
+    69 |     plotChannel1Data,
+
+ERROR in src/App.tsx:392:15
+TS2322: Type '{ analysisResult: EMGAnalysisResult; mvcThresholdForPlot: number | null; muscleChannels: string[]; allAvailableChannels: string[]; plotChannel1Name: any; setPlotChannel1Name: any; ... 19 more ...; appIsLoading: boolean; }' is not assignable to type 'IntrinsicAttributes & GameSessionTabsProps'.
+  Property 'plotChannel1Name' does not exist on type 'IntrinsicAttributes & GameSessionTabsProps'.
+    390 |               muscleChannels={muscleChannels}
+    391 |               allAvailableChannels={allAvailableChannels}
+  > 392 |               plotChannel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^^^^^
+    393 |               setPlotChannel1Name={setPlotChannel1Name}
+    394 |               plotChannel2Name={plotChannel2Name}
+    395 |               setPlotChannel2Name={setPlotChannel2Name}
+
+ERROR in src/lib/colorMappings.ts
+TS1208: 'colorMappings.ts' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/app/ViewSelector.tsx
+TS1208: 'ViewSelector.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/app/ViewSelector.tsx:3:10
+TS2305: Module '"lucide-react"' has no exported member 'LayoutGrid'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, Columns } from "lucide-react";
+      |          ^^^^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/ViewSelector.tsx:3:22
+TS2305: Module '"lucide-react"' has no exported member 'Columns'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, Columns } from "lucide-react";
+      |                      ^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/ViewSelector.tsx:3:10
+TS2305: Module '"lucide-react"' has no exported member 'LayoutGrid'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, Columns } from "lucide-react";
+      |          ^^^^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/ViewSelector.tsx:3:22
+TS2305: Module '"lucide-react"' has no exported member 'Columns'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, Columns } from "lucide-react";
+      |                      ^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/ViewSelector.tsx:3:10
+TS2305: Module '"lucide-react"' has no exported member 'LayoutGrid'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, LayoutList } from "lucide-react";
+      |          ^^^^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/ViewSelector.tsx:3:22
+TS2305: Module '"lucide-react"' has no exported member 'LayoutList'.
+    1 | import React from 'react';
+    2 | import { Button } from "../ui/button";
+  > 3 | import { LayoutGrid, LayoutList } from "lucide-react";
+      |                      ^^^^^^^^^^
+    4 |
+    5 | export type ViewMode = 'single' | 'comparison';
+    6 |
+
+ERROR in src/components/app/StatsPanel.tsx:272:13
+TS2322: Type '{ availableChannels: string[]; selectedChannel: string | null; setSelectedChannel: (channel: string | null) => void; sessionParams: GameSessionParameters | undefined; showChannelNames: true; showComparison: boolean; }' is not assignable to type 'IntrinsicAttributes & MuscleSelectorProps'.
+  Property 'showComparison' does not exist on type 'IntrinsicAttributes & MuscleSelectorProps'.
+    270 |             sessionParams={sessionParams}
+    271 |             showChannelNames={true}
+  > 272 |             showComparison={viewMode === 'comparison'}
+        |             ^^^^^^^^^^^^^^
+    273 |           />
+    274 |         </div>
+    275 |       </div>
+
+ERROR in src/components/app/StatsPanel.tsx:272:13
+TS2322: Type '{ availableChannels: string[]; selectedChannel: string | null; setSelectedChannel: (channel: string | null) => void; sessionParams: GameSessionParameters | undefined; showChannelNames: true; showComparison: boolean; }' is not assignable to type 'IntrinsicAttributes & MuscleSelectorProps'.
+  Property 'showComparison' does not exist on type 'IntrinsicAttributes & MuscleSelectorProps'.
+    270 |             sessionParams={sessionParams}
+    271 |             showChannelNames={true}
+  > 272 |             showComparison={viewMode === 'comparison'}
+        |             ^^^^^^^^^^^^^^
+    273 |           />
+    274 |         </div>
+    275 |       </div>
+
+ERROR in src/components/sessions/game-session-tabs.tsx:195:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; channel1Name: string | null; channel2Name: string | null; mvcThresholdForPlot: number | null | undefined; channel_muscle_mapping: Record<...>; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'channel1Name' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    193 |             <EMGChart 
+    194 |               chartData={mainChartData} 
+  > 195 |               channel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+    198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+
+ERROR in src/components/app/StatsPanel.tsx:272:13
+TS2322: Type '{ availableChannels: string[]; selectedChannel: string | null; setSelectedChannel: (channel: string | null) => void; sessionParams: GameSessionParameters | undefined; showChannelNames: true; showComparison: boolean; }' is not assignable to type 'IntrinsicAttributes & MuscleSelectorProps'.
+  Property 'showComparison' does not exist on type 'IntrinsicAttributes & MuscleSelectorProps'.
+    270 |             sessionParams={sessionParams}
+    271 |             showChannelNames={true}
+  > 272 |             showComparison={viewMode === 'comparison'}
+        |             ^^^^^^^^^^^^^^
+    273 |           />
+    274 |         </div>
+    275 |       </div>
+
+ERROR in src/components/sessions/game-session-tabs.tsx:195:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; channel1Name: string | null; channel2Name: string | null; mvcThresholdForPlot: number | null | undefined; channel_muscle_mapping: Record<...>; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'channel1Name' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    193 |             <EMGChart 
+    194 |               chartData={mainChartData} 
+  > 195 |               channel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+    198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+
+ERROR in src/components/app/StatsPanel.tsx:250:13
+TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+    248 |           <MuscleSelector
+    249 |             availableChannels={availableChannels}
+  > 250 |             selectedChannel={selectedChannel}
+        |             ^^^^^^^^^^^^^^^
+    251 |             setSelectedChannel={onChannelSelect || (() => {})}
+    252 |             sessionParams={sessionParams}
+    253 |             viewMode={viewMode}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:195:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; channel1Name: string | null; channel2Name: string | null; mvcThresholdForPlot: number | null | undefined; channel_muscle_mapping: Record<...>; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'channel1Name' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    193 |             <EMGChart 
+    194 |               chartData={mainChartData} 
+  > 195 |               channel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+    198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:195:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; channel1Name: string | null; channel2Name: string | null; mvcThresholdForPlot: number | null | undefined; channel_muscle_mapping: Record<...>; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'channel1Name' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    193 |             <EMGChart 
+    194 |               chartData={mainChartData} 
+  > 195 |               channel1Name={plotChannel1Name}
+        |               ^^^^^^^^^^^^
+    196 |               channel2Name={plotChannel2Name}
+    197 |               mvcThresholdForPlot={mvcThresholdForPlot}
+    198 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || { "CH1": "Left Quadriceps", "CH2": "Right Quadriceps" }}
+
+ERROR in src/components/app/ChannelFilter.tsx
+TS1208: 'ChannelFilter.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/app/StatsPanel.tsx:261:38
+TS2322: Type '{ allChannelsData: Record<string, ChannelAnalyticsData | null>; sessionParams: GameSessionParameters | undefined; }' is not assignable to type 'IntrinsicAttributes & MuscleComparisonTableProps'.
+  Property 'allChannelsData' does not exist on type 'IntrinsicAttributes & MuscleComparisonTableProps'. Did you mean 'channelsData'?
+    259 |           {viewMode === 'comparison' ? (
+    260 |             <div className="mt-4">
+  > 261 |               <MuscleComparisonTable allChannelsData={displayAllChannelsData} sessionParams={sessionParams} />
+        |                                      ^^^^^^^^^^^^^^^
+    262 |             </div>
+    263 |           ) : (
+    264 |             <>
+
+ERROR in src/components/app/StatsPanel.tsx:261:16
+TS2741: Property 'availableChannels' is missing in type '{ channelsData: Record<string, ChannelAnalyticsData | null>; sessionParams: GameSessionParameters | undefined; }' but required in type 'MuscleComparisonTableProps'.
+    259 |           {viewMode === 'comparison' ? (
+    260 |             <div className="mt-4">
+  > 261 |               <MuscleComparisonTable channelsData={displayAllChannelsData} sessionParams={sessionParams} />
+        |                ^^^^^^^^^^^^^^^^^^^^^
+    262 |             </div>
+    263 |           ) : (
+    264 |             <>
+
+ERROR in src/components/app/MuscleSelector.tsx:6:26
+TS2307: Cannot find module './ViewSelector' or its corresponding type declarations.
+    4 | import { cn } from '../../lib/utils';
+    5 | import { getChannelColor } from '../../lib/colorMappings';
+  > 6 | import { ViewMode } from './ViewSelector';
+      |                          ^^^^^^^^^^^^^^^^
+    7 |
+    8 | interface MuscleSelectorProps {
+    9 |   availableChannels: string[];
+
+ERROR in src/components/EMGChart.tsx:15:26
+TS2307: Cannot find module './app/ViewSelector' or its corresponding type declarations.
+    13 | } from 'recharts';
+    14 | import { getChannelColor } from '../lib/colorMappings';
+  > 15 | import { ViewMode } from './app/ViewSelector';
+       |                          ^^^^^^^^^^^^^^^^^^^^
+    16 |
+    17 | export interface CombinedChartDataPoint {
+    18 |   time: number;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:13:26
+TS2307: Cannot find module '../app/ViewSelector' or its corresponding type declarations.
+    11 | import { ChevronDownIcon } from '@radix-ui/react-icons';
+    12 | import { useState, useEffect } from 'react';
+  > 13 | import { ViewMode } from '../app/ViewSelector';
+       |                          ^^^^^^^^^^^^^^^^^^^^^
+    14 |
+    15 | import MetadataDisplay from "@/components/app/MetadataDisplay";
+    16 | import ChannelSelection from "@/components/app/ChannelSelection";
+
+ERROR in src/components/EMGChart.tsx:15:26
+TS2307: Cannot find module './app/ViewSelector' or its corresponding type declarations.
+    13 | } from 'recharts';
+    14 | import { getChannelColor } from '../lib/colorMappings';
+  > 15 | import { ViewMode } from './app/ViewSelector';
+       |                          ^^^^^^^^^^^^^^^^^^^^
+    16 |
+    17 | export interface CombinedChartDataPoint {
+    18 |   time: number;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:13:26
+TS2307: Cannot find module '../app/ViewSelector' or its corresponding type declarations.
+    11 | import { ChevronDownIcon } from '@radix-ui/react-icons';
+    12 | import { useState, useEffect } from 'react';
+  > 13 | import { ViewMode } from '../app/ViewSelector';
+       |                          ^^^^^^^^^^^^^^^^^^^^^
+    14 |
+    15 | import MetadataDisplay from "@/components/app/MetadataDisplay";
+    16 | import ChannelSelection from "@/components/app/ChannelSelection";
+
+ERROR in src/components/sessions/game-session-tabs.tsx:13:26
+TS2307: Cannot find module '../app/ViewSelector' or its corresponding type declarations.
+    11 | import { ChevronDownIcon } from '@radix-ui/react-icons';
+    12 | import { useState, useEffect } from 'react';
+  > 13 | import { ViewMode } from '../app/ViewSelector';
+       |                          ^^^^^^^^^^^^^^^^^^^^^
+    14 |
+    15 | import MetadataDisplay from "@/components/app/MetadataDisplay";
+    16 | import ChannelSelection from "@/components/app/ChannelSelection";
+
+ERROR in src/components/sessions/game-session-tabs.tsx:225:16
+TS2739: Type '{ stats: StatsData | null; channelAnalytics: ChannelAnalyticsData | null; selectedChannel: string | null; availableChannels: string[]; onChannelSelect: (name: string | null) => void; ... 4 more ...; allChannelsData: Record<...>; }' is missing the following properties from type 'StatsPanelComponentProps': viewMode, onFilterChange
+    223 |               </div>
+    224 |               
+  > 225 |               <StatsPanel 
+        |                ^^^^^^^^^^
+    226 |                 stats={currentStats}
+    227 |                 channelAnalytics={currentChannelAnalyticsData}
+    228 |                 selectedChannel={selectedChannelForStats}
+
+ERROR in src/components/SettingsPanel.tsx:158:7
+TS2698: Spread types may only be created from object types.
+    156 |   const handleMuscleColorChange = (muscleName: string, colorValue: string) => {
+    157 |     const updatedColorMapping = {
+  > 158 |       ...muscleColorMapping,
+        |       ^^^^^^^^^^^^^^^^^^^^^
+    159 |       [muscleName]: colorValue
+    160 |     };
+    161 |     
+
+ERROR in src/components/SettingsPanel.tsx:333:39
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'string | number | Record<string, string>'.
+  No index signature with a parameter of type 'string' was found on type 'string | number | Record<string, string>'.
+    331 |                 {uniqueMuscleNames.map((muscleName) => {
+    332 |                   const muscleColor = getMuscleColor(muscleName);
+  > 333 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+        |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    334 |                   
+    335 |                   return (
+    336 |                     <div key={muscleName} className="grid grid-cols-3 gap-4 items-center">
+
+ERROR in src/components/SettingsPanel.tsx:158:7
+TS2698: Spread types may only be created from object types.
+    156 |   const handleMuscleColorChange = (muscleName: string, colorValue: string) => {
+    157 |     const updatedColorMapping = {
+  > 158 |       ...muscleColorMapping,
+        |       ^^^^^^^^^^^^^^^^^^^^^
+    159 |       [muscleName]: colorValue
+    160 |     };
+    161 |     
+
+ERROR in src/components/SettingsPanel.tsx:333:39
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'string | number | Record<string, string>'.
+  No index signature with a parameter of type 'string' was found on type 'string | number | Record<string, string>'.
+    331 |                 {uniqueMuscleNames.map((muscleName) => {
+    332 |                   const muscleColor = getMuscleColor(muscleName);
+  > 333 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+        |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    334 |                   
+    335 |                   return (
+    336 |                     <div key={muscleName} className="grid grid-cols-3 gap-4 items-center">
+
+ERROR in src/components/SettingsPanel.tsx:158:7
+TS2698: Spread types may only be created from object types.
+    156 |   const handleMuscleColorChange = (muscleName: string, colorValue: string) => {
+    157 |     const updatedColorMapping = {
+  > 158 |       ...muscleColorMapping,
+        |       ^^^^^^^^^^^^^^^^^^^^^
+    159 |       [muscleName]: colorValue
+    160 |     };
+    161 |     
+
+ERROR in src/components/SettingsPanel.tsx:245:69
+TS2345: Argument of type 'string | number | Record<string, string>' is not assignable to parameter of type 'Record<string, string> | undefined'.
+  Type 'string' is not assignable to type 'Record<string, string>'.
+    243 |                     const currentName = channelMuscleMapping[channel] || '';
+    244 |                     const parts = parseMuscleNameParts(currentName);
+  > 245 |                     const muscleColor = getMuscleColor(currentName, muscleColorMapping);
+        |                                                                     ^^^^^^^^^^^^^^^^^^
+    246 |                     
+    247 |                     return (
+    248 |                       <div key={channel} className="grid grid-cols-4 gap-4 items-center">
+
+ERROR in src/components/SettingsPanel.tsx:332:66
+TS2345: Argument of type 'string | number | Record<string, string>' is not assignable to parameter of type 'Record<string, string> | undefined'.
+    330 |               <div className="grid gap-4">
+    331 |                 {uniqueMuscleNames.map((muscleName) => {
+  > 332 |                   const muscleColor = getMuscleColor(muscleName, muscleColorMapping);
+        |                                                                  ^^^^^^^^^^^^^^^^^^
+    333 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+    334 |                   
+    335 |                   return (
+
+ERROR in src/components/SettingsPanel.tsx:333:39
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'string | number | Record<string, string>'.
+  No index signature with a parameter of type 'string' was found on type 'string | number | Record<string, string>'.
+    331 |                 {uniqueMuscleNames.map((muscleName) => {
+    332 |                   const muscleColor = getMuscleColor(muscleName, muscleColorMapping);
+  > 333 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+        |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    334 |                   
+    335 |                   return (
+    336 |                     <div key={muscleName} className="grid grid-cols-3 gap-4 items-center">
+
+ERROR in src/components/SettingsPanel.tsx:392:17
+TS2322: Type 'string | number | false | Record<string, string>' is not assignable to type 'boolean | undefined'.
+  Type 'string' is not assignable to type 'boolean | undefined'.
+    390 |               <Switch
+    391 |                 id="raw-signals"
+  > 392 |                 checked={sessionParams.show_raw_signals || false}
+        |                 ^^^^^^^
+    393 |                 onCheckedChange={(checked) => {
+    394 |                   onParamsChange({
+    395 |                     ...sessionParams,
+
+ERROR in src/components/SettingsPanel.tsx:396:21
+TS2322: Type 'boolean' is not assignable to type 'string | number | Record<string, string> | null | undefined'.
+    394 |                   onParamsChange({
+    395 |                     ...sessionParams,
+  > 396 |                     show_raw_signals: checked
+        |                     ^^^^^^^^^^^^^^^^
+    397 |                   });
+    398 |                 }}
+    399 |                 disabled={disabled || !isEditing}
+
+ERROR in src/App.tsx:273:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    271 |
+    272 |       Object.keys(sessionParams).forEach(key => {
+  > 273 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    274 |         if (value !== null && value !== undefined) {
+    275 |           formData.append(key, String(value));
+    276 |         }
+
+ERROR in src/App.tsx:273:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    271 |
+    272 |       Object.keys(sessionParams).forEach(key => {
+  > 273 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    274 |         if (value !== null && value !== undefined) {
+    275 |           formData.append(key, String(value));
+    276 |         }
+
+ERROR in src/components/EMGChart.tsx:16:39
+TS2307: Cannot find module '../types/GameSessionParameters' or its corresponding type declarations.
+    14 | import { getColorForChannel } from '../lib/colorMappings';
+    15 | import { FilterMode } from './app/ChannelFilter';
+  > 16 | import { GameSessionParameters } from '../types/GameSessionParameters';
+       |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    17 |
+    18 | export interface CombinedChartDataPoint {
+    19 |   time: number;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:214:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; availableChannels: string[]; selectedChannel: string | null; viewMode: FilterMode; mvcThresholdForPlot: number | ... 1 more ... | undefined; channel_muscle_mapping: Record<...>; muscle_color_mapping: Record<...> | undefined; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'plotMode' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    212 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || {}}
+    213 |               muscle_color_mapping={sessionParams.muscle_color_mapping}
+  > 214 |               plotMode={plotMode}
+        |               ^^^^^^^^
+    215 |             />
+    216 |             
+    217 |             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
+
+ERROR in src/App.tsx:273:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    271 |
+    272 |       Object.keys(sessionParams).forEach(key => {
+  > 273 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    274 |         if (value !== null && value !== undefined) {
+    275 |           formData.append(key, String(value));
+    276 |         }
+
+ERROR in src/components/sessions/game-session-tabs.tsx:214:15
+TS2322: Type '{ chartData: CombinedChartDataPoint[]; availableChannels: string[]; selectedChannel: string | null; viewMode: FilterMode; mvcThresholdForPlot: number | ... 1 more ... | undefined; channel_muscle_mapping: Record<...>; muscle_color_mapping: Record<...> | undefined; plotMode: "raw" | "activated"; }' is not assignable to type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+  Property 'plotMode' does not exist on type 'IntrinsicAttributes & MultiChannelEMGChartProps'.
+    212 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping || {}}
+    213 |               muscle_color_mapping={sessionParams.muscle_color_mapping}
+  > 214 |               plotMode={plotMode}
+        |               ^^^^^^^^
+    215 |             />
+    216 |             
+    217 |             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
+
+ERROR in src/App.tsx:273:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    271 |
+    272 |       Object.keys(sessionParams).forEach(key => {
+  > 273 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    274 |         if (value !== null && value !== undefined) {
+    275 |           formData.append(key, String(value));
+    276 |         }
+
+ERROR in src/App.tsx:273:23
+TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'GameSessionParameters'.
+  No index signature with a parameter of type 'string' was found on type 'GameSessionParameters'.
+    271 |
+    272 |       Object.keys(sessionParams).forEach(key => {
+  > 273 |         const value = sessionParams[key];
+        |                       ^^^^^^^^^^^^^^^^^^
+    274 |         if (value !== null && value !== undefined) {
+    275 |           formData.append(key, String(value));
+    276 |         }
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:125:24
+TS2345: Argument of type '{ channel_muscle_mapping: Record<string, string>; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 8 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'SetStateAction<GameSessionParameters>'.
+  Type '{ channel_muscle_mapping: Record<string, string>; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 8 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to type 'GameSessionParameters'.
+    Property 'session_mvc_value' is incompatible with index signature.
+      Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    123 |       const newChannelMuscleMapping = data.metadata.session_parameters_used.channel_muscle_mapping || sessionParams.channel_muscle_mapping;
+    124 |       
+  > 125 |       setSessionParams({
+        |                        ^
+  > 126 |         ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 127 |         ...data.metadata.session_parameters_used,
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 128 |         // Always ensure we have a valid channel_muscle_mapping
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 129 |         channel_muscle_mapping: newChannelMuscleMapping || {
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 130 |           "CH1": "Left Quadriceps",
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 131 |           "CH2": "Right Quadriceps"
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 132 |         }
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 133 |       });
+        | ^^^^^^^^
+    134 |     }
+    135 |   }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams]);
+    136 |   
+
+ERROR in src/components/SessionConfigPanel.tsx:111:20
+TS2345: Argument of type '{ [x: string]: number | boolean | Record<string, string> | null | undefined; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 9 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'GameSessionParameters'.
+  'string' index signatures are incompatible.
+    Type 'number | boolean | Record<string, string> | null | undefined' is not assignable to type 'boolean | Record<string, string> | undefined'.
+      Type 'null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    109 |     }
+    110 |
+  > 111 |     onParamsChange({
+        |                    ^
+  > 112 |       ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 113 |       [name]: numValue,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 114 |     });
+        | ^^^^^^
+    115 |   };
+    116 |
+    117 |   // Validate that the sum of channel contractions matches the total
+
+ERROR in src/components/SettingsPanel.tsx:114:22
+TS2345: Argument of type '{ channel_muscle_mapping: { [x: string]: string; }; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 8 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'GameSessionParameters'.
+  Property 'session_mvc_value' is incompatible with index signature.
+    Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+      Type 'null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    112 |     
+    113 |     if (needsUpdate) {
+  > 114 |       onParamsChange({
+        |                      ^
+  > 115 |         ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 116 |         channel_muscle_mapping: updatedMapping
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 117 |       });
+        | ^^^^^^^^
+    118 |     }
+    119 |   }, [muscleChannels, channelMuscleMapping, sessionParams, onParamsChange]);
+    120 |   
+
+ERROR in src/components/SettingsPanel.tsx:127:20
+TS2345: Argument of type '{ channel_muscle_mapping: { [x: string]: string; }; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 8 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'GameSessionParameters'.
+  Property 'session_mvc_value' is incompatible with index signature.
+    Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    125 |     };
+    126 |     
+  > 127 |     onParamsChange({
+        |                    ^
+  > 128 |       ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 129 |       channel_muscle_mapping: updatedMapping
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 130 |     });
+        | ^^^^^^
+    131 |   };
+    132 |
+    133 |   const handleMuscleSideChange = (channel: string, side: string) => {
+
+ERROR in src/components/SettingsPanel.tsx:166:20
+TS2345: Argument of type '{ muscle_color_mapping: { [x: string]: string; }; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 8 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'GameSessionParameters'.
+  Property 'session_mvc_value' is incompatible with index signature.
+    Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    164 |     };
+    165 |     
+  > 166 |     onParamsChange({
+        |                    ^
+  > 167 |       ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 168 |       muscle_color_mapping: updatedColorMapping
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 169 |     });
+        | ^^^^^^
+    170 |   };
+    171 |   
+    172 |   const resetToDefaults = () => {
+
+ERROR in src/components/SettingsPanel.tsx:184:20
+TS2345: Argument of type '{ channel_muscle_mapping: Record<string, string>; muscle_color_mapping: {}; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; ... 7 more ...; show_raw_signals?: boolean | undefined; }' is not assignable to parameter of type 'GameSessionParameters'.
+  Property 'session_mvc_value' is incompatible with index signature.
+    Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    182 |     }
+    183 |     
+  > 184 |     onParamsChange({
+        |                    ^
+  > 185 |       ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 186 |       channel_muscle_mapping: defaultMapping,
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 187 |       muscle_color_mapping: {} // Reset color customizations
+        | ^^^^^^^^^^^^^^^^^^^^^^^
+  > 188 |     });
+        | ^^^^^^
+    189 |   };
+    190 |
+    191 |   const toggleEditMode = () => {
+
+ERROR in src/components/SettingsPanel.tsx:394:34
+TS2345: Argument of type '{ show_raw_signals: boolean; session_mvc_value: number | null; session_mvc_threshold_percentage: number | null; session_expected_contractions: number | null; session_expected_contractions_ch1?: number | ... 1 more ... | undefined; ... 7 more ...; muscle_color_mapping: Record<...>; }' is not assignable to parameter of type 'GameSessionParameters'.
+  Property 'session_mvc_value' is incompatible with index signature.
+    Type 'number | null' is not assignable to type 'boolean | Record<string, string> | undefined'.
+    392 |                 checked={sessionParams.show_raw_signals || false}
+    393 |                 onCheckedChange={(checked) => {
+  > 394 |                   onParamsChange({
+        |                                  ^
+  > 395 |                     ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 396 |                     show_raw_signals: checked
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 397 |                   });
+        | ^^^^^^^^^^^^^^^^^^^^
+    398 |                 }}
+    399 |                 disabled={disabled || !isEditing}
+    400 |               />
+
+ERROR in src/types/emg.ts:51:3
+TS2411: Property 'session_mvc_value' of type 'number | null' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    49 | // For the session parameters from GUI
+    50 | export interface GameSessionParameters {
+  > 51 |   session_mvc_value: number | null;
+       |   ^^^^^^^^^^^^^^^^^
+    52 |   session_mvc_threshold_percentage: number | null;
+    53 |   session_expected_contractions: number | null;
+    54 |   session_expected_contractions_ch1?: number | null;
+
+ERROR in src/types/emg.ts:52:3
+TS2411: Property 'session_mvc_threshold_percentage' of type 'number | null' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    50 | export interface GameSessionParameters {
+    51 |   session_mvc_value: number | null;
+  > 52 |   session_mvc_threshold_percentage: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    53 |   session_expected_contractions: number | null;
+    54 |   session_expected_contractions_ch1?: number | null;
+    55 |   session_expected_contractions_ch2?: number | null;
+
+ERROR in src/types/emg.ts:53:3
+TS2411: Property 'session_expected_contractions' of type 'number | null' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    51 |   session_mvc_value: number | null;
+    52 |   session_mvc_threshold_percentage: number | null;
+  > 53 |   session_expected_contractions: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    54 |   session_expected_contractions_ch1?: number | null;
+    55 |   session_expected_contractions_ch2?: number | null;
+    56 |   
+
+ERROR in src/types/emg.ts:54:3
+TS2411: Property 'session_expected_contractions_ch1' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    52 |   session_mvc_threshold_percentage: number | null;
+    53 |   session_expected_contractions: number | null;
+  > 54 |   session_expected_contractions_ch1?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    55 |   session_expected_contractions_ch2?: number | null;
+    56 |   
+    57 |   // Detailed expected contractions by type
+
+ERROR in src/types/emg.ts:55:3
+TS2411: Property 'session_expected_contractions_ch2' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    53 |   session_expected_contractions: number | null;
+    54 |   session_expected_contractions_ch1?: number | null;
+  > 55 |   session_expected_contractions_ch2?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 |   
+    57 |   // Detailed expected contractions by type
+    58 |   session_expected_long_left?: number | null;
+
+ERROR in src/types/emg.ts:58:3
+TS2411: Property 'session_expected_long_left' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    56 |   
+    57 |   // Detailed expected contractions by type
+  > 58 |   session_expected_long_left?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    59 |   session_expected_short_left?: number | null;
+    60 |   session_expected_long_right?: number | null;
+    61 |   session_expected_short_right?: number | null;
+
+ERROR in src/types/emg.ts:59:3
+TS2411: Property 'session_expected_short_left' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    57 |   // Detailed expected contractions by type
+    58 |   session_expected_long_left?: number | null;
+  > 59 |   session_expected_short_left?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    60 |   session_expected_long_right?: number | null;
+    61 |   session_expected_short_right?: number | null;
+    62 |   
+
+ERROR in src/types/emg.ts:60:3
+TS2411: Property 'session_expected_long_right' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    58 |   session_expected_long_left?: number | null;
+    59 |   session_expected_short_left?: number | null;
+  > 60 |   session_expected_long_right?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    61 |   session_expected_short_right?: number | null;
+    62 |   
+    63 |   // Contraction classification threshold
+
+ERROR in src/types/emg.ts:61:3
+TS2411: Property 'session_expected_short_right' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    59 |   session_expected_short_left?: number | null;
+    60 |   session_expected_long_right?: number | null;
+  > 61 |   session_expected_short_right?: number | null;
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    62 |   
+    63 |   // Contraction classification threshold
+    64 |   contraction_duration_threshold?: number | null; // in milliseconds, default 250ms
+
+ERROR in src/types/emg.ts:64:3
+TS2411: Property 'contraction_duration_threshold' of type 'number | null | undefined' is not assignable to 'string' index type 'boolean | Record<string, string> | undefined'.
+    62 |   
+    63 |   // Contraction classification threshold
+  > 64 |   contraction_duration_threshold?: number | null; // in milliseconds, default 250ms
+       |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    65 |   
+    66 |   // Channel to muscle name mapping - required field
+    67 |   channel_muscle_mapping: Record<string, string>;
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/app/MuscleComparisonTable.tsx:6:27
+TS2307: Cannot find module '../ui/separator' or its corresponding type declarations.
+    4 | import { formatMetricValue } from '../../utils/formatters';
+    5 | import { getColorForChannel } from '../../lib/colorMappings';
+  > 6 | import { Separator } from '../ui/separator';
+      |                           ^^^^^^^^^^^^^^^^^
+    7 |
+    8 | interface MuscleComparisonTableProps {
+    9 |   channelsData: Record<string, ChannelAnalyticsData | null>;
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:346:46
+TS2304: Cannot find name 'getTailwindClassesFromHex'.
+    344 |                           className={`w-6 h-6 rounded-full border-2`}
+    345 |                           style={{ 
+  > 346 |                             backgroundColor: getTailwindClassesFromHex(customColor).bg.replace('bg-', ''),
+        |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    347 |                             borderColor: customColor 
+    348 |                           }}
+    349 |                         />
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:8:26
+TS2459: Module '"../lib/colorMappings"' declares 'getTailwindClassesFromHex' locally, but it is not exported.
+     6 | import { GameSessionParameters } from '../types/emg';
+     7 | import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
+  >  8 | import { getMuscleColor, getTailwindClassesFromHex } from '../lib/colorMappings';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+    10 | import { Switch } from "./ui/switch";
+    11 | import {
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:8:26
+TS2459: Module '"../lib/colorMappings"' declares 'getTailwindClassesFromHex' locally, but it is not exported.
+     6 | import { GameSessionParameters } from '../types/emg';
+     7 | import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
+  >  8 | import { getMuscleColor, getTailwindClassesFromHex } from '../lib/colorMappings';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+    10 | import { Switch } from "./ui/switch";
+    11 | import {
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:8:26
+TS2459: Module '"../lib/colorMappings"' declares 'getTailwindClassesFromHex' locally, but it is not exported.
+     6 | import { GameSessionParameters } from '../types/emg';
+     7 | import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
+  >  8 | import { getMuscleColor, getTailwindClassesFromHex } from '../lib/colorMappings';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+    10 | import { Switch } from "./ui/switch";
+    11 | import {
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:8:26
+TS2459: Module '"../lib/colorMappings"' declares 'getTailwindClassesFromHex' locally, but it is not exported.
+     6 | import { GameSessionParameters } from '../types/emg';
+     7 | import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
+  >  8 | import { getMuscleColor, getTailwindClassesFromHex } from '../lib/colorMappings';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+    10 | import { Switch } from "./ui/switch";
+    11 | import {
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:198:49
+TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+    196 |                 availableChannels={muscleChannels}
+    197 |                 sessionParams={sessionParams}
+  > 198 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        |                                                 ^^^^^^^
+    199 |                 onFilterChange={handleFilterChange}
+    200 |               />
+    201 |             )}
+
+ERROR in src/components/SettingsPanel.tsx:8:26
+TS2459: Module '"../lib/colorMappings"' declares 'getTailwindClassesFromHex' locally, but it is not exported.
+     6 | import { GameSessionParameters } from '../types/emg';
+     7 | import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
+  >  8 | import { getMuscleColor, getTailwindClassesFromHex } from '../lib/colorMappings';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+    10 | import { Switch } from "./ui/switch";
+    11 | import {
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/App.tsx:41:77
+TS2345: Argument of type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' is not assignable to parameter of type 'GameSessionParameters | (() => GameSessionParameters)'.
+  Property 'muscle_color_mapping' is missing in type '{ session_mvc_value: number; session_mvc_threshold_percentage: number; session_expected_contractions: number; session_expected_contractions_ch1: null; session_expected_contractions_ch2: null; channel_muscle_mapping: { ...; }; }' but required in type 'GameSessionParameters'.
+    39 |   
+    40 |   // State for session parameters
+  > 41 |   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
+       |                                                                             ^
+  > 42 |     session_mvc_value: 0.00015,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 43 |     session_mvc_threshold_percentage: 75,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 44 |     session_expected_contractions: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 45 |     session_expected_contractions_ch1: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 46 |     session_expected_contractions_ch2: null,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 47 |     channel_muscle_mapping: {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 |       "CH1": "Left Quadriceps",
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 49 |       "CH2": "Right Quadriceps"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 50 |     }
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 51 |   });
+       | ^^^^
+    52 |   
+    53 |   // Initialize hooks
+    54 |   const downsamplingControls = useDataDownsampling(2000);
+
+ERROR in src/components/sessions/game-session-tabs.tsx:188:5
+TS2657: JSX expressions must have one parent element.
+    186 |
+    187 |   return (
+  > 188 |     <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange}>
+        |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 189 |       <div className="border-b mb-4">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 190 |         <TabsList className="w-full flex justify-between overflow-x-auto">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 191 |           <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 192 |           <TabsTrigger value="game-stats" className="flex-1 flex-shrink-0">Game Stats</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 193 |           <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 194 |         </TabsList>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 195 |       </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 196 |
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 197 |       <TabsContent value="plots">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 198 |         <Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 199 |           <CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 200 |           </CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 201 |           <CardContent className="pt-2">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 202 |             {sessionParams && muscleChannels.length > 0 && (
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 203 |               <ChannelFilter
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 204 |                 availableChannels={muscleChannels}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 205 |                 sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 206 |                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 207 |                 onFilterChange={handleFilterChange}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 208 |               />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 209 |             )}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 210 |             <EMGChart 
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 211 |               chartData={mainChartData}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 212 |               availableChannels={muscleChannels}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 213 |               selectedChannel={selectedChannelForStats}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 214 |               viewMode={viewMode}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 215 |               mvcThresholdForPlot={mvcThresholdForPlot}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 216 |               channel_muscle_mapping={sessionParams.channel_muscle_mapping}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 217 |               muscle_color_mapping={sessionParams.muscle_color_mapping}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 218 |               sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 219 |             />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 220 |             
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 221 |             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 222 |             <div className="mt-8 pt-6 border-t border-gray-200">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 223 |               <div className="flex items-center justify-between mb-4">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 224 |                 <div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 225 |                   <h3 className="text-lg font-medium">EMG Analytics</h3>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 226 |                   <p className="text-sm text-muted-foreground">Detailed metrics for the selected muscle group.</p>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 227 |                 </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 228 |               </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 229 |               
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 230 |               <StatsPanel 
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 231 |                 stats={currentStats}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 232 |                 channelAnalytics={currentChannelAnalyticsData}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 233 |                 selectedChannel={selectedChannelForStats}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 234 |                 availableChannels={muscleChannels}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 235 |                 onChannelSelect={setSelectedChannelForStats}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 236 |                 sessionExpectedContractions={sessionParams.session_expected_contractions ? parseInt(String(sessionParams.session_expected_contractions), 10) : null}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 237 |                 isEMGAnalyticsTab={true}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 238 |                 contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 239 |                 sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 240 |                 allChannelsData={allChannelsData}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 241 |                 viewMode={viewMode}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 242 |                 onFilterChange={handleFilterChange}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 243 |               />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 244 |             </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 245 |           </CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 246 |         </Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 247 |       </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 248 |
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 249 |       <TabsContent value="game-stats" className="bg-gray-50/50 p-4 rounded-b-lg">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 250 |         <PerformanceCard 
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 251 |           analysisResult={analysisResult}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 252 |           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 253 |           sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 254 |         />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 255 |       </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 256 |
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 257 |       <TabsContent value="settings">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 258 |         <div className="grid grid-cols-1 gap-4">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 259 |          
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 260 |
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 261 |           <Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 262 |             <CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 263 |               <CardTitle>Session Configuration</CardTitle>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 264 |             </CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 265 |             <CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 266 |               <ScoringConfigPanel
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 267 |                 sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 268 |                 onParamsChange={onSessionParamsChange}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 269 |                 onRecalculate={onRecalculateScores}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 270 |                 disabled={appIsLoading}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 271 |                 availableChannels={muscleChannels}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 272 |               />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 273 |             </CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 274 |           </Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 275 |           <SettingsPanel 
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 276 |             sessionParams={sessionParams}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 277 |             onParamsChange={onSessionParamsChange}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 278 |             muscleChannels={muscleChannels}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 279 |             disabled={appIsLoading}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 280 |           />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 281 |           
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 282 |           <Collapsible>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 283 |             <CollapsibleTrigger className="w-full text-left group flex items-center justify-between p-3 bg-white rounded-lg shadow-sm border hover:bg-slate-50 transition-colors">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 284 |               <div className="flex items-center">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 285 |                 <CodeIcon className="h-5 w-5 mr-3 text-slate-600" />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 286 |                 <div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 287 |                   <h4 className="font-semibold text-slate-800">Raw API Response</h4>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 288 |                   <p className="text-xs text-slate-500">Click to view the raw JSON output for debugging</p>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 289 |                 </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 290 |               </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 291 |               <ChevronDownIcon className="h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 292 |             </CollapsibleTrigger>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 293 |             <CollapsibleContent className="pt-2">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 294 |               <Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 295 |                 <CardContent className="p-0">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 296 |                   <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 297 |                     {JSON.stringify(analysisResult, null, 2)}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 298 |                   </pre>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 299 |                 </CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 300 |               </Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 301 |             </CollapsibleContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 302 |           </Collapsible>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 303 |         </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 304 |       </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 305 |     </Tabs>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 306 |      <Card>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 307 |      <CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 308 |        <CardTitle className="text-lg">Plot Configuration</CardTitle>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 309 |        <CardDescription>Configure EMG plot display options</CardDescription>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 310 |      </CardHeader>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 311 |      <CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 312 |        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 313 |          <div className="space-y-4">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 314 |            <div className="flex items-center space-x-2">
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 315 |              <Label htmlFor="plot-mode-switch">Raw</Label>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 316 |              <Switch
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 317 |                id="plot-mode-switch"
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 318 |                checked={plotMode === 'activated'}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 319 |                onCheckedChange={(checked: boolean) => {
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 320 |                  const newMode = checked ? 'activated' : 'raw';
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 321 |                  setPlotMode(newMode);
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 322 |                  // Sync with session params
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 323 |                  onSessionParamsChange({
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 324 |                    ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 325 |                    show_raw_signals: newMode === 'raw'
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 326 |                  });
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 327 |                }}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 328 |              />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 329 |              <Label htmlFor="plot-mode-switch">Activated</Label>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 330 |            </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 331 |            <div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 332 |              <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 333 |              <DownsamplingControl 
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 334 |                dataPoints={dataPoints}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 335 |                setDataPoints={setDataPoints}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 336 |                plotChannel1Data={mainPlotChannel1Data}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 337 |                plotChannel2Data={mainPlotChannel2Data}
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 338 |              />
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 339 |            </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 340 |          </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 341 |        </div>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 342 |      </CardContent>
+        | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 343 |    </Card>
+        | ^^^^^^^^^^^
+    344 |   );
+    345 | } 
+
+ERROR in src/components/SettingsPanel.tsx:199:5
+TS2657: JSX expressions must have one parent element.
+    197 |
+    198 |   return (
+  > 199 |     <Card>
+        |     ^^^^^^
+  > 200 |       <CardHeader>
+        | ^^^^^^^^^^^^^^^^^^
+  > 201 |         <div className="flex items-center justify-between">
+        | ^^^^^^^^^^^^^^^^^^
+  > 202 |           <CardTitle className="text-lg">Channel Settings</CardTitle>
+        | ^^^^^^^^^^^^^^^^^^
+  > 203 |           <Button 
+        | ^^^^^^^^^^^^^^^^^^
+  > 204 |             onClick={toggleEditMode} 
+        | ^^^^^^^^^^^^^^^^^^
+  > 205 |             variant="outline" 
+        | ^^^^^^^^^^^^^^^^^^
+  > 206 |             size="sm"
+        | ^^^^^^^^^^^^^^^^^^
+  > 207 |             disabled={disabled}
+        | ^^^^^^^^^^^^^^^^^^
+  > 208 |             className="flex items-center gap-1"
+        | ^^^^^^^^^^^^^^^^^^
+  > 209 |           >
+        | ^^^^^^^^^^^^^^^^^^
+  > 210 |             {isEditing ? (
+        | ^^^^^^^^^^^^^^^^^^
+  > 211 |               <>
+        | ^^^^^^^^^^^^^^^^^^
+  > 212 |                 <CheckIcon className="h-4 w-4" />
+        | ^^^^^^^^^^^^^^^^^^
+  > 213 |                 <span>Save</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 214 |               </>
+        | ^^^^^^^^^^^^^^^^^^
+  > 215 |             ) : (
+        | ^^^^^^^^^^^^^^^^^^
+  > 216 |               <>
+        | ^^^^^^^^^^^^^^^^^^
+  > 217 |                 <Pencil1Icon className="h-4 w-4" />
+        | ^^^^^^^^^^^^^^^^^^
+  > 218 |                 <span>Edit</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 219 |               </>
+        | ^^^^^^^^^^^^^^^^^^
+  > 220 |             )}
+        | ^^^^^^^^^^^^^^^^^^
+  > 221 |           </Button>
+        | ^^^^^^^^^^^^^^^^^^
+  > 222 |         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 223 |         <CardDescription>
+        | ^^^^^^^^^^^^^^^^^^
+  > 224 |           Configure muscle names and colors for better visualization
+        | ^^^^^^^^^^^^^^^^^^
+  > 225 |         </CardDescription>
+        | ^^^^^^^^^^^^^^^^^^
+  > 226 |       </CardHeader>
+        | ^^^^^^^^^^^^^^^^^^
+  > 227 |       <CardContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 228 |         <Tabs defaultValue="muscles" value={activeTab} onValueChange={setActiveTab}>
+        | ^^^^^^^^^^^^^^^^^^
+  > 229 |           <TabsList className="grid w-full grid-cols-3">
+        | ^^^^^^^^^^^^^^^^^^
+  > 230 |             <TabsTrigger value="muscles">Muscle Names</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 231 |             <TabsTrigger value="colors">Colors</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 232 |             <TabsTrigger value="display">Display</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 233 |           </TabsList>
+        | ^^^^^^^^^^^^^^^^^^
+  > 234 |           
+        | ^^^^^^^^^^^^^^^^^^
+  > 235 |           <TabsContent value="muscles" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 236 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^^^
+  > 237 |               Rename EMG channels to match actual muscle names for better readability in reports and analytics. Each muscle is assigned a unique color for consistency across all charts and tables.
+        | ^^^^^^^^^^^^^^^^^^
+  > 238 |             </p>
+        | ^^^^^^^^^^^^^^^^^^
+  > 239 |             
+        | ^^^^^^^^^^^^^^^^^^
+  > 240 |             {muscleChannels.length === 0 ? (
+        | ^^^^^^^^^^^^^^^^^^
+  > 241 |               <div className="p-4 bg-slate-100 rounded-md text-slate-500 text-center">
+        | ^^^^^^^^^^^^^^^^^^
+  > 242 |                 No channels available. Please load a session first.
+        | ^^^^^^^^^^^^^^^^^^
+  > 243 |               </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 244 |             ) : (
+        | ^^^^^^^^^^^^^^^^^^
+  > 245 |               <>
+        | ^^^^^^^^^^^^^^^^^^
+  > 246 |                 <div className="grid gap-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 247 |                   {muscleChannels.map((channel) => {
+        | ^^^^^^^^^^^^^^^^^^
+  > 248 |                     const currentName = channelMuscleMapping[channel] || '';
+        | ^^^^^^^^^^^^^^^^^^
+  > 249 |                     const parts = parseMuscleNameParts(currentName);
+        | ^^^^^^^^^^^^^^^^^^
+  > 250 |                     const muscleColor = getMuscleColor(currentName, muscleColorMapping);
+        | ^^^^^^^^^^^^^^^^^^
+  > 251 |                     
+        | ^^^^^^^^^^^^^^^^^^
+  > 252 |                     return (
+        | ^^^^^^^^^^^^^^^^^^
+  > 253 |                       <div key={channel} className="grid grid-cols-4 gap-4 items-center">
+        | ^^^^^^^^^^^^^^^^^^
+  > 254 |                         <div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 255 |                           <Label htmlFor={`muscle-${channel}`} className="text-sm font-medium flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 256 |                             <div 
+        | ^^^^^^^^^^^^^^^^^^
+  > 257 |                               className="w-4 h-4 rounded-full border-2" 
+        | ^^^^^^^^^^^^^^^^^^
+  > 258 |                               style={{ backgroundColor: muscleColor.stroke, borderColor: muscleColor.stroke }}
+        | ^^^^^^^^^^^^^^^^^^
+  > 259 |                             />
+        | ^^^^^^^^^^^^^^^^^^
+  > 260 |                             Channel {channel}
+        | ^^^^^^^^^^^^^^^^^^
+  > 261 |                           </Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 262 |                         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 263 |                         <div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 264 |                           <Label htmlFor={`muscle-side-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^^^
+  > 265 |                             Side
+        | ^^^^^^^^^^^^^^^^^^
+  > 266 |                           </Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 267 |                           <Select
+        | ^^^^^^^^^^^^^^^^^^
+  > 268 |                             value={parts.side}
+        | ^^^^^^^^^^^^^^^^^^
+  > 269 |                             onValueChange={(value) => handleMuscleSideChange(channel, value)}
+        | ^^^^^^^^^^^^^^^^^^
+  > 270 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 271 |                           >
+        | ^^^^^^^^^^^^^^^^^^
+  > 272 |                             <SelectTrigger id={`muscle-side-${channel}`} className="w-full">
+        | ^^^^^^^^^^^^^^^^^^
+  > 273 |                               <SelectValue placeholder="Select side" />
+        | ^^^^^^^^^^^^^^^^^^
+  > 274 |                             </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 275 |                             <SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 276 |                               {sides.map((side) => (
+        | ^^^^^^^^^^^^^^^^^^
+  > 277 |                                 <SelectItem key={side} value={side}>
+        | ^^^^^^^^^^^^^^^^^^
+  > 278 |                                   {side}
+        | ^^^^^^^^^^^^^^^^^^
+  > 279 |                                 </SelectItem>
+        | ^^^^^^^^^^^^^^^^^^
+  > 280 |                               ))}
+        | ^^^^^^^^^^^^^^^^^^
+  > 281 |                             </SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 282 |                           </Select>
+        | ^^^^^^^^^^^^^^^^^^
+  > 283 |                         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 284 |                         <div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 285 |                           <Label htmlFor={`muscle-group-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^^^
+  > 286 |                             Muscle Group
+        | ^^^^^^^^^^^^^^^^^^
+  > 287 |                           </Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 288 |                           <Select
+        | ^^^^^^^^^^^^^^^^^^
+  > 289 |                             value={parts.muscle}
+        | ^^^^^^^^^^^^^^^^^^
+  > 290 |                             onValueChange={(value) => handleMuscleGroupChange(channel, value)}
+        | ^^^^^^^^^^^^^^^^^^
+  > 291 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 292 |                           >
+        | ^^^^^^^^^^^^^^^^^^
+  > 293 |                             <SelectTrigger id={`muscle-group-${channel}`} className="w-full">
+        | ^^^^^^^^^^^^^^^^^^
+  > 294 |                               <SelectValue placeholder="Select muscle" />
+        | ^^^^^^^^^^^^^^^^^^
+  > 295 |                             </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 296 |                             <SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 297 |                               {commonMuscleGroups.map((muscle) => (
+        | ^^^^^^^^^^^^^^^^^^
+  > 298 |                                 <SelectItem key={muscle} value={muscle}>
+        | ^^^^^^^^^^^^^^^^^^
+  > 299 |                                   {muscle}
+        | ^^^^^^^^^^^^^^^^^^
+  > 300 |                                 </SelectItem>
+        | ^^^^^^^^^^^^^^^^^^
+  > 301 |                               ))}
+        | ^^^^^^^^^^^^^^^^^^
+  > 302 |                             </SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 303 |                           </Select>
+        | ^^^^^^^^^^^^^^^^^^
+  > 304 |                         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 305 |                         <div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 306 |                           <Label htmlFor={`muscle-custom-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^^^
+  > 307 |                             Custom (Optional)
+        | ^^^^^^^^^^^^^^^^^^
+  > 308 |                           </Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 309 |                           <Input
+        | ^^^^^^^^^^^^^^^^^^
+  > 310 |                             id={`muscle-custom-${channel}`}
+        | ^^^^^^^^^^^^^^^^^^
+  > 311 |                             value={parts.custom || ''}
+        | ^^^^^^^^^^^^^^^^^^
+  > 312 |                             onChange={(e) => handleCustomNameChange(channel, e.target.value)}
+        | ^^^^^^^^^^^^^^^^^^
+  > 313 |                             placeholder="e.g., Lateral head"
+        | ^^^^^^^^^^^^^^^^^^
+  > 314 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 315 |                           />
+        | ^^^^^^^^^^^^^^^^^^
+  > 316 |                         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 317 |                       </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 318 |                     );
+        | ^^^^^^^^^^^^^^^^^^
+  > 319 |                   })}
+        | ^^^^^^^^^^^^^^^^^^
+  > 320 |                 </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 321 |               </>
+        | ^^^^^^^^^^^^^^^^^^
+  > 322 |             )}
+        | ^^^^^^^^^^^^^^^^^^
+  > 323 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 324 |           
+        | ^^^^^^^^^^^^^^^^^^
+  > 325 |           <TabsContent value="colors" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 326 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^^^
+  > 327 |               Customize colors for each muscle to improve visualization and match your preferences. Colors will be consistent across all charts and tables.
+        | ^^^^^^^^^^^^^^^^^^
+  > 328 |             </p>
+        | ^^^^^^^^^^^^^^^^^^
+  > 329 |             
+        | ^^^^^^^^^^^^^^^^^^
+  > 330 |             {uniqueMuscleNames.length === 0 ? (
+        | ^^^^^^^^^^^^^^^^^^
+  > 331 |               <div className="p-4 bg-slate-100 rounded-md text-slate-500 text-center">
+        | ^^^^^^^^^^^^^^^^^^
+  > 332 |                 No muscles configured. Please set up muscle names first.
+        | ^^^^^^^^^^^^^^^^^^
+  > 333 |               </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 334 |             ) : (
+        | ^^^^^^^^^^^^^^^^^^
+  > 335 |               <div className="grid gap-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 336 |                 {uniqueMuscleNames.map((muscleName) => {
+        | ^^^^^^^^^^^^^^^^^^
+  > 337 |                   const muscleColor = getMuscleColor(muscleName, muscleColorMapping);
+        | ^^^^^^^^^^^^^^^^^^
+  > 338 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+        | ^^^^^^^^^^^^^^^^^^
+  > 339 |                   
+        | ^^^^^^^^^^^^^^^^^^
+  > 340 |                   return (
+        | ^^^^^^^^^^^^^^^^^^
+  > 341 |                     <div key={muscleName} className="grid grid-cols-3 gap-4 items-center">
+        | ^^^^^^^^^^^^^^^^^^
+  > 342 |                       <div className="flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 343 |                         <div 
+        | ^^^^^^^^^^^^^^^^^^
+  > 344 |                           className="w-6 h-6 rounded-full border-2" 
+        | ^^^^^^^^^^^^^^^^^^
+  > 345 |                           style={{ backgroundColor: customColor, borderColor: customColor }}
+        | ^^^^^^^^^^^^^^^^^^
+  > 346 |                         />
+        | ^^^^^^^^^^^^^^^^^^
+  > 347 |                         <span className="text-sm font-medium">{muscleName}</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 348 |                       </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 349 |                       <div className="col-span-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 350 |                         <Select
+        | ^^^^^^^^^^^^^^^^^^
+  > 351 |                           value={customColor}
+        | ^^^^^^^^^^^^^^^^^^
+  > 352 |                           onValueChange={(value) => handleMuscleColorChange(muscleName, value)}
+        | ^^^^^^^^^^^^^^^^^^
+  > 353 |                           disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 354 |                         >
+        | ^^^^^^^^^^^^^^^^^^
+  > 355 |                           <SelectTrigger className="w-full">
+        | ^^^^^^^^^^^^^^^^^^
+  > 356 |                             <SelectValue placeholder="Select color" />
+        | ^^^^^^^^^^^^^^^^^^
+  > 357 |                           </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^^^
+  > 358 |                           <SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 359 |                             {colorPresets.map((color) => (
+        | ^^^^^^^^^^^^^^^^^^
+  > 360 |                               <SelectItem key={color.value} value={color.value}>
+        | ^^^^^^^^^^^^^^^^^^
+  > 361 |                                 <div className="flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 362 |                                   <div 
+        | ^^^^^^^^^^^^^^^^^^
+  > 363 |                                     className="w-4 h-4 rounded-full" 
+        | ^^^^^^^^^^^^^^^^^^
+  > 364 |                                     style={{ backgroundColor: color.value }}
+        | ^^^^^^^^^^^^^^^^^^
+  > 365 |                                   />
+        | ^^^^^^^^^^^^^^^^^^
+  > 366 |                                   <span>{color.name}</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 367 |                                 </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 368 |                               </SelectItem>
+        | ^^^^^^^^^^^^^^^^^^
+  > 369 |                             ))}
+        | ^^^^^^^^^^^^^^^^^^
+  > 370 |                           </SelectContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 371 |                         </Select>
+        | ^^^^^^^^^^^^^^^^^^
+  > 372 |                       </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 373 |                     </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 374 |                   );
+        | ^^^^^^^^^^^^^^^^^^
+  > 375 |                 })}
+        | ^^^^^^^^^^^^^^^^^^
+  > 376 |               </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 377 |             )}
+        | ^^^^^^^^^^^^^^^^^^
+  > 378 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 379 |           
+        | ^^^^^^^^^^^^^^^^^^
+  > 380 |           <TabsContent value="display" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 381 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^^^
+  > 382 |               Configure how EMG signals are displayed in charts and visualizations.
+        | ^^^^^^^^^^^^^^^^^^
+  > 383 |             </p>
+        | ^^^^^^^^^^^^^^^^^^
+  > 384 |
+        | ^^^^^^^^^^^^^^^^^^
+  > 385 |             <div className="flex items-center justify-between space-x-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 386 |               <Label htmlFor="raw-signals" className="flex flex-col space-y-1">
+        | ^^^^^^^^^^^^^^^^^^
+  > 387 |                 <span>Raw Signals</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 388 |                 <span className="font-normal text-sm text-slate-500">Show raw EMG signals instead of activated ones</span>
+        | ^^^^^^^^^^^^^^^^^^
+  > 389 |               </Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 390 |               <Switch
+        | ^^^^^^^^^^^^^^^^^^
+  > 391 |                 id="raw-signals"
+        | ^^^^^^^^^^^^^^^^^^
+  > 392 |                 checked={sessionParams.show_raw_signals || false}
+        | ^^^^^^^^^^^^^^^^^^
+  > 393 |                 onCheckedChange={(checked) => {
+        | ^^^^^^^^^^^^^^^^^^
+  > 394 |                   onParamsChange({
+        | ^^^^^^^^^^^^^^^^^^
+  > 395 |                     ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^
+  > 396 |                     show_raw_signals: checked
+        | ^^^^^^^^^^^^^^^^^^
+  > 397 |                   });
+        | ^^^^^^^^^^^^^^^^^^
+  > 398 |                 }}
+        | ^^^^^^^^^^^^^^^^^^
+  > 399 |                 disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 400 |               />
+        | ^^^^^^^^^^^^^^^^^^
+  > 401 |             </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 402 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 403 |         </Tabs>
+        | ^^^^^^^^^^^^^^^^^^
+  > 404 |         
+        | ^^^^^^^^^^^^^^^^^^
+  > 405 |         <div className="pt-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 406 |           <Button 
+        | ^^^^^^^^^^^^^^^^^^
+  > 407 |             onClick={resetToDefaults}
+        | ^^^^^^^^^^^^^^^^^^
+  > 408 |             variant="outline"
+        | ^^^^^^^^^^^^^^^^^^
+  > 409 |             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^^^
+  > 410 |             className="w-full"
+        | ^^^^^^^^^^^^^^^^^^
+  > 411 |           >
+        | ^^^^^^^^^^^^^^^^^^
+  > 412 |             Reset to Default Names & Colors
+        | ^^^^^^^^^^^^^^^^^^
+  > 413 |           </Button>
+        | ^^^^^^^^^^^^^^^^^^
+  > 414 |         </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 415 |       </CardContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 416 |     </Card>
+        | ^^^^^^^^^^^^^^^^^^
+  > 417 |      <Card>
+        | ^^^^^^^^^^^^^^^^^^
+  > 418 |      <CardHeader>
+        | ^^^^^^^^^^^^^^^^^^
+  > 419 |        <CardTitle className="text-lg">Plot Configuration</CardTitle>
+        | ^^^^^^^^^^^^^^^^^^
+  > 420 |        <CardDescription>Configure EMG plot display options</CardDescription>
+        | ^^^^^^^^^^^^^^^^^^
+  > 421 |      </CardHeader>
+        | ^^^^^^^^^^^^^^^^^^
+  > 422 |      <CardContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 423 |        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 424 |          <div className="space-y-4">
+        | ^^^^^^^^^^^^^^^^^^
+  > 425 |            <div className="flex items-center space-x-2">
+        | ^^^^^^^^^^^^^^^^^^
+  > 426 |              <Label htmlFor="plot-mode-switch">Raw</Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 427 |              <Switch
+        | ^^^^^^^^^^^^^^^^^^
+  > 428 |                id="plot-mode-switch"
+        | ^^^^^^^^^^^^^^^^^^
+  > 429 |                checked={plotMode === 'activated'}
+        | ^^^^^^^^^^^^^^^^^^
+  > 430 |                onCheckedChange={(checked: boolean) => {
+        | ^^^^^^^^^^^^^^^^^^
+  > 431 |                  const newMode = checked ? 'activated' : 'raw';
+        | ^^^^^^^^^^^^^^^^^^
+  > 432 |                  setPlotMode(newMode);
+        | ^^^^^^^^^^^^^^^^^^
+  > 433 |                  // Sync with session params
+        | ^^^^^^^^^^^^^^^^^^
+  > 434 |                  onSessionParamsChange({
+        | ^^^^^^^^^^^^^^^^^^
+  > 435 |                    ...sessionParams,
+        | ^^^^^^^^^^^^^^^^^^
+  > 436 |                    show_raw_signals: newMode === 'raw'
+        | ^^^^^^^^^^^^^^^^^^
+  > 437 |                  });
+        | ^^^^^^^^^^^^^^^^^^
+  > 438 |                }}
+        | ^^^^^^^^^^^^^^^^^^
+  > 439 |              />
+        | ^^^^^^^^^^^^^^^^^^
+  > 440 |              <Label htmlFor="plot-mode-switch">Activated</Label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 441 |            </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 442 |            <div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 443 |              <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+        | ^^^^^^^^^^^^^^^^^^
+  > 444 |              <DownsamplingControl 
+        | ^^^^^^^^^^^^^^^^^^
+  > 445 |                dataPoints={dataPoints}
+        | ^^^^^^^^^^^^^^^^^^
+  > 446 |                setDataPoints={setDataPoints}
+        | ^^^^^^^^^^^^^^^^^^
+  > 447 |                plotChannel1Data={mainPlotChannel1Data}
+        | ^^^^^^^^^^^^^^^^^^
+  > 448 |                plotChannel2Data={mainPlotChannel2Data}
+        | ^^^^^^^^^^^^^^^^^^
+  > 449 |              />
+        | ^^^^^^^^^^^^^^^^^^
+  > 450 |            </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 451 |          </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 452 |        </div>
+        | ^^^^^^^^^^^^^^^^^^
+  > 453 |      </CardContent>
+        | ^^^^^^^^^^^^^^^^^^
+  > 454 |    </Card>
+        | ^^^^^^^^^^^
+    455 |   );
+    456 | };
+    457 |
+
+ERROR in src/components/SettingsPanel.tsx:429:25
+TS2304: Cannot find name 'plotMode'.
+    427 |              <Switch
+    428 |                id="plot-mode-switch"
+  > 429 |                checked={plotMode === 'activated'}
+        |                         ^^^^^^^^
+    430 |                onCheckedChange={(checked: boolean) => {
+    431 |                  const newMode = checked ? 'activated' : 'raw';
+    432 |                  setPlotMode(newMode);
+
+ERROR in src/components/SettingsPanel.tsx:432:18
+TS2304: Cannot find name 'setPlotMode'.
+    430 |                onCheckedChange={(checked: boolean) => {
+    431 |                  const newMode = checked ? 'activated' : 'raw';
+  > 432 |                  setPlotMode(newMode);
+        |                  ^^^^^^^^^^^
+    433 |                  // Sync with session params
+    434 |                  onSessionParamsChange({
+    435 |                    ...sessionParams,
+
+ERROR in src/components/SettingsPanel.tsx:434:18
+TS2552: Cannot find name 'onSessionParamsChange'. Did you mean 'onParamsChange'?
+    432 |                  setPlotMode(newMode);
+    433 |                  // Sync with session params
+  > 434 |                  onSessionParamsChange({
+        |                  ^^^^^^^^^^^^^^^^^^^^^
+    435 |                    ...sessionParams,
+    436 |                    show_raw_signals: newMode === 'raw'
+    437 |                  });
+
+ERROR in src/components/SettingsPanel.tsx:444:15
+TS2304: Cannot find name 'DownsamplingControl'.
+    442 |            <div>
+    443 |              <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+  > 444 |              <DownsamplingControl 
+        |               ^^^^^^^^^^^^^^^^^^^
+    445 |                dataPoints={dataPoints}
+    446 |                setDataPoints={setDataPoints}
+    447 |                plotChannel1Data={mainPlotChannel1Data}
+
+ERROR in src/components/SettingsPanel.tsx:445:28
+TS2304: Cannot find name 'dataPoints'.
+    443 |              <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+    444 |              <DownsamplingControl 
+  > 445 |                dataPoints={dataPoints}
+        |                            ^^^^^^^^^^
+    446 |                setDataPoints={setDataPoints}
+    447 |                plotChannel1Data={mainPlotChannel1Data}
+    448 |                plotChannel2Data={mainPlotChannel2Data}
+
+ERROR in src/components/SettingsPanel.tsx:446:31
+TS2304: Cannot find name 'setDataPoints'.
+    444 |              <DownsamplingControl 
+    445 |                dataPoints={dataPoints}
+  > 446 |                setDataPoints={setDataPoints}
+        |                               ^^^^^^^^^^^^^
+    447 |                plotChannel1Data={mainPlotChannel1Data}
+    448 |                plotChannel2Data={mainPlotChannel2Data}
+    449 |              />
+
+ERROR in src/components/SettingsPanel.tsx:447:34
+TS2304: Cannot find name 'mainPlotChannel1Data'.
+    445 |                dataPoints={dataPoints}
+    446 |                setDataPoints={setDataPoints}
+  > 447 |                plotChannel1Data={mainPlotChannel1Data}
+        |                                  ^^^^^^^^^^^^^^^^^^^^
+    448 |                plotChannel2Data={mainPlotChannel2Data}
+    449 |              />
+    450 |            </div>
+
+ERROR in src/components/SettingsPanel.tsx:448:34
+TS2304: Cannot find name 'mainPlotChannel2Data'.
+    446 |                setDataPoints={setDataPoints}
+    447 |                plotChannel1Data={mainPlotChannel1Data}
+  > 448 |                plotChannel2Data={mainPlotChannel2Data}
+        |                                  ^^^^^^^^^^^^^^^^^^^^
+    449 |              />
+    450 |            </div>
+    451 |          </div>
+
+ERROR in src/components/SettingsPanel.tsx:199:5
+TS2657: JSX expressions must have one parent element.
+    197 |
+    198 |   return (
+  > 199 |     <Card>
+        |     ^^^^^^
+  > 200 |     <CardHeader>
+        | ^^^^^^^^^^^^^^^^
+  > 201 |       <CardTitle className="text-lg">Plot Configuration</CardTitle>
+        | ^^^^^^^^^^^^^^^^
+  > 202 |       <CardDescription>Configure EMG plot display options</CardDescription>
+        | ^^^^^^^^^^^^^^^^
+  > 203 |     </CardHeader>
+        | ^^^^^^^^^^^^^^^^
+  > 204 |     <CardContent>
+        | ^^^^^^^^^^^^^^^^
+  > 205 |       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+        | ^^^^^^^^^^^^^^^^
+  > 206 |         <div className="space-y-4">
+        | ^^^^^^^^^^^^^^^^
+  > 207 |           <div className="flex items-center space-x-2">
+        | ^^^^^^^^^^^^^^^^
+  > 208 |             <Label htmlFor="plot-mode-switch">Raw</Label>
+        | ^^^^^^^^^^^^^^^^
+  > 209 |             <Switch
+        | ^^^^^^^^^^^^^^^^
+  > 210 |               id="plot-mode-switch"
+        | ^^^^^^^^^^^^^^^^
+  > 211 |               checked={plotMode === 'activated'}
+        | ^^^^^^^^^^^^^^^^
+  > 212 |               onCheckedChange={(checked: boolean) => {
+        | ^^^^^^^^^^^^^^^^
+  > 213 |                 const newMode = checked ? 'activated' : 'raw';
+        | ^^^^^^^^^^^^^^^^
+  > 214 |                 setPlotMode(newMode);
+        | ^^^^^^^^^^^^^^^^
+  > 215 |                 // Sync with session params
+        | ^^^^^^^^^^^^^^^^
+  > 216 |                 onSessionParamsChange({
+        | ^^^^^^^^^^^^^^^^
+  > 217 |                   ...sessionParams,
+        | ^^^^^^^^^^^^^^^^
+  > 218 |                   show_raw_signals: newMode === 'raw'
+        | ^^^^^^^^^^^^^^^^
+  > 219 |                 });
+        | ^^^^^^^^^^^^^^^^
+  > 220 |               }}
+        | ^^^^^^^^^^^^^^^^
+  > 221 |             />
+        | ^^^^^^^^^^^^^^^^
+  > 222 |             <Label htmlFor="plot-mode-switch">Activated</Label>
+        | ^^^^^^^^^^^^^^^^
+  > 223 |           </div>
+        | ^^^^^^^^^^^^^^^^
+  > 224 |           <div>
+        | ^^^^^^^^^^^^^^^^
+  > 225 |             <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+        | ^^^^^^^^^^^^^^^^
+  > 226 |             <DownsamplingControl 
+        | ^^^^^^^^^^^^^^^^
+  > 227 |               dataPoints={dataPoints}
+        | ^^^^^^^^^^^^^^^^
+  > 228 |               setDataPoints={setDataPoints}
+        | ^^^^^^^^^^^^^^^^
+  > 229 |               plotChannel1Data={mainPlotChannel1Data}
+        | ^^^^^^^^^^^^^^^^
+  > 230 |               plotChannel2Data={mainPlotChannel2Data}
+        | ^^^^^^^^^^^^^^^^
+  > 231 |             />
+        | ^^^^^^^^^^^^^^^^
+  > 232 |           </div>
+        | ^^^^^^^^^^^^^^^^
+  > 233 |         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 234 |       </div>
+        | ^^^^^^^^^^^^^^^^
+  > 235 |     </CardContent>
+        | ^^^^^^^^^^^^^^^^
+  > 236 |   </Card>
+        | ^^^^^^^^^^^^^^^^
+  > 237 |     <Card>
+        | ^^^^^^^^^^^^^^^^
+  > 238 |       <CardHeader>
+        | ^^^^^^^^^^^^^^^^
+  > 239 |         <div className="flex items-center justify-between">
+        | ^^^^^^^^^^^^^^^^
+  > 240 |           <CardTitle className="text-lg">Channel Settings</CardTitle>
+        | ^^^^^^^^^^^^^^^^
+  > 241 |           <Button 
+        | ^^^^^^^^^^^^^^^^
+  > 242 |             onClick={toggleEditMode} 
+        | ^^^^^^^^^^^^^^^^
+  > 243 |             variant="outline" 
+        | ^^^^^^^^^^^^^^^^
+  > 244 |             size="sm"
+        | ^^^^^^^^^^^^^^^^
+  > 245 |             disabled={disabled}
+        | ^^^^^^^^^^^^^^^^
+  > 246 |             className="flex items-center gap-1"
+        | ^^^^^^^^^^^^^^^^
+  > 247 |           >
+        | ^^^^^^^^^^^^^^^^
+  > 248 |             {isEditing ? (
+        | ^^^^^^^^^^^^^^^^
+  > 249 |               <>
+        | ^^^^^^^^^^^^^^^^
+  > 250 |                 <CheckIcon className="h-4 w-4" />
+        | ^^^^^^^^^^^^^^^^
+  > 251 |                 <span>Save</span>
+        | ^^^^^^^^^^^^^^^^
+  > 252 |               </>
+        | ^^^^^^^^^^^^^^^^
+  > 253 |             ) : (
+        | ^^^^^^^^^^^^^^^^
+  > 254 |               <>
+        | ^^^^^^^^^^^^^^^^
+  > 255 |                 <Pencil1Icon className="h-4 w-4" />
+        | ^^^^^^^^^^^^^^^^
+  > 256 |                 <span>Edit</span>
+        | ^^^^^^^^^^^^^^^^
+  > 257 |               </>
+        | ^^^^^^^^^^^^^^^^
+  > 258 |             )}
+        | ^^^^^^^^^^^^^^^^
+  > 259 |           </Button>
+        | ^^^^^^^^^^^^^^^^
+  > 260 |         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 261 |         <CardDescription>
+        | ^^^^^^^^^^^^^^^^
+  > 262 |           Configure muscle names and colors for better visualization
+        | ^^^^^^^^^^^^^^^^
+  > 263 |         </CardDescription>
+        | ^^^^^^^^^^^^^^^^
+  > 264 |       </CardHeader>
+        | ^^^^^^^^^^^^^^^^
+  > 265 |       <CardContent>
+        | ^^^^^^^^^^^^^^^^
+  > 266 |         <Tabs defaultValue="muscles" value={activeTab} onValueChange={setActiveTab}>
+        | ^^^^^^^^^^^^^^^^
+  > 267 |           <TabsList className="grid w-full grid-cols-3">
+        | ^^^^^^^^^^^^^^^^
+  > 268 |             <TabsTrigger value="muscles">Muscle Names</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 269 |             <TabsTrigger value="colors">Colors</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 270 |             <TabsTrigger value="display">Display</TabsTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 271 |           </TabsList>
+        | ^^^^^^^^^^^^^^^^
+  > 272 |           
+        | ^^^^^^^^^^^^^^^^
+  > 273 |           <TabsContent value="muscles" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^
+  > 274 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^
+  > 275 |               Rename EMG channels to match actual muscle names for better readability in reports and analytics. Each muscle is assigned a unique color for consistency across all charts and tables.
+        | ^^^^^^^^^^^^^^^^
+  > 276 |             </p>
+        | ^^^^^^^^^^^^^^^^
+  > 277 |             
+        | ^^^^^^^^^^^^^^^^
+  > 278 |             {muscleChannels.length === 0 ? (
+        | ^^^^^^^^^^^^^^^^
+  > 279 |               <div className="p-4 bg-slate-100 rounded-md text-slate-500 text-center">
+        | ^^^^^^^^^^^^^^^^
+  > 280 |                 No channels available. Please load a session first.
+        | ^^^^^^^^^^^^^^^^
+  > 281 |               </div>
+        | ^^^^^^^^^^^^^^^^
+  > 282 |             ) : (
+        | ^^^^^^^^^^^^^^^^
+  > 283 |               <>
+        | ^^^^^^^^^^^^^^^^
+  > 284 |                 <div className="grid gap-4">
+        | ^^^^^^^^^^^^^^^^
+  > 285 |                   {muscleChannels.map((channel) => {
+        | ^^^^^^^^^^^^^^^^
+  > 286 |                     const currentName = channelMuscleMapping[channel] || '';
+        | ^^^^^^^^^^^^^^^^
+  > 287 |                     const parts = parseMuscleNameParts(currentName);
+        | ^^^^^^^^^^^^^^^^
+  > 288 |                     const muscleColor = getMuscleColor(currentName, muscleColorMapping);
+        | ^^^^^^^^^^^^^^^^
+  > 289 |                     
+        | ^^^^^^^^^^^^^^^^
+  > 290 |                     return (
+        | ^^^^^^^^^^^^^^^^
+  > 291 |                       <div key={channel} className="grid grid-cols-4 gap-4 items-center">
+        | ^^^^^^^^^^^^^^^^
+  > 292 |                         <div>
+        | ^^^^^^^^^^^^^^^^
+  > 293 |                           <Label htmlFor={`muscle-${channel}`} className="text-sm font-medium flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^
+  > 294 |                             <div 
+        | ^^^^^^^^^^^^^^^^
+  > 295 |                               className="w-4 h-4 rounded-full border-2" 
+        | ^^^^^^^^^^^^^^^^
+  > 296 |                               style={{ backgroundColor: muscleColor.stroke, borderColor: muscleColor.stroke }}
+        | ^^^^^^^^^^^^^^^^
+  > 297 |                             />
+        | ^^^^^^^^^^^^^^^^
+  > 298 |                             Channel {channel}
+        | ^^^^^^^^^^^^^^^^
+  > 299 |                           </Label>
+        | ^^^^^^^^^^^^^^^^
+  > 300 |                         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 301 |                         <div>
+        | ^^^^^^^^^^^^^^^^
+  > 302 |                           <Label htmlFor={`muscle-side-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^
+  > 303 |                             Side
+        | ^^^^^^^^^^^^^^^^
+  > 304 |                           </Label>
+        | ^^^^^^^^^^^^^^^^
+  > 305 |                           <Select
+        | ^^^^^^^^^^^^^^^^
+  > 306 |                             value={parts.side}
+        | ^^^^^^^^^^^^^^^^
+  > 307 |                             onValueChange={(value) => handleMuscleSideChange(channel, value)}
+        | ^^^^^^^^^^^^^^^^
+  > 308 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 309 |                           >
+        | ^^^^^^^^^^^^^^^^
+  > 310 |                             <SelectTrigger id={`muscle-side-${channel}`} className="w-full">
+        | ^^^^^^^^^^^^^^^^
+  > 311 |                               <SelectValue placeholder="Select side" />
+        | ^^^^^^^^^^^^^^^^
+  > 312 |                             </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 313 |                             <SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 314 |                               {sides.map((side) => (
+        | ^^^^^^^^^^^^^^^^
+  > 315 |                                 <SelectItem key={side} value={side}>
+        | ^^^^^^^^^^^^^^^^
+  > 316 |                                   {side}
+        | ^^^^^^^^^^^^^^^^
+  > 317 |                                 </SelectItem>
+        | ^^^^^^^^^^^^^^^^
+  > 318 |                               ))}
+        | ^^^^^^^^^^^^^^^^
+  > 319 |                             </SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 320 |                           </Select>
+        | ^^^^^^^^^^^^^^^^
+  > 321 |                         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 322 |                         <div>
+        | ^^^^^^^^^^^^^^^^
+  > 323 |                           <Label htmlFor={`muscle-group-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^
+  > 324 |                             Muscle Group
+        | ^^^^^^^^^^^^^^^^
+  > 325 |                           </Label>
+        | ^^^^^^^^^^^^^^^^
+  > 326 |                           <Select
+        | ^^^^^^^^^^^^^^^^
+  > 327 |                             value={parts.muscle}
+        | ^^^^^^^^^^^^^^^^
+  > 328 |                             onValueChange={(value) => handleMuscleGroupChange(channel, value)}
+        | ^^^^^^^^^^^^^^^^
+  > 329 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 330 |                           >
+        | ^^^^^^^^^^^^^^^^
+  > 331 |                             <SelectTrigger id={`muscle-group-${channel}`} className="w-full">
+        | ^^^^^^^^^^^^^^^^
+  > 332 |                               <SelectValue placeholder="Select muscle" />
+        | ^^^^^^^^^^^^^^^^
+  > 333 |                             </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 334 |                             <SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 335 |                               {commonMuscleGroups.map((muscle) => (
+        | ^^^^^^^^^^^^^^^^
+  > 336 |                                 <SelectItem key={muscle} value={muscle}>
+        | ^^^^^^^^^^^^^^^^
+  > 337 |                                   {muscle}
+        | ^^^^^^^^^^^^^^^^
+  > 338 |                                 </SelectItem>
+        | ^^^^^^^^^^^^^^^^
+  > 339 |                               ))}
+        | ^^^^^^^^^^^^^^^^
+  > 340 |                             </SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 341 |                           </Select>
+        | ^^^^^^^^^^^^^^^^
+  > 342 |                         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 343 |                         <div>
+        | ^^^^^^^^^^^^^^^^
+  > 344 |                           <Label htmlFor={`muscle-custom-${channel}`} className="text-xs text-slate-500 mb-1 block">
+        | ^^^^^^^^^^^^^^^^
+  > 345 |                             Custom (Optional)
+        | ^^^^^^^^^^^^^^^^
+  > 346 |                           </Label>
+        | ^^^^^^^^^^^^^^^^
+  > 347 |                           <Input
+        | ^^^^^^^^^^^^^^^^
+  > 348 |                             id={`muscle-custom-${channel}`}
+        | ^^^^^^^^^^^^^^^^
+  > 349 |                             value={parts.custom || ''}
+        | ^^^^^^^^^^^^^^^^
+  > 350 |                             onChange={(e) => handleCustomNameChange(channel, e.target.value)}
+        | ^^^^^^^^^^^^^^^^
+  > 351 |                             placeholder="e.g., Lateral head"
+        | ^^^^^^^^^^^^^^^^
+  > 352 |                             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 353 |                           />
+        | ^^^^^^^^^^^^^^^^
+  > 354 |                         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 355 |                       </div>
+        | ^^^^^^^^^^^^^^^^
+  > 356 |                     );
+        | ^^^^^^^^^^^^^^^^
+  > 357 |                   })}
+        | ^^^^^^^^^^^^^^^^
+  > 358 |                 </div>
+        | ^^^^^^^^^^^^^^^^
+  > 359 |               </>
+        | ^^^^^^^^^^^^^^^^
+  > 360 |             )}
+        | ^^^^^^^^^^^^^^^^
+  > 361 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^
+  > 362 |           
+        | ^^^^^^^^^^^^^^^^
+  > 363 |           <TabsContent value="colors" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^
+  > 364 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^
+  > 365 |               Customize colors for each muscle to improve visualization and match your preferences. Colors will be consistent across all charts and tables.
+        | ^^^^^^^^^^^^^^^^
+  > 366 |             </p>
+        | ^^^^^^^^^^^^^^^^
+  > 367 |             
+        | ^^^^^^^^^^^^^^^^
+  > 368 |             {uniqueMuscleNames.length === 0 ? (
+        | ^^^^^^^^^^^^^^^^
+  > 369 |               <div className="p-4 bg-slate-100 rounded-md text-slate-500 text-center">
+        | ^^^^^^^^^^^^^^^^
+  > 370 |                 No muscles configured. Please set up muscle names first.
+        | ^^^^^^^^^^^^^^^^
+  > 371 |               </div>
+        | ^^^^^^^^^^^^^^^^
+  > 372 |             ) : (
+        | ^^^^^^^^^^^^^^^^
+  > 373 |               <div className="grid gap-4">
+        | ^^^^^^^^^^^^^^^^
+  > 374 |                 {uniqueMuscleNames.map((muscleName) => {
+        | ^^^^^^^^^^^^^^^^
+  > 375 |                   const muscleColor = getMuscleColor(muscleName, muscleColorMapping);
+        | ^^^^^^^^^^^^^^^^
+  > 376 |                   const customColor = muscleColorMapping[muscleName] || muscleColor.stroke;
+        | ^^^^^^^^^^^^^^^^
+  > 377 |                   
+        | ^^^^^^^^^^^^^^^^
+  > 378 |                   return (
+        | ^^^^^^^^^^^^^^^^
+  > 379 |                     <div key={muscleName} className="grid grid-cols-3 gap-4 items-center">
+        | ^^^^^^^^^^^^^^^^
+  > 380 |                       <div className="flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^
+  > 381 |                         <div 
+        | ^^^^^^^^^^^^^^^^
+  > 382 |                           className="w-6 h-6 rounded-full border-2" 
+        | ^^^^^^^^^^^^^^^^
+  > 383 |                           style={{ backgroundColor: customColor, borderColor: customColor }}
+        | ^^^^^^^^^^^^^^^^
+  > 384 |                         />
+        | ^^^^^^^^^^^^^^^^
+  > 385 |                         <span className="text-sm font-medium">{muscleName}</span>
+        | ^^^^^^^^^^^^^^^^
+  > 386 |                       </div>
+        | ^^^^^^^^^^^^^^^^
+  > 387 |                       <div className="col-span-2">
+        | ^^^^^^^^^^^^^^^^
+  > 388 |                         <Select
+        | ^^^^^^^^^^^^^^^^
+  > 389 |                           value={customColor}
+        | ^^^^^^^^^^^^^^^^
+  > 390 |                           onValueChange={(value) => handleMuscleColorChange(muscleName, value)}
+        | ^^^^^^^^^^^^^^^^
+  > 391 |                           disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 392 |                         >
+        | ^^^^^^^^^^^^^^^^
+  > 393 |                           <SelectTrigger className="w-full">
+        | ^^^^^^^^^^^^^^^^
+  > 394 |                             <SelectValue placeholder="Select color" />
+        | ^^^^^^^^^^^^^^^^
+  > 395 |                           </SelectTrigger>
+        | ^^^^^^^^^^^^^^^^
+  > 396 |                           <SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 397 |                             {colorPresets.map((color) => (
+        | ^^^^^^^^^^^^^^^^
+  > 398 |                               <SelectItem key={color.value} value={color.value}>
+        | ^^^^^^^^^^^^^^^^
+  > 399 |                                 <div className="flex items-center gap-2">
+        | ^^^^^^^^^^^^^^^^
+  > 400 |                                   <div 
+        | ^^^^^^^^^^^^^^^^
+  > 401 |                                     className="w-4 h-4 rounded-full" 
+        | ^^^^^^^^^^^^^^^^
+  > 402 |                                     style={{ backgroundColor: color.value }}
+        | ^^^^^^^^^^^^^^^^
+  > 403 |                                   />
+        | ^^^^^^^^^^^^^^^^
+  > 404 |                                   <span>{color.name}</span>
+        | ^^^^^^^^^^^^^^^^
+  > 405 |                                 </div>
+        | ^^^^^^^^^^^^^^^^
+  > 406 |                               </SelectItem>
+        | ^^^^^^^^^^^^^^^^
+  > 407 |                             ))}
+        | ^^^^^^^^^^^^^^^^
+  > 408 |                           </SelectContent>
+        | ^^^^^^^^^^^^^^^^
+  > 409 |                         </Select>
+        | ^^^^^^^^^^^^^^^^
+  > 410 |                       </div>
+        | ^^^^^^^^^^^^^^^^
+  > 411 |                     </div>
+        | ^^^^^^^^^^^^^^^^
+  > 412 |                   );
+        | ^^^^^^^^^^^^^^^^
+  > 413 |                 })}
+        | ^^^^^^^^^^^^^^^^
+  > 414 |               </div>
+        | ^^^^^^^^^^^^^^^^
+  > 415 |             )}
+        | ^^^^^^^^^^^^^^^^
+  > 416 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^
+  > 417 |           
+        | ^^^^^^^^^^^^^^^^
+  > 418 |           <TabsContent value="display" className="space-y-4 mt-4">
+        | ^^^^^^^^^^^^^^^^
+  > 419 |             <p className="text-sm text-slate-500">
+        | ^^^^^^^^^^^^^^^^
+  > 420 |               Configure how EMG signals are displayed in charts and visualizations.
+        | ^^^^^^^^^^^^^^^^
+  > 421 |             </p>
+        | ^^^^^^^^^^^^^^^^
+  > 422 |
+        | ^^^^^^^^^^^^^^^^
+  > 423 |             <div className="flex items-center justify-between space-x-2">
+        | ^^^^^^^^^^^^^^^^
+  > 424 |               <Label htmlFor="raw-signals" className="flex flex-col space-y-1">
+        | ^^^^^^^^^^^^^^^^
+  > 425 |                 <span>Raw Signals</span>
+        | ^^^^^^^^^^^^^^^^
+  > 426 |                 <span className="font-normal text-sm text-slate-500">Show raw EMG signals instead of activated ones</span>
+        | ^^^^^^^^^^^^^^^^
+  > 427 |               </Label>
+        | ^^^^^^^^^^^^^^^^
+  > 428 |               <Switch
+        | ^^^^^^^^^^^^^^^^
+  > 429 |                 id="raw-signals"
+        | ^^^^^^^^^^^^^^^^
+  > 430 |                 checked={sessionParams.show_raw_signals || false}
+        | ^^^^^^^^^^^^^^^^
+  > 431 |                 onCheckedChange={(checked) => {
+        | ^^^^^^^^^^^^^^^^
+  > 432 |                   onParamsChange({
+        | ^^^^^^^^^^^^^^^^
+  > 433 |                     ...sessionParams,
+        | ^^^^^^^^^^^^^^^^
+  > 434 |                     show_raw_signals: checked
+        | ^^^^^^^^^^^^^^^^
+  > 435 |                   });
+        | ^^^^^^^^^^^^^^^^
+  > 436 |                 }}
+        | ^^^^^^^^^^^^^^^^
+  > 437 |                 disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 438 |               />
+        | ^^^^^^^^^^^^^^^^
+  > 439 |             </div>
+        | ^^^^^^^^^^^^^^^^
+  > 440 |           </TabsContent>
+        | ^^^^^^^^^^^^^^^^
+  > 441 |         </Tabs>
+        | ^^^^^^^^^^^^^^^^
+  > 442 |         
+        | ^^^^^^^^^^^^^^^^
+  > 443 |         <div className="pt-4">
+        | ^^^^^^^^^^^^^^^^
+  > 444 |           <Button 
+        | ^^^^^^^^^^^^^^^^
+  > 445 |             onClick={resetToDefaults}
+        | ^^^^^^^^^^^^^^^^
+  > 446 |             variant="outline"
+        | ^^^^^^^^^^^^^^^^
+  > 447 |             disabled={disabled || !isEditing}
+        | ^^^^^^^^^^^^^^^^
+  > 448 |             className="w-full"
+        | ^^^^^^^^^^^^^^^^
+  > 449 |           >
+        | ^^^^^^^^^^^^^^^^
+  > 450 |             Reset to Default Names & Colors
+        | ^^^^^^^^^^^^^^^^
+  > 451 |           </Button>
+        | ^^^^^^^^^^^^^^^^
+  > 452 |         </div>
+        | ^^^^^^^^^^^^^^^^
+  > 453 |       </CardContent>
+        | ^^^^^^^^^^^^^^^^
+  > 454 |     </Card>
+        | ^^^^^^^^^^^^
+    455 |     
+    456 |   );
+    457 | };
+
+ERROR in src/components/SettingsPanel.tsx:211:24
+TS2304: Cannot find name 'plotMode'.
+    209 |             <Switch
+    210 |               id="plot-mode-switch"
+  > 211 |               checked={plotMode === 'activated'}
+        |                        ^^^^^^^^
+    212 |               onCheckedChange={(checked: boolean) => {
+    213 |                 const newMode = checked ? 'activated' : 'raw';
+    214 |                 setPlotMode(newMode);
+
+ERROR in src/components/SettingsPanel.tsx:214:17
+TS2304: Cannot find name 'setPlotMode'.
+    212 |               onCheckedChange={(checked: boolean) => {
+    213 |                 const newMode = checked ? 'activated' : 'raw';
+  > 214 |                 setPlotMode(newMode);
+        |                 ^^^^^^^^^^^
+    215 |                 // Sync with session params
+    216 |                 onSessionParamsChange({
+    217 |                   ...sessionParams,
+
+ERROR in src/components/SettingsPanel.tsx:216:17
+TS2552: Cannot find name 'onSessionParamsChange'. Did you mean 'onParamsChange'?
+    214 |                 setPlotMode(newMode);
+    215 |                 // Sync with session params
+  > 216 |                 onSessionParamsChange({
+        |                 ^^^^^^^^^^^^^^^^^^^^^
+    217 |                   ...sessionParams,
+    218 |                   show_raw_signals: newMode === 'raw'
+    219 |                 });
+
+ERROR in src/components/SettingsPanel.tsx:226:14
+TS2304: Cannot find name 'DownsamplingControl'.
+    224 |           <div>
+    225 |             <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+  > 226 |             <DownsamplingControl 
+        |              ^^^^^^^^^^^^^^^^^^^
+    227 |               dataPoints={dataPoints}
+    228 |               setDataPoints={setDataPoints}
+    229 |               plotChannel1Data={mainPlotChannel1Data}
+
+ERROR in src/components/SettingsPanel.tsx:227:27
+TS2304: Cannot find name 'dataPoints'.
+    225 |             <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
+    226 |             <DownsamplingControl 
+  > 227 |               dataPoints={dataPoints}
+        |                           ^^^^^^^^^^
+    228 |               setDataPoints={setDataPoints}
+    229 |               plotChannel1Data={mainPlotChannel1Data}
+    230 |               plotChannel2Data={mainPlotChannel2Data}
+
+ERROR in src/components/SettingsPanel.tsx:228:30
+TS2304: Cannot find name 'setDataPoints'.
+    226 |             <DownsamplingControl 
+    227 |               dataPoints={dataPoints}
+  > 228 |               setDataPoints={setDataPoints}
+        |                              ^^^^^^^^^^^^^
+    229 |               plotChannel1Data={mainPlotChannel1Data}
+    230 |               plotChannel2Data={mainPlotChannel2Data}
+    231 |             />
+
+ERROR in src/components/SettingsPanel.tsx:229:33
+TS2304: Cannot find name 'mainPlotChannel1Data'.
+    227 |               dataPoints={dataPoints}
+    228 |               setDataPoints={setDataPoints}
+  > 229 |               plotChannel1Data={mainPlotChannel1Data}
+        |                                 ^^^^^^^^^^^^^^^^^^^^
+    230 |               plotChannel2Data={mainPlotChannel2Data}
+    231 |             />
+    232 |           </div>
+
+ERROR in src/components/SettingsPanel.tsx:230:33
+TS2304: Cannot find name 'mainPlotChannel2Data'.
+    228 |               setDataPoints={setDataPoints}
+    229 |               plotChannel1Data={mainPlotChannel1Data}
+  > 230 |               plotChannel2Data={mainPlotChannel2Data}
+        |                                 ^^^^^^^^^^^^^^^^^^^^
+    231 |             />
+    232 |           </div>
+    233 |         </div>
+
+ERROR in src/components/sessions/game-session-tabs.tsx:109:46
+TS2448: Block-scoped variable 'handleFilterChange' used before its declaration.
+    107 |       handleFilterChange('comparison');
+    108 |     }
+  > 109 |   }, [analysisResult, muscleChannels.length, handleFilterChange]);
+        |                                              ^^^^^^^^^^^^^^^^^^
+    110 |   
+    111 |   // Update the all channels data when current analytics changes
+    112 |   useEffect(() => {
+
+ERROR in src/components/sessions/game-session-tabs.tsx:109:46
+TS2454: Variable 'handleFilterChange' is used before being assigned.
+    107 |       handleFilterChange('comparison');
+    108 |     }
+  > 109 |   }, [analysisResult, muscleChannels.length, handleFilterChange]);
+        |                                              ^^^^^^^^^^^^^^^^^^
+    110 |   
+    111 |   // Update the all channels data when current analytics changes
+    112 |   useEffect(() => {
+

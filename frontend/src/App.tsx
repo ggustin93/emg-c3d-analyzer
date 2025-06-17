@@ -47,7 +47,8 @@ function App() {
     channel_muscle_mapping: {
       "CH1": "Left Quadriceps",
       "CH2": "Right Quadriceps"
-    }
+    },
+    muscle_color_mapping: {}
   });
   
   // Initialize hooks
@@ -106,7 +107,7 @@ function App() {
     resetPlotDataAndStats();
     resetGameSessionData();
     setSelectedChannelForStats(null);
-    setActiveTab("plots");
+    setActiveTab("plots"); // Set to the combined EMG Analysis tab
     // Don't reset sessionParams here, therapist might want to keep them for next upload
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
 
@@ -115,13 +116,23 @@ function App() {
     setAnalysisResult(data);
     updateChannelsAfterUpload(data);
     determineChannelsForTabs(data);
-    setActiveTab("plots");
+    setActiveTab("plots"); // Keep default tab as "plots" which is now the combined EMG Analysis tab
     
     // Update sessionParams from the response if available
     if (data.metadata.session_parameters_used) {
+      // Preserve the existing channel_muscle_mapping if the new data doesn't provide one
+      const newChannelMuscleMapping = data.metadata.session_parameters_used.channel_muscle_mapping || sessionParams.channel_muscle_mapping;
+      const newMuscleColorMapping = data.metadata.session_parameters_used.muscle_color_mapping || sessionParams.muscle_color_mapping;
+      
       setSessionParams({
         ...sessionParams,
-        ...data.metadata.session_parameters_used
+        ...data.metadata.session_parameters_used,
+        // Always ensure we have valid mappings
+        channel_muscle_mapping: newChannelMuscleMapping || {
+          "CH1": "Left Quadriceps",
+          "CH2": "Right Quadriceps"
+        },
+        muscle_color_mapping: newMuscleColorMapping || {}
       });
     }
   }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams]);
@@ -143,40 +154,17 @@ function App() {
       const formData = new FormData();
       formData.append('result_id', analysisResult.file_id);
       
-      // Add session parameters to the form data
-      if (sessionParams.session_mvc_value !== null && sessionParams.session_mvc_value !== undefined) {
-        formData.append('session_mvc_value', String(sessionParams.session_mvc_value));
-      }
-      if (sessionParams.session_mvc_threshold_percentage !== null && sessionParams.session_mvc_threshold_percentage !== undefined) {
-        formData.append('session_mvc_threshold_percentage', String(sessionParams.session_mvc_threshold_percentage));
-      }
-      if (sessionParams.session_expected_contractions !== null && sessionParams.session_expected_contractions !== undefined) {
-        formData.append('session_expected_contractions', String(sessionParams.session_expected_contractions));
-      }
-      if (sessionParams.session_expected_contractions_ch1 !== null && sessionParams.session_expected_contractions_ch1 !== undefined) {
-        formData.append('session_expected_contractions_ch1', String(sessionParams.session_expected_contractions_ch1));
-      }
-      if (sessionParams.session_expected_contractions_ch2 !== null && sessionParams.session_expected_contractions_ch2 !== undefined) {
-        formData.append('session_expected_contractions_ch2', String(sessionParams.session_expected_contractions_ch2));
-      }
-      if (sessionParams.session_expected_long_left !== null && sessionParams.session_expected_long_left !== undefined) {
-        formData.append('session_expected_long_left', String(sessionParams.session_expected_long_left));
-      }
-      if (sessionParams.session_expected_short_left !== null && sessionParams.session_expected_short_left !== undefined) {
-        formData.append('session_expected_short_left', String(sessionParams.session_expected_short_left));
-      }
-      if (sessionParams.session_expected_long_right !== null && sessionParams.session_expected_long_right !== undefined) {
-        formData.append('session_expected_long_right', String(sessionParams.session_expected_long_right));
-      }
-      if (sessionParams.session_expected_short_right !== null && sessionParams.session_expected_short_right !== undefined) {
-        formData.append('session_expected_short_right', String(sessionParams.session_expected_short_right));
-      }
-      if (sessionParams.contraction_duration_threshold !== null && sessionParams.contraction_duration_threshold !== undefined) {
-        formData.append('contraction_duration_threshold', String(sessionParams.contraction_duration_threshold));
-      }
-      if (sessionParams.channel_muscle_mapping) {
-        formData.append('channel_muscle_mapping', JSON.stringify(sessionParams.channel_muscle_mapping));
-      }
+      // Add all session parameters to the form data
+      Object.keys(sessionParams).forEach(key => {
+        const value = sessionParams[key];
+        if (value !== null && value !== undefined) {
+          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
 
       // Send the request to recalculate scores
       const recalculateResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/recalculate-scores', {
@@ -217,22 +205,17 @@ function App() {
       const formData = new FormData();
       formData.append('file', file);
       
-      // Add session parameters to the form data
-      if (sessionParams.session_mvc_value !== null && sessionParams.session_mvc_value !== undefined) {
-        formData.append('session_mvc_value', String(sessionParams.session_mvc_value));
-      }
-      if (sessionParams.session_mvc_threshold_percentage !== null && sessionParams.session_mvc_threshold_percentage !== undefined) {
-        formData.append('session_mvc_threshold_percentage', String(sessionParams.session_mvc_threshold_percentage));
-      }
-      if (sessionParams.session_expected_contractions !== null && sessionParams.session_expected_contractions !== undefined) {
-        formData.append('session_expected_contractions', String(sessionParams.session_expected_contractions));
-      }
-      if (sessionParams.session_expected_contractions_ch1 !== null && sessionParams.session_expected_contractions_ch1 !== undefined) {
-        formData.append('session_expected_contractions_ch1', String(sessionParams.session_expected_contractions_ch1));
-      }
-      if (sessionParams.session_expected_contractions_ch2 !== null && sessionParams.session_expected_contractions_ch2 !== undefined) {
-        formData.append('session_expected_contractions_ch2', String(sessionParams.session_expected_contractions_ch2));
-      }
+      // Add all session parameters to the form data
+      Object.keys(sessionParams).forEach(key => {
+        const value = sessionParams[key];
+        if (value !== null && value !== undefined) {
+          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
 
       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
           method: 'POST',
@@ -260,11 +243,16 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
+      
+      // Add all session parameters to the form data
       Object.keys(sessionParams).forEach(key => {
         const value = sessionParams[key];
         if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
+          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
         }
       });
 
@@ -294,6 +282,8 @@ function App() {
     const name1 = plotChannel1Name;
     const name2 = plotChannel2Name;
 
+    console.log('Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
+
     if (!series1 && !series2) return [];
 
     const maxLength = Math.max(series1?.data.length || 0, series2?.data.length || 0);
@@ -309,10 +299,26 @@ function App() {
       if (name2 && series2 && i < series2.data.length) {
         point[name2] = series2.data[i];
       }
+      
+      // Only add points that have at least one data value
       if (Object.keys(point).length > 1) {
-          newChartData.push(point);
+        newChartData.push(point);
       }
     }
+    
+    // If we have no data points but have series data, create a placeholder point
+    if (newChartData.length === 0 && (series1 || series2)) {
+      const placeholderPoint: CombinedChartDataPoint = { time: 0 };
+      if (name1 && series1) {
+        placeholderPoint[name1] = 0;
+      }
+      if (name2 && series2) {
+        placeholderPoint[name2] = 0;
+      }
+      newChartData.push(placeholderPoint);
+    }
+    
+    console.log('Generated chart data points:', newChartData.length);
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
