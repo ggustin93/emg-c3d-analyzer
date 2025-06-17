@@ -355,19 +355,28 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                         isInteger={true}
                         description={`Contractions meeting MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(1)}). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
                         error={displayAnalytics.errors?.contractions}
+                        tooltipContent={expertTooltips.goodContractions}
                       />
                     )}
                     {hasContractionTypeData && (
-                      <div className="p-3 bg-slate-50 rounded-md flex flex-col justify-center">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm font-medium">Short (&lt;{contractionDurationThreshold}ms)</span>
-                          <span className="text-sm">{shortContractions} ({shortGoodContractions} good)</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Long (≥{contractionDurationThreshold}ms)</span>
-                          <span className="text-sm">{longContractions} ({longGoodContractions} good)</span>
-                        </div>
-                      </div>
+                      <>
+                        <MetricCard
+                          title={`Short (<${contractionDurationThreshold}ms)`}
+                          value={shortContractions}
+                          unit={`(${shortGoodContractions} good)`}
+                          isInteger
+                          description={`Contractions shorter than ${contractionDurationThreshold}ms.`}
+                          tooltipContent={`Contractions with a duration less than ${contractionDurationThreshold}ms. These are often brief, phasic muscle activations.`}
+                        />
+                        <MetricCard
+                          title={`Long (≥${contractionDurationThreshold}ms)`}
+                          value={longContractions}
+                          unit={`(${longGoodContractions} good)`}
+                          isInteger
+                          description={`Contractions longer than ${contractionDurationThreshold}ms.`}
+                          tooltipContent={`Contractions with a duration of ${contractionDurationThreshold}ms or more. These are sustained, tonic muscle activations.`}
+                        />
+                      </>
                     )}
                   </div>
                 </div>

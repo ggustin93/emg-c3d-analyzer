@@ -73,6 +73,7 @@
         - ✅ Improved muscle naming with structured dropdowns in `SettingsPanel`.
         - ✅ Enhanced `MuscleSelector` to work with the view mode system.
         - ✅ Updated `EMGChart` to support both single and comparison views with consistent colors.
+        - ✅ **Refined Comparison View**: Fixed loading loops, added tooltips, and removed redundant UI wrappers for a cleaner, more stable experience.
 ✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
@@ -141,6 +142,7 @@
 - **Enhanced muscle selection** with a more intuitive interface that respects the view mode.
 - **Fixed tooltip rendering issues** by properly structuring `TooltipProvider` components.
 - **Improved muscle naming** with structured dropdowns in `SettingsPanel`.
+- **Stabilized and polished the comparison view**, fixing loading issues and improving UI consistency.
 
 ### Milestone 7: Production Hardening & Automation 🚧
 - [ ] Achieve high test coverage for caching and processing logic.

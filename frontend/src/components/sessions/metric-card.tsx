@@ -42,19 +42,7 @@ export default function MetricCard({
       });
 
   const renderCardContent = () => (
-    <Card className="relative">
-      {validationStatus === 'strong-assumption' && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground p-0 m-0 h-4 w-4 flex items-center justify-center">
-              <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-amber-50 border-amber-100">
-            <p>Work in Progress: based on strong biomedical assumptions.</p>
-          </TooltipContent>
-        </Tooltip>
-      )}
+    <Card className="relative flex flex-col justify-between h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -62,7 +50,7 @@ export default function MetricCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
-                  <InfoCircledIcon className="h-3.5 w-3.5" />
+                  <InfoCircledIcon className="h-4 w-4" />
                 </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
@@ -71,15 +59,14 @@ export default function MetricCard({
             </Tooltip>
           )}
         </div>
-        {icon && <div className="h-4 w-4 text-muted-foreground">{icon}</div>}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold flex items-center">
+      <CardContent className="flex flex-col items-center justify-center flex-grow">
+        <div className="text-3xl font-bold">
           {formattedValue}
-          {typeof value === 'number' && !isNaN(value) && value !== null && !error && (
-            <span className="ml-1 text-lg text-muted-foreground">{unit}</span>
-          )}
         </div>
+        {typeof value === 'number' && !isNaN(value) && value !== null && !error && (
+          <div className="text-md text-muted-foreground">{unit}</div>
+        )}
       </CardContent>
     </Card>
   );

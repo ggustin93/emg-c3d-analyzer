@@ -28,6 +28,7 @@
     - The `StatsPanel` has been refined to only show clinically relevant metrics, removing "Min/Max Value" to avoid confusion with "Min/Max Amplitude".
     - Corrected scientific notation formatting for very small numbers.
     - **Improved muscle selection** with a more intuitive interface that respects the view mode.
+    - **Refined Comparison View**: Fixed loading issues, added tooltips, and removed unnecessary UI wrappers for a cleaner and more stable comparison table.
 - **Performance Overhaul**:
     - Implemented robust backend caching for the `/upload` endpoint, using a hash of file content and processing parameters.
     - Pre-serialized all raw and activated EMG data to a separate JSON file during initial processing, making the `/raw-data` endpoint near-instantaneous.
@@ -44,6 +45,10 @@
 - End-to-end testing of the full analysis and visualization pipeline, especially the new caching layers.
 
 ### Recent Changes
+*   **Comparison View Overhaul**:
+    *   **Fixed Infinite Loading**: Refactored `useEffect` hooks in `game-session-tabs.tsx` to correctly pre-load all channel data, eliminating an infinite loading loop in comparison mode.
+    *   **Stabilized Data Handling**: Improved data merging logic in `StatsPanel.tsx` to correctly handle analytics data for both single and comparison views.
+    *   **UI Cleanup**: Removed redundant wrapper `div`s from the comparison view for a cleaner layout and added tooltips for consistency with the single-channel view.
 *   **UI Improvements**:
     *   **Centralized Color System**: Created a shared color mapping system in `colorMappings.ts` to ensure consistent styling across all components.
     *   **View Mode Selector**: Implemented a reusable `ViewSelector` component for switching between single and comparison views.
