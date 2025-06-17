@@ -64,8 +64,8 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   console.log('Available data keys:', availableDataKeys);
 
   // Determine which channels to display - use dataKeys if availableChannels is empty
-  const displayChannels = viewMode === 'comparison' || availableChannels.length > 1
-    ? availableChannels 
+  const displayChannels = viewMode === 'comparison'
+    ? availableChannels.length > 0 ? availableChannels : availableDataKeys
     : selectedChannel 
       ? [selectedChannel] 
       : availableChannels.length > 0 ? [availableChannels[0]] : [];

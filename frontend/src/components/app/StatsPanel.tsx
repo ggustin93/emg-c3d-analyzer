@@ -22,6 +22,7 @@ interface StatsPanelComponentProps extends ExternalStatsPanelProps {
   allChannelsData?: Record<string, ChannelAnalyticsData | null>;
   viewMode: FilterMode;
   onFilterChange: (mode: FilterMode, channel?: string) => void;
+  isInitializingComparison?: boolean;
 }
 
 // Function to calculate performance score based on good contractions vs expected
@@ -146,32 +147,80 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   sessionParams,
   allChannelsData = {},
   viewMode,
-  onFilterChange
+  onFilterChange,
+  isInitializingComparison = false
 }) => {
   // const [viewMode, setViewMode] = useState<FilterMode>('single'); // State is now lifted
   
   // Initialize allChannelsData if not provided
   const [localAllChannelsData, setLocalAllChannelsData] = useState<Record<string, ChannelAnalyticsData | null>>({});
   
-  // Update local data when channelAnalytics changes
+  // Update local data by merging incoming props
   useEffect(() => {
-    if (channelAnalytics && selectedChannel) {
-      setLocalAllChannelsData(prev => ({
-        ...prev,
-        [selectedChannel]: channelAnalytics
-      }));
-    }
-  }, [channelAnalytics, selectedChannel]);
+    setLocalAllChannelsData(prev => {
+      const updatedData = { ...prev };
+      
+      // Merge data from allChannelsData prop
+      if (allChannelsData) {
+        Object.assign(updatedData, allChannelsData);
+      }
+      
+      // Merge data for the currently selected single channel
+      if (channelAnalytics && selectedChannel) {
+        updatedData[selectedChannel] = channelAnalytics;
+      }
+      
+      return updatedData;
+    });
+  }, [channelAnalytics, selectedChannel, allChannelsData]);
   
   // Use provided allChannelsData if available, otherwise use local state
   const displayAllChannelsData = Object.keys(allChannelsData).length > 0 
     ? allChannelsData 
     : localAllChannelsData;
 
+  // Check if we have enough data to display in comparison mode
+  const hasEnoughDataForComparison = viewMode === 'comparison' && 
+    availableChannels.length > 0 &&
+    availableChannels.every(channel => displayAllChannelsData[channel] !== undefined);
+
+  if (isInitializingComparison || (viewMode === 'comparison' && !hasEnoughDataForComparison)) {
+    return (
+      <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
+        <p className="text-center text-muted-foreground">
+          {isInitializingComparison || !hasEnoughDataForComparison
+            ? "Initializing comparison data..."
+            : "Select channels to compare their analytics."}
+        </p>
+        <div className="flex justify-center my-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        </div>
+        <div className="mt-4">
+          <ChannelFilter 
+            availableChannels={availableChannels}
+            sessionParams={sessionParams || { channel_muscle_mapping: {}, muscle_color_mapping: {} }}
+            activeFilter={{ mode: viewMode, channel: selectedChannel }}
+            onFilterChange={onFilterChange}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (!channelAnalytics && !stats && viewMode === 'single') {
     return (
       <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
-        <p className="text-center text-muted-foreground">Select a muscle to view its detailed analytics.</p>
+        <p className="text-center text-muted-foreground">
+          Select a muscle to view its detailed analytics.
+        </p>
+        <div className="mt-4">
+          <ChannelFilter 
+            availableChannels={availableChannels}
+            sessionParams={sessionParams || { channel_muscle_mapping: {}, muscle_color_mapping: {} }}
+            activeFilter={{ mode: viewMode, channel: selectedChannel }}
+            onFilterChange={onFilterChange}
+          />
+        </div>
       </div>
     );
   }
@@ -245,9 +294,12 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
       <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
         <div className="flex flex-col mb-4">
           {viewMode === 'comparison' ? (
-            <div className="mt-4">
-              <MuscleComparisonTable channelsData={displayAllChannelsData} sessionParams={sessionParams} availableChannels={availableChannels} />
-            </div>
+            <MuscleComparisonTable 
+              channelsData={displayAllChannelsData} 
+              sessionParams={sessionParams} 
+              availableChannels={availableChannels} 
+              expertTooltips={expertTooltips}
+            />
           ) : (
             <>
               {hasPerformanceData && !isEMGAnalyticsTab && (

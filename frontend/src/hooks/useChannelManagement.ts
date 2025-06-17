@@ -69,8 +69,14 @@ export const useChannelManagement = (
     const analyticsChannels = Object.keys(data.analytics);
     if (analyticsChannels.length === 0) return;
 
-    // By default, select the first muscle for stats display.
-    const defaultStatsChannel = analyticsChannels[0];
+    // Try to find a channel with "Quadriceps" in its name from the session parameters
+    const quadricepsChannel = analyticsChannels.find(channel => {
+      const muscleName = data.metadata?.session_parameters_used?.channel_muscle_mapping?.[channel];
+      return muscleName && muscleName.includes('Quadriceps');
+    });
+
+    // If found, select the Quadriceps channel, otherwise select the first channel
+    const defaultStatsChannel = quadricepsChannel || analyticsChannels[0];
     setSelectedChannelForStats(defaultStatsChannel);
 
     // Plot channels are now handled by the useEffect above.

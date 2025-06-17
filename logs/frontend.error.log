@@ -4882,3 +4882,58 @@ TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; 
     159 |         muscleCount={muscleScores.length}
     160 |         symmetryScore={symmetryScore}
 
+ERROR in src/components/app/StatsPanel.tsx:183:13
+TS2322: Type '{ availableChannels: string[]; selectedChannel: string | null; viewMode: FilterMode; onFilterChange: (mode: FilterMode, channel?: string | undefined) => void; }' is not assignable to type 'IntrinsicAttributes & ChannelFilterProps'.
+  Property 'selectedChannel' does not exist on type 'IntrinsicAttributes & ChannelFilterProps'.
+    181 |           <ChannelFilter 
+    182 |             availableChannels={availableChannels}
+  > 183 |             selectedChannel={selectedChannel}
+        |             ^^^^^^^^^^^^^^^
+    184 |             viewMode={viewMode}
+    185 |             onFilterChange={onFilterChange}
+    186 |           />
+
+ERROR in src/components/app/StatsPanel.tsx:183:13
+TS2322: Type '{ availableChannels: string[]; selectedChannel: string | null; viewMode: FilterMode; onFilterChange: (mode: FilterMode, channel?: string | undefined) => void; }' is not assignable to type 'IntrinsicAttributes & ChannelFilterProps'.
+  Property 'selectedChannel' does not exist on type 'IntrinsicAttributes & ChannelFilterProps'.
+    181 |           <ChannelFilter 
+    182 |             availableChannels={availableChannels}
+  > 183 |             selectedChannel={selectedChannel}
+        |             ^^^^^^^^^^^^^^^
+    184 |             viewMode={viewMode}
+    185 |             onFilterChange={onFilterChange}
+    186 |           />
+
+ERROR in src/components/sessions/game-session-tabs.tsx:309:17
+TS2322: Type '{ stats: StatsData | null; channelAnalytics: ChannelAnalyticsData | null; selectedChannel: string | null; availableChannels: string[]; onChannelSelect: (name: string | null) => void; ... 7 more ...; isInitializingComparison: boolean; }' is not assignable to type 'IntrinsicAttributes & StatsPanelComponentProps'.
+  Property 'isInitializingComparison' does not exist on type 'IntrinsicAttributes & StatsPanelComponentProps'.
+    307 |                 viewMode={viewMode}
+    308 |                 onFilterChange={handleFilterChange}
+  > 309 |                 isInitializingComparison={isInitializingComparison}
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^
+    310 |               />
+    311 |             </div>
+    312 |           </CardContent>
+
+ERROR in src/components/sessions/game-session-tabs.tsx:309:17
+TS2322: Type '{ stats: StatsData | null; channelAnalytics: ChannelAnalyticsData | null; selectedChannel: string | null; availableChannels: string[]; onChannelSelect: (name: string | null) => void; ... 7 more ...; isInitializingComparison: boolean; }' is not assignable to type 'IntrinsicAttributes & StatsPanelComponentProps'.
+  Property 'isInitializingComparison' does not exist on type 'IntrinsicAttributes & StatsPanelComponentProps'.
+    307 |                 viewMode={viewMode}
+    308 |                 onFilterChange={handleFilterChange}
+  > 309 |                 isInitializingComparison={isInitializingComparison}
+        |                 ^^^^^^^^^^^^^^^^^^^^^^^^
+    310 |               />
+    311 |             </div>
+    312 |           </CardContent>
+
+ERROR in src/components/app/StatsPanel.tsx:301:15
+TS2322: Type '{ channelsData: Record<string, ChannelAnalyticsData | null>; sessionParams: GameSessionParameters | undefined; availableChannels: string[]; expertTooltips: { ...; }; }' is not assignable to type 'IntrinsicAttributes & MuscleComparisonTableProps'.
+  Property 'expertTooltips' does not exist on type 'IntrinsicAttributes & MuscleComparisonTableProps'.
+    299 |               sessionParams={sessionParams} 
+    300 |               availableChannels={availableChannels} 
+  > 301 |               expertTooltips={expertTooltips}
+        |               ^^^^^^^^^^^^^^
+    302 |             />
+    303 |           ) : (
+    304 |             <>
+

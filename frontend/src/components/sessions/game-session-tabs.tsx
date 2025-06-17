@@ -99,15 +99,37 @@ export default function GameSessionTabs({
   // Add state to store analytics data for all channels
   const [allChannelsData, setAllChannelsData] = useState<Record<string, ChannelAnalyticsData | null>>({});
   const [viewMode, setViewMode] = useState<FilterMode>('comparison');
+  const [isInitializingComparison, setIsInitializingComparison] = useState(false);
   
-  // Initialize to comparison mode when component mounts or when data changes
+  // This effect will run when the component mounts or when dependencies change.
+  // It's responsible for pre-loading all channel data for comparison view.
   useEffect(() => {
-    console.log('Setting up comparison mode');
-    handleFilterChange('comparison');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Only run this logic if there are muscle channels to process.
+    if (muscleChannels.length > 0 && analysisResult?.analytics) {
+      console.log('Pre-loading all channel analytics for comparison mode.');
+      
+      // Set the loading state to true.
+      setIsInitializingComparison(true);
+      
+      // Create a new object to hold the analytics data for all channels.
+      const allData: Record<string, ChannelAnalyticsData | null> = {};
+      
+      // Iterate over the muscle channels and populate the data object.
+      muscleChannels.forEach(channel => {
+        allData[channel] = analysisResult.analytics[channel] || null;
+      });
+      
+      // Update the state with the complete data set.
+      setAllChannelsData(allData);
+      
+      // Set the loading state to false once data is ready.
+      setIsInitializingComparison(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [muscleChannels, analysisResult?.analytics]); // Dependency on analytics object
   
-  // Update the all channels data when current analytics changes
+  // This effect ensures that any updates to a single channel's analytics
+  // (e.g., from recalculation) are merged into the main data set.
   useEffect(() => {
     if (currentChannelAnalyticsData && selectedChannelForStats) {
       setAllChannelsData(prev => ({
@@ -117,10 +139,11 @@ export default function GameSessionTabs({
     }
   }, [currentChannelAnalyticsData, selectedChannelForStats]);
   
-  // Reset all channels data when analysis result changes
+  // This effect resets the data when the entire analysis result is cleared.
   useEffect(() => {
-    if (analysisResult) {
+    if (!analysisResult) {
       setAllChannelsData({});
+      setViewMode('comparison'); // Reset to default view
     }
   }, [analysisResult]);
 
@@ -247,6 +270,7 @@ export default function GameSessionTabs({
                 allChannelsData={allChannelsData}
                 viewMode={viewMode}
                 onFilterChange={handleFilterChange}
+                isInitializingComparison={isInitializingComparison}
               />
             </div>
           </CardContent>

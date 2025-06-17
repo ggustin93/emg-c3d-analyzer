@@ -3,11 +3,14 @@ import { ChannelAnalyticsData, GameSessionParameters } from '../../types/emg';
 import MuscleNameDisplay from '../MuscleNameDisplay';
 import { formatMetricValue } from '../../utils/formatters';
 import { getColorForChannel } from '../../lib/colorMappings';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 interface MuscleComparisonTableProps {
   channelsData: Record<string, ChannelAnalyticsData | null>;
   availableChannels: string[];
   sessionParams?: GameSessionParameters;
+  expertTooltips: Record<string, string>;
 }
 
 // Define metric type
@@ -36,11 +39,30 @@ const formatValue = (value: number | null | undefined, unit: string, useScientif
 const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
   channelsData,
   availableChannels,
-  sessionParams
+  sessionParams,
+  expertTooltips
 }) => {
-  if (availableChannels.length === 0 || Object.keys(channelsData).length === 0) {
-    return null;
+  // Filter to only include channels that have data
+  const channelsWithData = availableChannels.filter(channel => 
+    Object.keys(channelsData).includes(channel) && channelsData[channel] !== null
+  );
+  
+  // Show table even if we only have data for some channels
+  if (availableChannels.length === 0 || channelsWithData.length === 0) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        No data available for comparison.
+      </div>
+    );
   }
+
+  // Map metric groups to tooltip keys
+  const groupTooltipKeys: Record<string, string> = {
+    'Contraction Metrics': 'contractionQuantity',
+    'Duration Metrics': 'durationMetrics',
+    'Amplitude Metrics': 'amplitudeMetrics',
+    'Fatigue Metrics': 'fatigueMetrics'
+  };
 
   // Define the metrics we want to compare
   const metricGroups = [
@@ -87,7 +109,7 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Metric
             </th>
-            {availableChannels.map((channel) => {
+            {channelsWithData.map((channel) => {
               const colorStyle = getColorForChannel(channel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);
               return (
                 <th 
@@ -117,10 +139,22 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
             <React.Fragment key={group.title}>
               <tr className="bg-slate-100">
                 <td 
-                  colSpan={availableChannels.length + 1} 
+                  colSpan={channelsWithData.length + 1} 
                   className="px-4 py-2 text-sm font-semibold text-slate-900 border-t-2 border-slate-200"
                 >
-                  {group.title}
+                  <div className="flex items-center">
+                    <span>{group.title}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
+                          <InfoCircledIcon className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                        <p>{expertTooltips[groupTooltipKeys[group.title]]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </td>
               </tr>
               {group.metrics.map((metric) => (
@@ -128,7 +162,7 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                   <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                     {metric.label}
                   </td>
-                  {availableChannels.map((channel) => {
+                  {channelsWithData.map((channel) => {
                     const data = channelsData[channel];
                     const value = data ? data[metric.key as keyof ChannelAnalyticsData] : null;
                     const colorStyle = getColorForChannel(channel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);

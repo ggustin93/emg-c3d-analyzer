@@ -2,7 +2,7 @@
 
 A web-based tool for the analysis and visualization of Electromyography (EMG) data from C3D files, tailored for the GHOSTLY rehabilitation game platform.
 
-![EMG C3D Analyzer Screenshot](assets/screenshot-v1.png)
+![EMG C3D Analyzer Screenshot](assets/screenshot-2.png)
 
 ## Core Features
 

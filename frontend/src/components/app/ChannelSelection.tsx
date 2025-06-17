@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ interface ChannelSelectionProps {
   id: string;
   sessionParams?: GameSessionParameters;
   showChannelNames?: boolean;
+  defaultToQuadriceps?: boolean;
 }
 
 const ChannelSelection: React.FC<ChannelSelectionProps> = ({
@@ -27,8 +28,29 @@ const ChannelSelection: React.FC<ChannelSelectionProps> = ({
   label,
   id,
   sessionParams,
-  showChannelNames = false
+  showChannelNames = false,
+  defaultToQuadriceps = true
 }) => {
+  // Auto-select Quadriceps when no channel is selected and defaultToQuadriceps is true
+  useEffect(() => {
+    if (!selectedChannel && defaultToQuadriceps && availableChannels.length > 0) {
+      // Try to find a channel with "Quadriceps" in its muscle name
+      const quadChannel = availableChannels.find(channel => {
+        const muscleName = sessionParams?.channel_muscle_mapping?.[channel];
+        return muscleName && muscleName.includes('Quadriceps');
+      });
+      
+      // If found, select it
+      if (quadChannel) {
+        setSelectedChannel(quadChannel);
+      }
+      // Otherwise, select the first channel
+      else if (availableChannels.length > 0) {
+        setSelectedChannel(availableChannels[0]);
+      }
+    }
+  }, [availableChannels, selectedChannel, setSelectedChannel, sessionParams, defaultToQuadriceps]);
+
   if (availableChannels.length === 0) {
     return null;
   }

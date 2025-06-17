@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 // Removed unused Recharts imports, EMGChart import is now only for its types if needed elsewhere, actual component used in GameSessionTabs
 import type {
   EMGAnalysisResult,
@@ -38,18 +38,40 @@ function App() {
   const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
   
   // State for session parameters
-  const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
-    session_mvc_value: 0.00015,
-    session_mvc_threshold_percentage: 75,
-    session_expected_contractions: 12,
-    session_expected_contractions_ch1: null,
-    session_expected_contractions_ch2: null,
-    channel_muscle_mapping: {
-      "CH1": "Left Quadriceps",
-      "CH2": "Right Quadriceps"
-    },
-    muscle_color_mapping: {}
+  const [sessionParams, setSessionParams] = useState<GameSessionParameters>(() => {
+    // Try to load saved params from localStorage
+    const savedParams = localStorage.getItem('emg_session_params');
+    if (savedParams) {
+      try {
+        const parsed = JSON.parse(savedParams);
+        return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved session params:', e);
+      }
+    }
+    
+    // Default values if no saved params exist
+    return {
+      session_mvc_value: 0.00015,
+      session_mvc_threshold_percentage: 75,
+      session_expected_contractions: 12,
+      session_expected_contractions_ch1: null,
+      session_expected_contractions_ch2: null,
+      channel_muscle_mapping: {
+        "CH1": "Left Quadriceps",
+        "CH2": "Right Quadriceps"
+      },
+      muscle_color_mapping: {
+        "Left Quadriceps": "#3b82f6", // Blue
+        "Right Quadriceps": "#ef4444"  // Red
+      }
+    };
   });
+  
+  // Save sessionParams to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('emg_session_params', JSON.stringify(sessionParams));
+  }, [sessionParams]);
   
   // Initialize hooks
   const downsamplingControls = useDataDownsampling(2000);
@@ -65,6 +87,29 @@ function App() {
     updateChannelsAfterUpload,
     resetChannelSelections,
   } = useChannelManagement(analysisResult, plotMode);
+
+  // Ensure muscle mappings are initialized
+  useEffect(() => {
+    // Check if we need to initialize the mappings
+    const needsInitialization = Object.keys(sessionParams.channel_muscle_mapping).length === 0 ||
+                               Object.keys(sessionParams.muscle_color_mapping).length === 0;
+    
+    if (needsInitialization) {
+      setSessionParams(prev => ({
+        ...prev,
+        channel_muscle_mapping: {
+          ...prev.channel_muscle_mapping,
+          "CH1": "Left Quadriceps",
+          "CH2": "Right Quadriceps"
+        },
+        muscle_color_mapping: {
+          ...prev.muscle_color_mapping,
+          "Left Quadriceps": "#3b82f6", // Blue
+          "Right Quadriceps": "#ef4444"  // Red
+        }
+      }));
+    }
+  }, []);
 
   const {
     plotChannel1Data,
@@ -108,7 +153,19 @@ function App() {
     resetGameSessionData();
     setSelectedChannelForStats(null);
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
-    // Don't reset sessionParams here, therapist might want to keep them for next upload
+    
+    // Reset muscle color mappings to defaults while preserving other session params
+    setSessionParams(prev => ({
+      ...prev,
+      channel_muscle_mapping: {
+        "CH1": "Left Quadriceps",
+        "CH2": "Right Quadriceps"
+      },
+      muscle_color_mapping: {
+        "Left Quadriceps": "#3b82f6", // Blue
+        "Right Quadriceps": "#ef4444"  // Red
+      }
+    }));
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult) => {
@@ -121,21 +178,46 @@ function App() {
     // Update sessionParams from the response if available
     if (data.metadata.session_parameters_used) {
       // Preserve the existing channel_muscle_mapping if the new data doesn't provide one
-      const newChannelMuscleMapping = data.metadata.session_parameters_used.channel_muscle_mapping || sessionParams.channel_muscle_mapping;
-      const newMuscleColorMapping = data.metadata.session_parameters_used.muscle_color_mapping || sessionParams.muscle_color_mapping;
+      const newChannelMuscleMapping = data.metadata.session_parameters_used.channel_muscle_mapping || {
+        "CH1": "Left Quadriceps",
+        "CH2": "Right Quadriceps"
+      };
+      
+      // Always ensure we have default color mappings
+      const newMuscleColorMapping = {
+        "Left Quadriceps": "#3b82f6", // Blue
+        "Right Quadriceps": "#ef4444", // Red
+        ...(data.metadata.session_parameters_used.muscle_color_mapping || {})
+      };
+      
+      // Get the available channels from the data
+      const availableChannels = Object.keys(data.analytics || {});
+      
+      // Ensure all available channels have a muscle mapping
+      if (availableChannels.length > 0) {
+        availableChannels.forEach((channel, index) => {
+          if (!newChannelMuscleMapping[channel]) {
+            // If channel doesn't have a mapping, assign default Quadriceps if possible
+            if (index === 0) {
+              newChannelMuscleMapping[channel] = "Left Quadriceps";
+            } else if (index === 1) {
+              newChannelMuscleMapping[channel] = "Right Quadriceps";
+            } else {
+              // For additional channels, use a generic name
+              newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
+            }
+          }
+        });
+      }
       
       setSessionParams({
         ...sessionParams,
         ...data.metadata.session_parameters_used,
-        // Always ensure we have valid mappings
-        channel_muscle_mapping: newChannelMuscleMapping || {
-          "CH1": "Left Quadriceps",
-          "CH2": "Right Quadriceps"
-        },
-        muscle_color_mapping: newMuscleColorMapping || {}
+        channel_muscle_mapping: newChannelMuscleMapping,
+        muscle_color_mapping: newMuscleColorMapping
       });
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams]);
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, setActiveTab, sessionParams]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
