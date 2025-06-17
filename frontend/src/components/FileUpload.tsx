@@ -89,7 +89,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
             accept=".c3d"
             onChange={handleFileChange}
             disabled={isUploading}
-            className="cursor-pointer file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+            lang="en"
+            className="cursor-pointer file:cursor-pointer file:mr-4 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 file:ml-[-5px] flex items-center"
           />
         </div>
         
