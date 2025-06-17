@@ -22,17 +22,65 @@ export interface MultiChannelEMGChartProps {
   channel1Name: string | null;
   channel2Name: string | null;
   mvcThresholdForPlot?: number | null; // New prop for MVC threshold
+  channel_muscle_mapping?: Record<string, string>; // Add muscle mapping prop
+  plotMode?: 'raw' | 'activated'; // Add plot mode prop
 }
 
 const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({ 
   chartData, 
   channel1Name, 
   channel2Name,
-  mvcThresholdForPlot 
+  mvcThresholdForPlot,
+  channel_muscle_mapping = {}, // Default to empty object
+  plotMode = 'activated' // Default to activated
 }) => {
   if (!chartData || chartData.length === 0) {
     return <p className="text-center text-gray-500 my-4">No data available for chart.</p>;
   }
+
+  // Get muscle names from mapping or use channel names as fallback
+  const getMuscleName = (channelName: string | null): string => {
+    if (!channelName) return '';
+    
+    // Extract the base channel name (CH1, CH2, etc.) without any suffix
+    const baseChannelName = channelName.split(' ')[0];
+    
+    // Get the muscle name from the mapping
+    const muscleName = channel_muscle_mapping[baseChannelName] || baseChannelName;
+    
+    // Append the mode (Raw/Activated) to the muscle name
+    return `${muscleName} ${plotMode === 'raw' ? 'Raw' : 'Activated'}`;
+  };
+
+  // Custom legend formatter to include MVC threshold
+  const renderLegend = (props: any) => {
+    const { payload } = props;
+    
+    return (
+      <div className="recharts-default-legend" style={{ padding: '0 10px' }}>
+        <ul className="flex flex-wrap items-center gap-x-6">
+          {payload.map((entry: any, index: number) => (
+            <li key={`item-${index}`} className="flex items-center">
+              <span 
+                className="inline-block w-3 h-3 mr-2" 
+                style={{ backgroundColor: entry.color }}
+              />
+              <span>{getMuscleName(entry.value)}</span>
+            </li>
+          ))}
+          {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
+            <li className="flex items-center">
+              <span 
+                className="inline-block w-6 h-0 mr-2 border-t-2 border-dashed" 
+                style={{ borderColor: '#dc2626' }}
+              />
+              <span style={{ color: '#dc2626' }}>MVC Threshold ({mvcThresholdForPlot.toExponential(3)} mV)</span>
+            </li>
+          )}
+        </ul>
+      </div>
+    );
+  };
 
   // Determine Y-axis domain if MVC threshold is present to ensure it's visible
   let yDomain: [number | 'auto', number | 'auto'] = ['auto', 'auto'];
@@ -68,27 +116,31 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
           <XAxis dataKey="time" label={{ value: "Time (s)", position: "bottom" }} tick={{ fontSize: 10 }} />
           <YAxis 
             tick={{ fontSize: 10 }} 
-            label={{ value: "Amplitude", angle: -90, position: "insideLeft", offset: 10, fontSize: 12 }}
+            label={{ value: "Amplitude (mV)", angle: -90, position: "insideLeft", offset: 10, fontSize: 12 }}
             domain={yDomain} // Apply dynamic domain
           />
-          <Tooltip formatter={(value: number, name: string) => [value.toFixed(4), name]} labelFormatter={(label: number) => `Time: ${label.toFixed(3)}s`} />
-          <Legend verticalAlign="top" height={36} wrapperStyle={{ top: -5, right: 0, backgroundColor: 'transparent' }} />
+          <Tooltip formatter={(value: number, name: string) => [`${value.toExponential(3)} mV`, getMuscleName(name)]} labelFormatter={(label: number) => `Time: ${label.toFixed(3)}s`} />
+          <Legend 
+            verticalAlign="top" 
+            height={36} 
+            wrapperStyle={{ top: -5, right: 0, backgroundColor: 'transparent' }} 
+            content={renderLegend}
+          />
           
           {channel1Name && (
-            <Line type="monotone" dataKey={channel1Name} name={channel1Name} stroke="#8884d8" dot={false} isAnimationActive={false} strokeWidth={1.5}/>
+            <Line type="monotone" dataKey={channel1Name} name={channel1Name} stroke="#8884d8" dot={false} isAnimationActive={false} strokeWidth={2.5}/>
           )}
           {channel2Name && (
-            <Line type="monotone" dataKey={channel2Name} name={channel2Name} stroke="#82ca9d" dot={false} isAnimationActive={false} strokeWidth={1.5}/>
+            <Line type="monotone" dataKey={channel2Name} name={channel2Name} stroke="#82ca9d" dot={false} isAnimationActive={false} strokeWidth={2.5}/>
           )}
 
           {/* MVC Threshold Line */}
           {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
             <ReferenceLine 
               y={mvcThresholdForPlot} 
-              label={{ value: `MVC Threshold (${mvcThresholdForPlot.toFixed(3)})`, position: 'insideTopRight', fill: '#dc2626', fontSize: 10 }} 
               stroke="#dc2626" // Red color for threshold
               strokeDasharray="3 3" 
-              strokeWidth={1.5}
+              strokeWidth={2.5}
             />
           )}
 

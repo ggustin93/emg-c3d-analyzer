@@ -7,7 +7,7 @@ export interface DownsamplingControls {
   downsampleData: (data: number[], timeAxis: number[], maxPoints: number) => { data: number[], timeAxis: number[] };
 }
 
-export const useDataDownsampling = (initialDataPoints: number = 1000): DownsamplingControls => {
+export const useDataDownsampling = (initialDataPoints: number = 2000): DownsamplingControls => {
   const [dataPoints, setDataPoints] = useState<number>(initialDataPoints);
 
   const handleDataPointsChange = useCallback((value: number) => {

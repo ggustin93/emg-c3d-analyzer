@@ -21,12 +21,21 @@ import { CombinedChartDataPoint } from "./components/EMGChart"; // This type mig
 import SessionLoader from "./components/SessionLoader";
 import { Button } from "./components/ui/button";
 
+// Import Stagewise components
+import { StagewiseToolbar } from "@stagewise/toolbar-react";
+import { ReactPlugin } from "@stagewise-plugins/react";
+
+// Define Stagewise configuration
+const stagewiseConfig = {
+  plugins: [ReactPlugin],
+};
+
 function App() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
-  const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('raw');
+  const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
   
   // State for session parameters
   const [sessionParams, setSessionParams] = useState<GameSessionParameters>({
@@ -42,7 +51,7 @@ function App() {
   });
   
   // Initialize hooks
-  const downsamplingControls = useDataDownsampling(1000);
+  const downsamplingControls = useDataDownsampling(2000);
   const {
     plotChannel1Name,
     setPlotChannel1Name,
@@ -324,105 +333,110 @@ function App() {
   }, [analysisResult]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col items-center justify-center">
-            <div className="flex items-center space-x-3 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <h1 className="text-3xl font-light text-slate-800 tracking-tight">EMG C3D Analyzer</h1>
-            </div>
-            {analysisResult && (
-              <div className="flex items-center mt-4 space-x-4">
-                <p className="text-sm text-slate-500">
-                  File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
-                </p>
-                <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
-                  Load Another File
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {!analysisResult ? (
-          <SessionLoader
-            onUploadSuccess={handleSuccess}
-            onUploadError={handleError}
-            setIsLoading={setIsLoading}
-            onQuickSelect={handleQuickSelect}
-            isLoading={isLoading}
-            sessionParams={sessionParams}
-          />
-        ) : (
-          <GameSessionTabs
-            analysisResult={analysisResult}
-            mvcThresholdForPlot={
-              plotMode === 'activated'
-                ? (sessionParams.session_mvc_value ?? 0) * (sessionParams.session_mvc_threshold_percentage ?? 0) / 100
-                : null
-            }
-            muscleChannels={muscleChannels}
-            allAvailableChannels={allAvailableChannels}
-            plotChannel1Name={plotChannel1Name}
-            setPlotChannel1Name={setPlotChannel1Name}
-            plotChannel2Name={plotChannel2Name}
-            setPlotChannel2Name={setPlotChannel2Name}
-            selectedChannelForStats={selectedChannelForStats}
-            setSelectedChannelForStats={setSelectedChannelForStats}
-            currentStats={currentStats}
-            currentChannelAnalyticsData={currentChannelAnalytics}
-            mainChartData={mainCombinedChartData}
-            dataPoints={downsamplingControls.dataPoints}
-            setDataPoints={downsamplingControls.setDataPoints}
-            handleDataPointsChange={downsamplingControls.handleDataPointsChange}
-            mainPlotChannel1Data={plotChannel1Data}
-            mainPlotChannel2Data={plotChannel2Data}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            plotMode={plotMode}
-            setPlotMode={setPlotMode}
-            sessionParams={sessionParams}
-            onSessionParamsChange={setSessionParams}
-            onRecalculateScores={handleRecalculateScores}
-            appIsLoading={isLoading}
-          />
-        )}
-
-        {appError && (
-          <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-md">
-            <p><span className="font-medium">Error:</span> {appError}</p>
-          </div>
-        )}
-
-        {isLoading && !analysisResult && (
-           <div className="mt-6 flex flex-col items-center justify-center">
-             <Spinner />
-             <p className="text-teal-500 mt-2">Analyzing data, please wait...</p>
-           </div>
-        )}
-      </main>
+    <>
+      {/* Stagewise Toolbar - only renders in development mode */}
+      <StagewiseToolbar config={stagewiseConfig} />
       
-      <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-center text-center">
-            <p className="text-sm text-slate-500">
-              GHOSTLY+ EMG C3D Analyzer | Research Project
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              Developed for rehabilitation research and therapy assessment
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              © {new Date().getFullYear()} | Academic Research Tool
-            </p>
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col items-center justify-center">
+              <div className="flex items-center space-x-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <h1 className="text-3xl font-light text-slate-800 tracking-tight">EMG C3D Analyzer</h1>
+              </div>
+              {analysisResult && (
+                <div className="flex items-center mt-4 space-x-4">
+                  <p className="text-sm text-slate-500">
+                    File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
+                  </p>
+                  <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
+                    Load Another File
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </header>
+
+        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+          {!analysisResult ? (
+            <SessionLoader
+              onUploadSuccess={handleSuccess}
+              onUploadError={handleError}
+              setIsLoading={setIsLoading}
+              onQuickSelect={handleQuickSelect}
+              isLoading={isLoading}
+              sessionParams={sessionParams}
+            />
+          ) : (
+            <GameSessionTabs
+              analysisResult={analysisResult}
+              mvcThresholdForPlot={
+                plotMode === 'activated'
+                  ? (sessionParams.session_mvc_value ?? 0) * (sessionParams.session_mvc_threshold_percentage ?? 0) / 100
+                  : null
+              }
+              muscleChannels={muscleChannels}
+              allAvailableChannels={allAvailableChannels}
+              plotChannel1Name={plotChannel1Name}
+              setPlotChannel1Name={setPlotChannel1Name}
+              plotChannel2Name={plotChannel2Name}
+              setPlotChannel2Name={setPlotChannel2Name}
+              selectedChannelForStats={selectedChannelForStats}
+              setSelectedChannelForStats={setSelectedChannelForStats}
+              currentStats={currentStats}
+              currentChannelAnalyticsData={currentChannelAnalytics}
+              mainChartData={mainCombinedChartData}
+              dataPoints={downsamplingControls.dataPoints}
+              setDataPoints={downsamplingControls.setDataPoints}
+              handleDataPointsChange={downsamplingControls.handleDataPointsChange}
+              mainPlotChannel1Data={plotChannel1Data}
+              mainPlotChannel2Data={plotChannel2Data}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              plotMode={plotMode}
+              setPlotMode={setPlotMode}
+              sessionParams={sessionParams}
+              onSessionParamsChange={setSessionParams}
+              onRecalculateScores={handleRecalculateScores}
+              appIsLoading={isLoading}
+            />
+          )}
+
+          {appError && (
+            <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-md">
+              <p><span className="font-medium">Error:</span> {appError}</p>
+            </div>
+          )}
+
+          {isLoading && !analysisResult && (
+             <div className="mt-6 flex flex-col items-center justify-center">
+               <Spinner />
+               <p className="text-teal-500 mt-2">Analyzing data, please wait...</p>
+             </div>
+          )}
+        </main>
+        
+        <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <p className="text-sm text-slate-500">
+                GHOSTLY+ EMG C3D Analyzer | Research Project
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Developed for rehabilitation research and therapy assessment
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                © {new Date().getFullYear()} | Academic Research Tool
+              </p>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </>
   );
 }
 

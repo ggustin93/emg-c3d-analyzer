@@ -972,3 +972,28 @@ TS17008: JSX element 'div' has no corresponding closing tag.
     90 |         <Button 
     91 |           onClick={toggleEditMode} 
 
+(node:33052) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:33052) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/App.tsx:30:17
+TS2351: This expression is not constructable.
+  Type 'ToolbarPlugin' has no construct signatures.
+    28 | // Define Stagewise configuration
+    29 | const stagewiseConfig = {
+  > 30 |   plugins: [new ReactPlugin()],
+       |                 ^^^^^^^^^^^
+    31 | };
+    32 |
+    33 | function App() {
+
+ERROR in src/App.tsx:30:17
+TS2351: This expression is not constructable.
+  Type 'ToolbarPlugin' has no construct signatures.
+    28 | // Define Stagewise configuration
+    29 | const stagewiseConfig = {
+  > 30 |   plugins: [new ReactPlugin()],
+       |                 ^^^^^^^^^^^
+    31 | };
+    32 |
+    33 | function App() {
+

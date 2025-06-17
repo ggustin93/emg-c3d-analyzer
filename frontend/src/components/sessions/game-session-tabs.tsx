@@ -176,6 +176,8 @@ export default function GameSessionTabs({
               channel1Name={plotChannel1Name}
               channel2Name={plotChannel2Name}
               mvcThresholdForPlot={mvcThresholdForPlot}
+              channel_muscle_mapping={sessionParams.channel_muscle_mapping}
+              plotMode={plotMode}
             />
           </CardContent>
         </Card>
