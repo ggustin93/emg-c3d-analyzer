@@ -188,23 +188,27 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     <TooltipProvider>
       <div className="space-y-4">
         {/* Muscle-Specific MVC Values Section */}
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-medium">Muscle-Specific MVC Values</h4>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-slate-400 hover:text-slate-600 cursor-help">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="w-[250px] text-xs">
+                Each muscle requires its own specific MVC value due to anatomical differences in size, fiber composition, and electrode placement. This approach provides more accurate clinical assessment.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <div className="space-y-4 border rounded-md p-3">
+
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Muscle-Specific MVC Values</h4>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="w-[250px] text-xs">
-                  Each muscle requires its own specific MVC value due to anatomical differences in size, fiber composition, and electrode placement. This approach provides more accurate clinical assessment.
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            
           </div>
           
           {/* Channel-specific MVC values */}
