@@ -125,12 +125,25 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 <Progress 
                   value={symmetryScore} 
                   className="h-3" 
-                  indicatorClassName="bg-gray-400"
+                  indicatorClassName={
+                    symmetryScore >= 90 ? "bg-gray-500" : 
+                    symmetryScore >= 70 ? "bg-gray-400" : 
+                    "bg-gray-300"
+                  }
                 />
                 
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>Imbalanced</span>
                   <span>Perfect symmetry</span>
+                </div>
+                
+                {/* Add status text */}
+                <div className="text-center text-sm mt-2">
+                  <span className="text-gray-600">
+                    {symmetryScore >= 90 ? "Excellent balance" : 
+                     symmetryScore >= 70 ? "Good balance" : 
+                     "Needs attention"}
+                  </span>
                 </div>
               </div>
             )}

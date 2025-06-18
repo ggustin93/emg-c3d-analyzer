@@ -3,6 +3,7 @@ import { EMGAnalysisResult, GameSessionParameters } from '../../types/emg';
 // import OverallPerformanceCard from './performance/OverallPerformanceCard';
 import MusclePerformanceCard from './performance/MusclePerformanceCard';
 import MuscleNameDisplay from '../MuscleNameDisplay';
+import { getScoreColors } from '@/hooks/useScoreColors';
 
 export interface PerformanceCardProps {
   analysisResult: EMGAnalysisResult | null;
@@ -96,7 +97,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
     const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
     const totalScore = calculateTotalScore(contractionScore, goodContractionScore);
-    const { label, textColor, bgColor, hexColor } = getScoreLabel(totalScore);
+    const scoreColors = getScoreColors(totalScore);
     
     muscleScores.push(totalScore);
 
@@ -118,10 +119,10 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     muscleData.push({
       channelName,
       totalScore,
-      scoreLabel: label,
-      scoreTextColor: textColor,
-      scoreBgColor: bgColor,
-      scoreHexColor: hexColor,
+      scoreLabel: scoreColors.label,
+      scoreTextColor: scoreColors.text,
+      scoreBgColor: scoreColors.bg,
+      scoreHexColor: scoreColors.hex,
       totalContractions,
       expectedContractions,
       contractionScore,

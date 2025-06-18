@@ -10,6 +10,7 @@ import MuscleNameDisplay from '../../MuscleNameDisplay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useScoreColors } from '@/hooks/useScoreColors';
 
 interface MusclePerformanceCardProps {
   channel: string;
@@ -32,34 +33,6 @@ interface MusclePerformanceCardProps {
   contractionDurationThreshold?: number;
   sessionParams?: GameSessionParameters;
 }
-
-const getScoreColors = (score: number) => {
-  if (score >= 100) {
-    return {
-      text: 'text-green-700',
-      bg: 'bg-green-600',
-      hex: '#16a34a'
-    };
-  } else if (score >= 80) {
-    return {
-      text: 'text-blue-700',
-      bg: 'bg-blue-600',
-      hex: '#2563eb'
-    };
-  } else if (score >= 60) {
-    return {
-      text: 'text-yellow-700',
-      bg: 'bg-yellow-600',
-      hex: '#ca8a04'
-    };
-  } else {
-    return {
-      text: 'text-red-700',
-      bg: 'bg-red-600',
-      hex: '#dc2626'
-    };
-  }
-};
 
 const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   channel,
@@ -145,7 +118,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 data={[{ value: fillPercentage }, { value: 100 - fillPercentage }]}
                 cx="50%"
                 cy="50%"
-                innerRadius={size === "sm" ? 25 : size === "md" ? 35 : 45}
+                innerRadius={size === "sm" ? 28 : size === "md" ? 38 : 48}
                 outerRadius={size === "sm" ? 30 : size === "md" ? 42 : 52}
                 startAngle={90}
                 endAngle={-270}
@@ -177,7 +150,14 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
 
   // Calculate contraction count score
   const contractionCountScore = expectedContractions ? Math.min(Math.round((totalContractions / expectedContractions) * 100), 100) : 0;
-  const contractionColors = getScoreColors(contractionCountScore);
+  const contractionColors = useScoreColors(contractionCountScore);
+
+  // When using for good contraction score:
+  const goodContractionPercentage = totalContractions > 0 ? Math.round((goodContractionCount / totalContractions) * 100) : 0;
+  const goodContractionColors = useScoreColors(goodContractionPercentage);
+
+  // Get colors for the overall score
+  const scoreColors = useScoreColors(totalScore);
 
   return (
     <TooltipProvider>
@@ -198,7 +178,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               </TooltipContent>
             </Tooltip>
           </CardTitle>
-          <p className={`text-sm font-bold ${scoreTextColor} mb-2`}>{scoreLabel}</p>
+          <p className={`text-sm font-bold ${scoreColors.text} mb-2`}>{scoreColors.label}</p>
           
           <Tooltip>
             <TooltipTrigger asChild>
@@ -206,7 +186,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 <CircleDisplay 
                   value={totalScore} 
                   label="" 
-                  color={scoreHexColor} 
+                  color={scoreColors.hex}
                   size="lg"
                   showPercentage={true}
                 />
@@ -260,7 +240,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               )}
 
               <CollapsibleContent className="pt-2 space-y-4">
-                <div className="flex justify-around items-center">
+                <div className="flex justify-center items-center">
                   <CircleDisplay 
                     value={contractionCount} 
                     total={expectedContractions ?? undefined}
@@ -270,15 +250,20 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     showPercentage={false}
                     showExpected={true}
                   />
-                  
-                  <div className="flex flex-col items-center">
-                    <span className={`text-2xl font-bold ${contractionColors.text}`}>{contractionScore}%</span>
-                  </div>
                 </div>
 
-                {/* Breakdown of contraction count */}
-                <div className="text-xs text-center text-gray-500">
-                  <p>Performed <span className="font-bold">{contractionCount}</span> out of <span className="font-bold">{expectedContractions ?? 'N/A'}</span> expected contractions.</p>
+                {/* Contraction Type Breakdown - Moved here from bottom section */}
+                <div className="mt-2">
+                  <ContractionTypeBreakdown
+                    shortContractions={shortContractions}
+                    shortGoodContractions={shortGoodContractions}
+                    longContractions={longContractions}
+                    longGoodContractions={longGoodContractions}
+                    expectedShortContractions={expectedShortContractions}
+                    expectedLongContractions={expectedLongContractions}
+                    contractionDurationThreshold={contractionDurationThreshold}
+                    color={scoreHexColor}
+                  />
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -303,8 +288,8 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                   </CollapsibleTrigger>
                 </div>
                 {goodContractionCount !== null && totalContractions > 0 ? (
-                  <span className={`text-sm font-bold ${getScoreColors(Math.round((goodContractionCount / totalContractions) * 100)).text}`}>
-                    {Math.round((goodContractionCount / totalContractions) * 100)}%
+                  <span className={`text-sm font-bold ${goodContractionColors.text}`}>
+                    {goodContractionPercentage}%
                   </span>
                 ) : (
                   <span className="text-sm font-bold text-gray-400">N/A</span>
@@ -314,9 +299,9 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               {goodContractionCount !== null && totalContractions > 0 && (
                 <>
                   <Progress 
-                    value={(goodContractionCount / totalContractions) * 100} 
+                    value={goodContractionPercentage} 
                     className="h-2" 
-                    indicatorClassName={`${getScoreColors(Math.round((goodContractionCount / totalContractions) * 100)).bg} opacity-80`} 
+                    indicatorClassName={`${goodContractionColors.bg} opacity-80`} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
                     {goodContractionCount} of {totalContractions} good quality
@@ -330,7 +315,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     value={goodContractionCount} 
                     total={totalContractions}
                     label="Good Quality" 
-                    color={getScoreColors(Math.round((goodContractionCount / totalContractions) * 100)).hex} 
+                    color={goodContractionColors.hex} 
                     size="md"
                     showPercentage={false}
                     showExpected={true}
@@ -341,20 +326,6 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          </div>
-          
-          {/* Contraction Type Breakdown */}
-          <div className="rounded-md bg-slate-50 p-4">
-            <ContractionTypeBreakdown
-              shortContractions={shortContractions}
-              shortGoodContractions={shortGoodContractions}
-              longContractions={longContractions}
-              longGoodContractions={longGoodContractions}
-              expectedShortContractions={expectedShortContractions}
-              expectedLongContractions={expectedLongContractions}
-              contractionDurationThreshold={contractionDurationThreshold}
-              color={scoreHexColor}
-            />
           </div>
         </CardContent>
       </Card>

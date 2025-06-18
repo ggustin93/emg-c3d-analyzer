@@ -23,6 +23,8 @@ import { Label } from "@/components/ui/label"
 import ScoringConfigPanel from '../SessionConfigPanel';
 import SettingsPanel from '../SettingsPanel';
 import ChannelFilter from '../app/ChannelFilter';
+import OverallPerformanceCard from './performance/OverallPerformanceCard';
+import { useScoreColors } from '@/hooks/useScoreColors';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -207,10 +209,78 @@ export default function GameSessionTabs({
     }
   }, [sessionParams.show_raw_signals, plotMode, setPlotMode]);
 
-  const getPerformanceScore = (metrics?: EMGMetrics) => {
-    if (!metrics) return 0;
-    // ... existing code ...
+  // Helper function to calculate the total score for a muscle
+  const calculateMuscleScore = (channelData: ChannelAnalyticsData, expectedContractions: number | null): number => {
+    if (!channelData) return 0;
+    
+    const totalContractions = channelData.contraction_count || 0;
+    const goodContractions = channelData.good_contraction_count || 0;
+    
+    // Calculate contraction score (completion)
+    const contractionScore = expectedContractions ? 
+      Math.min(Math.round((totalContractions / expectedContractions) * 100), 100) : 100;
+    
+    // Calculate good contraction score (quality)
+    const goodContractionScore = totalContractions > 0 ? 
+      Math.round((goodContractions / totalContractions) * 100) : 0;
+    
+    // Total score is the average of completion and quality
+    const scores = [contractionScore, goodContractionScore].filter(s => s !== null);
+    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
   };
+
+  // Calculate individual muscle scores
+  const muscleScores: number[] = [];
+  
+  if (analysisResult && analysisResult.analytics) {
+    const channelNames = Object.keys(analysisResult.analytics).sort();
+    
+    channelNames.forEach((channelName, index) => {
+      const channelData = analysisResult.analytics[channelName];
+      if (!channelData) return;
+      
+      // Determine expected contractions for this channel
+      let expectedContractions: number | null = null;
+      const params = analysisResult.metadata?.session_parameters_used;
+      
+      if (params) {
+        // Keys are 1-indexed (ch1, ch2), so we use `index + 1`
+        const perChannelKey = `session_expected_contractions_ch${index + 1}`;
+        if (params.hasOwnProperty(perChannelKey)) {
+          expectedContractions = (params as any)[perChannelKey] ?? null;
+        } else {
+          // Fallback to the overall session value if per-channel is not defined
+          expectedContractions = params.session_expected_contractions ?? null;
+        }
+      }
+      
+      const muscleScore = calculateMuscleScore(channelData, expectedContractions);
+      muscleScores.push(muscleScore);
+    });
+  }
+  
+  // Calculate overall score as average of muscle scores
+  const overallScore = muscleScores.length > 0 
+    ? Math.round(muscleScores.reduce((sum, score) => sum + score, 0) / muscleScores.length)
+    : (analysisResult?.overall_score ? Math.round(analysisResult.overall_score) : 0);
+  
+  // Calculate symmetry score
+  let symmetryScore: number | undefined;
+  
+  if (muscleScores.length === 2) {
+    const [score1, score2] = muscleScores;
+    if (score1 > 0 || score2 > 0) {
+      symmetryScore = Math.round((Math.min(score1, score2) / Math.max(score1, score2)) * 100);
+    } else {
+      symmetryScore = 100; // Both are 0, perfect symmetry
+    }
+  } else {
+    // Fallback to the API-provided symmetry score if available
+    symmetryScore = analysisResult?.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+  }
+  
+  // Use the hook at the component level (not in a callback)
+  const scoreInfo = useScoreColors(overallScore);
 
   if (!analysisResult) return null;
 
@@ -278,6 +348,17 @@ export default function GameSessionTabs({
       </TabsContent>
 
       <TabsContent value="game-stats" className="bg-gray-50/50 p-4 rounded-b-lg">
+        <div className="grid grid-cols-1 gap-4 mb-4">
+          <OverallPerformanceCard 
+            totalScore={overallScore}
+            scoreLabel={scoreInfo.label}
+            scoreTextColor={scoreInfo.text}
+            scoreBgColor={scoreInfo.bg}
+            scoreHexColor={scoreInfo.hex}
+            muscleCount={muscleChannels.length}
+            symmetryScore={symmetryScore}
+          />
+        </div>
         <PerformanceCard 
           analysisResult={analysisResult}
           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}

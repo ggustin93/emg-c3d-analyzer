@@ -5821,3 +5821,295 @@ TS2339: Property 'toFixed' does not exist on type 'number | ""'.
     248 |                     />
     249 |                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
 
+ERROR in src/components/SessionConfigPanel.tsx:257:48
+TS2339: Property 'value' does not exist on type 'EventTarget'.
+    255 |                       }}
+    256 |                       onInput={(e) => {
+  > 257 |                         const value = e.target.value;
+        |                                                ^^^^^
+    258 |                         if (value.length > 5) {
+    259 |                           e.target.value = value.slice(0, 5);
+    260 |                         }
+
+ERROR in src/components/SessionConfigPanel.tsx:259:36
+TS2339: Property 'value' does not exist on type 'EventTarget'.
+    257 |                         const value = e.target.value;
+    258 |                         if (value.length > 5) {
+  > 259 |                           e.target.value = value.slice(0, 5);
+        |                                    ^^^^^
+    260 |                         }
+    261 |                       }}
+    262 |                     />
+
+ERROR in src/components/SessionConfigPanel.tsx:295:48
+TS2339: Property 'value' does not exist on type 'EventTarget'.
+    293 |                       }}
+    294 |                       onInput={(e) => {
+  > 295 |                         const value = e.target.value;
+        |                                                ^^^^^
+    296 |                         if (value.length > 5) {
+    297 |                           e.target.value = value.slice(0, 5);
+    298 |                         }
+
+ERROR in src/components/SessionConfigPanel.tsx:297:36
+TS2339: Property 'value' does not exist on type 'EventTarget'.
+    295 |                         const value = e.target.value;
+    296 |                         if (value.length > 5) {
+  > 297 |                           e.target.value = value.slice(0, 5);
+        |                                    ^^^^^
+    298 |                         }
+    299 |                       }}
+    300 |                     />
+
+ERROR in src/components/sessions/game-session-tabs.tsx:252:39
+TS2339: Property 'overall_score' does not exist on type 'EMGAnalysisResult'.
+    250 |
+    251 |   // Calculate overall score and symmetry score
+  > 252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+        |                                       ^^^^^^^^^^^^^
+    253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+
+ERROR in src/components/sessions/game-session-tabs.tsx:252:81
+TS2339: Property 'overall_score' does not exist on type 'EMGAnalysisResult'.
+    250 |
+    251 |   // Calculate overall score and symmetry score
+  > 252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+        |                                                                                 ^^^^^^^^^^^^^
+    253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+
+ERROR in src/components/sessions/game-session-tabs.tsx:253:40
+TS2339: Property 'symmetry_score' does not exist on type 'EMGAnalysisResult'.
+    251 |   // Calculate overall score and symmetry score
+    252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+  > 253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                        ^^^^^^^^^^^^^^
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+    256 |   return (
+
+ERROR in src/components/sessions/game-session-tabs.tsx:253:83
+TS2339: Property 'symmetry_score' does not exist on type 'EMGAnalysisResult'.
+    251 |   // Calculate overall score and symmetry score
+    252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+  > 253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                                                                   ^^^^^^^^^^^^^^
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+    256 |   return (
+
+ERROR in src/components/sessions/game-session-tabs.tsx:252:39
+TS2339: Property 'overall_score' does not exist on type 'EMGAnalysisResult'.
+    250 |
+    251 |   // Calculate overall score and symmetry score
+  > 252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+        |                                       ^^^^^^^^^^^^^
+    253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+
+ERROR in src/components/sessions/game-session-tabs.tsx:252:81
+TS2339: Property 'overall_score' does not exist on type 'EMGAnalysisResult'.
+    250 |
+    251 |   // Calculate overall score and symmetry score
+  > 252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+        |                                                                                 ^^^^^^^^^^^^^
+    253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+
+ERROR in src/components/sessions/game-session-tabs.tsx:253:40
+TS2339: Property 'symmetry_score' does not exist on type 'EMGAnalysisResult'.
+    251 |   // Calculate overall score and symmetry score
+    252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+  > 253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                        ^^^^^^^^^^^^^^
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+    256 |   return (
+
+ERROR in src/components/sessions/game-session-tabs.tsx:253:83
+TS2339: Property 'symmetry_score' does not exist on type 'EMGAnalysisResult'.
+    251 |   // Calculate overall score and symmetry score
+    252 |   const overallScore = analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0;
+  > 253 |   const symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                                                                   ^^^^^^^^^^^^^^
+    254 |   const scoreInfo = getScoreInfo(overallScore);
+    255 |
+    256 |   return (
+
+ERROR in src/components/sessions/performance/MuscleSymmetryCard.tsx
+TS1208: 'MuscleSymmetryCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance/MuscleSymmetryCard.tsx
+TS1208: 'MuscleSymmetryCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/hooks/useScoreColors.ts
+TS1208: 'useScoreColors.ts' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/hooks/useScoreColors.ts
+TS1208: 'useScoreColors.ts' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/game-session-tabs.tsx:235:7
+TS18047: 'analysisResult' is possibly 'null'.
+    233 |   const muscleScores: number[] = [];
+    234 |   
+  > 235 |   if (analysisResult.analytics) {
+        |       ^^^^^^^^^^^^^^
+    236 |     const channelNames = Object.keys(analysisResult.analytics).sort();
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+
+ERROR in src/components/sessions/game-session-tabs.tsx:236:38
+TS18047: 'analysisResult' is possibly 'null'.
+    234 |   
+    235 |   if (analysisResult.analytics) {
+  > 236 |     const channelNames = Object.keys(analysisResult.analytics).sort();
+        |                                      ^^^^^^^^^^^^^^
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+    239 |       const channelData = analysisResult.analytics[channelName];
+
+ERROR in src/components/sessions/game-session-tabs.tsx:239:27
+TS18047: 'analysisResult' is possibly 'null'.
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+  > 239 |       const channelData = analysisResult.analytics[channelName];
+        |                           ^^^^^^^^^^^^^^
+    240 |       if (!channelData) return;
+    241 |       
+    242 |       // Determine expected contractions for this channel
+
+ERROR in src/components/sessions/game-session-tabs.tsx:244:22
+TS18047: 'analysisResult' is possibly 'null'.
+    242 |       // Determine expected contractions for this channel
+    243 |       let expectedContractions: number | null = null;
+  > 244 |       const params = analysisResult.metadata.session_parameters_used;
+        |                      ^^^^^^^^^^^^^^
+    245 |       
+    246 |       if (params) {
+    247 |         // Keys are 1-indexed (ch1, ch2), so we use `index + 1`
+
+ERROR in src/components/sessions/game-session-tabs.tsx:265:8
+TS18047: 'analysisResult' is possibly 'null'.
+    263 |   const overallScore = muscleScores.length > 0 
+    264 |     ? Math.round(muscleScores.reduce((sum, score) => sum + score, 0) / muscleScores.length)
+  > 265 |     : (analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0);
+        |        ^^^^^^^^^^^^^^
+    266 |   
+    267 |   // Calculate symmetry score
+    268 |   let symmetryScore: number | undefined;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:265:50
+TS18047: 'analysisResult' is possibly 'null'.
+    263 |   const overallScore = muscleScores.length > 0 
+    264 |     ? Math.round(muscleScores.reduce((sum, score) => sum + score, 0) / muscleScores.length)
+  > 265 |     : (analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0);
+        |                                                  ^^^^^^^^^^^^^^
+    266 |   
+    267 |   // Calculate symmetry score
+    268 |   let symmetryScore: number | undefined;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:279:21
+TS18047: 'analysisResult' is possibly 'null'.
+    277 |   } else {
+    278 |     // Fallback to the API-provided symmetry score if available
+  > 279 |     symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                     ^^^^^^^^^^^^^^
+    280 |   }
+    281 |   
+    282 |   // Use the hook to get colors
+
+ERROR in src/components/sessions/game-session-tabs.tsx:279:64
+TS18047: 'analysisResult' is possibly 'null'.
+    277 |   } else {
+    278 |     // Fallback to the API-provided symmetry score if available
+  > 279 |     symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                                                ^^^^^^^^^^^^^^
+    280 |   }
+    281 |   
+    282 |   // Use the hook to get colors
+
+ERROR in src/components/sessions/game-session-tabs.tsx:235:7
+TS18047: 'analysisResult' is possibly 'null'.
+    233 |   const muscleScores: number[] = [];
+    234 |   
+  > 235 |   if (analysisResult.analytics) {
+        |       ^^^^^^^^^^^^^^
+    236 |     const channelNames = Object.keys(analysisResult.analytics).sort();
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+
+ERROR in src/components/sessions/game-session-tabs.tsx:236:38
+TS18047: 'analysisResult' is possibly 'null'.
+    234 |   
+    235 |   if (analysisResult.analytics) {
+  > 236 |     const channelNames = Object.keys(analysisResult.analytics).sort();
+        |                                      ^^^^^^^^^^^^^^
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+    239 |       const channelData = analysisResult.analytics[channelName];
+
+ERROR in src/components/sessions/game-session-tabs.tsx:239:27
+TS18047: 'analysisResult' is possibly 'null'.
+    237 |     
+    238 |     channelNames.forEach((channelName, index) => {
+  > 239 |       const channelData = analysisResult.analytics[channelName];
+        |                           ^^^^^^^^^^^^^^
+    240 |       if (!channelData) return;
+    241 |       
+    242 |       // Determine expected contractions for this channel
+
+ERROR in src/components/sessions/game-session-tabs.tsx:244:22
+TS18047: 'analysisResult' is possibly 'null'.
+    242 |       // Determine expected contractions for this channel
+    243 |       let expectedContractions: number | null = null;
+  > 244 |       const params = analysisResult.metadata.session_parameters_used;
+        |                      ^^^^^^^^^^^^^^
+    245 |       
+    246 |       if (params) {
+    247 |         // Keys are 1-indexed (ch1, ch2), so we use `index + 1`
+
+ERROR in src/components/sessions/game-session-tabs.tsx:265:8
+TS18047: 'analysisResult' is possibly 'null'.
+    263 |   const overallScore = muscleScores.length > 0 
+    264 |     ? Math.round(muscleScores.reduce((sum, score) => sum + score, 0) / muscleScores.length)
+  > 265 |     : (analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0);
+        |        ^^^^^^^^^^^^^^
+    266 |   
+    267 |   // Calculate symmetry score
+    268 |   let symmetryScore: number | undefined;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:265:50
+TS18047: 'analysisResult' is possibly 'null'.
+    263 |   const overallScore = muscleScores.length > 0 
+    264 |     ? Math.round(muscleScores.reduce((sum, score) => sum + score, 0) / muscleScores.length)
+  > 265 |     : (analysisResult.overall_score ? Math.round(analysisResult.overall_score) : 0);
+        |                                                  ^^^^^^^^^^^^^^
+    266 |   
+    267 |   // Calculate symmetry score
+    268 |   let symmetryScore: number | undefined;
+
+ERROR in src/components/sessions/game-session-tabs.tsx:279:21
+TS18047: 'analysisResult' is possibly 'null'.
+    277 |   } else {
+    278 |     // Fallback to the API-provided symmetry score if available
+  > 279 |     symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                     ^^^^^^^^^^^^^^
+    280 |   }
+    281 |   
+    282 |   // Use the hook to get colors
+
+ERROR in src/components/sessions/game-session-tabs.tsx:279:64
+TS18047: 'analysisResult' is possibly 'null'.
+    277 |   } else {
+    278 |     // Fallback to the API-provided symmetry score if available
+  > 279 |     symmetryScore = analysisResult.symmetry_score ? Math.round(analysisResult.symmetry_score) : undefined;
+        |                                                                ^^^^^^^^^^^^^^
+    280 |   }
+    281 |   
+    282 |   // Use the hook to get colors
+

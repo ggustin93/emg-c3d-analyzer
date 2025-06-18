@@ -130,4 +130,6 @@ export interface EMGAnalysisResult {
   session_id?: string | null;
   patient_id?: string | null;
   plots?: { [key: string]: string };
+  overall_score?: number;
+  symmetry_score?: number;
 } 

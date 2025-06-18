@@ -2083,3 +2083,9 @@ INFO:     127.0.0.1:57583 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/
 INFO:     127.0.0.1:57586 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH1%20activated HTTP/1.1" 200 OK
 INFO:     127.0.0.1:57587 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH2%20activated HTTP/1.1" 200 OK
 INFO:     127.0.0.1:57583 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59803 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59803 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH1%20Raw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59806 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59809 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH1%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59810 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH2%20activated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59806 - "GET /raw-data/da741007-be5d-4b84-93d8-6afa3e2023c4/CH2 HTTP/1.1" 200 OK
