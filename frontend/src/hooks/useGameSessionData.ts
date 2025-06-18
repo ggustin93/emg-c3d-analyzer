@@ -33,6 +33,14 @@ export const useGameSessionData = (
   const { fetchChannelRawData } = fetcherControls;
 
   const determineChannelsForTabs = useCallback((result: EMGAnalysisResult) => {
+    // Check if result.analytics exists and is an object
+    if (!result || !result.analytics || typeof result.analytics !== 'object') {
+      console.warn('Analytics is not available or not an object, cannot determine channels');
+      setLeftQuadChannelForTabs(null);
+      setRightQuadChannelForTabs(null);
+      return;
+    }
+    
     const channelKeys = Object.keys(result.analytics);
     if (channelKeys.length === 0) {
         setLeftQuadChannelForTabs(null);
@@ -156,6 +164,14 @@ export const useGameSessionData = (
   useEffect(() => {
     if (analysisResult && analysisResult.metadata && analysisResult.analytics) {
       const { metadata, analytics, file_id } = analysisResult;
+      
+      // Ensure analytics is an object before using Object.keys
+      if (!analytics || typeof analytics !== 'object') {
+        console.warn('Analytics is not an object, cannot derive game session');
+        setCurrentGameSession(null);
+        return;
+      }
+      
       const channelKeys = Object.keys(analytics);
 
       const emgMetrics: EMGMetrics = {};

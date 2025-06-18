@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { Switch } from "./ui/switch";
 import MuscleNameDisplay from "./MuscleNameDisplay";
 
 interface ScoringConfigPanelProps {
@@ -24,94 +25,125 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   disabled,
   availableChannels = []
 }) => {
+  // Extract muscle channels (CH1, CH2, etc.) from available channels
+  const muscleChannels = availableChannels
+    .filter(ch => !ch.includes(' ')) // Filter out channels with spaces (like "CH1 Raw")
+    .slice(0, 2); // Limit to 2 channels for now
+  
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     channels?: string;
     types?: string;
   }>({});
   
-  // Set default values when component mounts
+  // Initialize channel-specific MVC values if not already set
   useEffect(() => {
-    // Skip if already initialized or disabled
-    if (
-      sessionParams.session_mvc_threshold_percentage !== undefined ||
-      sessionParams.session_expected_contractions !== undefined ||
-      disabled
-    ) {
-      return;
+    const updatedParams = { ...sessionParams };
+    let hasChanges = false;
+    
+    // Initialize MVC values map if it doesn't exist
+    if (!updatedParams.session_mvc_values) {
+      updatedParams.session_mvc_values = {};
+      hasChanges = true;
     }
     
-    // Only set defaults if values are not already set
-    const updatedParams = { ...sessionParams };
-    let hasUpdates = false;
-
-    // Set default MVC threshold if not set
-    if (updatedParams.session_mvc_threshold_percentage === undefined) {
-      updatedParams.session_mvc_threshold_percentage = 70;
-      hasUpdates = true;
+    // Initialize MVC threshold percentages map if it doesn't exist
+    if (!updatedParams.session_mvc_threshold_percentages) {
+      updatedParams.session_mvc_threshold_percentages = {};
+      hasChanges = true;
     }
-
-    // Set default expected contractions if not set
-    if (updatedParams.session_expected_contractions === undefined) {
-      updatedParams.session_expected_contractions = 10;
-      hasUpdates = true;
-    }
-
-    // Set default expected contractions per channel if not set
-    if (updatedParams.session_expected_contractions_ch1 === undefined) {
-      updatedParams.session_expected_contractions_ch1 = 5;
-      hasUpdates = true;
-    }
-
-    if (updatedParams.session_expected_contractions_ch2 === undefined) {
-      updatedParams.session_expected_contractions_ch2 = 5;
-      hasUpdates = true;
-    }
-
-    // Set default expected contractions by type if not set
-    if (updatedParams.session_expected_short_left === undefined) {
-      updatedParams.session_expected_short_left = 3;
-      hasUpdates = true;
-    }
-
-    if (updatedParams.session_expected_long_left === undefined) {
-      updatedParams.session_expected_long_left = 2;
-      hasUpdates = true;
-    }
-
-    if (updatedParams.session_expected_short_right === undefined) {
-      updatedParams.session_expected_short_right = 3;
-      hasUpdates = true;
-    }
-
-    if (updatedParams.session_expected_long_right === undefined) {
-      updatedParams.session_expected_long_right = 2;
-      hasUpdates = true;
-    }
-
-    // Set default contraction duration threshold if not set
-    if (updatedParams.contraction_duration_threshold === undefined) {
-      updatedParams.contraction_duration_threshold = 250;
-      hasUpdates = true;
-    }
-
-    // Apply updates if any defaults were set
-    if (hasUpdates) {
+    
+    // Ensure all muscle channels have values
+    muscleChannels.forEach(channel => {
+      // Initialize MVC value if not set
+      if (!updatedParams.session_mvc_values![channel]) {
+        // Use global value as fallback if available
+        updatedParams.session_mvc_values![channel] = updatedParams.session_mvc_value !== undefined ? 
+          updatedParams.session_mvc_value : null;
+        hasChanges = true;
+      }
+      
+      // Initialize threshold percentage if not set
+      if (!updatedParams.session_mvc_threshold_percentages![channel]) {
+        updatedParams.session_mvc_threshold_percentages![channel] = 
+          updatedParams.session_mvc_threshold_percentage || 70;
+        hasChanges = true;
+      }
+    });
+    
+    // Only trigger update if changes were made
+    if (hasChanges) {
       onParamsChange(updatedParams);
     }
-  }, [sessionParams, onParamsChange]);
+  }, [sessionParams, muscleChannels, onParamsChange]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    let numValue: number | undefined | null = parseFloat(value);
+    let numValue: number | null = parseFloat(value);
+    
     if (isNaN(numValue)) {
-        numValue = name === 'session_mvc_value' ? null : undefined; // Allow clearing MVC value
+      numValue = null; // Allow clearing values
+    }
+    
+    const updatedParams = {
+      ...sessionParams,
+      [name]: numValue
+    };
+    
+    // Auto-distribute expected contractions between channels
+    if (name === 'session_expected_contractions' && numValue !== null) {
+      const halfExpected = numValue / 2;
+      
+      // Update channel values
+      updatedParams.session_expected_contractions_ch1 = Math.ceil(halfExpected);
+      updatedParams.session_expected_contractions_ch2 = Math.floor(halfExpected);
+      
+      // Update type values
+      updatedParams.session_expected_short_left = Math.ceil(halfExpected / 2);
+      updatedParams.session_expected_long_left = Math.floor(halfExpected / 2);
+      updatedParams.session_expected_short_right = Math.ceil(halfExpected / 2);
+      updatedParams.session_expected_long_right = Math.floor(halfExpected / 2);
     }
 
-    onParamsChange({
+    onParamsChange(updatedParams);
+  };
+
+  // Handle channel-specific MVC value changes
+  const handleChannelMVCChange = (channel: string, value: string) => {
+    let numValue: number | null = parseFloat(value);
+    if (isNaN(numValue)) {
+      numValue = null; // Allow clearing MVC value
+    } else if (numValue !== null) {
+      numValue = parseFloat(numValue.toPrecision(5));
+    }
+
+    const updatedParams = {
       ...sessionParams,
-      [name]: numValue,
-    });
+      session_mvc_values: {
+        ...(sessionParams.session_mvc_values || {}),
+        [channel]: numValue
+      }
+    };
+
+    onParamsChange(updatedParams);
+  };
+
+  // Handle channel-specific MVC threshold percentage changes
+  const handleChannelThresholdChange = (channel: string, value: string) => {
+    let numValue: number | null = parseFloat(value);
+    if (isNaN(numValue)) {
+      numValue = 70; // Default to 70% if invalid
+    }
+
+    const updatedParams = {
+      ...sessionParams,
+      session_mvc_threshold_percentages: {
+        ...(sessionParams.session_mvc_threshold_percentages || {}),
+        [channel]: numValue
+      }
+    };
+
+    onParamsChange(updatedParams);
   };
 
   // Validate that the sum of channel contractions matches the total
@@ -144,11 +176,6 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     setValidationErrors(errors);
   }, [sessionParams]);
 
-  // Filter channels to only include muscle channels (not raw/activated variants)
-  const muscleChannels = availableChannels.filter(channel => 
-    !channel.includes(' Raw') && !channel.includes(' activated')
-  );
-
   // Get channel names for display
   const channel1Name = muscleChannels[0] || 'Channel 1';
   const channel2Name = muscleChannels[1] || 'Channel 2';
@@ -160,9 +187,10 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <Label htmlFor="session_mvc_value" className="text-sm font-medium flex-grow">MVC Value (mV)</Label>
+        {/* Muscle-Specific MVC Values Section */}
+        <div className="space-y-4 border rounded-md p-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium">Muscle-Specific MVC Values</h4>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="text-slate-400 hover:text-slate-600 cursor-help">
@@ -172,62 +200,87 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="w-[200px] text-xs">
-                  Maximum Voluntary Contraction value in millivolts. 
-                  Leave empty to use the maximum value from the recording.
+                <p className="w-[250px] text-xs">
+                  Each muscle requires its own specific MVC value due to anatomical differences in size, fiber composition, and electrode placement. This approach provides more accurate clinical assessment.
                 </p>
               </TooltipContent>
             </Tooltip>
           </div>
-          <div className="relative">
-            <Input
-              type="number"
-              id="session_mvc_value"
-              name="session_mvc_value"
-              value={sessionParams.session_mvc_value ?? ''}
-              onChange={handleChange}
-              placeholder="e.g., 1.5"
-              min="0" step="0.01"
-              className="pr-8"
-              disabled={disabled}
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400">mV</span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <Label htmlFor="session_mvc_threshold_percentage" className="text-sm font-medium flex-grow">MVC Threshold (%)</Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="w-[200px] text-xs">
-                  Percentage of MVC that defines a "good" contraction. 
-                  Typically between 60-80% for rehabilitation exercises.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="relative">
-            <Input
-              type="number"
-              id="session_mvc_threshold_percentage"
-              name="session_mvc_threshold_percentage"
-              value={sessionParams.session_mvc_threshold_percentage ?? ''}
-              onChange={handleChange}
-              placeholder="e.g., 75"
-              min="0" max="100" step="1"
-              className="pr-8"
-              disabled={disabled}
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400">%</span>
-          </div>
+          
+          {/* Channel-specific MVC values */}
+          {muscleChannels.map((channel, index) => {
+            const muscleName = sessionParams.channel_muscle_mapping?.[channel] || channel;
+            const mvcValue = sessionParams.session_mvc_values?.[channel] ?? '';
+            const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 70;
+            
+            return (
+              <div key={channel} className="space-y-3 pb-3 border-b last:border-b-0 last:pb-0">
+                <h5 className="text-sm font-medium">{muscleName}</h5>
+                
+                {/* MVC Value for this channel */}
+                <div className="space-y-1">
+                  <div className="flex items-center">
+                    <Label htmlFor={`mvc_${channel}`} className="text-xs font-medium flex-grow">MVC Value (mV)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-slate-400 hover:text-slate-600 cursor-help">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="w-[250px] text-xs">
+                          MVC value is automatically initialized to the maximum contraction amplitude detected in the signal. This is the highest peak value from all detected contractions. You can manually adjust this value if needed.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      id={`mvc_${channel}`}
+                      value={mvcValue}
+                      onChange={(e) => handleChannelMVCChange(channel, e.target.value)}
+                      placeholder="e.g., 1.5"
+                      min="0" step="0.0001"
+                      className="pr-8 pl-6 text-sm h-8"
+                      data-auto-initialized={(typeof mvcValue === 'number' && mvcValue > 0) ? 'true' : 'false'}
+                      disabled={disabled}
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
+                    {mvcValue && (
+                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* MVC Threshold for this channel */}
+                <div className="space-y-1">
+                  <div className="flex items-center">
+                    <Label htmlFor={`threshold_${channel}`} className="text-xs font-medium flex-grow">MVC Threshold (%)</Label>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      id={`threshold_${channel}`}
+                      value={thresholdValue}
+                      onChange={(e) => handleChannelThresholdChange(channel, e.target.value)}
+                      placeholder="e.g., 75"
+                      min="0" max="100" step="1"
+                      className="pr-8 text-sm h-8"
+                      disabled={disabled}
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">%</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="space-y-2">
@@ -261,6 +314,43 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
           />
         </div>
 
+        <div className="space-y-2">
+          <div className="flex items-center">
+            <Label htmlFor="contraction_duration_threshold" className="text-sm font-medium flex-grow">
+              Short/Long Threshold
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-slate-400 hover:text-slate-600 cursor-help">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="w-[200px] text-xs">
+                  Duration threshold in milliseconds to distinguish between short and long contractions. 
+                  Contractions shorter than this value are considered "short".
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="relative">
+            <Input
+              type="number"
+              id="contraction_duration_threshold"
+              name="contraction_duration_threshold"
+              value={sessionParams.contraction_duration_threshold ?? 250}
+              onChange={handleChange}
+              placeholder="e.g., 250"
+              min="100" step="50"
+              className="pr-8"
+              disabled={disabled}
+            />
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400">ms</span>
+          </div>
+        </div>
+
         <Collapsible 
           open={isAdvancedOpen} 
           onOpenChange={setIsAdvancedOpen}
@@ -285,10 +375,9 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-2">
             <Tabs defaultValue="channels">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="channels">By Channel</TabsTrigger>
                 <TabsTrigger value="types">By Type</TabsTrigger>
-                <TabsTrigger value="thresholds">Thresholds</TabsTrigger>
               </TabsList>
               
               <TabsContent value="channels" className="space-y-4 pt-2">
@@ -420,56 +509,16 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                   />
                 </div>
               </TabsContent>
-
-              <TabsContent value="thresholds" className="space-y-4 pt-2">
-                {/* Contraction Duration Threshold */}
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="contraction_duration_threshold" className="text-sm font-medium flex-grow">
-                      Short/Long Threshold
-                    </Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="w-[200px] text-xs">
-                          Duration threshold in milliseconds to distinguish between short and long contractions. 
-                          Contractions shorter than this value are considered "short".
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      id="contraction_duration_threshold"
-                      name="contraction_duration_threshold"
-                      value={sessionParams.contraction_duration_threshold ?? 250}
-                      onChange={handleChange}
-                      placeholder="e.g., 250"
-                      min="100" step="50"
-                      className="pr-8"
-                      disabled={disabled}
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400">ms</span>
-                  </div>
-                </div>
-              </TabsContent>
             </Tabs>
           </CollapsibleContent>
         </Collapsible>
 
         {onRecalculate && (
-          <div className="pt-2">
+          <div className="pt-2 flex justify-end">
             <Button 
               onClick={onRecalculate} 
               disabled={disabled || !!validationErrors.channels || !!validationErrors.types}
-              className="w-full"
+              size="sm"
             >
               Re-calculate Scores
             </Button>

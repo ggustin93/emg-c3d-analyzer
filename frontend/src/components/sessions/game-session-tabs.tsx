@@ -303,49 +303,17 @@ export default function GameSessionTabs({
               />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Plot Configuration</CardTitle>
-              <CardDescription>Configure EMG plot display options</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="plot-mode-switch">Raw</Label>
-                    <Switch
-                      id="plot-mode-switch"
-                      checked={plotMode === 'activated'}
-                      onCheckedChange={(checked: boolean) => {
-                        const newMode = checked ? 'activated' : 'raw';
-                        setPlotMode(newMode);
-                        // Sync with session params
-                        onSessionParamsChange({
-                          ...sessionParams,
-                          show_raw_signals: newMode === 'raw'
-                        });
-                      }}
-                    />
-                    <Label htmlFor="plot-mode-switch">Activated</Label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Data Display Options:</label>
-                    <DownsamplingControl 
-                      dataPoints={dataPoints}
-                      setDataPoints={setDataPoints}
-                      plotChannel1Data={mainPlotChannel1Data}
-                      plotChannel2Data={mainPlotChannel2Data}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
           <SettingsPanel 
             sessionParams={sessionParams}
             onParamsChange={onSessionParamsChange}
             muscleChannels={muscleChannels}
             disabled={appIsLoading}
+            plotMode={plotMode}
+            setPlotMode={setPlotMode}
+            dataPoints={dataPoints}
+            setDataPoints={setDataPoints}
+            plotChannel1Data={mainPlotChannel1Data}
+            plotChannel2Data={mainPlotChannel2Data}
           />
           
           <Collapsible>

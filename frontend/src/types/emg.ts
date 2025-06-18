@@ -53,8 +53,10 @@ export interface GameSessionParameters {
   show_raw_signals?: boolean;
   
   // Session configuration
-  session_mvc_value?: number | null;
-  session_mvc_threshold_percentage?: number | null;
+  session_mvc_value?: number | null;  // Kept for backward compatibility
+  session_mvc_values?: Record<string, number | null>; // New: channel-specific MVC values
+  session_mvc_threshold_percentage?: number | null;  // Global threshold
+  session_mvc_threshold_percentages?: Record<string, number | null>; // New: channel-specific thresholds
   session_expected_contractions?: number | null;
   session_expected_contractions_ch1?: number | null;
   session_expected_contractions_ch2?: number | null;
@@ -69,7 +71,7 @@ export interface GameSessionParameters {
   contraction_duration_threshold?: number | null;
   
   // Allow string indexing for dynamic access
-  [key: string]: Record<string, string> | boolean | number | null | undefined;
+  [key: string]: Record<string, string | number | null> | boolean | number | null | undefined;
 }
 
 // For the backend response structure

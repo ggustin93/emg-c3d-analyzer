@@ -11,7 +11,10 @@ export const CHANNEL_COLORS: Record<number, {
 };
 
 export const getChannelColor = (index: number) => {
-  return CHANNEL_COLORS[index % Object.keys(CHANNEL_COLORS).length];
+  // Ensure CHANNEL_COLORS is defined before using Object.keys
+  const colorsLength = CHANNEL_COLORS && typeof CHANNEL_COLORS === 'object' ? 
+    Object.keys(CHANNEL_COLORS).length : 1;
+  return CHANNEL_COLORS[index % colorsLength];
 };
 
 // Muscle-specific color mapping for consistent colors across the app

@@ -41,7 +41,7 @@ export const useChannelManagement = (
 
   // Derives the clean "muscle" channels (e.g., "CH1") from the analytics object keys.
   const muscleChannels = useMemo(() => {
-    return analysisResult ? Object.keys(analysisResult.analytics) : [];
+    return (analysisResult && analysisResult.analytics) ? Object.keys(analysisResult.analytics) : [];
   }, [analysisResult]);
 
   // Retains the full list of all channels from the C3D file for any components that need it.
@@ -66,12 +66,16 @@ export const useChannelManagement = (
   }, [plotMode, muscleChannels, allAvailableChannels]);
 
   const updateChannelsAfterUpload = useCallback((data: EMGAnalysisResult) => {
+    if (!data || !data.analytics) return;
+    
     const analyticsChannels = Object.keys(data.analytics);
     if (analyticsChannels.length === 0) return;
 
     // Try to find a channel with "Quadriceps" in its name from the session parameters
     const quadricepsChannel = analyticsChannels.find(channel => {
-      const muscleName = data.metadata?.session_parameters_used?.channel_muscle_mapping?.[channel];
+      const channelMuscleMapping = data.metadata?.session_parameters_used?.channel_muscle_mapping;
+      const muscleName = channelMuscleMapping && typeof channelMuscleMapping === 'object' ? 
+                         channelMuscleMapping[channel] : undefined;
       return muscleName && muscleName.includes('Quadriceps');
     });
 

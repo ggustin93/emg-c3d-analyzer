@@ -242,6 +242,7 @@ def analyze_contractions(
         smoothing_window: The size of the moving average window to smooth the signal.
         mvc_amplitude_threshold: Optional. If provided, contractions with max_amplitude
                                  at or above this value are considered 'good'.
+                                 This can be channel-specific from session_mvc_values.
         merge_threshold_ms: The maximum time gap in milliseconds between two detected contractions
                            to consider them as a single physiological contraction. Default is 200ms,
                            which is based on typical motor unit firing rates and muscle response times.

@@ -45,7 +45,7 @@ const getScoreLabel = (score: number): { label: string; color: string } => {
 const expertTooltips = {
   contractionQuantity: "Quantitative assessment of neuromuscular activation patterns. The total number of contractions indicates overall muscle recruitment frequency, which correlates with motor unit activation thresholds and neural drive efficiency.",
   
-  goodContractions: "Contractions that exceed the minimum voluntary contraction (MVC) threshold, indicating sufficient recruitment of motor units to achieve functional movement patterns required for therapeutic goals.",
+  goodContractions: "Contractions that exceed the muscle-specific Minimum Voluntary Contraction (MVC) threshold, indicating sufficient recruitment of motor units to achieve functional movement patterns. Each muscle can have its own MVC threshold to account for anatomical differences in muscle size, fiber composition, and electrode placement.",
   
   durationMetrics: "Temporal parameters of muscle activation provide insight into motor control strategies. Duration metrics reflect the ability to sustain motor unit recruitment and are indicative of both neural drive sustainability and muscle fiber composition (Type I vs Type II).",
   
@@ -122,16 +122,18 @@ const CircularProgress: React.FC<{ value: number; label: string; color: string }
 const SectionHeader: React.FC<{ title: string; tooltipContent: string }> = ({ title, tooltipContent }) => (
   <div className="flex items-center mb-2">
     <h4 className="text-md font-semibold text-teal-600">{title}</h4>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
-          <InfoCircledIcon className="h-4 w-4" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-        <p>{tooltipContent}</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
+            <InfoCircledIcon className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+          <p>{tooltipContent}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   </div>
 );
 
@@ -175,7 +177,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   }, [channelAnalytics, selectedChannel, allChannelsData]);
   
   // Use provided allChannelsData if available, otherwise use local state
-  const displayAllChannelsData = Object.keys(allChannelsData).length > 0 
+  const displayAllChannelsData = allChannelsData && typeof allChannelsData === 'object' && Object.keys(allChannelsData).length > 0 
     ? allChannelsData 
     : localAllChannelsData;
 
@@ -353,7 +355,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                         value={displayAnalytics.good_contraction_count}
                         unit={sessionExpectedContractions !== null ? `/ ${sessionExpectedContractions}` : ""}
                         isInteger={true}
-                        description={`Contractions meeting MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(1)}). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
+                        description={`Contractions meeting muscle-specific MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(3)} mV). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
                         error={displayAnalytics.errors?.contractions}
                         tooltipContent={expertTooltips.goodContractions}
                       />

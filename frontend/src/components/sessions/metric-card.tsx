@@ -71,18 +71,18 @@ export default function MetricCard({
     </Card>
   );
 
-  if (error) {
-    return (
-      <TooltipProvider delayDuration={100}>
+  return (
+    <TooltipProvider delayDuration={100}>
+      {error ? (
         <Tooltip>
           <TooltipTrigger asChild>{renderCardContent()}</TooltipTrigger>
           <TooltipContent className="bg-destructive text-destructive-foreground max-w-xs">
             <p>Error: {error}</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return renderCardContent();
+      ) : (
+        renderCardContent()
+      )}
+    </TooltipProvider>
+  );
 } 

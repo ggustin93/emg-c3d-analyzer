@@ -17,6 +17,8 @@ import { useDataDownsampling } from "./hooks/useDataDownsampling";
 import { useChannelManagement } from "./hooks/useChannelManagement";
 import { useEmgDataFetching } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
+import { useMvcInitialization } from "./hooks/useMvcInitialization";
+import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/EMGChart"; // This type might move later
 import SessionLoader from "./components/SessionLoader";
 import { Button } from "./components/ui/button";
@@ -44,7 +46,14 @@ function App() {
     if (savedParams) {
       try {
         const parsed = JSON.parse(savedParams);
-        return parsed;
+        // Ensure required objects exist
+        return {
+          ...parsed,
+          channel_muscle_mapping: parsed.channel_muscle_mapping || {},
+          muscle_color_mapping: parsed.muscle_color_mapping || {},
+          session_mvc_values: parsed.session_mvc_values || {},
+          session_mvc_threshold_percentages: parsed.session_mvc_threshold_percentages || {}
+        };
       } catch (e) {
         console.error('Failed to parse saved session params:', e);
       }
@@ -64,7 +73,9 @@ function App() {
       muscle_color_mapping: {
         "Left Quadriceps": "#3b82f6", // Blue
         "Right Quadriceps": "#ef4444"  // Red
-      }
+      },
+      session_mvc_values: {},
+      session_mvc_threshold_percentages: {}
     };
   });
   
@@ -75,6 +86,8 @@ function App() {
   
   // Initialize hooks
   const downsamplingControls = useDataDownsampling(2000);
+  const { initializeMvcValues } = useMvcInitialization();
+  const { ensureDefaultMuscleGroups } = useMuscleDefaults();
   const {
     plotChannel1Name,
     setPlotChannel1Name,
@@ -91,19 +104,25 @@ function App() {
   // Ensure muscle mappings are initialized
   useEffect(() => {
     // Check if we need to initialize the mappings
-    const needsInitialization = Object.keys(sessionParams.channel_muscle_mapping).length === 0 ||
-                               Object.keys(sessionParams.muscle_color_mapping).length === 0;
+    const hasChannelMuscleMapping = sessionParams.channel_muscle_mapping && 
+                                   typeof sessionParams.channel_muscle_mapping === 'object';
+    const hasMuscleColorMapping = sessionParams.muscle_color_mapping && 
+                                 typeof sessionParams.muscle_color_mapping === 'object';
+                                 
+    const needsInitialization = !hasChannelMuscleMapping || !hasMuscleColorMapping ||
+                               (hasChannelMuscleMapping && Object.keys(sessionParams.channel_muscle_mapping).length === 0) ||
+                               (hasMuscleColorMapping && Object.keys(sessionParams.muscle_color_mapping).length === 0);
     
     if (needsInitialization) {
       setSessionParams(prev => ({
         ...prev,
         channel_muscle_mapping: {
-          ...prev.channel_muscle_mapping,
+          ...(prev.channel_muscle_mapping || {}),
           "CH1": "Left Quadriceps",
           "CH2": "Right Quadriceps"
         },
         muscle_color_mapping: {
-          ...prev.muscle_color_mapping,
+          ...(prev.muscle_color_mapping || {}),
           "Left Quadriceps": "#3b82f6", // Blue
           "Right Quadriceps": "#ef4444"  // Red
         }
@@ -164,7 +183,9 @@ function App() {
       muscle_color_mapping: {
         "Left Quadriceps": "#3b82f6", // Blue
         "Right Quadriceps": "#ef4444"  // Red
-      }
+      },
+      session_mvc_values: {},
+      session_mvc_threshold_percentages: {}
     }));
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
 
@@ -176,48 +197,31 @@ function App() {
     setActiveTab("plots"); // Keep default tab as "plots" which is now the combined EMG Analysis tab
     
     // Update sessionParams from the response if available
-    if (data.metadata.session_parameters_used) {
-      // Preserve the existing channel_muscle_mapping if the new data doesn't provide one
-      const newChannelMuscleMapping = data.metadata.session_parameters_used.channel_muscle_mapping || {
-        "CH1": "Left Quadriceps",
-        "CH2": "Right Quadriceps"
-      };
-      
-      // Always ensure we have default color mappings
-      const newMuscleColorMapping = {
-        "Left Quadriceps": "#3b82f6", // Blue
-        "Right Quadriceps": "#ef4444", // Red
-        ...(data.metadata.session_parameters_used.muscle_color_mapping || {})
-      };
-      
+    if (data && data.metadata && data.metadata.session_parameters_used) {
       // Get the available channels from the data
-      const availableChannels = Object.keys(data.analytics || {});
+      const availableChannels = data.analytics ? Object.keys(data.analytics) : [];
       
-      // Ensure all available channels have a muscle mapping
-      if (availableChannels.length > 0) {
-        availableChannels.forEach((channel, index) => {
-          if (!newChannelMuscleMapping[channel]) {
-            // If channel doesn't have a mapping, assign default Quadriceps if possible
-            if (index === 0) {
-              newChannelMuscleMapping[channel] = "Left Quadriceps";
-            } else if (index === 1) {
-              newChannelMuscleMapping[channel] = "Right Quadriceps";
-            } else {
-              // For additional channels, use a generic name
-              newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
-            }
-          }
-        });
-      }
+      // Step 1: Initialize session parameters with default muscle groups (Quadriceps)
+      let updatedSessionParams = ensureDefaultMuscleGroups(
+        availableChannels, 
+        data.metadata.session_parameters_used || sessionParams
+      );
       
-      setSessionParams({
-        ...sessionParams,
-        ...data.metadata.session_parameters_used,
-        channel_muscle_mapping: newChannelMuscleMapping,
-        muscle_color_mapping: newMuscleColorMapping
+      // Step 2: Initialize MVC values and thresholds
+      updatedSessionParams = initializeMvcValues(data, updatedSessionParams);
+      
+      // Log the updated parameters
+      console.log('Setting session params from upload:', {
+        availableChannels,
+        channel_muscle_mapping: updatedSessionParams.channel_muscle_mapping,
+        session_mvc_values: updatedSessionParams.session_mvc_values,
+        session_mvc_threshold_percentages: updatedSessionParams.session_mvc_threshold_percentages
       });
+      
+      // Step 3: Update the session parameters
+      setSessionParams(updatedSessionParams);
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, setActiveTab, sessionParams]);
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, setActiveTab, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
@@ -237,16 +241,19 @@ function App() {
       formData.append('result_id', analysisResult.file_id);
       
       // Add all session parameters to the form data
-      Object.keys(sessionParams).forEach(key => {
-        const value = sessionParams[key];
-        if (value !== null && value !== undefined) {
-          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
-            formData.append(key, JSON.stringify(value));
-          } else {
-            formData.append(key, String(value));
+      if (sessionParams) {
+        Object.keys(sessionParams).forEach(key => {
+          const value = sessionParams[key];
+          if (value !== null && value !== undefined) {
+            if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping' || 
+                key === 'session_mvc_values' || key === 'session_mvc_threshold_percentages') {
+              formData.append(key, JSON.stringify(value || {}));
+            } else {
+              formData.append(key, String(value));
+            }
           }
-        }
-      });
+        });
+      }
 
       // Send the request to recalculate scores
       const recalculateResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/recalculate-scores', {
@@ -288,16 +295,19 @@ function App() {
       formData.append('file', file);
       
       // Add all session parameters to the form data
-      Object.keys(sessionParams).forEach(key => {
-        const value = sessionParams[key];
-        if (value !== null && value !== undefined) {
-          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
-            formData.append(key, JSON.stringify(value));
-          } else {
-            formData.append(key, String(value));
+      if (sessionParams) {
+        Object.keys(sessionParams).forEach(key => {
+          const value = sessionParams[key];
+          if (value !== null && value !== undefined) {
+            if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping' || 
+                key === 'session_mvc_values' || key === 'session_mvc_threshold_percentages') {
+              formData.append(key, JSON.stringify(value || {}));
+            } else {
+              formData.append(key, String(value));
+            }
           }
-        }
-      });
+        });
+      }
 
       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
           method: 'POST',
@@ -327,16 +337,19 @@ function App() {
       formData.append('file', file);
       
       // Add all session parameters to the form data
-      Object.keys(sessionParams).forEach(key => {
-        const value = sessionParams[key];
-        if (value !== null && value !== undefined) {
-          if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping') {
-            formData.append(key, JSON.stringify(value));
-          } else {
-            formData.append(key, String(value));
+      if (sessionParams) {
+        Object.keys(sessionParams).forEach(key => {
+          const value = sessionParams[key];
+          if (value !== null && value !== undefined) {
+            if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping' || 
+                key === 'session_mvc_values' || key === 'session_mvc_threshold_percentages') {
+              formData.append(key, JSON.stringify(value || {}));
+            } else {
+              formData.append(key, String(value));
+            }
           }
-        }
-      });
+        });
+      }
 
       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
         method: 'POST',
@@ -412,11 +425,8 @@ function App() {
 
   // Calculate actual MVC threshold for the plot if params are set
   const mvcThresholdForPlot = useMemo(() => {
-    if (analysisResult?.metadata.session_parameters_used?.session_mvc_value &&
-        analysisResult?.metadata.session_parameters_used?.session_mvc_threshold_percentage) {
-      return (analysisResult.metadata.session_parameters_used.session_mvc_value * 
-              analysisResult.metadata.session_parameters_used.session_mvc_threshold_percentage) / 100;
-    }
+    // We no longer use global MVC threshold - channel-specific thresholds are handled in EMGChart
+    // This is kept as null for backward compatibility with components that might expect this prop
     return null;
   }, [analysisResult]);
 
@@ -462,11 +472,7 @@ function App() {
           ) : (
             <GameSessionTabs
               analysisResult={analysisResult}
-              mvcThresholdForPlot={
-                plotMode === 'activated'
-                  ? (sessionParams.session_mvc_value ?? 0) * (sessionParams.session_mvc_threshold_percentage ?? 0) / 100
-                  : null
-              }
+              mvcThresholdForPlot={null}
               muscleChannels={muscleChannels}
               allAvailableChannels={allAvailableChannels}
               plotChannel1Name={plotChannel1Name}

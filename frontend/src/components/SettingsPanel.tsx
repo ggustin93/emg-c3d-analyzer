@@ -3,11 +3,17 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { GameSessionParameters } from '../types/emg';
+import { GameSessionParameters, EmgSignalData } from '../types/emg';
 import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
 import { getMuscleColor } from '../lib/colorMappings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Switch } from "./ui/switch";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "./ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -15,12 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import DownsamplingControl from './app/DownsamplingControl';
 
 interface SettingsPanelProps {
   sessionParams: GameSessionParameters;
   onParamsChange: (params: GameSessionParameters) => void;
   muscleChannels: string[];
   disabled: boolean;
+  plotMode: 'raw' | 'activated';
+  setPlotMode: (mode: 'raw' | 'activated') => void;
+  dataPoints: number;
+  setDataPoints: (points: number) => void;
+  plotChannel1Data: EmgSignalData | null;
+  plotChannel2Data: EmgSignalData | null;
 }
 
 // Common muscle groups for therapists
@@ -83,7 +96,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   sessionParams,
   onParamsChange,
   muscleChannels,
-  disabled
+  disabled,
+  plotMode,
+  setPlotMode,
+  dataPoints,
+  setDataPoints,
+  plotChannel1Data,
+  plotChannel2Data,
 }) => {
   // State to track if we're in edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -222,7 +241,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Channels Settings</CardTitle>
+          <CardTitle className="text-lg">Display & Channel Settings</CardTitle>
           <Button 
             onClick={toggleEditMode} 
             variant="outline" 
@@ -244,7 +263,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </Button>
         </div>
         <CardDescription>
-          Configure muscle names and colors for better visualization
+          Configure muscle names, colors, and plot display options.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -252,7 +271,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="muscles">Muscle Names</TabsTrigger>
             <TabsTrigger value="colors">Colors</TabsTrigger>
-            <TabsTrigger value="display">Display</TabsTrigger>
+            <TabsTrigger value="plot">Plot</TabsTrigger>
           </TabsList>
           
           <TabsContent value="muscles" className="space-y-4 mt-4">
@@ -305,15 +324,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor={`muscle-group-${channel}`} className="text-xs text-slate-500 mb-1 block">
-                            Muscle Group
-                          </Label>
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor={`muscle-group-${channel}`} className="text-xs text-slate-500 mb-1 block">
+                              Muscle Group
+                            </Label>
+                          </div>
                           <Select
                             value={parts.muscle}
                             onValueChange={(value) => handleMuscleGroupChange(channel, value)}
                             disabled={disabled || !isEditing}
                           >
-                            <SelectTrigger id={`muscle-group-${channel}`} className="w-full">
+                            <SelectTrigger 
+                              id={`muscle-group-${channel}`} 
+                              className="w-full"
+                            >
                               <SelectValue placeholder="Select muscle" />
                             </SelectTrigger>
                             <SelectContent>
@@ -400,37 +424,59 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             )}
           </TabsContent>
           
-          <TabsContent value="display" className="space-y-4 mt-4">
+          <TabsContent value="plot" className="space-y-4 mt-4">
             <p className="text-sm text-slate-500">
               Configure how EMG signals are displayed in charts and visualizations.
             </p>
 
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="raw-signals" className="flex flex-col space-y-1">
-                <span>Raw Signals</span>
-                <span className="font-normal text-sm text-slate-500">Show raw EMG signals instead of activated ones</span>
+            <div className="flex items-center justify-between space-x-2 p-2 rounded-md border">
+              <Label htmlFor="plot-mode-switch" className="flex flex-col space-y-1">
+                <span>Signal Type</span>
+                <span className="font-normal text-sm text-slate-500">
+                  Switch between Raw and Activated signals.
+                </span>
               </Label>
-              <Switch
-                id="raw-signals"
-                checked={sessionParams.show_raw_signals || false}
-                onCheckedChange={(checked) => {
-                  onParamsChange({
-                    ...sessionParams,
-                    show_raw_signals: checked
-                  });
-                }}
-                disabled={disabled || !isEditing}
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="plot-mode-switch">Raw</Label>
+                <Switch
+                  id="plot-mode-switch"
+                  checked={plotMode === 'activated'}
+                  onCheckedChange={(checked: boolean) => {
+                    const newMode = checked ? 'activated' : 'raw';
+                    setPlotMode(newMode);
+                    // Sync with session params
+                    onParamsChange({
+                      ...sessionParams,
+                      show_raw_signals: newMode === 'raw'
+                    });
+                  }}
+                  disabled={disabled}
+                />
+                <Label htmlFor="plot-mode-switch">Activated</Label>
+              </div>
+            </div>
+
+            <div className="space-y-2 p-2 rounded-md border">
+              <Label>Data Display Options</Label>
+              <p className="font-normal text-sm text-slate-500">
+                Control the number of data points shown in the plot.
+              </p>
+              <DownsamplingControl 
+                dataPoints={dataPoints}
+                setDataPoints={setDataPoints}
+                plotChannel1Data={plotChannel1Data}
+                plotChannel2Data={plotChannel2Data}
               />
             </div>
           </TabsContent>
         </Tabs>
         
-        <div className="pt-4">
+        <div className="pt-4 flex justify-end">
           <Button 
             onClick={resetToDefaults}
             variant="outline"
             disabled={disabled || !isEditing}
-            className="w-full"
+            size="sm"
           >
             Reset to Default Names & Colors
           </Button>

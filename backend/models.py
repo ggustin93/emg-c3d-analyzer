@@ -65,6 +65,10 @@ class GameSessionParameters(BaseModel):
     
     # Channel to muscle name mapping
     channel_muscle_mapping: Optional[Dict[str, str]] = Field(None, description="Mapping of channel names to muscle names")
+    
+    # New fields for channel-specific MVC values and thresholds
+    session_mvc_values: Optional[Dict[str, Optional[float]]] = Field(None, description="Channel-specific MVC values")
+    session_mvc_threshold_percentages: Optional[Dict[str, Optional[float]]] = Field(None, description="Channel-specific MVC threshold percentages")
 
 class GameMetadata(BaseModel):
     game_name: Optional[str] = None

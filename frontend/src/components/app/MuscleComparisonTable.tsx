@@ -3,7 +3,7 @@ import { ChannelAnalyticsData, GameSessionParameters } from '../../types/emg';
 import MuscleNameDisplay from '../MuscleNameDisplay';
 import { formatMetricValue } from '../../utils/formatters';
 import { getColorForChannel } from '../../lib/colorMappings';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 interface MuscleComparisonTableProps {
@@ -44,7 +44,9 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
 }) => {
   // Filter to only include channels that have data
   const channelsWithData = availableChannels.filter(channel => 
-    Object.keys(channelsData).includes(channel) && channelsData[channel] !== null
+    channelsData && typeof channelsData === 'object' && 
+    Object.keys(channelsData).includes(channel) && 
+    channelsData[channel] !== null
   );
   
   // Show table even if we only have data for some channels
@@ -144,16 +146,18 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                 >
                   <div className="flex items-center">
                     <span>{group.title}</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
-                          <InfoCircledIcon className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-                        <p>{expertTooltips[groupTooltipKeys[group.title]]}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
+                            <InfoCircledIcon className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                          <p>{expertTooltips[groupTooltipKeys[group.title]]}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </td>
               </tr>

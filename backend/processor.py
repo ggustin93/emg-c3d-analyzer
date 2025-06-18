@@ -181,30 +181,82 @@ class GHOSTLYC3DProcessor:
                            session_params: GameSessionParameters
                           ) -> Dict:
         """
-        Calculate summary analytics by applying the correct analysis to the correct signal type.
-        - Contraction analysis is run on "activated" signals.
-        - Full-signal metrics (RMS, MAV, MPF, etc.) are run on "Raw" signals.
+        Calculate analytics for all EMG channels.
+        
+        Args:
+            threshold_factor: Factor of max amplitude to use as threshold for contraction detection
+            min_duration_ms: Minimum duration (ms) for a valid contraction
+            smoothing_window: Window size for signal smoothing
+            session_params: Session parameters including MVC values and thresholds
+            
+        Returns:
+            Dictionary of analytics for each channel
         """
         if not self.emg_data:
-            self.extract_emg_data()
-
-        all_analytics = {}
+            raise ValueError("No EMG data loaded. Call extract_emg_data() first.")
         
-        # Determine actual MVC amplitude threshold if session MVC value is provided
-        actual_mvc_threshold: Optional[float] = None
+        # Initialize per-muscle MVC values if they don't exist
+        if not hasattr(session_params, 'session_mvc_values') or not session_params.session_mvc_values:
+            session_params.session_mvc_values = {}
+            
+        if not hasattr(session_params, 'session_mvc_threshold_percentages') or not session_params.session_mvc_threshold_percentages:
+            session_params.session_mvc_threshold_percentages = {}
+        
+        # Determine global MVC threshold if session MVC value is provided - used as fallback
+        global_mvc_threshold: Optional[float] = None
         if session_params.session_mvc_value is not None and session_params.session_mvc_threshold_percentage is not None:
-            actual_mvc_threshold = session_params.session_mvc_value * (session_params.session_mvc_threshold_percentage / 100.0)
+            global_mvc_threshold = session_params.session_mvc_value * (session_params.session_mvc_threshold_percentage / 100.0)
+        
+        all_analytics = {}
         
         # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
         base_names = sorted(list(set(
             name.replace(' Raw', '').replace(' activated', '') 
             for name in self.emg_data.keys()
         )))
-
-        for base_name in base_names:
+        
+        # Process each base channel
+        for i, base_name in enumerate(base_names):
             channel_analytics = {}
             channel_errors = {}
-
+            
+            # Determine expected contractions for this channel
+            expected_contractions = session_params.session_expected_contractions
+            if i == 0 and session_params.session_expected_contractions_ch1 is not None:
+                expected_contractions = session_params.session_expected_contractions_ch1
+            elif i == 1 and session_params.session_expected_contractions_ch2 is not None:
+                expected_contractions = session_params.session_expected_contractions_ch2
+            
+            # Store expected contractions in analytics
+            channel_analytics['expected_contractions'] = expected_contractions
+            
+            # Determine channel-specific MVC threshold
+            actual_mvc_threshold: Optional[float] = None
+            
+            # First check if we have channel-specific MVC values
+            if (hasattr(session_params, 'session_mvc_values') and 
+                session_params.session_mvc_values and 
+                base_name in session_params.session_mvc_values):
+                
+                channel_mvc = session_params.session_mvc_values.get(base_name)
+                
+                # Use channel-specific threshold percentage if available
+                if (hasattr(session_params, 'session_mvc_threshold_percentages') and 
+                    session_params.session_mvc_threshold_percentages and 
+                    base_name in session_params.session_mvc_threshold_percentages):
+                    
+                    threshold_percentage = session_params.session_mvc_threshold_percentages.get(base_name)
+                    if channel_mvc is not None and threshold_percentage is not None:
+                        actual_mvc_threshold = channel_mvc * (threshold_percentage / 100.0)
+                
+                # Fall back to global threshold percentage
+                elif channel_mvc is not None and session_params.session_mvc_threshold_percentage is not None:
+                    actual_mvc_threshold = channel_mvc * (session_params.session_mvc_threshold_percentage / 100.0)
+            
+            # Fall back to global MVC threshold
+            else:
+                actual_mvc_threshold = global_mvc_threshold
+            
             # --- Full-Signal Analysis on RAW data ---
             raw_channel_name = f"{base_name} Raw"
             if raw_channel_name in self.emg_data:
@@ -250,6 +302,47 @@ class GHOSTLYC3DProcessor:
                         mvc_amplitude_threshold=actual_mvc_threshold
                     )
                     channel_analytics.update(contraction_stats)
+                    
+                    # Initialize MVC value to max amplitude if not provided
+                    max_amplitude = contraction_stats.get('max_amplitude', 0.0)
+                    if (not session_params.session_mvc_values or 
+                        base_name not in session_params.session_mvc_values or 
+                        session_params.session_mvc_values[base_name] is None):
+                        print(f"Initializing MVC value for {base_name} to max amplitude: {max_amplitude}")
+                        if not session_params.session_mvc_values:
+                            session_params.session_mvc_values = {}
+                        session_params.session_mvc_values[base_name] = max_amplitude
+                        
+                        # Recalculate MVC threshold with the new MVC value
+                        if session_params.session_mvc_threshold_percentages and base_name in session_params.session_mvc_threshold_percentages:
+                            threshold_percentage = session_params.session_mvc_threshold_percentages[base_name]
+                            if threshold_percentage is not None:
+                                actual_mvc_threshold = max_amplitude * (threshold_percentage / 100.0)
+                                # Update the threshold in the analytics
+                                channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+                        elif session_params.session_mvc_threshold_percentage:
+                            actual_mvc_threshold = max_amplitude * (session_params.session_mvc_threshold_percentage / 100.0)
+                            # Update the threshold in the analytics
+                            channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+                    
+                    # Initialize MVC threshold percentage if not provided
+                    if (not session_params.session_mvc_threshold_percentages or 
+                        base_name not in session_params.session_mvc_threshold_percentages or 
+                        session_params.session_mvc_threshold_percentages[base_name] is None):
+                        default_threshold = session_params.session_mvc_threshold_percentage or 70
+                        print(f"Initializing MVC threshold percentage for {base_name} to default: {default_threshold}%")
+                        if not session_params.session_mvc_threshold_percentages:
+                            session_params.session_mvc_threshold_percentages = {}
+                        session_params.session_mvc_threshold_percentages[base_name] = default_threshold
+                        
+                        # Recalculate MVC threshold with the new threshold percentage
+                        if session_params.session_mvc_values and base_name in session_params.session_mvc_values:
+                            mvc_value = session_params.session_mvc_values[base_name]
+                            if mvc_value is not None:
+                                actual_mvc_threshold = mvc_value * (default_threshold / 100.0)
+                                # Update the threshold in the analytics
+                                channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+                    
                 except Exception as e:
                     channel_errors['contractions'] = f"Contraction analysis failed: {str(e)}"
                     # Provide default values for required fields
@@ -391,11 +484,6 @@ class GHOSTLYC3DProcessor:
         existing_analytics = result_data.get('analytics', {})
         updated_analytics = {}
         
-        # Determine actual MVC threshold if session MVC value is provided
-        actual_mvc_threshold: Optional[float] = None
-        if session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
-            actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
-        
         # Get available channels
         available_channels = result_data.get('available_channels', [])
         
@@ -405,6 +493,23 @@ class GHOSTLYC3DProcessor:
             for name in available_channels
         )))
         
+        # Initialize per-muscle MVC values if they don't exist
+        if not hasattr(session_game_params, 'session_mvc_values') or not session_game_params.session_mvc_values:
+            session_game_params.session_mvc_values = {}
+            
+        if not hasattr(session_game_params, 'session_mvc_threshold_percentages') or not session_game_params.session_mvc_threshold_percentages:
+            session_game_params.session_mvc_threshold_percentages = {}
+            
+        # Ensure all base channels have MVC values
+        for base_name in base_names:
+            if base_name not in session_game_params.session_mvc_values:
+                # Use global value as fallback if available
+                session_game_params.session_mvc_values[base_name] = session_game_params.session_mvc_value
+                
+            if base_name not in session_game_params.session_mvc_threshold_percentages:
+                # Use global threshold as fallback
+                session_game_params.session_mvc_threshold_percentages[base_name] = session_game_params.session_mvc_threshold_percentage
+            
         # Process each channel
         for i, base_name in enumerate(base_names):
             # Get the existing analytics for this channel
@@ -420,6 +525,33 @@ class GHOSTLYC3DProcessor:
             elif i == 1 and session_game_params.session_expected_contractions_ch2 is not None:
                 expected_contractions = session_game_params.session_expected_contractions_ch2
             
+            # Determine channel-specific MVC threshold
+            actual_mvc_threshold: Optional[float] = None
+            
+            # First check if we have channel-specific MVC values
+            if (hasattr(session_game_params, 'session_mvc_values') and 
+                session_game_params.session_mvc_values and 
+                base_name in session_game_params.session_mvc_values):
+                
+                channel_mvc = session_game_params.session_mvc_values.get(base_name)
+                
+                # Use channel-specific threshold percentage if available
+                if (hasattr(session_game_params, 'session_mvc_threshold_percentages') and 
+                    session_game_params.session_mvc_threshold_percentages and 
+                    base_name in session_game_params.session_mvc_threshold_percentages):
+                    
+                    threshold_percentage = session_game_params.session_mvc_threshold_percentages.get(base_name)
+                    if channel_mvc is not None and threshold_percentage is not None:
+                        actual_mvc_threshold = channel_mvc * (threshold_percentage / 100.0)
+                
+                # Fall back to global threshold percentage
+                elif channel_mvc is not None and session_game_params.session_mvc_threshold_percentage is not None:
+                    actual_mvc_threshold = channel_mvc * (session_game_params.session_mvc_threshold_percentage / 100.0)
+            
+            # Fall back to global MVC value and threshold
+            elif session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
+                actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
+            
             # Count good contractions based on MVC threshold
             good_contraction_count = 0
             if actual_mvc_threshold is not None:
@@ -434,6 +566,7 @@ class GHOSTLYC3DProcessor:
             channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
             channel_analytics['good_contraction_count'] = good_contraction_count
             channel_analytics['contractions'] = contractions
+            channel_analytics['expected_contractions'] = expected_contractions  # Add expected contractions to analytics
             
             # Add the updated analytics to the result
             updated_analytics[base_name] = channel_analytics

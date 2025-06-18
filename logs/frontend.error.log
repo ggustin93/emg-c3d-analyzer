@@ -4937,3 +4937,887 @@ TS2322: Type '{ channelsData: Record<string, ChannelAnalyticsData | null>; sessi
     303 |           ) : (
     304 |             <>
 
+(node:2684) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:2684) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/sessions/game-session-tabs.tsx:344:12
+TS2740: Type '{ sessionParams: GameSessionParameters; onParamsChange: (params: GameSessionParameters) => void; muscleChannels: string[]; disabled: boolean; }' is missing the following properties from type 'SettingsPanelProps': plotMode, setPlotMode, dataPoints, setDataPoints, and 2 more.
+    342 |             </CardContent>
+    343 |           </Card>
+  > 344 |           <SettingsPanel 
+        |            ^^^^^^^^^^^^^
+    345 |             sessionParams={sessionParams}
+    346 |             onParamsChange={onSessionParamsChange}
+    347 |             muscleChannels={muscleChannels}
+
+ERROR in src/components/SettingsPanel.tsx:458:17
+TS2322: Type '{ dataPoints: number; setDataPoints: (points: number) => void; plotChannel1Data: EmgSignalData | null; plotChannel2Data: EmgSignalData | null; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & DownsamplingControlProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & DownsamplingControlProps'.
+    456 |                 plotChannel1Data={plotChannel1Data}
+    457 |                 plotChannel2Data={plotChannel2Data}
+  > 458 |                 disabled={disabled}
+        |                 ^^^^^^^^
+    459 |               />
+    460 |             </div>
+    461 |           </TabsContent>
+
+ERROR in src/components/sessions/game-session-tabs.tsx:344:12
+TS2740: Type '{ sessionParams: GameSessionParameters; onParamsChange: (params: GameSessionParameters) => void; muscleChannels: string[]; disabled: boolean; }' is missing the following properties from type 'SettingsPanelProps': plotMode, setPlotMode, dataPoints, setDataPoints, and 2 more.
+    342 |             </CardContent>
+    343 |           </Card>
+  > 344 |           <SettingsPanel 
+        |            ^^^^^^^^^^^^^
+    345 |             sessionParams={sessionParams}
+    346 |             onParamsChange={onSessionParamsChange}
+    347 |             muscleChannels={muscleChannels}
+
+ERROR in src/components/sessions/performance/OverallPerformanceCard.tsx:3:20
+TS2305: Module '"@radix-ui/react-icons"' has no exported member 'BalanceIcon'.
+    1 | import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    2 | import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+  > 3 | import { StarIcon, BalanceIcon } from '@radix-ui/react-icons';
+      |                    ^^^^^^^^^^^
+    4 | import { Progress } from '@/components/ui/progress';
+    5 |
+    6 | interface OverallPerformanceCardProps {
+
+ERROR in src/components/sessions/performance/OverallPerformanceCard.tsx:3:20
+TS2305: Module '"@radix-ui/react-icons"' has no exported member 'ScaleIcon'.
+    1 | import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    2 | import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+  > 3 | import { StarIcon, ScaleIcon } from '@radix-ui/react-icons';
+      |                    ^^^^^^^^^
+    4 | import { Progress } from '@/components/ui/progress';
+    5 |
+    6 | interface OverallPerformanceCardProps {
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:142:33
+TS2304: Cannot find name 'percentage'.
+    140 |             <PieChart>
+    141 |               <Pie
+  > 142 |                 data={[{ value: percentage }, { value: 100 - percentage }]}
+        |                                 ^^^^^^^^^^
+    143 |                 cx="50%"
+    144 |                 cy="50%"
+    145 |                 innerRadius={size === "sm" ? 25 : size === "md" ? 30 : 35}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:142:62
+TS2304: Cannot find name 'percentage'.
+    140 |             <PieChart>
+    141 |               <Pie
+  > 142 |                 data={[{ value: percentage }, { value: 100 - percentage }]}
+        |                                                              ^^^^^^^^^^
+    143 |                 cx="50%"
+    144 |                 cy="50%"
+    145 |                 innerRadius={size === "sm" ? 25 : size === "md" ? 30 : 35}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:142:33
+TS2304: Cannot find name 'percentage'.
+    140 |             <PieChart>
+    141 |               <Pie
+  > 142 |                 data={[{ value: percentage }, { value: 100 - percentage }]}
+        |                                 ^^^^^^^^^^
+    143 |                 cx="50%"
+    144 |                 cy="50%"
+    145 |                 innerRadius={size === "sm" ? 25 : size === "md" ? 30 : 35}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:142:62
+TS2304: Cannot find name 'percentage'.
+    140 |             <PieChart>
+    141 |               <Pie
+  > 142 |                 data={[{ value: percentage }, { value: 100 - percentage }]}
+        |                                                              ^^^^^^^^^^
+    143 |                 cx="50%"
+    144 |                 cy="50%"
+    145 |                 innerRadius={size === "sm" ? 25 : size === "md" ? 30 : 35}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance/MuscleSymmetryCard.tsx
+TS1208: 'MuscleSymmetryCard.tsx' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:157:9
+TS2322: Type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreBgColor: string; scoreHexColor: string; muscleCount: number; symmetryScore: number | undefined; }' is not assignable to type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+  Property 'scoreBgColor' does not exist on type 'IntrinsicAttributes & OverallPerformanceCardProps'.
+    155 |         scoreLabel={overallScoreLabel.label}
+    156 |         scoreTextColor={overallScoreLabel.textColor}
+  > 157 |         scoreBgColor={overallScoreLabel.bgColor}
+        |         ^^^^^^^^^^^^
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+    159 |         muscleCount={muscleScores.length}
+    160 |         symmetryScore={symmetryScore}
+
+ERROR in src/components/sessions/performance-card.tsx:159:12
+TS2741: Property 'scoreBgColor' is missing in type '{ totalScore: number; scoreLabel: string; scoreTextColor: string; scoreHexColor: string; muscleCount: number; }' but required in type 'OverallPerformanceCardProps'.
+    157 |         scoreBgColor={overallScoreLabel.bgColor}
+    158 |         scoreHexColor={overallScoreLabel.hexColor}
+  > 159 |         muscleCount={muscleScores.length}
+        |            ^^^^^^^^^^^^^^^^^^^^^^
+    160 |         symmetryScore={symmetryScore}
+    161 |       />
+    162 |       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:13:32
+TS2307: Cannot find module '@/lib/scoreUtils' or its corresponding type declarations.
+    11 | import { cn } from '@/lib/utils';
+    12 | import { Button } from '@/components/ui/button';
+  > 13 | import { getScoreColors } from '@/lib/scoreUtils';
+       |                                ^^^^^^^^^^^^^^^^^^
+    14 |
+    15 | interface MusclePerformanceCardProps {
+    16 |   channel: string;
+
+ERROR in src/components/SessionConfigPanel.tsx:123:71
+TS2448: Block-scoped variable 'muscleChannels' used before its declaration.
+    121 |       onParamsChange(updatedParams);
+    122 |     }
+  > 123 |   }, [sessionParams, onParamsChange, disabled, useChannelSpecificMVC, muscleChannels]);
+        |                                                                       ^^^^^^^^^^^^^^
+    124 |   
+    125 |   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    126 |     const { name, value } = e.target;
+
+ERROR in src/components/SessionConfigPanel.tsx:123:71
+TS2454: Variable 'muscleChannels' is used before being assigned.
+    121 |       onParamsChange(updatedParams);
+    122 |     }
+  > 123 |   }, [sessionParams, onParamsChange, disabled, useChannelSpecificMVC, muscleChannels]);
+        |                                                                       ^^^^^^^^^^^^^^
+    124 |   
+    125 |   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    126 |     const { name, value } = e.target;
+
+ERROR in src/components/SessionConfigPanel.tsx:203:9
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | null'.
+  Type 'undefined' is not assignable to type 'number | null'.
+    201 |       
+    202 |       muscleChannels.forEach(channel => {
+  > 203 |         updatedParams.session_mvc_values![channel] = updatedParams.session_mvc_value;
+        |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    204 |         updatedParams.session_mvc_threshold_percentages![channel] = updatedParams.session_mvc_threshold_percentage || 70;
+    205 |       });
+    206 |     } else {
+
+ERROR in src/components/EMGChart.tsx:140:5
+TS2322: Type 'number | null | undefined' is not assignable to type 'number | null'.
+  Type 'undefined' is not assignable to type 'number | null'.
+    138 |     
+    139 |     // Fall back to global MVC threshold
+  > 140 |     return mvcThresholdForPlot;
+        |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    141 |   };
+    142 |
+    143 |   // MVC threshold colors - using different shades for different channels
+
+(node:10909) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:10909) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:13105) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:13105) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:13592) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:13592) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/EMGChart.tsx:350:16
+TS2528: A module cannot have multiple default exports.
+    348 | });
+    349 |
+  > 350 | export default EMGChart; 
+        |                ^^^^^^^^
+    351 | export default EMGChart; 
+
+ERROR in src/components/EMGChart.tsx:351:16
+TS2528: A module cannot have multiple default exports.
+    349 |
+    350 | export default EMGChart; 
+  > 351 | export default EMGChart; 
+        |                ^^^^^^^^
+
+ERROR in src/App.tsx:219:44
+TS18049: 'data.metadata.session_parameters_used' is possibly 'null' or 'undefined'.
+    217 |           if (newSessionMVCValues[channel] === undefined) {
+    218 |             // Use global MVC value as fallback if available
+  > 219 |             newSessionMVCValues[channel] = data.metadata.session_parameters_used.session_mvc_value !== undefined ? 
+        |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    220 |               data.metadata.session_parameters_used.session_mvc_value : null;
+    221 |           }
+    222 |           
+
+ERROR in src/App.tsx:220:15
+TS18049: 'data.metadata.session_parameters_used' is possibly 'null' or 'undefined'.
+    218 |             // Use global MVC value as fallback if available
+    219 |             newSessionMVCValues[channel] = data.metadata.session_parameters_used.session_mvc_value !== undefined ? 
+  > 220 |               data.metadata.session_parameters_used.session_mvc_value : null;
+        |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    221 |           }
+    222 |           
+    223 |           // Initialize MVC threshold percentages if not present
+
+ERROR in src/App.tsx:226:58
+TS18049: 'data.metadata.session_parameters_used' is possibly 'null' or 'undefined'.
+    224 |           if (newSessionMVCThresholdPercentages[channel] === undefined) {
+    225 |             // Use global threshold percentage as fallback if available
+  > 226 |             newSessionMVCThresholdPercentages[channel] = data.metadata.session_parameters_used.session_mvc_threshold_percentage !== undefined ?
+        |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    227 |               data.metadata.session_parameters_used.session_mvc_threshold_percentage : 70;
+    228 |           }
+    229 |         });
+
+ERROR in src/App.tsx:227:15
+TS18049: 'data.metadata.session_parameters_used' is possibly 'null' or 'undefined'.
+    225 |             // Use global threshold percentage as fallback if available
+    226 |             newSessionMVCThresholdPercentages[channel] = data.metadata.session_parameters_used.session_mvc_threshold_percentage !== undefined ?
+  > 227 |               data.metadata.session_parameters_used.session_mvc_threshold_percentage : 70;
+        |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    228 |           }
+    229 |         });
+    230 |       }
+
+(node:14099) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:14099) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/EMGChart.tsx:231:45
+TS18048: 'item.mvcValue' is possibly 'undefined'.
+    229 |                 {item.mvcValue !== null && item.percentage !== null && (
+    230 |                   <span className="text-xs ml-1">
+  > 231 |                     ({item.percentage}% of {item.mvcValue.toExponential(3)} mV)
+        |                                             ^^^^^^^^^^^^^
+    232 |                   </span>
+    233 |                 )}
+    234 |               </span>
+
+ERROR in src/App.tsx:224:32
+TS18047: 'channelAnalytics.mvc_threshold_actual_value' is possibly 'null'.
+    222 |               // If we have a threshold value and a percentage, calculate the MVC value
+    223 |               const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 70;
+  > 224 |               const mvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
+        |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    225 |               console.log(`Initializing MVC value for ${channel} from backend MAX amplitude: ${mvcValue}`);
+    226 |               newSessionMVCValues[channel] = mvcValue;
+    227 |             } else {
+
+ERROR in src/App.tsx:224:32
+TS18047: 'channelAnalytics.mvc_threshold_actual_value' is possibly 'null'.
+    222 |               // If we have a threshold value and a percentage, calculate the MVC value
+    223 |               const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 70;
+  > 224 |               const mvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
+        |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    225 |               console.log(`Initializing MVC value for ${channel} from backend MAX amplitude: ${mvcValue}`);
+    226 |               newSessionMVCValues[channel] = mvcValue;
+    227 |             } else {
+
+ERROR in src/hooks/useMvcInitialization.ts
+TS1208: 'useMvcInitialization.ts' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/hooks/useMvcInitialization.ts:37:59
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    35 |               channelAnalytics.mvc_threshold_actual_value !== null) {
+    36 |             // If we have a threshold value and a percentage, calculate the MVC value
+  > 37 |             const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 70;
+       |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    38 |             const mvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
+    39 |             console.log(`Initializing MVC value for ${channel} from backend MAX amplitude: ${mvcValue}`);
+    40 |             newSessionMVCValues[channel] = mvcValue;
+
+ERROR in src/hooks/useMvcInitialization.ts:43:62
+TS2339: Property 'session_mvc_value' does not exist on type '{}'.
+    41 |           } else {
+    42 |             // Fallback to global MVC value if available
+  > 43 |             newSessionMVCValues[channel] = sessionParamsUsed.session_mvc_value !== undefined ? 
+       |                                                              ^^^^^^^^^^^^^^^^^
+    44 |               sessionParamsUsed.session_mvc_value : null;
+    45 |           }
+    46 |         }
+
+ERROR in src/hooks/useMvcInitialization.ts:44:33
+TS2339: Property 'session_mvc_value' does not exist on type '{}'.
+    42 |             // Fallback to global MVC value if available
+    43 |             newSessionMVCValues[channel] = sessionParamsUsed.session_mvc_value !== undefined ? 
+  > 44 |               sessionParamsUsed.session_mvc_value : null;
+       |                                 ^^^^^^^^^^^^^^^^^
+    45 |           }
+    46 |         }
+    47 |         
+
+ERROR in src/hooks/useMvcInitialization.ts:51:74
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    49 |         if (newSessionMVCThresholdPercentages[channel] === undefined) {
+    50 |           // Use global threshold percentage as fallback if available
+  > 51 |           newSessionMVCThresholdPercentages[channel] = sessionParamsUsed.session_mvc_threshold_percentage !== undefined ?
+       |                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    52 |             sessionParamsUsed.session_mvc_threshold_percentage : 70;
+    53 |         }
+    54 |       });
+
+ERROR in src/hooks/useMvcInitialization.ts:52:31
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    50 |           // Use global threshold percentage as fallback if available
+    51 |           newSessionMVCThresholdPercentages[channel] = sessionParamsUsed.session_mvc_threshold_percentage !== undefined ?
+  > 52 |             sessionParamsUsed.session_mvc_threshold_percentage : 70;
+       |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    53 |         }
+    54 |       });
+    55 |     }
+
+ERROR in src/hooks/useMvcInitialization.ts:37:59
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    35 |               channelAnalytics.mvc_threshold_actual_value !== null) {
+    36 |             // If we have a threshold value and a percentage, calculate the MVC value
+  > 37 |             const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 70;
+       |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    38 |             const mvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
+    39 |             console.log(`Initializing MVC value for ${channel} from backend MAX amplitude: ${mvcValue}`);
+    40 |             newSessionMVCValues[channel] = mvcValue;
+
+ERROR in src/hooks/useMvcInitialization.ts:43:62
+TS2339: Property 'session_mvc_value' does not exist on type '{}'.
+    41 |           } else {
+    42 |             // Fallback to global MVC value if available
+  > 43 |             newSessionMVCValues[channel] = sessionParamsUsed.session_mvc_value !== undefined ? 
+       |                                                              ^^^^^^^^^^^^^^^^^
+    44 |               sessionParamsUsed.session_mvc_value : null;
+    45 |           }
+    46 |         }
+
+ERROR in src/hooks/useMvcInitialization.ts:44:33
+TS2339: Property 'session_mvc_value' does not exist on type '{}'.
+    42 |             // Fallback to global MVC value if available
+    43 |             newSessionMVCValues[channel] = sessionParamsUsed.session_mvc_value !== undefined ? 
+  > 44 |               sessionParamsUsed.session_mvc_value : null;
+       |                                 ^^^^^^^^^^^^^^^^^
+    45 |           }
+    46 |         }
+    47 |         
+
+ERROR in src/hooks/useMvcInitialization.ts:51:74
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    49 |         if (newSessionMVCThresholdPercentages[channel] === undefined) {
+    50 |           // Use global threshold percentage as fallback if available
+  > 51 |           newSessionMVCThresholdPercentages[channel] = sessionParamsUsed.session_mvc_threshold_percentage !== undefined ?
+       |                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    52 |             sessionParamsUsed.session_mvc_threshold_percentage : 70;
+    53 |         }
+    54 |       });
+
+ERROR in src/hooks/useMvcInitialization.ts:52:31
+TS2339: Property 'session_mvc_threshold_percentage' does not exist on type '{}'.
+    50 |           // Use global threshold percentage as fallback if available
+    51 |           newSessionMVCThresholdPercentages[channel] = sessionParamsUsed.session_mvc_threshold_percentage !== undefined ?
+  > 52 |             sessionParamsUsed.session_mvc_threshold_percentage : 70;
+       |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    53 |         }
+    54 |       });
+    55 |     }
+
+ERROR in src/hooks/useMuscleDefaults.ts
+TS1208: 'useMuscleDefaults.ts' cannot be compiled under '--isolatedModules' because it is considered a global script file. Add an import, export, or an empty 'export {}' statement to make it a module.
+
+ERROR in src/App.tsx:188:11
+TS2451: Cannot redeclare block-scoped variable 'updatedSessionParams'.
+    186 |       
+    187 |       // Initialize session parameters with default muscle groups (Quadriceps)
+  > 188 |       let updatedSessionParams = ensureDefaultMuscleGroups(
+        |           ^^^^^^^^^^^^^^^^^^^^
+    189 |         availableChannels, 
+    190 |         data.metadata.session_parameters_used || sessionParams
+    191 |       );
+
+ERROR in src/App.tsx:200:16
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    198 |         availableChannels.forEach((channel, index) => {
+    199 |           // Handle muscle mapping
+  > 200 |           if (!newChannelMuscleMapping[channel]) {
+        |                ^^^^^^^^^^^^^^^^^^^^^^^
+    201 |             // If channel doesn't have a mapping, assign default Quadriceps if possible
+    202 |             if (index === 0) {
+    203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+
+ERROR in src/App.tsx:203:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    201 |             // If channel doesn't have a mapping, assign default Quadriceps if possible
+    202 |             if (index === 0) {
+  > 203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    204 |             } else if (index === 1) {
+    205 |               newChannelMuscleMapping[channel] = "Right Quadriceps";
+    206 |             } else {
+
+ERROR in src/App.tsx:205:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+    204 |             } else if (index === 1) {
+  > 205 |               newChannelMuscleMapping[channel] = "Right Quadriceps";
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    206 |             } else {
+    207 |               // For additional channels, use a generic name
+    208 |               newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
+
+ERROR in src/App.tsx:208:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    206 |             } else {
+    207 |               // For additional channels, use a generic name
+  > 208 |               newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    209 |             }
+    210 |           }
+    211 |         });
+
+ERROR in src/App.tsx:215:13
+TS2451: Cannot redeclare block-scoped variable 'updatedSessionParams'.
+    213 |       
+    214 |       // Use our hook to initialize MVC values from the backend data
+  > 215 |       const updatedSessionParams = initializeMvcValues(data, {
+        |             ^^^^^^^^^^^^^^^^^^^^
+    216 |         ...sessionParams,
+    217 |         channel_muscle_mapping: newChannelMuscleMapping,
+    218 |         muscle_color_mapping: newMuscleColorMapping
+
+ERROR in src/App.tsx:217:33
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    215 |       const updatedSessionParams = initializeMvcValues(data, {
+    216 |         ...sessionParams,
+  > 217 |         channel_muscle_mapping: newChannelMuscleMapping,
+        |                                 ^^^^^^^^^^^^^^^^^^^^^^^
+    218 |         muscle_color_mapping: newMuscleColorMapping
+    219 |       });
+    220 |       
+
+ERROR in src/App.tsx:218:31
+TS2304: Cannot find name 'newMuscleColorMapping'.
+    216 |         ...sessionParams,
+    217 |         channel_muscle_mapping: newChannelMuscleMapping,
+  > 218 |         muscle_color_mapping: newMuscleColorMapping
+        |                               ^^^^^^^^^^^^^^^^^^^^^
+    219 |       });
+    220 |       
+    221 |       // Extract the initialized MVC values and thresholds
+
+ERROR in src/App.tsx:227:9
+TS18004: No value exists in scope for the shorthand property 'newChannelMuscleMapping'. Either declare one or provide an initializer.
+    225 |       console.log('Setting session params from upload:', {
+    226 |         availableChannels,
+  > 227 |         newChannelMuscleMapping,
+        |         ^^^^^^^^^^^^^^^^^^^^^^^
+    228 |         newSessionMVCValues,
+    229 |         newSessionMVCThresholdPercentages
+    230 |       });
+
+ERROR in src/App.tsx:188:11
+TS2451: Cannot redeclare block-scoped variable 'updatedSessionParams'.
+    186 |       
+    187 |       // Initialize session parameters with default muscle groups (Quadriceps)
+  > 188 |       let updatedSessionParams = ensureDefaultMuscleGroups(
+        |           ^^^^^^^^^^^^^^^^^^^^
+    189 |         availableChannels, 
+    190 |         data.metadata.session_parameters_used || sessionParams
+    191 |       );
+
+ERROR in src/App.tsx:200:16
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    198 |         availableChannels.forEach((channel, index) => {
+    199 |           // Handle muscle mapping
+  > 200 |           if (!newChannelMuscleMapping[channel]) {
+        |                ^^^^^^^^^^^^^^^^^^^^^^^
+    201 |             // If channel doesn't have a mapping, assign default Quadriceps if possible
+    202 |             if (index === 0) {
+    203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+
+ERROR in src/App.tsx:203:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    201 |             // If channel doesn't have a mapping, assign default Quadriceps if possible
+    202 |             if (index === 0) {
+  > 203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    204 |             } else if (index === 1) {
+    205 |               newChannelMuscleMapping[channel] = "Right Quadriceps";
+    206 |             } else {
+
+ERROR in src/App.tsx:205:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    203 |               newChannelMuscleMapping[channel] = "Left Quadriceps";
+    204 |             } else if (index === 1) {
+  > 205 |               newChannelMuscleMapping[channel] = "Right Quadriceps";
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    206 |             } else {
+    207 |               // For additional channels, use a generic name
+    208 |               newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
+
+ERROR in src/App.tsx:208:15
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    206 |             } else {
+    207 |               // For additional channels, use a generic name
+  > 208 |               newChannelMuscleMapping[channel] = `Muscle ${index + 1}`;
+        |               ^^^^^^^^^^^^^^^^^^^^^^^
+    209 |             }
+    210 |           }
+    211 |         });
+
+ERROR in src/App.tsx:215:13
+TS2451: Cannot redeclare block-scoped variable 'updatedSessionParams'.
+    213 |       
+    214 |       // Use our hook to initialize MVC values from the backend data
+  > 215 |       const updatedSessionParams = initializeMvcValues(data, {
+        |             ^^^^^^^^^^^^^^^^^^^^
+    216 |         ...sessionParams,
+    217 |         channel_muscle_mapping: newChannelMuscleMapping,
+    218 |         muscle_color_mapping: newMuscleColorMapping
+
+ERROR in src/App.tsx:217:33
+TS2304: Cannot find name 'newChannelMuscleMapping'.
+    215 |       const updatedSessionParams = initializeMvcValues(data, {
+    216 |         ...sessionParams,
+  > 217 |         channel_muscle_mapping: newChannelMuscleMapping,
+        |                                 ^^^^^^^^^^^^^^^^^^^^^^^
+    218 |         muscle_color_mapping: newMuscleColorMapping
+    219 |       });
+    220 |       
+
+ERROR in src/App.tsx:218:31
+TS2304: Cannot find name 'newMuscleColorMapping'.
+    216 |         ...sessionParams,
+    217 |         channel_muscle_mapping: newChannelMuscleMapping,
+  > 218 |         muscle_color_mapping: newMuscleColorMapping
+        |                               ^^^^^^^^^^^^^^^^^^^^^
+    219 |       });
+    220 |       
+    221 |       // Extract the initialized MVC values and thresholds
+
+ERROR in src/App.tsx:227:9
+TS18004: No value exists in scope for the shorthand property 'newChannelMuscleMapping'. Either declare one or provide an initializer.
+    225 |       console.log('Setting session params from upload:', {
+    226 |         availableChannels,
+  > 227 |         newChannelMuscleMapping,
+        |         ^^^^^^^^^^^^^^^^^^^^^^^
+    228 |         newSessionMVCValues,
+    229 |         newSessionMVCThresholdPercentages
+    230 |       });
+
+ERROR in src/components/SettingsPanel.tsx:326:32
+TS2304: Cannot find name 'Tooltip'.
+    324 |                             </Label>
+    325 |                             {parts.muscle === "Quadriceps" && (
+  > 326 |                               <Tooltip>
+        |                                ^^^^^^^
+    327 |                                 <TooltipTrigger asChild>
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+ERROR in src/components/SettingsPanel.tsx:327:34
+TS2304: Cannot find name 'TooltipTrigger'.
+    325 |                             {parts.muscle === "Quadriceps" && (
+    326 |                               <Tooltip>
+  > 327 |                                 <TooltipTrigger asChild>
+        |                                  ^^^^^^^^^^^^^^
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    330 |                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+
+ERROR in src/components/SettingsPanel.tsx:333:35
+TS2304: Cannot find name 'TooltipTrigger'.
+    331 |                                     </svg>
+    332 |                                   </span>
+  > 333 |                                 </TooltipTrigger>
+        |                                   ^^^^^^^^^^^^^^
+    334 |                                 <TooltipContent>
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+
+ERROR in src/components/SettingsPanel.tsx:334:34
+TS2304: Cannot find name 'TooltipContent'.
+    332 |                                   </span>
+    333 |                                 </TooltipTrigger>
+  > 334 |                                 <TooltipContent>
+        |                                  ^^^^^^^^^^^^^^
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+
+ERROR in src/components/SettingsPanel.tsx:338:35
+TS2304: Cannot find name 'TooltipContent'.
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+  > 338 |                                 </TooltipContent>
+        |                                   ^^^^^^^^^^^^^^
+    339 |                               </Tooltip>
+    340 |                             )}
+    341 |                           </div>
+
+ERROR in src/components/SettingsPanel.tsx:339:33
+TS2304: Cannot find name 'Tooltip'.
+    337 |                                   </p>
+    338 |                                 </TooltipContent>
+  > 339 |                               </Tooltip>
+        |                                 ^^^^^^^
+    340 |                             )}
+    341 |                           </div>
+    342 |                           <Select
+
+ERROR in src/components/SettingsPanel.tsx:326:32
+TS2304: Cannot find name 'Tooltip'.
+    324 |                             </Label>
+    325 |                             {parts.muscle === "Quadriceps" && (
+  > 326 |                               <Tooltip>
+        |                                ^^^^^^^
+    327 |                                 <TooltipTrigger asChild>
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+ERROR in src/components/SettingsPanel.tsx:327:34
+TS2304: Cannot find name 'TooltipTrigger'.
+    325 |                             {parts.muscle === "Quadriceps" && (
+    326 |                               <Tooltip>
+  > 327 |                                 <TooltipTrigger asChild>
+        |                                  ^^^^^^^^^^^^^^
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    330 |                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+
+ERROR in src/components/SettingsPanel.tsx:333:35
+TS2304: Cannot find name 'TooltipTrigger'.
+    331 |                                     </svg>
+    332 |                                   </span>
+  > 333 |                                 </TooltipTrigger>
+        |                                   ^^^^^^^^^^^^^^
+    334 |                                 <TooltipContent>
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+
+ERROR in src/components/SettingsPanel.tsx:334:34
+TS2304: Cannot find name 'TooltipContent'.
+    332 |                                   </span>
+    333 |                                 </TooltipTrigger>
+  > 334 |                                 <TooltipContent>
+        |                                  ^^^^^^^^^^^^^^
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+
+ERROR in src/components/SettingsPanel.tsx:338:35
+TS2304: Cannot find name 'TooltipContent'.
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+  > 338 |                                 </TooltipContent>
+        |                                   ^^^^^^^^^^^^^^
+    339 |                               </Tooltip>
+    340 |                             )}
+    341 |                           </div>
+
+ERROR in src/components/SettingsPanel.tsx:339:33
+TS2304: Cannot find name 'Tooltip'.
+    337 |                                   </p>
+    338 |                                 </TooltipContent>
+  > 339 |                               </Tooltip>
+        |                                 ^^^^^^^
+    340 |                             )}
+    341 |                           </div>
+    342 |                           <Select
+
+ERROR in src/components/SettingsPanel.tsx:326:32
+TS2304: Cannot find name 'Tooltip'.
+    324 |                             </Label>
+    325 |                             {parts.muscle === "Quadriceps" && (
+  > 326 |                               <Tooltip>
+        |                                ^^^^^^^
+    327 |                                 <TooltipTrigger asChild>
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+ERROR in src/components/SettingsPanel.tsx:327:34
+TS2304: Cannot find name 'TooltipTrigger'.
+    325 |                             {parts.muscle === "Quadriceps" && (
+    326 |                               <Tooltip>
+  > 327 |                                 <TooltipTrigger asChild>
+        |                                  ^^^^^^^^^^^^^^
+    328 |                                   <span className="text-green-500 hover:text-green-600 cursor-help">
+    329 |                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    330 |                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+
+ERROR in src/components/SettingsPanel.tsx:333:35
+TS2304: Cannot find name 'TooltipTrigger'.
+    331 |                                     </svg>
+    332 |                                   </span>
+  > 333 |                                 </TooltipTrigger>
+        |                                   ^^^^^^^^^^^^^^
+    334 |                                 <TooltipContent>
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+
+ERROR in src/components/SettingsPanel.tsx:334:34
+TS2304: Cannot find name 'TooltipContent'.
+    332 |                                   </span>
+    333 |                                 </TooltipTrigger>
+  > 334 |                                 <TooltipContent>
+        |                                  ^^^^^^^^^^^^^^
+    335 |                                   <p className="w-[200px] text-xs">
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+
+ERROR in src/components/SettingsPanel.tsx:338:35
+TS2304: Cannot find name 'TooltipContent'.
+    336 |                                     Auto-assigned to Quadriceps by default. You can change this if needed.
+    337 |                                   </p>
+  > 338 |                                 </TooltipContent>
+        |                                   ^^^^^^^^^^^^^^
+    339 |                               </Tooltip>
+    340 |                             )}
+    341 |                           </div>
+
+ERROR in src/components/SettingsPanel.tsx:339:33
+TS2304: Cannot find name 'Tooltip'.
+    337 |                                   </p>
+    338 |                                 </TooltipContent>
+  > 339 |                               </Tooltip>
+        |                                 ^^^^^^^
+    340 |                             )}
+    341 |                           </div>
+    342 |                           <Select
+
+(node:17850) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:17850) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:330:15
+TS2322: Type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; expectedShortContractions: number | undefined; expectedLongContractions: number | undefined; contractionDurationThreshold: number; }' is not assignable to type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+  Property 'contractionDurationThreshold' does not exist on type 'IntrinsicAttributes & ContractionTypeBreakdownProps'.
+    328 |               expectedShortContractions={expectedShortContractions}
+    329 |               expectedLongContractions={expectedLongContractions}
+  > 330 |               contractionDurationThreshold={contractionDurationThreshold}
+        |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    331 |             />
+    332 |           </div>
+    333 |         </CardContent>
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:323:14
+TS2741: Property 'color' is missing in type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; expectedShortContractions: number | undefined; expectedLongContractions: number | undefined; contractionDurationThreshold: number; }' but required in type 'ContractionTypeBreakdownProps'.
+    321 |           {/* Contraction Type Breakdown */}
+    322 |           <div className="rounded-md bg-slate-50 p-4">
+  > 323 |             <ContractionTypeBreakdown
+        |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    324 |               shortContractions={shortContractions}
+    325 |               shortGoodContractions={shortGoodContractions}
+    326 |               longContractions={longContractions}
+
+ERROR in src/components/sessions/performance/ContractionTypeBreakdown.tsx:97:22
+TS2304: Cannot find name 'color'.
+     95 |               good={shortGoodContractions} 
+     96 |               expected={expectedShortContractions}
+  >  97 |               color={color} 
+        |                      ^^^^^
+     98 |             />
+     99 |             <p className="text-xs text-gray-500 mt-3">
+    100 |               {shortGoodContractions} good contractions
+
+ERROR in src/components/sessions/performance/ContractionTypeBreakdown.tsx:111:22
+TS2304: Cannot find name 'color'.
+    109 |               good={longGoodContractions} 
+    110 |               expected={expectedLongContractions}
+  > 111 |               color={color} 
+        |                      ^^^^^
+    112 |             />
+    113 |             <p className="text-xs text-gray-500 mt-3">
+    114 |               {longGoodContractions} good contractions
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:323:14
+TS2741: Property 'color' is missing in type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; expectedShortContractions: number | undefined; expectedLongContractions: number | undefined; contractionDurationThreshold: number; }' but required in type 'ContractionTypeBreakdownProps'.
+    321 |           {/* Contraction Type Breakdown */}
+    322 |           <div className="rounded-md bg-slate-50 p-4">
+  > 323 |             <ContractionTypeBreakdown
+        |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    324 |               shortContractions={shortContractions}
+    325 |               shortGoodContractions={shortGoodContractions}
+    326 |               longContractions={longContractions}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:323:14
+TS2741: Property 'color' is missing in type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; expectedShortContractions: number | undefined; expectedLongContractions: number | undefined; contractionDurationThreshold: number; }' but required in type 'ContractionTypeBreakdownProps'.
+    321 |           {/* Contraction Type Breakdown */}
+    322 |           <div className="rounded-md bg-slate-50 p-4">
+  > 323 |             <ContractionTypeBreakdown
+        |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    324 |               shortContractions={shortContractions}
+    325 |               shortGoodContractions={shortGoodContractions}
+    326 |               longContractions={longContractions}
+
+ERROR in src/components/sessions/performance/MusclePerformanceCard.tsx:323:14
+TS2741: Property 'color' is missing in type '{ shortContractions: number; shortGoodContractions: number; longContractions: number; longGoodContractions: number; expectedShortContractions: number | undefined; expectedLongContractions: number | undefined; contractionDurationThreshold: number; }' but required in type 'ContractionTypeBreakdownProps'.
+    321 |           {/* Contraction Type Breakdown */}
+    322 |           <div className="rounded-md bg-slate-50 p-4">
+  > 323 |             <ContractionTypeBreakdown
+        |              ^^^^^^^^^^^^^^^^^^^^^^^^
+    324 |               shortContractions={shortContractions}
+    325 |               shortGoodContractions={shortGoodContractions}
+    326 |               longContractions={longContractions}
+
+ERROR in src/components/SessionConfigPanel.tsx:246:55
+TS2339: Property 'toFixed' does not exist on type 'number | ""'.
+  Property 'toFixed' does not exist on type '""'.
+    244 |                       min="0" step="0.0001"
+    245 |                       className={`pr-8 pl-6 text-sm h-8 ${mvcValue ? 'border-green-500 focus:ring-green-500' : ''}`}
+  > 246 |                       data-auto-initialized={mvcValue.toFixed(4) ? 'true' : 'false'}
+        |                                                       ^^^^^^^
+    247 |                       disabled={disabled}
+    248 |                     />
+    249 |                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
+
+ERROR in src/components/SessionConfigPanel.tsx:246:55
+TS2339: Property 'toFixed' does not exist on type 'number | ""'.
+  Property 'toFixed' does not exist on type '""'.
+    244 |                       min="0" step="0.0001"
+    245 |                       className={`pr-8 pl-6 text-sm h-8 ${mvcValue ? 'border-green-500 focus:ring-green-500' : ''}`}
+  > 246 |                       data-auto-initialized={mvcValue.toFixed(4) ? 'true' : 'false'}
+        |                                                       ^^^^^^^
+    247 |                       disabled={disabled}
+    248 |                     />
+    249 |                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
+
+ERROR in src/components/SessionConfigPanel.tsx:246:55
+TS2339: Property 'toFixed' does not exist on type 'number | ""'.
+  Property 'toFixed' does not exist on type '""'.
+    244 |                       min="0" step="0.0001"
+    245 |                       className={`pr-8 pl-6 text-sm h-8 ${mvcValue ? 'border-green-500 focus:ring-green-500' : ''}`}
+  > 246 |                       data-auto-initialized={mvcValue.toFixed(5) ? 'true' : 'false'}
+        |                                                       ^^^^^^^
+    247 |                       disabled={disabled}
+    248 |                     />
+    249 |                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
+

@@ -258,7 +258,9 @@ async def recalculate_scores(
     session_expected_long_right: Optional[int] = Form(None),
     session_expected_short_right: Optional[int] = Form(None),
     contraction_duration_threshold: Optional[int] = Form(250),
-    channel_muscle_mapping: Optional[str] = Form(None)):
+    channel_muscle_mapping: Optional[str] = Form(None),
+    session_mvc_values: Optional[str] = Form(None),
+    session_mvc_threshold_percentages: Optional[str] = Form(None)):
     """Recalculate scores for an existing result with updated parameters."""
     
     # Find the result file
@@ -286,6 +288,22 @@ async def recalculate_scores(
             except json.JSONDecodeError:
                 raise HTTPException(status_code=400, detail="Invalid channel_muscle_mapping JSON format")
         
+        # Parse the session_mvc_values JSON string if provided
+        parsed_mvc_values = None
+        if session_mvc_values:
+            try:
+                parsed_mvc_values = json.loads(session_mvc_values)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid session_mvc_values JSON format")
+        
+        # Parse the session_mvc_threshold_percentages JSON string if provided
+        parsed_mvc_threshold_percentages = None
+        if session_mvc_threshold_percentages:
+            try:
+                parsed_mvc_threshold_percentages = json.loads(session_mvc_threshold_percentages)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid session_mvc_threshold_percentages JSON format")
+        
         # Create session parameters object
         session_game_params = GameSessionParameters(
             session_mvc_value=session_mvc_value,
@@ -298,7 +316,9 @@ async def recalculate_scores(
             session_expected_long_right=session_expected_long_right,
             session_expected_short_right=session_expected_short_right,
             contraction_duration_threshold=contraction_duration_threshold,
-            channel_muscle_mapping=parsed_channel_muscle_mapping
+            channel_muscle_mapping=parsed_channel_muscle_mapping,
+            session_mvc_values=parsed_mvc_values,
+            session_mvc_threshold_percentages=parsed_mvc_threshold_percentages
         )
         
         # Create a processor instance

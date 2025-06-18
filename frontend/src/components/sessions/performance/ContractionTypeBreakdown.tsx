@@ -68,7 +68,7 @@ interface ContractionTypeBreakdownProps {
   longGoodContractions: number;
   expectedShortContractions?: number;
   expectedLongContractions?: number;
-  durationThreshold: number;
+  contractionDurationThreshold: number;
   color: string;
 }
 
@@ -79,7 +79,7 @@ const ContractionTypeBreakdown: React.FC<ContractionTypeBreakdownProps> = ({
   longGoodContractions,
   expectedShortContractions,
   expectedLongContractions,
-  durationThreshold,
+  contractionDurationThreshold,
   color,
 }) => {
   const hasData = shortContractions > 0 || longContractions > 0 || expectedShortContractions || expectedLongContractions;
@@ -90,7 +90,7 @@ const ContractionTypeBreakdown: React.FC<ContractionTypeBreakdownProps> = ({
     <div className="mt-4 pt-4 border-t border-gray-200">
       <div className="grid grid-cols-2 gap-6 text-center">
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Short (&lt;{durationThreshold / 1000}s)</h4>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Short (&lt;{contractionDurationThreshold / 1000}s)</h4>
           <div className="flex flex-col items-center">
             <BreakdownChart 
               total={shortContractions} 
@@ -104,7 +104,7 @@ const ContractionTypeBreakdown: React.FC<ContractionTypeBreakdownProps> = ({
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Long (≥{durationThreshold / 1000}s)</h4>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Long (≥{contractionDurationThreshold / 1000}s)</h4>
           <div className="flex flex-col items-center">
             <BreakdownChart 
               total={longContractions} 

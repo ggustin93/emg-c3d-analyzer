@@ -55,7 +55,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
     *   **Contraction Analysis** (`analyze_contractions`) is performed **only on the "activated" signal**, as it represents a clean muscle activation envelope.
     *   **Full-Signal Metrics** (RMS, MAV, MPF, MDF, etc.) are performed **only on the "Raw" signal**, as they require the complete, unprocessed signal data for valid calculations.
 3.  **Game-Specific Analysis**:
-    *   **MVC Threshold Analysis**: Contractions are evaluated against the MVC threshold percentage to determine if they are "good" contractions.
+    *   **Muscle-Specific MVC Threshold Analysis**: Each muscle has its own MVC (Maximum Voluntary Contraction) value and threshold percentage to account for anatomical differences. Contractions are evaluated against these muscle-specific thresholds to determine if they are "good" contractions.
     *   **Performance Tracking**: The system counts good contractions and compares against expected contractions count.
 4.  **Result Aggregation**: The results from both analyses are merged under a single, clean channel name (e.g., "CH1"). This provides a unified and scientifically valid set of analytics to the frontend.
 

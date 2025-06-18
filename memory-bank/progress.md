@@ -29,8 +29,8 @@
     - ✅ MDF (Median Frequency)
     - ✅ Dimitrov's Fatigue Index (FI_nsm5)
 ✅ **Game-Specific Analysis:**
-    - ✅ MVC (Maximum Voluntary Contraction) threshold analysis
-    - ✅ Good contraction flagging based on MVC threshold
+    - ✅ Muscle-specific MVC values for accurate clinical assessment
+    - ✅ Good contraction flagging based on muscle-specific MVC thresholds
     - ✅ Expected contractions count for performance tracking
 ✅ **Optimized API Response:**
     - ✅ API returns a clean, unified analytics object per muscle.
@@ -151,6 +151,9 @@
 - [ ] CI/CD pipeline.
 
 ## Recent Progress
+- Implemented per-muscle MVC values for more accurate clinical assessment
+- Modified the system to always use muscle-specific MVC values instead of global values
+- Updated EMGChart to use matching colors for each channel's data line and MVC threshold line
 - Created a centralized color system for consistent styling across all components.
 - Implemented a reusable ViewSelector component for switching between single and comparison views.
 - Enhanced MuscleSelector to work with the view mode system and use consistent colors.

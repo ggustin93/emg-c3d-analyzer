@@ -56,7 +56,8 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }
 
   // Check for data keys in chartData
-  const dataKeys = Object.keys(chartData[0]).filter(key => key !== 'time');
+  const dataKeys = chartData[0] && typeof chartData[0] === 'object' ? 
+    Object.keys(chartData[0]).filter(key => key !== 'time') : [];
   console.log('Chart data keys:', dataKeys);
 
   // Map available channels to actual data keys in the chart data
@@ -113,52 +114,185 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     }
   };
 
-  // MVC threshold color - using orange
-  const mvcThresholdColor = '#f97316'; // orange-500
+  // Get channel-specific MVC thresholds
+  const getChannelMVCThreshold = (channel: string): number | null => {
+    // Extract base channel name (CH1, CH2, etc.)
+    const baseChannelName = channel.split(' ')[0];
+    
+    console.log(`Getting MVC threshold for ${baseChannelName}`, {
+      sessionParams,
+      hasSessionMVCValues: !!sessionParams?.session_mvc_values,
+      channelMVC: sessionParams?.session_mvc_values?.[baseChannelName],
+      channelThresholdPercentage: sessionParams?.session_mvc_threshold_percentages?.[baseChannelName],
+      globalThresholdPercentage: sessionParams?.session_mvc_threshold_percentage,
+      globalMVCValue: sessionParams?.session_mvc_value,
+      mvcThresholdForPlot
+    });
+    
+    // Check if we have channel-specific MVC values
+    if (sessionParams?.session_mvc_values && baseChannelName in sessionParams.session_mvc_values) {
+      const channelMVC = sessionParams.session_mvc_values[baseChannelName];
+      
+      // If we have a channel-specific threshold percentage, use it
+      if (sessionParams.session_mvc_threshold_percentages && baseChannelName in sessionParams.session_mvc_threshold_percentages) {
+        const thresholdPercentage = sessionParams.session_mvc_threshold_percentages[baseChannelName];
+        if (channelMVC !== null && thresholdPercentage !== null) {
+          const threshold = channelMVC * (thresholdPercentage / 100);
+          console.log(`Using channel-specific threshold for ${baseChannelName}: ${threshold} (${channelMVC} * ${thresholdPercentage}%)`);
+          return threshold;
+        }
+      }
+      
+      // Fall back to global threshold percentage if available
+      if (channelMVC !== null && sessionParams.session_mvc_threshold_percentage) {
+        const threshold = channelMVC * (sessionParams.session_mvc_threshold_percentage / 100);
+        console.log(`Using channel MVC with global percentage for ${baseChannelName}: ${threshold} (${channelMVC} * ${sessionParams.session_mvc_threshold_percentage}%)`);
+        return threshold;
+      }
+    }
+    
+    // Fall back to global MVC value and threshold
+    if (sessionParams?.session_mvc_value !== null && sessionParams?.session_mvc_value !== undefined && 
+        sessionParams?.session_mvc_threshold_percentage !== null && sessionParams?.session_mvc_threshold_percentage !== undefined) {
+      const threshold = sessionParams.session_mvc_value * (sessionParams.session_mvc_threshold_percentage / 100);
+      console.log(`Using global MVC threshold for ${baseChannelName}: ${threshold} (${sessionParams.session_mvc_value} * ${sessionParams.session_mvc_threshold_percentage}%)`);
+      return threshold;
+    }
+    
+    // Last fallback to mvcThresholdForPlot
+    if (mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined) {
+      console.log(`Using mvcThresholdForPlot for ${baseChannelName}: ${mvcThresholdForPlot}`);
+      return mvcThresholdForPlot;
+    }
+    
+    console.log(`No MVC threshold available for ${baseChannelName}`);
+    return null;
+  };
 
-  // Custom legend formatter to only show MVC threshold
+  // Custom legend formatter to show MVC thresholds
   const renderLegend = (props: any) => {
+    // Collect all unique MVC thresholds to display
+    const thresholds: Array<{
+      channel: string, 
+      value: number, 
+      color: string, 
+      mvcValue?: number | null, 
+      percentage?: number | null
+    }> = [];
+    
+    // Add channel-specific thresholds
+    finalDisplayDataKeys.forEach((key, index) => {
+      const threshold = getChannelMVCThreshold(key);
+      if (threshold !== null) {
+        const baseChannelName = key.split(' ')[0];
+        const muscleName = getMuscleName(baseChannelName);
+        
+        // Get the same color as the channel line
+        const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+        
+        // Get the original MVC value and percentage
+        const mvcValue = sessionParams?.session_mvc_values?.[baseChannelName] || null;
+        const percentage = sessionParams?.session_mvc_threshold_percentages?.[baseChannelName] || 
+                           sessionParams?.session_mvc_threshold_percentage || null;
+        
+        thresholds.push({
+          channel: muscleName,
+          value: threshold,
+          color: colorStyle.stroke,
+          mvcValue,
+          percentage
+        });
+      }
+    });
+    
+    // If no channel-specific thresholds but global threshold exists
+    if (thresholds.length === 0 && mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined) {
+      thresholds.push({
+        channel: 'Global',
+        value: mvcThresholdForPlot,
+        color: '#f97316', // Default to orange for global threshold
+        mvcValue: sessionParams?.session_mvc_value || null,
+        percentage: sessionParams?.session_mvc_threshold_percentage || null
+      });
+    }
+    
     return (
       <div className="recharts-default-legend" style={{ padding: '0 10px' }}>
         <ul className="flex flex-wrap items-center gap-x-6">
-          {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
-            <li className="flex items-center">
-              <span 
-                className="inline-block w-6 h-0 mr-2 border-t-2 border-dashed" 
-                style={{ borderColor: mvcThresholdColor }}
-              />
-              <span style={{ color: mvcThresholdColor, fontWeight: 500 }}>
-                MVC ({mvcThresholdForPlot.toExponential(3)} mV)
-              </span>
-            </li>
-          )}
+          {thresholds.map((item, index) => {
+            // Format the values for display
+            const thresholdValue = item.value.toExponential(3);
+            const mvcValue = item.mvcValue !== undefined && item.mvcValue !== null 
+              ? item.mvcValue.toExponential(3) 
+              : null;
+            const percentage = item.percentage !== undefined && item.percentage !== null 
+              ? item.percentage 
+              : null;
+              
+            // Create concise label
+            const muscleLabel = item.channel.replace(' Activated', '').replace(' Raw', '');
+            
+            return (
+              <li key={index} className="flex items-center">
+                <span 
+                  className="inline-block w-6 h-0 mr-2 border-t-2 border-dashed" 
+                  style={{ borderColor: item.color }}
+                />
+                <div>
+                  <span style={{ color: item.color, fontWeight: 500 }}>
+                    {muscleLabel} Threshold: {thresholdValue} mV
+                  </span>
+                  {mvcValue !== null && percentage !== null && (
+                    <span className="text-xs ml-1 text-gray-500">
+                      ({percentage}% of MVC)
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );
   };
 
-  // Determine Y-axis domain if MVC threshold is present to ensure it's visible
+  // Determine Y-axis domain based on data and MVC thresholds
   let yDomain: [number | 'auto', number | 'auto'] = ['auto', 'auto'];
-  if (mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined) {
-    // Find min/max of actual data to ensure threshold is within reasonable view
-    let dataMin = Infinity;
-    let dataMax = -Infinity;
-    chartData.forEach(point => {
-      displayChannels.forEach(channel => {
-        if (point[channel] !== undefined) {
-          dataMin = Math.min(dataMin, point[channel]!);
-          dataMax = Math.max(dataMax, point[channel]!);
-        }
-      });
+  
+  // Find min/max of actual data
+  let dataMin = Infinity;
+  let dataMax = -Infinity;
+  chartData.forEach(point => {
+    finalDisplayDataKeys.forEach(channel => {
+      if (point[channel] !== undefined) {
+        dataMin = Math.min(dataMin, point[channel]!);
+        dataMax = Math.max(dataMax, point[channel]!);
+      }
     });
-    if (dataMin !== Infinity && dataMax !== -Infinity) {
-      yDomain = [
-        Math.min(dataMin, mvcThresholdForPlot * 0.8), // ensure threshold isn't at the very bottom
-        Math.max(dataMax, mvcThresholdForPlot * 1.2)  // ensure threshold isn't at the very top
-      ];
-    } else { // If no data, but threshold exists
-      yDomain = [mvcThresholdForPlot * 0.8, mvcThresholdForPlot * 1.2];
+  });
+  
+  // Find max MVC threshold to ensure all thresholds are visible
+  let maxThreshold = -Infinity;
+  finalDisplayDataKeys.forEach(key => {
+    const threshold = getChannelMVCThreshold(key);
+    if (threshold !== null) {
+      maxThreshold = Math.max(maxThreshold, threshold);
     }
+  });
+  
+  // If no channel-specific thresholds but global threshold exists
+  if (maxThreshold === -Infinity && mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined) {
+    maxThreshold = mvcThresholdForPlot;
+  }
+  
+  // Set domain to include both data range and thresholds
+  if (dataMin !== Infinity && dataMax !== -Infinity && maxThreshold !== -Infinity) {
+    yDomain = [
+      Math.min(dataMin, maxThreshold * 0.8), // ensure threshold isn't at the very bottom
+      Math.max(dataMax, maxThreshold * 1.2)  // ensure threshold isn't at the very top
+    ];
+  } else if (maxThreshold !== -Infinity) { // If only threshold exists
+    yDomain = [maxThreshold * 0.8, maxThreshold * 1.2];
   }
 
   return (
@@ -208,11 +342,35 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             );
           })}
 
-          {/* MVC Threshold Line */}
-          {mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
+          {/* MVC Threshold Lines - one per channel */}
+          {finalDisplayDataKeys.map((dataKey, index) => {
+            const threshold = getChannelMVCThreshold(dataKey);
+            if (threshold !== null) {
+              // Find the base channel name (without activated/Raw suffix)
+              const baseChannelName = dataKey.split(' ')[0];
+              
+              // Get color directly using getColorForChannel for consistency
+              const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+              
+              return (
+                <ReferenceLine 
+                  key={`mvc-${dataKey}`}
+                  y={threshold} 
+                  stroke={colorStyle.stroke}
+                  strokeDasharray="3 3" 
+                  strokeWidth={2.5}
+                />
+              );
+            }
+            return null;
+          })}
+
+          {/* Fallback to global MVC threshold if no channel-specific thresholds */}
+          {finalDisplayDataKeys.every(dataKey => getChannelMVCThreshold(dataKey) === null) && 
+           mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
             <ReferenceLine 
               y={mvcThresholdForPlot} 
-              stroke={mvcThresholdColor} // Use the same color as in the legend
+              stroke="#f97316" // Default to orange for global threshold
               strokeDasharray="3 3" 
               strokeWidth={2.5}
             />

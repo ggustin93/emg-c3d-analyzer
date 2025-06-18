@@ -21,6 +21,7 @@
     - The `useChannelManagement` hook now dynamically manages channel selection based on the plot mode.
     - **Implemented zoom/pan functionality for EMG charts** using Recharts Brush component for better data exploration.
     - **Enhanced EMGChart component** to support both single and comparison views with consistent colors.
+    - **Improved MVC threshold visualization** with channel-specific colors for better visual correlation.
 - **Enhanced UI/UX**:
     - Default view after upload is now the "Signal Plots" tab.
     - The uploaded filename is now displayed.
@@ -35,16 +36,21 @@
     - Wrapped blocking backend operations in `run_in_threadpool` to prevent event loop blocking.
     - Implemented a simple in-memory cache on the frontend to avoid redundant data fetching for plots.
 - **Game-Specific Analysis Features**:
-    - Added MVC (Maximum Voluntary Contraction) value and threshold percentage parameters.
-    - Implemented expected contractions count for game session analysis.
-    - Added visual MVC threshold line on EMG charts for reference.
-    - Flagging of "good" contractions based on MVC threshold for performance tracking.
-    - Created SessionConfigPanel component for inputting game session parameters.
+    - **Implemented muscle-specific MVC values** to account for anatomical differences between muscles.
+    - **Always use per-muscle MVC thresholds** for more accurate clinical assessment.
+    - Added visual MVC threshold lines on EMG charts with matching channel colors for clear reference.
+    - Flagging of "good" contractions based on muscle-specific MVC thresholds for performance tracking.
+    - Created SessionConfigPanel component focused on per-muscle configuration.
 
 🚧 In Progress:
 - End-to-end testing of the full analysis and visualization pipeline, especially the new caching layers.
 
 ### Recent Changes
+*   **Per-Muscle MVC Implementation**:
+    *   **Removed Global MVC Option**: Modified the system to always use muscle-specific MVC values for more accurate clinical assessment.
+    *   **Enhanced UI**: Updated the SessionConfigPanel to focus solely on per-muscle configuration.
+    *   **Improved Visualization**: Updated EMGChart to use matching colors for each channel's data line and MVC threshold line.
+    *   **Backend Updates**: Modified processor.py to initialize per-muscle MVC values if they don't exist.
 *   **Comparison View Overhaul**:
     *   **Fixed Infinite Loading**: Refactored `useEffect` hooks in `game-session-tabs.tsx` to correctly pre-load all channel data, eliminating an infinite loading loop in comparison mode.
     *   **Stabilized Data Handling**: Improved data merging logic in `StatsPanel.tsx` to correctly handle analytics data for both single and comparison views.
@@ -94,6 +100,7 @@
 - **Caching is King**: The performance issues have been addressed with a multi-layered caching strategy (backend request hashing, data pre-serialization, frontend in-memory cache). This is the new standard for the application.
 - **Process Once, Read Many**: The new backend pattern is to perform all heavy processing a single time during the initial `/upload` call and save all necessary artifacts (results, raw data). Subsequent requests should be lightweight read operations against these artifacts.
 - **Robust Cache Key**: The backend cache key is a hash of file content AND processing parameters. This is the most reliable way to ensure cache correctness. Filename-based caching is not robust enough.
+- **Per-Muscle MVC Values**: From a clinical perspective, each muscle should have its own MVC value due to anatomical differences in size, fiber composition, and electrode placement. This provides more accurate assessment for rehabilitation purposes.
 - **Game-Specific Analysis**: The application now supports game-specific analysis parameters, allowing for more targeted evaluation of EMG data in the context of rehabilitation games.
 - **Consistent UI Components**: The application now uses a centralized color system and reusable components for a more consistent and intuitive user experience.
 

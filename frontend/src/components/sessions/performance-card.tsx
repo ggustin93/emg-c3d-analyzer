@@ -1,6 +1,6 @@
 import { GameSession } from '@/types/session';
 import { EMGAnalysisResult, GameSessionParameters } from '../../types/emg';
-import OverallPerformanceCard from './performance/OverallPerformanceCard';
+// import OverallPerformanceCard from './performance/OverallPerformanceCard';
 import MusclePerformanceCard from './performance/MusclePerformanceCard';
 import MuscleNameDisplay from '../MuscleNameDisplay';
 
@@ -28,11 +28,13 @@ const calculateTotalScore = (subscore1: number | null, subscore2: number | null)
   return Math.round(sum / scores.length);
 };
 
+/*
 const calculateOverallScore = (muscleScores: number[]): number => {
   if (muscleScores.length === 0) return 0;
   const sum = muscleScores.reduce((a, b) => a + b, 0);
   return Math.round(sum / muscleScores.length);
 };
+*/
 
 const getScoreLabel = (score: number): { label: string; textColor: string; bgColor: string; hexColor: string } => {
   if (score >= 90) return { label: "Excellent", textColor: "text-emerald-500", bgColor: "bg-emerald-500", hexColor: "#10b981" };
@@ -52,7 +54,8 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   const muscleScores: number[] = [];
   const muscleData: any[] = [];
 
-  const channelNames = Object.keys(analysisResult.analytics).sort();
+  const channelNames = analysisResult.analytics && typeof analysisResult.analytics === 'object' ? 
+    Object.keys(analysisResult.analytics).sort() : [];
 
   channelNames.forEach((channelName, index) => {
     const channelData = analysisResult.analytics[channelName];
@@ -133,6 +136,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     });
   });
 
+  /*
   const overallScore = calculateOverallScore(muscleScores);
   const overallScoreLabel = getScoreLabel(overallScore);
 
@@ -145,12 +149,13 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
       symmetryScore = 100; // Both are 0, perfect symmetry
     }
   }
+  */
 
   const durationThreshold = analysisResult?.metadata.session_parameters_used?.contraction_duration_threshold ?? contractionDurationThreshold;
 
   return (
     <div className="space-y-6">
-      <OverallPerformanceCard
+      {/* <OverallPerformanceCard
         totalScore={overallScore}
         scoreLabel={overallScoreLabel.label}
         scoreTextColor={overallScoreLabel.textColor}
@@ -158,7 +163,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         scoreHexColor={overallScoreLabel.hexColor}
         muscleCount={muscleScores.length}
         symmetryScore={symmetryScore}
-      />
+      /> */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {muscleData.map(data => (
           <MusclePerformanceCard
