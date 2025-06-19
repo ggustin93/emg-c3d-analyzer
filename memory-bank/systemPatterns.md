@@ -80,8 +80,13 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
   - `useChannelManagement`: **Crucially, this hook now derives the list of selectable "muscles" (e.g., "CH1") from the keys of the `analytics` object returned by the API.** It also accepts a `plotMode` ('raw' | 'activated') and uses a `useEffect` to automatically select the correct corresponding plot channels (e.g., "CH1 Raw" or "CH1 activated"). This centralizes the channel switching logic.
   - `useEmgDataFetching`: Manages fetching raw EMG data for plots.
   - `useGameSessionData`: Manages the state of the `GameSession` object, deriving it from the analysis result, now with proper handling of nullable fields.
+- **Custom React Hooks for Logic Encapsulation**:
+  - `useChannelManagement`: Derives selectable muscles from API results and manages channel selection based on the current plot mode (`raw` vs. `activated`).
+  - `useEmgDataFetching`: Manages fetching raw EMG data for plots.
+  - `useGameSessionData`: Manages the state of the `GameSession` object.
+  - `usePerformanceMetrics`: A key pattern for separating complex business logic from presentation. This hook takes the raw `analysisResult` and performs all score calculations (overall, muscle-specific, good contractions, symmetry, etc.), returning a clean, memoized data object for the UI to consume. This makes the UI components simpler and more performant.
 - **Path Aliases**: The frontend is configured via `craco.config.js` to use the `@/` path alias, which maps to the `src/` directory. This allows for cleaner imports (e.g., `import MyComponent from '@/components/MyComponent'`).
-- **Interactive Chart Components**: The `EMGChart` component now includes Brush for zoom/pan functionality and ReferenceLine for MVC threshold visualization.
+- **Interactive Chart Components**: The `EMGChart` component now includes Brush for zoom/pan functionality, ReferenceLine for MVC threshold visualization, and a dedicated loading state to improve UX. It is also optimized with `useMemo` and `useCallback` to prevent unnecessary re-renders.
 - **Configuration UI**: The new `SessionConfigPanel` component provides a dedicated interface for inputting game session parameters.
 
 ## Component Relationships
@@ -108,6 +113,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - API ← File Storage
 - Frontend Hooks ← API Service
 - `EMGChart` ← Recharts (Brush, ReferenceLine)
+- `PerformanceCard` ← `usePerformanceMetrics` Hook ← `MusclePerformanceCard`
 
 ## Technical Patterns
 
@@ -124,6 +130,7 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - **Backend Request Caching**: The `/upload` endpoint uses a sha256 hash of file content and processing parameters for robust caching.
 - **Data Pre-serialization**: All EMG data is extracted and saved to a dedicated file during initial processing to accelerate subsequent reads.
 - **Frontend In-Memory Caching**: A simple `Map` caches downsampled plot data in the `useEmgDataFetching` hook to prevent redundant API calls.
+- **Component-Level Memoization**: Key components like `EMGChart` are wrapped in `React.memo`, and internal calculations are further optimized with `useMemo` and `useCallback` to ensure efficiency.
 - Result caching
 - Efficient file handling
 - Memory management

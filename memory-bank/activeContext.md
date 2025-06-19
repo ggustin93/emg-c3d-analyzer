@@ -35,6 +35,10 @@
     - Pre-serialized all raw and activated EMG data to a separate JSON file during initial processing, making the `/raw-data` endpoint near-instantaneous.
     - Wrapped blocking backend operations in `run_in_threadpool` to prevent event loop blocking.
     - Implemented a simple in-memory cache on the frontend to avoid redundant data fetching for plots.
+- **Frontend Logic Refactoring & Optimization**:
+    - **Optimized `EMGChart`**: Added a loading state with a spinner and memoized expensive calculations using `useMemo` and `useCallback` to prevent unnecessary re-renders.
+    - **Encapsulated Performance Logic**: Created a new `usePerformanceMetrics` hook to centralize all complex score calculations, removing them from the rendering components.
+    - **Simplified `PerformanceCard`**: Refactored the component to be a clean, simple consumer of the `usePerformanceMetrics` hook, focusing solely on presentation.
 - **Game-Specific Analysis Features**:
     - **Implemented muscle-specific MVC values** to account for anatomical differences between muscles.
     - **Always use per-muscle MVC thresholds** for more accurate clinical assessment.
@@ -46,6 +50,10 @@
 - End-to-end testing of the full analysis and visualization pipeline, especially the new caching layers.
 
 ### Recent Changes
+*   **Frontend Refactoring**:
+    *   **Optimized `EMGChart`**: To improve user experience during data loads, an `isLoading` prop was added to display a spinner. To enhance performance, `useMemo` and `useCallback` were implemented to prevent costly re-renders and calculations.
+    *   **Centralized Performance Metrics**: Created a new `usePerformanceMetrics` hook to encapsulate all business logic related to calculating performance scores (overall, muscle-specific, symmetry, etc.). This makes the logic reusable, testable, and separate from the UI.
+    *   **Simplified UI Components**: Refactored the `PerformanceCard` component to be a "dumb" presentational component that gets all its data directly from the new `usePerformanceMetrics` hook.
 *   **Per-Muscle MVC Implementation**:
     *   **Removed Global MVC Option**: Modified the system to always use muscle-specific MVC values for more accurate clinical assessment.
     *   **Enhanced UI**: Updated the SessionConfigPanel to focus solely on per-muscle configuration.

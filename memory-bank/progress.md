@@ -55,6 +55,7 @@
     - ✅ Channel selection logic is now dynamic and centralized in `useChannelManagement`.
     - ✅ Implemented zoom/pan functionality using Recharts Brush component.
     - ✅ Added MVC threshold reference line for visual feedback.
+    - ✅ **Optimized `EMGChart` with loading state and memoization.**
 ✅ **Game Session Analysis UI**:
     - ✅ Created SessionConfigPanel for inputting game session parameters.
     - ✅ Updated StatsPanel to display good contractions count.
@@ -74,6 +75,9 @@
         - ✅ Enhanced `MuscleSelector` to work with the view mode system.
         - ✅ Updated `EMGChart` to support both single and comparison views with consistent colors.
         - ✅ **Refined Comparison View**: Fixed loading loops, added tooltips, and removed redundant UI wrappers for a cleaner, more stable experience.
+✅ **Frontend Logic Refactoring**:
+    - ✅ **Encapsulated performance calculation logic into a `usePerformanceMetrics` hook.**
+    - ✅ **Simplified `PerformanceCard` to use the new hook.**
 ✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
@@ -144,7 +148,12 @@
 - **Improved muscle naming** with structured dropdowns in `SettingsPanel`.
 - **Stabilized and polished the comparison view**, fixing loading issues and improving UI consistency.
 
-### Milestone 7: Production Hardening & Automation 🚧
+### Milestone 7: Frontend Code Quality & Optimization ✅
+- **Optimized `EMGChart` rendering performance** and added a user-facing loading state.
+- **Refactored performance score calculations** into a dedicated `usePerformanceMetrics` hook, separating logic from UI.
+- **Simplified presentational components** by having them consume the new performance hook.
+
+### Milestone 8: Production Hardening & Automation 🚧
 - [ ] Achieve high test coverage for caching and processing logic.
 - [ ] Harden security (if applicable, e.g., auth).
 - [ ] Comprehensive documentation.
@@ -160,3 +169,5 @@
 - Fixed tooltip rendering issues by properly structuring TooltipProvider components.
 - Improved muscle naming with structured dropdowns in SettingsPanel.
 - Updated EMGChart to support both single and comparison views with consistent colors.
+- Refactored performance metric calculations into the `usePerformanceMetrics` hook for better separation of concerns.
+- Optimized the `EMGChart` component with memoization and a new loading state.

@@ -6,209 +6,39 @@ This module contains a collection of functions for calculating various
 EMG (Electromyography) metrics from signal data. Each function is designed
 to be a standalone calculation that can be easily integrated into a larger
 processing pipeline. The hypotheses and implementation choices for each metric are documented below.
+
+DISCLAIMER: This module was written with AI assistance (Claude and Perplexity AI, June 2025) 
+and requires validation by qualified medical professionals before clinical application.
+
+Key parameters requiring clinical validation:
+
+1. Signal Processing:
+   - Minimum samples: 256 for spectral analysis
+   - Welch's method with nperseg=256 for PSD estimation
+
+2. Amplitude Metrics:
+   - RMS/MAV correlation with muscle activation level
+
+3. Fatigue Analysis:
+   - MPF/MDF decrease threshold for clinical fatigue (typically >10%)
+   - Dimitrov's FI_nsm5 index clinical significance threshold
+
+4. Contraction Detection:
+   - Threshold factor: 20-30% of max amplitude
+   - Minimum contraction duration (ms)
+   - Smoothing window size (recommend ~50ms)
+   - Merge threshold: 200ms for physiological contractions
+   - Refractory period: currently 0ms (disabled)
+
+5. MVC Analysis:
+   - Threshold for "good" contractions
+
+Detailed hypotheses for each parameter are documented within the relevant function docstrings.
 """
 
 import numpy as np
 from scipy.signal import welch
 from typing import Dict, Optional
-
-# --- Foundational Function for Spectral Analysis ---
-
-def _calculate_psd(signal: np.ndarray, sampling_rate: int) -> tuple[np.ndarray, np.ndarray] | tuple[None, None]:
-    """
-    Calculates the Power Spectral Density (PSD) of a signal using Welch's method.
-
-    Hypothesis: Welch's method is chosen as it provides a stable and reliable
-    estimation of the power spectrum for non-stationary signals like EMG. It does
-    this by averaging the periodograms of overlapping segments, reducing noise.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz.
-
-    Returns:
-        A tuple containing:
-        - Frequencies (ndarray).
-        - Power Spectral Density (ndarray).
-        Returns (None, None) if the signal is too short.
-    """
-    # Check if signal is long enough for spectral analysis
-    # Welch method requires a minimum number of points
-    min_samples_required = 256
-    if len(signal) < min_samples_required:
-        print(f"Warning: Signal too short for spectral analysis. Has {len(signal)} samples, needs {min_samples_required}.")
-        return None, None
-        
-    # Check if signal has enough variation for meaningful spectral analysis
-    if np.std(signal) < 1e-10:
-        print(f"Warning: Signal has insufficient variation for spectral analysis. Standard deviation: {np.std(signal)}")
-        return None, None
-        
-    try:
-        # nperseg=256 is a common choice for EMG analysis
-        freqs, psd = welch(signal, fs=sampling_rate, nperseg=min(256, len(signal)))
-        return freqs, psd
-    except Exception as e:
-        print(f"Error in spectral analysis: {e}")
-        return None, None
-
-# --- Amplitude-based Metrics ---
-
-def calculate_rms(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
-    """
-    Calculates the Root Mean Square (RMS) of the signal.
-
-    Biomedical Hypothesis: The amplitude of the surface EMG signal is, under
-    non-fatiguing and isometric conditions, proportionally related to the force of
-    muscle contraction. RMS is a measure of the signal's power and serves as a
-    robust estimator of muscle activation intensity. An increase in RMS can
-    indicate greater motor unit recruitment and thus improved muscle strength.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz (not used for this
-                     calculation but kept for consistent function signatures).
-
-    Returns:
-        A dictionary containing the calculated 'rms' value.
-    """
-    if len(signal) == 0:
-        return {"rms": 0.0}
-    rms = np.sqrt(np.mean(signal**2))
-    return {"rms": float(rms)}
-
-
-def calculate_mav(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
-    """
-    Calculates the Mean Absolute Value (MAV) of the signal.
-
-    Biomedical Hypothesis: Similar to RMS, MAV quantifies the EMG signal's
-    amplitude and correlates with contraction level. It's computationally simpler
-    than RMS and less sensitive to large, sporadic spikes in the signal, making
-    it a stable estimator of muscle activity.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz (not used for this
-                     calculation but kept for consistent function signatures).
-
-    Returns:
-        A dictionary containing the calculated 'mav' value.
-    """
-    if len(signal) == 0:
-        return {"mav": 0.0}
-    mav = np.mean(np.abs(signal))
-    return {"mav": float(mav)}
-
-# --- Frequency-based Metrics (for Fatigue Analysis) ---
-
-def calculate_mpf(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
-    """
-    Calculates the Mean Power Frequency (MPF) of the signal.
-
-    Biomedical Hypothesis: During sustained muscle contractions, metabolic byproducts
-    accumulate, which slows the conduction velocity of muscle fibers. This physiological
-    change manifests as a compression of the EMG power spectrum towards lower
-    frequencies. MPF, the average frequency of the spectrum, will decrease as
-    fatigue sets in, making it a classic indicator of muscle fatigue.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz.
-
-    Returns:
-        A dictionary containing the calculated 'mpf' value or None if calculation fails.
-    """
-    freqs, psd = _calculate_psd(signal, sampling_rate)
-    if freqs is None or psd is None:
-        return {"mpf": None}
-    
-    if np.sum(psd) == 0:
-        return {"mpf": None}
-    
-    mpf = np.sum(freqs * psd) / np.sum(psd)
-    return {"mpf": float(mpf)}
-
-
-def calculate_mdf(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
-    """
-    Calculates the Median Frequency (MDF) of the signal.
-
-    Biomedical Hypothesis: MDF is the frequency that divides the power spectrum
-    into two halves of equal power. Like MPF, MDF decreases with muscle fatigue
-    due to the slowing of muscle fiber conduction velocity. It is often considered
-    more robust than MPF because it is less affected by noise and random spikes
-    in the power spectrum.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz.
-
-    Returns:
-        A dictionary containing the calculated 'mdf' value or None if calculation fails.
-    """
-    freqs, psd = _calculate_psd(signal, sampling_rate)
-    if freqs is None or psd is None:
-        return {"mdf": None}
-
-    if np.sum(psd) == 0:
-        return {"mdf": None}
-
-    total_power = np.sum(psd)
-    cumulative_power = np.cumsum(psd)
-    
-    # Find the frequency at which cumulative power is 50% of total power
-    median_freq_indices = np.where(cumulative_power >= total_power * 0.5)[0]
-    if len(median_freq_indices) == 0:
-        return {"mdf": None}
-        
-    median_freq_index = median_freq_indices[0]
-    mdf = freqs[median_freq_index]
-    
-    return {"mdf": float(mdf)}
-
-
-def calculate_fatigue_index_fi_nsm5(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
-    """
-    Calculates Dimitrov's Fatigue Index (FI_nsm5) using normalized spectral moments.
-
-    Biomedical Hypothesis: This index is a sensitive measure of muscle fatigue,
-    designed to capture the compression and shape change of the power spectrum more
-    effectively than mean or median frequency alone. It's the ratio of a low-frequency
-    spectral moment (order -1) to a high-frequency one (order 5). As fatigue develops,
-    power shifts to lower frequencies, increasing the numerator and decreasing the
-    denominator, thus causing a significant rise in the index value.
-
-    Reference: Dimitrov, G. V., et al. (2006). Med Sci Sports Exerc, 38(11), 1971-9.
-
-    Args:
-        signal: A numpy array of the EMG signal.
-        sampling_rate: The sampling rate of the signal in Hz.
-
-    Returns:
-        A dictionary containing the calculated 'fatigue_index_fi_nsm5' or None if calculation fails.
-    """
-    freqs, psd = _calculate_psd(signal, sampling_rate)
-    if freqs is None or psd is None:
-        return {"fatigue_index_fi_nsm5": None}
-
-    # Avoid division by zero for frequency; start from the second element
-    valid_indices = freqs > 0
-    freqs = freqs[valid_indices]
-    psd = psd[valid_indices]
-
-    if len(freqs) == 0 or np.sum(psd) == 0:
-        return {"fatigue_index_fi_nsm5": None}
-    
-    # Calculate spectral moments M-1 and M5
-    moment_neg_1 = np.sum((freqs**-1) * psd)
-    moment_5 = np.sum((freqs**5) * psd)
-
-    if moment_5 == 0:
-        return {"fatigue_index_fi_nsm5": None}
-
-    fi_nsm5 = moment_neg_1 / moment_5
-    return {"fatigue_index_fi_nsm5": float(fi_nsm5)}
 
 # --- Contraction Analysis ---
 
@@ -231,6 +61,18 @@ def analyze_contractions(
     may cause the signal to briefly drop below the detection threshold during what is physiologically
     a single contraction event. The merge_threshold_ms parameter addresses this by treating closely
     spaced contractions as a single physiological event, better reflecting the actual muscle activity.
+    
+    Clinical Assumptions:
+    - Threshold factor: 20-30% of maximum amplitude is typical for contraction detection
+      (Research suggests 20% of MVC or peak-to-peak amplitude as common clinical practice)
+    - Minimum duration: Clinically significant contractions should exceed a minimum duration
+      (Research suggests minimum durations in tens of milliseconds)
+    - Smoothing window: ~50ms windows common in clinical practice
+    - Merge threshold: 200ms default for physiologically related contractions
+      (Based on typical motor unit firing rates and muscle response times)
+    - Refractory period: 0ms default (disabled)
+      (May need adjustment based on specific muscle physiology)
+    - MVC threshold: External threshold represents clinically significant contraction level
 
     Args:
         signal: A numpy array of the EMG signal (can be raw, not rectified).
@@ -401,6 +243,242 @@ def analyze_contractions(
         'good_contraction_count': good_contraction_count if mvc_amplitude_threshold is not None else None,
         'mvc_threshold_actual_value': mvc_amplitude_threshold
     }
+
+
+# --- Amplitude-based Metrics ---
+
+def calculate_rms(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+    """
+    Calculates the Root Mean Square (RMS) of the signal.
+
+    Biomedical Hypothesis: The amplitude of the surface EMG signal is, under
+    non-fatiguing and isometric conditions, proportionally related to the force of
+    muscle contraction. RMS is a measure of the signal's power and serves as a
+    robust estimator of muscle activation intensity. An increase in RMS can
+    indicate greater motor unit recruitment and thus improved muscle strength.
+    
+    Clinical Assumptions:
+    - EMG amplitude linearly relates to muscle activation under non-fatiguing, isometric conditions
+    - No normalization to MVC is performed within this function (must be done externally if needed)
+    - Signal linearity assumption may not hold during dynamic contractions or fatigue
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz (not used for this
+                     calculation but kept for consistent function signatures).
+
+    Returns:
+        A dictionary containing the calculated 'rms' value.
+    """
+    if len(signal) == 0:
+        return {"rms": 0.0}
+    rms = np.sqrt(np.mean(signal**2))
+    return {"rms": float(rms)}
+
+
+def calculate_mav(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+    """
+    Calculates the Mean Absolute Value (MAV) of the signal.
+
+    Biomedical Hypothesis: Similar to RMS, MAV quantifies the EMG signal's
+    amplitude and correlates with contraction level. It's computationally simpler
+    than RMS and less sensitive to large, sporadic spikes in the signal, making
+    it a stable estimator of muscle activity.
+    
+    Clinical Assumptions:
+    - MAV correlates with muscle contraction level
+    - MAV is less sensitive to sporadic spikes compared to RMS
+    - No normalization to MVC is performed (must be done externally)
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz (not used for this
+                     calculation but kept for consistent function signatures).
+
+    Returns:
+        A dictionary containing the calculated 'mav' value.
+    """
+    if len(signal) == 0:
+        return {"mav": 0.0}
+    mav = np.mean(np.abs(signal))
+    return {"mav": float(mav)}
+
+
+# --- Foundational Function for Spectral Analysis ---
+
+def _calculate_psd(signal: np.ndarray, sampling_rate: int) -> tuple[np.ndarray, np.ndarray] | tuple[None, None]:
+    """
+    Calculates the Power Spectral Density (PSD) of a signal using Welch's method.
+
+    Hypothesis: Welch's method is chosen as it provides a stable and reliable
+    estimation of the power spectrum for non-stationary signals like EMG. It does
+    this by averaging the periodograms of overlapping segments, reducing noise.
+    
+    Clinical Assumptions:
+    - Minimum signal length of 256 samples is required for meaningful spectral analysis
+    - Signal variation threshold (std > 1e-10) ensures sufficient signal quality
+    - Default rectangular window is used (consider validating if Hanning/Hamming would be more appropriate)
+    - 50% overlap between segments is implicit in implementation
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz.
+
+    Returns:
+        A tuple containing:
+        - Frequencies (ndarray).
+        - Power Spectral Density (ndarray).
+        Returns (None, None) if the signal is too short.
+    """
+    # Check if signal is long enough for spectral analysis
+    # Welch method requires a minimum number of points
+    min_samples_required = 256
+    if len(signal) < min_samples_required:
+        print(f"Warning: Signal too short for spectral analysis. Has {len(signal)} samples, needs {min_samples_required}.")
+        return None, None
+        
+    # Check if signal has enough variation for meaningful spectral analysis
+    if np.std(signal) < 1e-10:
+        print(f"Warning: Signal has insufficient variation for spectral analysis. Standard deviation: {np.std(signal)}")
+        return None, None
+        
+    try:
+        # nperseg=256 is a common choice for EMG analysis
+        freqs, psd = welch(signal, fs=sampling_rate, nperseg=min(256, len(signal)))
+        return freqs, psd
+    except Exception as e:
+        print(f"Error in spectral analysis: {e}")
+        return None, None
+
+# --- Frequency-based Metrics (for Fatigue Analysis) ---
+
+def calculate_mpf(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+    """
+    Calculates the Mean Power Frequency (MPF) of the signal.
+
+    Biomedical Hypothesis: During sustained muscle contractions, metabolic byproducts
+    accumulate, which slows the conduction velocity of muscle fibers. This physiological
+    change manifests as a compression of the EMG power spectrum towards lower
+    frequencies. MPF, the average frequency of the spectrum, will decrease as
+    fatigue sets in, making it a classic indicator of muscle fatigue.
+    
+    Clinical Assumptions:
+    - MPF decrease indicates muscle fatigue
+    - Typical clinical threshold for fatigue: >10% decrease from baseline
+    - Spectral compression reflects slowing of muscle fiber conduction velocity
+    - Requires sufficient signal quality and length for reliable estimation
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz.
+
+    Returns:
+        A dictionary containing the calculated 'mpf' value or None if calculation fails.
+    """
+    freqs, psd = _calculate_psd(signal, sampling_rate)
+    if freqs is None or psd is None:
+        return {"mpf": None}
+    
+    if np.sum(psd) == 0:
+        return {"mpf": None}
+    
+    mpf = np.sum(freqs * psd) / np.sum(psd)
+    return {"mpf": float(mpf)}
+
+
+def calculate_mdf(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+    """
+    Calculates the Median Frequency (MDF) of the signal.
+
+    Biomedical Hypothesis: MDF is the frequency that divides the power spectrum
+    into two halves of equal power. Like MPF, MDF decreases with muscle fatigue
+    due to the slowing of muscle fiber conduction velocity. It is often considered
+    more robust than MPF because it is less affected by noise and random spikes
+    in the power spectrum.
+    
+    Clinical Assumptions:
+    - MDF decrease indicates muscle fatigue
+    - MDF is more robust to noise than MPF
+    - Typical clinical threshold for fatigue: >10% decrease from baseline
+    - Requires sufficient signal quality for reliable estimation
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz.
+
+    Returns:
+        A dictionary containing the calculated 'mdf' value or None if calculation fails.
+    """
+    freqs, psd = _calculate_psd(signal, sampling_rate)
+    if freqs is None or psd is None:
+        return {"mdf": None}
+
+    if np.sum(psd) == 0:
+        return {"mdf": None}
+
+    total_power = np.sum(psd)
+    cumulative_power = np.cumsum(psd)
+    
+    # Find the frequency at which cumulative power is 50% of total power
+    median_freq_indices = np.where(cumulative_power >= total_power * 0.5)[0]
+    if len(median_freq_indices) == 0:
+        return {"mdf": None}
+        
+    median_freq_index = median_freq_indices[0]
+    mdf = freqs[median_freq_index]
+    
+    return {"mdf": float(mdf)}
+
+
+def calculate_fatigue_index_fi_nsm5(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
+    """
+    Calculates Dimitrov's Fatigue Index (FI_nsm5) using normalized spectral moments.
+
+    Biomedical Hypothesis: This index is a sensitive measure of muscle fatigue,
+    designed to capture the compression and shape change of the power spectrum more
+    effectively than mean or median frequency alone. It's the ratio of a low-frequency
+    spectral moment (order -1) to a high-frequency one (order 5). As fatigue develops,
+    power shifts to lower frequencies, increasing the numerator and decreasing the
+    denominator, thus causing a significant rise in the index value.
+    
+    Clinical Assumptions:
+    - FI_nsm5 is more sensitive to fatigue than MPF/MDF alone
+    - Increasing values indicate increasing fatigue
+    - No specific threshold for clinical significance is defined (needs validation)
+    - Orders -1 and 5 are optimal for detecting spectral changes due to fatigue
+
+    Reference: Dimitrov, G. V., et al. (2006). Med Sci Sports Exerc, 38(11), 1971-9.
+
+    Args:
+        signal: A numpy array of the EMG signal.
+        sampling_rate: The sampling rate of the signal in Hz.
+
+    Returns:
+        A dictionary containing the calculated 'fatigue_index_fi_nsm5' or None if calculation fails.
+    """
+    freqs, psd = _calculate_psd(signal, sampling_rate)
+    if freqs is None or psd is None:
+        return {"fatigue_index_fi_nsm5": None}
+
+    # Avoid division by zero for frequency; start from the second element
+    valid_indices = freqs > 0
+    freqs = freqs[valid_indices]
+    psd = psd[valid_indices]
+
+    if len(freqs) == 0 or np.sum(psd) == 0:
+        return {"fatigue_index_fi_nsm5": None}
+    
+    # Calculate spectral moments M-1 and M5
+    moment_neg_1 = np.sum((freqs**-1) * psd)
+    moment_5 = np.sum((freqs**5) * psd)
+
+    if moment_5 == 0:
+        return {"fatigue_index_fi_nsm5": None}
+
+    fi_nsm5 = moment_neg_1 / moment_5
+    return {"fatigue_index_fi_nsm5": float(fi_nsm5)}
+
+
 
 # --- Registry of Analysis Functions ---
 
