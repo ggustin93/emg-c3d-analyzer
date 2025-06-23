@@ -81,6 +81,12 @@
 ✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.
+✅ **Clinical Assessment Features**:
+    - ✅ **Implemented Borg CR10 RPE scale** for standardized subjective exertion measurement.
+    - ✅ Added `SubjectiveFatigueCard` component to display patient-reported exertion levels with proper color coding.
+    - ✅ Enhanced statistical display with mean ± standard deviation format for EMG metrics.
+    - ✅ Added "Patient Outcomes" tab in Settings panel for configuring subjective metrics.
+    - ✅ Updated terminology from "fatigue" to "exertion" to align with clinical standards.
 
 ### Deployment
 ✅ **Backend (FastAPI) successfully deployed to Render.**
@@ -91,6 +97,24 @@
     - Connected to Render backend via `REACT_APP_API_URL`.
 
 ## In Progress Features
+
+### Backend Refactoring for Stateless Architecture (🚧 0%)
+- [ ] **Phase 1: Backend Streamlining & Core Data Flow**
+  - [ ] Remove server-side plotting relics (functions, methods, files)
+  - [ ] Modify `/upload` endpoint to return all EMG signal data
+  - [ ] Adapt frontend to use bundled signal data
+- [ ] **Phase 2: Backend Logic & Resilient Channel Handling**
+  - [ ] Integrate new `emg_analysis.py` with advanced clinical metrics
+  - [ ] Refactor `processor.py` for flexible channel handling
+  - [ ] Update frontend types to match enhanced backend models
+- [ ] **Phase 3: Frontend Chart Enhancements**
+  - [ ] Implement RMS envelope as primary signal display
+  - [ ] Make raw EMG display optional in charts
+  - [ ] Visualize detected contraction periods on charts
+- [ ] **Phase 4: Final Clean-up & Documentation**
+  - [ ] Centralize backend configuration
+  - [ ] Review and refine frontend channel logic
+  - [ ] Add comprehensive code comments and documentation
 
 ### Testing (🚧 20%)
 - [ ] Add unit and integration tests for the `GHOSTLYC3DProcessor` logic.
@@ -108,6 +132,7 @@
 - [ ] Cloud storage for C3D files.
 - [ ] CI/CD pipeline setup.
 - [ ] Additional game-specific analysis features based on user feedback.
+- [ ] Integration of additional clinical assessment scales.
 
 ## Milestones
 
@@ -153,21 +178,29 @@
 - **Refactored performance score calculations** into a dedicated `usePerformanceMetrics` hook, separating logic from UI.
 - **Simplified presentational components** by having them consume the new performance hook.
 
-### Milestone 8: Production Hardening & Automation 🚧
-- [ ] Achieve high test coverage for caching and processing logic.
+### Milestone 8: Clinical Assessment Enhancements ✅
+- **Implemented standardized clinical measures** with the Borg CR10 Scale for Rating of Perceived Exertion.
+- **Added patient-reported outcomes** with the SubjectiveFatigueCard component.
+- **Enhanced statistical display** with mean ± standard deviation format for EMG metrics.
+- **Improved clinical terminology** to align with established standards in rehabilitation medicine.
+
+### Milestone 9: Stateless Backend & Enhanced Clinical Metrics 🚧
+- [ ] **Phase 1**: Remove server-side plotting relics and implement stateless data flow
+- [ ] **Phase 2**: Integrate advanced EMG analysis and flexible channel handling
+- [ ] **Phase 3**: Enhance frontend charts with clinically relevant visualizations
+- [ ] **Phase 4**: Clean up code and improve documentation
+
+### Milestone 10: Production Hardening & Automation 🚧
+- [ ] Achieve high test coverage for processing logic.
 - [ ] Harden security (if applicable, e.g., auth).
 - [ ] Comprehensive documentation.
 - [ ] CI/CD pipeline.
 
 ## Recent Progress
-- Implemented per-muscle MVC values for more accurate clinical assessment
-- Modified the system to always use muscle-specific MVC values instead of global values
-- Updated EMGChart to use matching colors for each channel's data line and MVC threshold line
-- Created a centralized color system for consistent styling across all components.
-- Implemented a reusable ViewSelector component for switching between single and comparison views.
-- Enhanced MuscleSelector to work with the view mode system and use consistent colors.
-- Fixed tooltip rendering issues by properly structuring TooltipProvider components.
-- Improved muscle naming with structured dropdowns in SettingsPanel.
-- Updated EMGChart to support both single and comparison views with consistent colors.
-- Refactored performance metric calculations into the `usePerformanceMetrics` hook for better separation of concerns.
-- Optimized the `EMGChart` component with memoization and a new loading state.
+- **Implemented Borg CR10 Scale for Rating of Perceived Exertion**
+- **Updated SubjectiveFatigueCard component** with proper scale labels and color coding
+- **Enhanced Settings Panel** with correct terminology for patient-reported outcomes
+- Developed comprehensive refactoring plan for stateless backend architecture
+- Identified server-side plotting relics to be removed
+- Designed new data models for enhanced EMG analysis
+- Planned improvements for clinical relevance in visualization

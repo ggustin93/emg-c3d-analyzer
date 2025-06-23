@@ -48,8 +48,8 @@ export interface EMGChartProps {
 
 // For the session parameters from GUI
 export interface GameSessionParameters {
-  channel_muscle_mapping: Record<string, string>;
-  muscle_color_mapping: Record<string, string>;
+  channel_muscle_mapping: { [channelName: string]: string };
+  muscle_color_mapping: { [muscleName: string]: string };
   show_raw_signals?: boolean;
   
   // Session configuration
@@ -72,6 +72,11 @@ export interface GameSessionParameters {
   
   // Allow string indexing for dynamic access
   [key: string]: Record<string, string | number | null> | boolean | number | null | undefined;
+
+  expected_contractions?: number;
+  mvc_threshold_factor?: number;
+  mvc_thresholds?: { [muscleName: string]: number };
+  subjective_fatigue_level?: number; // 0-10 scale for patient-reported fatigue
 }
 
 // For the backend response structure
@@ -93,6 +98,16 @@ export interface GameMetadata {
   session_notes: string | null;
 }
 
+// Interface for temporal analysis stats from the backend
+export interface TemporalAnalysisStats {
+  mean_value?: number;
+  std_value?: number;
+  min_value?: number;
+  max_value?: number;
+  valid_windows?: number;
+  coefficient_of_variation?: number;
+}
+
 export interface ChannelAnalyticsData {
   contraction_count: number;
   avg_duration_ms: number;
@@ -103,9 +118,24 @@ export interface ChannelAnalyticsData {
   max_amplitude: number;
   rms: number;
   mav: number;
-  mpf?: number | null;
-  mdf?: number | null;
-  fatigue_index_fi_nsm5?: number | null;
+  mpf: number;
+  mdf: number;
+  fatigue_index_fi_nsm5: number;
+  
+  // Corresponding standard deviation values, all optional
+  std_duration_ms?: number;
+  std_amplitude?: number;
+  std_rms?: number;
+  std_mav?: number;
+  std_mpf?: number;
+  std_mdf?: number;
+  std_fatigue_index_fi_nsm5?: number;
+
+  // Optional temporal analysis stats
+  rms_temporal_stats?: TemporalAnalysisStats;
+  mav_temporal_stats?: TemporalAnalysisStats;
+  fatigue_index_temporal_stats?: TemporalAnalysisStats;
+
   contractions?: Contraction[];
   errors?: { [metric: string]: string };
   
@@ -117,6 +147,8 @@ export interface ChannelAnalyticsData {
   short_contraction_count?: number | null;
   good_long_contraction_count?: number | null;
   good_short_contraction_count?: number | null;
+  
+  mvc_threshold_used?: number;
 }
 
 export interface EMGAnalysisResult {

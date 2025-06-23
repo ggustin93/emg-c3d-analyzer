@@ -40,6 +40,8 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
+logs/*
+
 # Project-specific data
 data/uploads/
 data/results/
@@ -69,6 +71,7 @@ htmlcov/
 # testing
 /coverage
 
+
 # production
 /build
 
@@ -85,4 +88,3 @@ yarn-error.log*
 
 .cursor
 data/cache/*
-logs/*

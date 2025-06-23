@@ -8,6 +8,8 @@ import { Progress } from "../ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import ChannelFilter, { FilterMode } from './ChannelFilter';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { formatMetricValue } from '../../utils/formatters';
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
 interface StatsPanelComponentProps extends ExternalStatsPanelProps {
@@ -118,10 +120,10 @@ const CircularProgress: React.FC<{ value: number; label: string; color: string }
   );
 };
 
-// Section header with tooltip component
-const SectionHeader: React.FC<{ title: string; tooltipContent: string }> = ({ title, tooltipContent }) => (
-  <div className="flex items-center mb-2">
-    <h4 className="text-md font-semibold text-teal-600">{title}</h4>
+// New MetricTooltip component to fix the error
+const MetricTooltip: React.FC<{ tooltip: string | undefined }> = ({ tooltip }) => {
+  if (!tooltip) return null;
+  return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -130,12 +132,39 @@ const SectionHeader: React.FC<{ title: string; tooltipContent: string }> = ({ ti
           </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-          <p>{tooltipContent}</p>
+          <p>{tooltip}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  </div>
-);
+  );
+};
+
+const formatValue = (
+  avg: number | null | undefined,
+  std: number | null | undefined,
+  unit: string = '',
+  options: { precision?: number; useScientificNotation?: boolean } = {},
+) => {
+  if (avg === null || avg === undefined || isNaN(avg)) {
+    return '—';
+  }
+
+  const formattedAvg = formatMetricValue(avg, {
+    precision: options.precision ?? 2,
+    useScientificNotation: options.useScientificNotation || (avg !== 0 && Math.abs(avg) < 0.001),
+  });
+
+  if (std === null || std === undefined || isNaN(std)) {
+    return `${formattedAvg} ${unit}`;
+  }
+
+  const formattedStd = formatMetricValue(std, {
+    precision: options.precision ?? 2,
+    useScientificNotation: options.useScientificNotation || (std !== 0 && Math.abs(std) < 0.001),
+  });
+
+  return `${formattedAvg} ± ${formattedStd} ${unit}`;
+};
 
 const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({ 
   stats, 
@@ -304,6 +333,13 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
             />
           ) : (
             <>
+              <div className="mb-4 flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                  Work in Progress
+                </Badge>
+                <p className="text-sm text-muted-foreground">Metrics will display 'average ± std' once backend calculations are complete.</p>
+              </div>
+
               {hasPerformanceData && !isEMGAnalyticsTab && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-white rounded-lg shadow">
                   <div className="p-3 bg-slate-50 rounded-md">
@@ -333,10 +369,12 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
               <div className="space-y-6">
                 {/* --- Contraction Quantity & Quality --- */}
                 <div className="p-4 border rounded-lg bg-white">
-                  <SectionHeader 
-                    title="Contraction Quantity & Quality" 
-                    tooltipContent={expertTooltips.contractionQuantity} 
-                  />
+                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span>Contraction Quantity & Quality</span>
+                      <MetricTooltip tooltip={expertTooltips.contractionQuantity} />
+                    </div>
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <MetricCard
                       title="Total Contractions"
@@ -385,10 +423,12 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
 
                 {/* --- Duration Metrics --- */}
                 <div className="p-4 border rounded-lg bg-white">
-                  <SectionHeader 
-                    title="Duration Metrics" 
-                    tooltipContent={expertTooltips.durationMetrics} 
-                  />
+                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span>Duration Metrics</span>
+                      <MetricTooltip tooltip={expertTooltips.durationMetrics} />
+                    </div>
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <MetricCard
                       title="Avg Duration"
@@ -425,92 +465,65 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                   </div>
                 </div>
 
-                {/* --- Amplitude & Signal Intensity --- */}
+                {/* --- Amplitude Metrics --- */}
                 <div className="p-4 border rounded-lg bg-white">
-                  <SectionHeader 
-                    title="Amplitude & Signal Intensity" 
-                    tooltipContent={expertTooltips.amplitudeMetrics} 
-                  />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <MetricCard
-                      title="Avg Amplitude"
-                      value={displayAnalytics.avg_amplitude}
-                      unit="mV"
-                      description="Average signal strength during contractions."
-                      precision={1} // Limit to 1 decimal place
-                      useScientificNotation={Math.abs(displayAnalytics.avg_amplitude ?? 0) < 0.001}
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                    <MetricCard
-                      title="Max Amplitude"
-                      value={displayAnalytics.max_amplitude}
-                      unit="mV"
-                      description="Peak signal strength during contractions."
-                      precision={1} // Limit to 1 decimal place
-                      useScientificNotation={Math.abs(displayAnalytics.max_amplitude ?? 0) < 0.001}
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                    <MetricCard
-                      title="RMS"
-                      value={displayAnalytics.rms}
-                      unit="mV"
-                      description="Root Mean Square of the raw signal."
-                      precision={1} // Limit to 1 decimal place
-                      useScientificNotation={Math.abs(displayAnalytics.rms ?? 0) < 0.001}
-                      error={displayAnalytics.errors?.rms}
-                      tooltipContent={expertTooltips.rms}
-                    />
-                    <MetricCard
-                      title="MAV"
-                      value={displayAnalytics.mav}
-                      unit="mV"
-                      description="Mean Absolute Value of the raw signal."
-                      precision={1} // Limit to 1 decimal place
-                      useScientificNotation={Math.abs(displayAnalytics.mav ?? 0) < 0.001}
-                      error={displayAnalytics.errors?.mav}
-                      tooltipContent={expertTooltips.mav}
-                    />
+                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span>Amplitude Analysis</span>
+                      <MetricTooltip tooltip={expertTooltips.amplitudeMetrics} />
+                    </div>
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 ml-2">WIP</Badge>
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-700">RMS <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.rms, displayAnalytics.std_rms, 'mV', { useScientificNotation: true })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">MAV <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.mav, displayAnalytics.std_mav, 'mV', { useScientificNotation: true })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Max Amplitude</p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.max_amplitude, undefined, 'mV', { useScientificNotation: true })}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* --- Fatigue Analysis --- */}
                 <div className="p-4 border rounded-lg bg-white">
-                  <SectionHeader 
-                    title="Fatigue Analysis" 
-                    tooltipContent={expertTooltips.fatigueMetrics} 
-                  />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <MetricCard
-                      title="MPF"
-                      value={displayAnalytics.mpf ?? null}
-                      unit="Hz"
-                      description="Mean Power Frequency - decreases with fatigue."
-                      precision={1} // Limit to 1 decimal place
-                      error={displayAnalytics.errors?.mpf}
-                      validationStatus="strong-assumption"
-                      tooltipContent={expertTooltips.mpf}
-                    />
-                    <MetricCard
-                      title="MDF"
-                      value={displayAnalytics.mdf ?? null}
-                      unit="Hz"
-                      description="Median Frequency - robust indicator, decreases with fatigue."
-                      precision={1} // Limit to 1 decimal place
-                      error={displayAnalytics.errors?.mdf}
-                      validationStatus="strong-assumption"
-                      tooltipContent={expertTooltips.mdf}
-                    />
-                    <MetricCard
-                      title="Fatigue Index (FI)"
-                      value={displayAnalytics.fatigue_index_fi_nsm5 ?? null}
-                      unit=""
-                      description="Dimitrov's Index (FI_nsm5) - increases with fatigue."
-                      precision={1} // Limit to 1 decimal place
-                      useScientificNotation
-                      error={displayAnalytics.errors?.fatigue_index_fi_nsm5}
-                      validationStatus="strong-assumption"
-                      tooltipContent={expertTooltips.fatigueIndex}
-                    />
+                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span>Fatigue Analysis</span>
+                      <MetricTooltip tooltip={expertTooltips.fatigueMetrics} />
+                    </div>
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 ml-2">WIP</Badge>
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-700">MPF <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.mpf, displayAnalytics.std_mpf, 'Hz')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">MDF <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.mdf, displayAnalytics.std_mdf, 'Hz')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Fatigue Index (FI) <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="text-xl font-semibold text-gray-800">
+                        {formatValue(displayAnalytics.fatigue_index_fi_nsm5, displayAnalytics.std_fatigue_index_fi_nsm5, '', { useScientificNotation: true, precision: 2 })}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

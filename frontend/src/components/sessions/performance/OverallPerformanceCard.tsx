@@ -3,6 +3,8 @@ import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { StarIcon, MixerHorizontalIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import SubjectiveFatigueCard from './SubjectiveFatigueCard';
+import MuscleSymmetryCard from './MuscleSymmetryCard';
 
 interface OverallPerformanceCardProps {
   totalScore: number;
@@ -12,6 +14,7 @@ interface OverallPerformanceCardProps {
   scoreHexColor: string;
   muscleCount: number;
   symmetryScore?: number;
+  subjectiveFatigueLevel?: number;
 }
 
 const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
@@ -21,7 +24,8 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   scoreBgColor,
   scoreHexColor,
   muscleCount,
-  symmetryScore
+  symmetryScore,
+  subjectiveFatigueLevel
 }) => {
   const scoreData = [
     { name: 'Score', value: Math.min(totalScore, 100) },
@@ -95,58 +99,21 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
               </div>
             </div>
             
-            {/* Symmetry score as progress bar */}
-            {symmetryScore !== undefined && (
-              <div className="w-full max-w-md border border-gray-100 rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <MixerHorizontalIcon className="h-5 w-5 text-gray-500" />
-                    <h3 className="text-base font-semibold text-gray-700">Muscle Symmetry</h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InfoCircledIcon className="h-4 w-4 text-gray-500 ml-1 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>
-                          Muscle symmetry is crucial for balanced rehabilitation:
-                          <br /><br />
-                          • 100%: Ideal balance - both sides working equally
-                          <br />• 70-99%: Minor imbalance - typical during recovery
-                          <br />• Below 70%: Significant imbalance - may need attention
-                          <br /><br />
-                          Based on comparing left vs. right muscle performance, considering both strength (MVC) and activation patterns.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <span className="ml-auto text-lg font-bold text-gray-600">{symmetryScore}%</span>
-                </div>
-                
-                <Progress 
-                  value={symmetryScore} 
-                  className="h-3" 
-                  indicatorClassName={
-                    symmetryScore >= 90 ? "bg-gray-500" : 
-                    symmetryScore >= 70 ? "bg-gray-400" : 
-                    "bg-gray-300"
-                  }
+            {/* Additional metrics section */}
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Symmetry score now uses the dedicated component */}
+              {symmetryScore !== undefined && (
+                <MuscleSymmetryCard symmetryScore={symmetryScore} />
+              )}
+              
+              {/* Subjective fatigue card */}
+              {subjectiveFatigueLevel !== undefined && (
+                <SubjectiveFatigueCard 
+                  fatigueLevel={subjectiveFatigueLevel} 
+                  showBadge={true}
                 />
-                
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>Imbalanced</span>
-                  <span>Perfect symmetry</span>
-                </div>
-                
-                {/* Add status text */}
-                <div className="text-center text-sm mt-2">
-                  <span className="text-gray-600">
-                    {symmetryScore >= 90 ? "Excellent balance" : 
-                     symmetryScore >= 70 ? "Good balance" : 
-                     "Needs attention"}
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

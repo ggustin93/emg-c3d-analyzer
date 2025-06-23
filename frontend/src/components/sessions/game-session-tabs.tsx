@@ -23,8 +23,8 @@ import { Label } from "@/components/ui/label"
 import ScoringConfigPanel from '../SessionConfigPanel';
 import SettingsPanel from '../SettingsPanel';
 import ChannelFilter from '../app/ChannelFilter';
-import OverallPerformanceCard from './performance/OverallPerformanceCard';
 import { useScoreColors } from '@/hooks/useScoreColors';
+import PatientOutcomesCard from '../app/PatientOutcomesCard';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -289,7 +289,7 @@ export default function GameSessionTabs({
       <div className="border-b mb-4">
         <TabsList className="w-full flex justify-between overflow-x-auto">
           <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
-          <TabsTrigger value="game-stats" className="flex-1 flex-shrink-0">Game Stats</TabsTrigger>
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0">Performance Analysis</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
         </TabsList>
       </div>
@@ -347,18 +347,8 @@ export default function GameSessionTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="game-stats" className="bg-gray-50/50 p-4 rounded-b-lg">
-        <div className="grid grid-cols-1 gap-4 mb-4">
-          <OverallPerformanceCard 
-            totalScore={overallScore}
-            scoreLabel={scoreInfo.label}
-            scoreTextColor={scoreInfo.text}
-            scoreBgColor={scoreInfo.bg}
-            scoreHexColor={scoreInfo.hex}
-            muscleCount={muscleChannels.length}
-            symmetryScore={symmetryScore}
-          />
-        </div>
+      <TabsContent value="game" className="bg-gray-50/50 p-4 rounded-b-lg">
+       
         <PerformanceCard 
           analysisResult={analysisResult}
           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
@@ -396,28 +386,11 @@ export default function GameSessionTabs({
             plotChannel1Data={mainPlotChannel1Data}
             plotChannel2Data={mainPlotChannel2Data}
           />
-          
-          <Collapsible>
-            <CollapsibleTrigger className="w-full text-left group flex items-center justify-between p-3 bg-white rounded-lg shadow-sm border hover:bg-slate-50 transition-colors">
-              <div className="flex items-center">
-                <CodeIcon className="h-5 w-5 mr-3 text-slate-600" />
-                <div>
-                  <h4 className="font-semibold text-slate-800">Raw API Response</h4>
-                  <p className="text-xs text-slate-500">Click to view the raw JSON output for debugging</p>
-                </div>
-              </div>
-              <ChevronDownIcon className="h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-2">
-              <Card>
-                <CardContent className="p-0">
-                  <pre className="p-4 rounded-md bg-slate-950 text-white overflow-x-auto text-xs">
-                    {JSON.stringify(analysisResult, null, 2)}
-                  </pre>
-                </CardContent>
-              </Card>
-            </CollapsibleContent>
-          </Collapsible>
+          <PatientOutcomesCard
+            sessionParams={sessionParams}
+            onParamsChange={onSessionParamsChange}
+            disabled={appIsLoading}
+          />
         </div>
       </TabsContent>
     </Tabs>

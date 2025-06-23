@@ -10,9 +10,10 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
 - **Core Components**:
     - `api.py`: Defines all the FastAPI endpoints. This is the main interface for the frontend.
     - `processor.py`: The core processing engine (`GHOSTLYC3DProcessor`). It orchestrates the analysis by applying the correct metrics to the correct signal types (Raw vs. Activated).
-    - `models.py`: Pydantic data models for API validation, including the new `SessionConfig` model for game parameters.
-    - `emg_analysis.py`: Standalone, stateless functions for specific EMG metric calculations (RMS, MAV, MPF, etc.) and contraction analysis with MVC threshold support.
+    - `models.py`: Pydantic data models for API validation, including the `SessionConfig` model for game parameters and the new `EMGChannelSignalData` model.
+    - `emg_analysis.py`: Standalone, stateless functions for specific EMG metric calculations (RMS, MAV, MPF, etc.) and contraction analysis with MVC threshold support. Now includes advanced temporal analysis and fatigue metrics.
     - `main.py`: The main entry point for launching the Uvicorn server.
+    - `config.py`: Centralized configuration for the backend.
     - `tests/`: Integration tests for the API.
 
 ### 2. Frontend (React/TypeScript)
@@ -20,10 +21,10 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
 - **Responsibility**: Provides the user interface (UI) and interacts with the backend API.
 - **Core Components**:
     - UI components are built with React and `shadcn/ui`.
-    - Custom hooks in `frontend/src/hooks/` encapsulate state management and data fetching logic.
-    - Communicates with the backend via HTTP requests to the FastAPI endpoints.
-    - New `SessionConfigPanel` component for inputting game session parameters.
-    - Enhanced `EMGChart` component with zoom/pan functionality and MVC threshold visualization.
+    - Custom hooks in `frontend/src/hooks/` encapsulate state management and data processing logic.
+    - All visualization is done client-side using Recharts.
+    - Enhanced `EMGChart` component with RMS envelope display, optional raw EMG, and contraction period visualization.
+    - `usePlotDataProcessor` hook (refactored from `useEmgDataFetching`) for downsampling and processing plot data.
 
 ### Directory Structure
 ```
@@ -35,11 +36,8 @@ emg-c3d-analyzer/
 │   ├── processor.py
 │   ├── models.py
 │   ├── emg_analysis.py
+│   ├── config.py
 │   ├── main.py
-├── data/
-│   ├── uploads/
-│   ├── results/
-│   ├── cache/
 ├── frontend/
 │   └── src/
 ├── pyproject.toml
@@ -48,72 +46,74 @@ emg-c3d-analyzer/
 
 ## Core Processing Logic
 
-The system intelligently distinguishes between **Raw** and **Activated** EMG signals based on channel names from the C3D file.
+The system intelligently processes EMG signals with a focus on clinical relevance and flexible channel handling.
 
-1.  **Signal Identification**: The `GHOSTLYC3DProcessor` identifies pairs of channels (e.g., "CH1 Raw" and "CH1 activated").
-2.  **Targeted Analysis**:
-    *   **Contraction Analysis** (`analyze_contractions`) is performed **only on the "activated" signal**, as it represents a clean muscle activation envelope.
-    *   **Full-Signal Metrics** (RMS, MAV, MPF, MDF, etc.) are performed **only on the "Raw" signal**, as they require the complete, unprocessed signal data for valid calculations.
-3.  **Game-Specific Analysis**:
-    *   **Muscle-Specific MVC Threshold Analysis**: Each muscle has its own MVC (Maximum Voluntary Contraction) value and threshold percentage to account for anatomical differences. Contractions are evaluated against these muscle-specific thresholds to determine if they are "good" contractions.
-    *   **Performance Tracking**: The system counts good contractions and compares against expected contractions count.
-4.  **Result Aggregation**: The results from both analyses are merged under a single, clean channel name (e.g., "CH1"). This provides a unified and scientifically valid set of analytics to the frontend.
+1. **Signal Processing**:
+   * **EMG Data Extraction**: The `GHOSTLYC3DProcessor` extracts all channels from the C3D file.
+   * **Signal Analysis**: For each channel, the processor calculates:
+     * RMS (Root Mean Square) envelope for better clinical interpretation
+     * MAV (Mean Absolute Value) for amplitude assessment
+     * Spectral parameters (MPF, MDF) for frequency analysis
+     * Fatigue indices (including Dimitrov's FI_nsm5) for fatigue estimation
+   * **Temporal Analysis**: New advanced temporal analysis provides statistical metrics (mean, std, min, max, coefficient of variation) for each parameter.
+
+2. **Contraction Analysis**:
+   * **Detection Algorithm**: Identifies muscle contractions based on signal characteristics.
+   * **MVC-Based Assessment**: Evaluates contractions against muscle-specific MVC thresholds.
+   * **Contraction Metrics**: Calculates duration, amplitude, and other clinically relevant parameters.
+
+3. **Resilient Channel Handling**:
+   * The system now flexibly handles different C3D channel naming conventions.
+   * Channel analytics are stored under the actual C3D channel names.
+   * The processor attempts to find "activated" versions of channels for contraction analysis when available.
 
 ## Design Patterns
 
 ### API Design
-- RESTful endpoints defined in `backend/api.py`.
-- **Clean Analytics Object**: The API returns a clean `analytics` object with aggregated results under base channel names (e.g., "CH1"), abstracting the Raw/Activated complexity from the client.
-- **Frontend UI Focus**: The UI, specifically the `StatsPanel`, intentionally omits the raw signal's "Min/Max Value". This focuses the user on clinically relevant metrics derived from detected contractions (e.g., "Max Amplitude") rather than raw signal characteristics, which are less pertinent for therapeutic assessment and can be confusing.
-- **Game Session Parameters**: The API now accepts and processes game-specific parameters like MVC value, MVC threshold percentage, and expected contractions count.
+- **Stateless Backend**: The backend is designed to be completely stateless, processing data on-demand without relying on saving files between requests.
+- **Single-Response Data Flow**: The `/upload` endpoint returns all necessary data in one response, including EMG signals, analytics, and metadata.
+- **RESTful Endpoints**: Clearly defined in `backend/api.py`.
+- **Frontend UI Focus**: The UI emphasizes clinically relevant metrics and visualizations.
 
 ### Data Processing
-- **Targeted Analysis Pipeline**: The processor doesn't just run all metrics on all data. It intelligently selects which analysis to run on which type of signal, ensuring the scientific validity of the results.
-- **MVC Threshold Analysis**: The system evaluates contractions against the MVC threshold to determine if they are "good" contractions for rehabilitation purposes.
-- Modular processing steps.
-- Configurable parameters at the API level.
+- **Enhanced EMG Analysis**: The new `emg_analysis.py` provides advanced metrics for better clinical assessment.
+- **Flexible Channel Handling**: The processor can work with various C3D channel naming conventions.
+- **Modular Processing**: Each analysis function is independent and stateless for better maintainability.
+- **Temporal Analysis**: New statistical metrics for each parameter provide deeper insights into muscle activity patterns.
 
 ### Frontend Development Patterns
-- Component-based architecture (React).
-- UI components primarily from `shadcn/ui`.
+- **Component-Based Architecture**: React components for modular UI development.
+- **UI Components**: Primarily from `shadcn/ui`.
 - **Custom React Hooks for State Management**:
-  - `useChannelManagement`: **Crucially, this hook now derives the list of selectable "muscles" (e.g., "CH1") from the keys of the `analytics` object returned by the API.** It also accepts a `plotMode` ('raw' | 'activated') and uses a `useEffect` to automatically select the correct corresponding plot channels (e.g., "CH1 Raw" or "CH1 activated"). This centralizes the channel switching logic.
-  - `useEmgDataFetching`: Manages fetching raw EMG data for plots.
-  - `useGameSessionData`: Manages the state of the `GameSession` object, deriving it from the analysis result, now with proper handling of nullable fields.
-- **Custom React Hooks for Logic Encapsulation**:
-  - `useChannelManagement`: Derives selectable muscles from API results and manages channel selection based on the current plot mode (`raw` vs. `activated`).
-  - `useEmgDataFetching`: Manages fetching raw EMG data for plots.
+  - `useChannelManagement`: Manages channel selection and mapping.
+  - `usePlotDataProcessor`: Processes EMG signal data for visualization (downsampling, etc.).
   - `useGameSessionData`: Manages the state of the `GameSession` object.
-  - `usePerformanceMetrics`: A key pattern for separating complex business logic from presentation. This hook takes the raw `analysisResult` and performs all score calculations (overall, muscle-specific, good contractions, symmetry, etc.), returning a clean, memoized data object for the UI to consume. This makes the UI components simpler and more performant.
-- **Path Aliases**: The frontend is configured via `craco.config.js` to use the `@/` path alias, which maps to the `src/` directory. This allows for cleaner imports (e.g., `import MyComponent from '@/components/MyComponent'`).
-- **Interactive Chart Components**: The `EMGChart` component now includes Brush for zoom/pan functionality, ReferenceLine for MVC threshold visualization, and a dedicated loading state to improve UX. It is also optimized with `useMemo` and `useCallback` to prevent unnecessary re-renders.
-- **Configuration UI**: The new `SessionConfigPanel` component provides a dedicated interface for inputting game session parameters.
+  - `usePerformanceMetrics`: Calculates performance metrics from analysis results.
+- **Enhanced Visualization**:
+  - RMS envelope as the primary signal display for better clinical interpretation.
+  - Optional raw EMG display for detailed analysis when needed.
+  - Contraction period visualization directly on charts.
+  - MVC threshold reference lines for performance assessment.
 
 ## Component Relationships
 
 ### Data Flow
-1.  **File Upload**: Frontend sends C3D file and processing parameters (including game session parameters) to Backend API (`/upload`).
-2.  **Caching Check**: The backend calculates a hash of the file content + parameters and checks if a result already exists in the `data/cache` directory. If so, it returns the cached result immediately.
-3.  **Processing (Cache Miss)**: If no cache entry is found, the backend's `GHOSTLYC3DProcessor` extracts "Raw" and "Activated" channels. This heavy processing is run in a thread pool to avoid blocking the server.
-4.  **Targeted Analysis**: Runs contraction analysis on "Activated" signals and full-signal analysis on "Raw" signals.
-5.  **Game-Specific Analysis**: If MVC value and threshold are provided, contractions are evaluated against the threshold to determine if they are "good" contractions.
-6.  **Result Persistence**:
-    *   The main analysis object (containing aggregated results) is saved to a JSON file in `data/results`.
-    *   All raw and activated signal data is serialized to a separate `_raw_emg.json` file in `data/results`.
-    *   A marker file containing the path to the main result is created in `data/cache`.
-7.  **API Response**: Backend sends the aggregated results, a list of all available channels, and the source filename back to the Frontend.
-8.  **UI Display**: Frontend uses the clean analytics keys to populate the "Analyse Muscle" dropdown. It uses the `available_channels` list to request the correct data for plotting.
-9.  **Plot Data Fetching**: When a plot is requested, the frontend calls the `/raw-data` endpoint.
-10. **Optimized Data Retrieval**: The `/raw-data` endpoint reads directly from the pre-serialized `_raw_emg.json` file, providing near-instant access without reprocessing the C3D file.
-11. **Interactive Chart Rendering**: The `EMGChart` component renders the data with zoom/pan functionality via Brush and displays the MVC threshold via ReferenceLine.
+1. **File Upload**: Frontend sends C3D file and processing parameters to Backend API (`/upload`).
+2. **Processing**: The backend's `GHOSTLYC3DProcessor` extracts all channels and performs comprehensive analysis.
+3. **Complete Response**: The backend returns a single response containing:
+   - All EMG signal data (raw signals, RMS envelopes, time axes)
+   - Complete analytics for all channels
+   - Metadata and available channels
+4. **Frontend Processing**: The frontend processes the data for visualization:
+   - `usePlotDataProcessor` handles downsampling for efficient plotting
+   - `EMGChart` renders the data with RMS envelope, optional raw EMG, and contraction markers
+   - `StatsPanel` displays the analytics in a clinically relevant format
 
 ### Dependencies
 - FastAPI ← Pydantic Models
 - `GHOSTLYC3DProcessor` ← `emg_analysis` functions
-- API ← File Storage
 - Frontend Hooks ← API Service
-- `EMGChart` ← Recharts (Brush, ReferenceLine)
-- `PerformanceCard` ← `usePerformanceMetrics` Hook ← `MusclePerformanceCard`
+- `EMGChart` ← Recharts
 
 ## Technical Patterns
 
@@ -126,15 +126,10 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - Type safety with proper handling of nullable fields
 
 ### Performance Optimization
-- Async operations with `FastAPI.concurrency.run_in_threadpool`.
-- **Backend Request Caching**: The `/upload` endpoint uses a sha256 hash of file content and processing parameters for robust caching.
-- **Data Pre-serialization**: All EMG data is extracted and saved to a dedicated file during initial processing to accelerate subsequent reads.
-- **Frontend In-Memory Caching**: A simple `Map` caches downsampled plot data in the `useEmgDataFetching` hook to prevent redundant API calls.
-- **Component-Level Memoization**: Key components like `EMGChart` are wrapped in `React.memo`, and internal calculations are further optimized with `useMemo` and `useCallback` to ensure efficiency.
-- Result caching
-- Efficient file handling
-- Memory management
-- Resource cleanup
+- **Stateless Processing**: All data is processed on-demand without relying on file storage between requests.
+- **Bundled Response**: All necessary data is returned in a single API call, reducing network overhead.
+- **Frontend Processing**: Signal downsampling and visualization processing are handled client-side.
+- **Component-Level Memoization**: Key components use `React.memo`, `useMemo`, and `useCallback` for efficiency.
 
 ### Security
 - Input validation
@@ -149,16 +144,16 @@ The system intelligently distinguishes between **Raw** and **Activated** EMG sig
 - Performance benchmarks
 - Error case validation
 - Security testing
-- Game-specific feature validation
-
-## Caching Mechanism
-- Use file content and parameter hashes for cache keys.
-- Store cache markers in `data/cache/` for robustness.
-
-## Async Processing
-- Utilize `run_in_threadpool` for CPU-bound operations to maintain API responsiveness.
 
 ## Interactive Features
-- Zoom/pan functionality using Recharts Brush component for better data exploration.
-- Visual MVC threshold reference line for clear feedback on contraction quality.
-- Game session configuration panel for easy parameter input. 
+- RMS envelope as primary signal display
+- Optional raw EMG display
+- Contraction period visualization
+- Zoom/pan functionality
+- MVC threshold reference lines
+
+## Clinical Relevance
+- **Enhanced EMG Analysis**: Advanced metrics for better rehabilitation assessment
+- **Temporal Analysis**: Statistical insights into muscle activity patterns
+- **Contraction Quality**: Assessment based on MVC thresholds
+- **Fatigue Estimation**: Multiple metrics for comprehensive fatigue analysis 

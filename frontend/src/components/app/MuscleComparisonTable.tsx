@@ -5,6 +5,7 @@ import { formatMetricValue } from '../../utils/formatters';
 import { getColorForChannel } from '../../lib/colorMappings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { Badge } from '../ui/badge';
 
 interface MuscleComparisonTableProps {
   channelsData: Record<string, ChannelAnalyticsData | null>;
@@ -13,27 +14,43 @@ interface MuscleComparisonTableProps {
   expertTooltips: Record<string, string>;
 }
 
-// Define metric type
+// Define metric type with optional standard deviation key
 interface MetricDefinition {
   key: string;
+  std_key?: string;
   label: string;
   unit: string;
   precision: number;
   scientific?: boolean;
 }
 
-// Format value with appropriate units and scientific notation if needed
-const formatValue = (value: number | null | undefined, unit: string, useScientific: boolean = false, precision: number = 1) => {
-  if (value === null || value === undefined || isNaN(value)) {
+// Format value with appropriate units and scientific notation, now handles std dev
+const formatValue = (
+  avg: number | null | undefined,
+  std: number | null | undefined,
+  unit: string,
+  useScientific: boolean = false,
+  precision: number = 1,
+) => {
+  if (avg === null || avg === undefined || isNaN(avg)) {
     return '—';
   }
-  
-  const formattedValue = formatMetricValue(value, {
+
+  const formattedAvg = formatMetricValue(avg, {
     precision,
-    useScientificNotation: useScientific || Math.abs(value) < 0.001
+    useScientificNotation: useScientific || (avg !== 0 && Math.abs(avg) < 0.001),
   });
-  
-  return `${formattedValue} ${unit}`;
+
+  if (std === null || std === undefined || isNaN(std)) {
+    return `${formattedAvg} ${unit}`;
+  }
+
+  const formattedStd = formatMetricValue(std, {
+    precision,
+    useScientificNotation: useScientific || (std !== 0 && Math.abs(std) < 0.001),
+  });
+
+  return `${formattedAvg} ± ${formattedStd} ${unit}`;
 };
 
 const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
@@ -66,7 +83,7 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
     'Fatigue Metrics': 'fatigueMetrics'
   };
 
-  // Define the metrics we want to compare
+  // Define the metrics we want to compare, now with std_keys
   const metricGroups = [
     {
       title: 'Contraction Metrics',
@@ -79,7 +96,7 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
     {
       title: 'Duration Metrics',
       metrics: [
-        { key: 'avg_duration_ms', label: 'Avg Duration', unit: 'ms', precision: 1, scientific: false },
+        { key: 'avg_duration_ms', std_key: 'std_duration_ms', label: 'Avg Duration', unit: 'ms', precision: 1, scientific: false },
         { key: 'max_duration_ms', label: 'Max Duration', unit: 'ms', precision: 1, scientific: false },
         { key: 'min_duration_ms', label: 'Min Duration', unit: 'ms', precision: 1, scientific: false },
       ] as MetricDefinition[]
@@ -87,24 +104,30 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
     {
       title: 'Amplitude Metrics',
       metrics: [
-        { key: 'avg_amplitude', label: 'Avg Amplitude', unit: 'mV', precision: 1, scientific: true },
+        { key: 'avg_amplitude', std_key: 'std_amplitude', label: 'Avg Amplitude', unit: 'mV', precision: 1, scientific: true },
         { key: 'max_amplitude', label: 'Max Amplitude', unit: 'mV', precision: 1, scientific: true },
-        { key: 'rms', label: 'RMS', unit: 'mV', precision: 1, scientific: true },
-        { key: 'mav', label: 'MAV', unit: 'mV', precision: 1, scientific: true },
+        { key: 'rms', std_key: 'std_rms', label: 'RMS', unit: 'mV', precision: 1, scientific: true },
+        { key: 'mav', std_key: 'std_mav', label: 'MAV', unit: 'mV', precision: 1, scientific: true },
       ] as MetricDefinition[]
     },
     {
       title: 'Fatigue Metrics',
       metrics: [
-        { key: 'mpf', label: 'Mean Power Freq.', unit: 'Hz', precision: 1, scientific: false },
-        { key: 'mdf', label: 'Median Power Freq.', unit: 'Hz', precision: 1, scientific: false },
-        { key: 'fatigue_index_fi_nsm5', label: 'Fatigue Index', unit: '', precision: 2, scientific: false },
+        { key: 'mpf', std_key: 'std_mpf', label: 'Mean Power Freq.', unit: 'Hz', precision: 1, scientific: false },
+        { key: 'mdf', std_key: 'std_mdf', label: 'Median Power Freq.', unit: 'Hz', precision: 1, scientific: false },
+        { key: 'fatigue_index_fi_nsm5', std_key: 'std_fatigue_index_fi_nsm5', label: 'Fatigue Index', unit: '', precision: 2, scientific: true },
       ] as MetricDefinition[]
     }
   ];
 
   return (
     <div className="w-full overflow-x-auto">
+      <div className="mb-2 flex items-center gap-2">
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          Work in Progress
+        </Badge>
+        <p className="text-sm text-muted-foreground">Metrics will display 'average ± std' once backend calculations are complete.</p>
+      </div>
       <table className="min-w-full divide-y divide-gray-200 border rounded-lg">
         <thead className="bg-gray-50">
           <tr>
@@ -144,20 +167,25 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                   colSpan={channelsWithData.length + 1} 
                   className="px-4 py-2 text-sm font-semibold text-slate-900 border-t-2 border-slate-200"
                 >
-                  <div className="flex items-center">
-                    <span>{group.title}</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
-                            <InfoCircledIcon className="h-4 w-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-                          <p>{expertTooltips[groupTooltipKeys[group.title]]}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span>{group.title}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="ml-1.5 text-teal-500 hover:text-teal-700 focus:outline-none">
+                              <InfoCircledIcon className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                            <p>{expertTooltips[groupTooltipKeys[group.title]]}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    {(group.title === 'Amplitude Metrics' || group.title === 'Fatigue Metrics') && (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">WIP</Badge>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -165,10 +193,12 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                 <tr key={metric.key} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                     {metric.label}
+                    {metric.std_key && <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>}
                   </td>
                   {channelsWithData.map((channel) => {
                     const data = channelsData[channel];
-                    const value = data ? data[metric.key as keyof ChannelAnalyticsData] : null;
+                    const avg_value = data ? data[metric.key as keyof ChannelAnalyticsData] : null;
+                    const std_value = metric.std_key && data ? data[metric.std_key as keyof ChannelAnalyticsData] : null;
                     const colorStyle = getColorForChannel(channel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);
                     
                     return (
@@ -177,7 +207,8 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                         className={`px-4 py-3 text-sm ${colorStyle.text}`}
                       >
                         {formatValue(
-                          value as number | null | undefined, 
+                          avg_value as number | null | undefined,
+                          std_value as number | null | undefined,
                           metric.unit, 
                           metric.scientific, 
                           metric.precision

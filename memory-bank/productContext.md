@@ -7,21 +7,25 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 2. Automated muscle contraction detection
 3. Progress tracking for rehabilitation patients
 4. Data-driven insights for therapists
+5. Enhanced clinical metrics for rehabilitation assessment
 
 ## User Experience Goals
 
 ### For Therapists
 - Quick upload and processing of C3D files
-- Clear visualization of EMG data
+- Clear visualization of EMG data with clinically relevant metrics
 - Easy access to patient progress
 - Automated report generation
 - Intuitive interface for data analysis
-- Ensure fast and reliable data retrieval for users.
-- Improve server responsiveness to enhance user interaction.
+- Fast and reliable data retrieval
+- Improved assessment of contraction quality and fatigue
+- Better visualization of muscle activity patterns
+- Integration of standardized clinical assessment scales
 
 ### For Researchers
 - Access to raw EMG data
 - Detailed analytics and metrics
+- Advanced temporal analysis of EMG parameters
 - Batch processing capabilities
 - Data export functionality
 - Customizable analysis parameters
@@ -31,10 +35,10 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 ### Data Processing Workflow
 1. Upload C3D file through API
 2. Automatic extraction of EMG data
-3. Signal processing and contraction detection
-4. Analytics calculation
-5. Plot and report generation
-6. Results storage and retrieval
+3. Comprehensive signal processing and contraction detection
+4. Advanced analytics calculation including temporal analysis
+5. Complete data returned to frontend for visualization
+6. Client-side plotting and interactive data exploration
 
 ### Patient Monitoring Workflow
 1. Associate data with patient ID
@@ -42,6 +46,7 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 3. Compare progress across sessions
 4. Generate progress reports
 5. Store patient-specific analytics
+6. Record subjective patient-reported outcomes
 
 ## Key Features
 
@@ -55,16 +60,28 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 - Calculation of Mean Absolute Value (MAV)
 - Calculation of spectral fatigue parameters (MPF, MDF)
 - Calculation of Dimitrov's Fatigue Index (FI_nsm5)
+- Enhanced temporal analysis of EMG parameters
+- Statistical metrics for clinical assessment (mean, std, coefficient of variation)
 
 ### Visualization
-- Individual channel plots
-- Contraction markers
-- Summary reports
+- RMS envelope as primary signal display
+- Optional raw EMG display
+- Contraction period visualization
+- Interactive charts with zoom/pan functionality
+- MVC threshold reference lines
 - Progress tracking charts
-- Real-time plot generation
+- Client-side plot generation with Recharts
+
+### Clinical Assessment
+- Borg CR10 Scale for Rating of Perceived Exertion (RPE)
+- Subjective exertion level visualization (0-10 scale)
+- Statistical representation of EMG metrics (mean ± standard deviation)
+- Muscle symmetry analysis
+- Performance scoring based on clinical parameters
 
 ### Data Management
-- Secure file storage
+- Stateless backend processing
+- Efficient data bundling in API responses
 - Patient data organization
 - Session tracking
 - Result caching
@@ -85,3 +102,19 @@ The EMG C3D Analyzer addresses the critical need for automated analysis of EMG d
 - Authentication support
 - Bulk data operations
 - Error handling and validation 
+
+## Clinical Relevance
+
+### Enhanced Assessment
+- Improved contraction detection algorithms
+- Better fatigue estimation through multiple metrics
+- Statistical analysis of EMG parameters over time
+- Clearer visualization of muscle activity patterns
+- Standardized subjective exertion measurement using Borg CR10 Scale
+
+### Rehabilitation Focus
+- Assessment of contraction quality based on MVC thresholds
+- Tracking of patient adherence and progress
+- Quantification of rehabilitation session effectiveness
+- Support for clinical decision-making
+- Correlation of objective EMG data with subjective patient-reported outcomes 

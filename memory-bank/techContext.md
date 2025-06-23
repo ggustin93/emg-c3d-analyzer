@@ -14,6 +14,7 @@
 - TypeScript
 - Tailwind CSS (via shadcn/ui)
 - shadcn/ui (for UI components)
+- Recharts (for client-side data visualization)
 
 ### Key Backend Dependencies
 ```toml
@@ -25,8 +26,7 @@ pydantic = "^2.11.4"
 numpy = "^2.2.5"
 pandas = "^2.2.3"
 scipy = "^1.15.3"
-matplotlib = "^3.10.3"
-seaborn = "^0.13.2"
+# matplotlib and seaborn will be removed in the stateless architecture
 uvicorn = "^0.34.2"
 requests = "^2.32.3"
 python-multipart = "^0.0.9" # Added for FastAPI file uploads
@@ -40,6 +40,7 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 - `tailwindcss`
 - `@radix-ui/react-icons` (for icons)
 - `axios` (for API calls)
+- `recharts` (for client-side data visualization)
 - Specific `shadcn/ui` components. New components are added via `npx shadcn@latest add <component-name>`.
 
 ## Development Environment
@@ -90,6 +91,7 @@ npm start
 - Frontend: `shadcn/ui` configured via `components.json`.
 - Ruff for Python code formatting.
 - Pyright for Python type checking.
+- Backend: Centralized configuration in `backend/config.py`.
 
 ### Frontend API Endpoint Configuration
 - The frontend uses the `REACT_APP_API_URL` environment variable to determine the backend API URL.
@@ -111,6 +113,7 @@ npm start
     - **Start Command on Render:** `uvicorn backend.api:app --host 0.0.0.0 --port $PORT`
     - Python version on Render aligned with project (`>=3.10,<3.12`).
     - `python-multipart` added for file uploads.
+    - **Stateless Architecture**: The new stateless design is ideal for Render's free tier, as it doesn't rely on persistent file storage between requests.
 - **Frontend (React):**
     - Successfully deployed to Vercel.
     - Configured to point to the Render backend via the `REACT_APP_API_URL` environment variable set in Vercel project settings.
@@ -128,8 +131,8 @@ ignore = ['W291', 'W292', 'W293']
 ### Performance Requirements
 - Fast C3D file processing
 - Real-time EMG analysis
-- Quick plot generation
-- Efficient file storage
+- Client-side data visualization
+- Stateless backend processing
 
 ### Security Requirements
 - Input validation
@@ -141,25 +144,78 @@ ignore = ['W291', 'W292', 'W293']
 - C3D file format compliance
 - REST API standards
 - JSON data format
-- PNG image format
 
 ## Infrastructure
 
 ### File Storage
-- Local file system structure for development (`data/` directory, gitignored).
-- Deployed backend on Render uses ephemeral storage for temporary processing if not configured otherwise.
+- Moving away from local file system storage to a stateless model.
+- All necessary data is returned directly in API responses.
+- Temporary processing of uploaded C3D files during request handling only.
 
 ### API Server
 - FastAPI application (the `app` instance is in `backend.api`).
 - The server is launched via `backend.main`.
 - CORS middleware enabled.
 - Async request handling.
+- Stateless processing model.
 
 ### Processing Pipeline
 - EMG data extraction
 - Signal processing (filtering, etc.)
 - Analytics calculation (contractions, RMS, MAV, MPF, MDF, FI_nsm5)
-- Visualization generation
+- Enhanced temporal analysis for clinical metrics
+- Complete data bundling in API response
+
+## Data Models
+
+### Key Backend Models
+- **EMGChannelSignalData**: New model for storing complete signal data for a channel:
+  ```python
+  class EMGChannelSignalData(BaseModel):
+      sampling_rate: float
+      time_axis: List[float]
+      data: List[float]  # Primary C3D signal
+      rms_envelope: Optional[List[float]] = None
+      activated_data: Optional[List[float]] = None
+  ```
+
+- **TemporalAnalysisStats**: New model for enhanced clinical metrics:
+  ```python
+  class TemporalAnalysisStats(BaseModel):
+      mean_value: Optional[float] = None
+      std_value: Optional[float] = None
+      min_value: Optional[float] = None
+      max_value: Optional[float] = None
+      valid_windows: Optional[int] = None
+      coefficient_of_variation: Optional[float] = None
+  ```
+
+- **ChannelAnalytics**: Enhanced with temporal analysis:
+  ```python
+  class ChannelAnalytics(BaseModel):
+      rms: Optional[float]
+      mav: Optional[float]
+      fatigue_index_fi_nsm5: Optional[float]
+      rms_temporal_stats: Optional[TemporalAnalysisStats] = None
+      mav_temporal_stats: Optional[TemporalAnalysisStats] = None
+      fatigue_index_temporal_stats: Optional[TemporalAnalysisStats] = None
+      mpf: Optional[float]
+      mdf: Optional[float]
+      # ... other fields ...
+  ```
+
+- **EMGAnalysisResult**: Enhanced to include complete signal data:
+  ```python
+  class EMGAnalysisResult(BaseModel):
+      file_id: str
+      # ... existing fields ...
+      emg_signals: Dict[str, EMGChannelSignalData]  # Complete signal data
+      # ... other fields ...
+  ```
+
+### Key Frontend Types
+- Corresponding TypeScript interfaces for all backend models.
+- Enhanced types for the new data structures and analytics.
 
 ## Monitoring and Maintenance
 

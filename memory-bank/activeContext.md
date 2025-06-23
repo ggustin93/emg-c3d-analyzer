@@ -45,11 +45,26 @@
     - Added visual MVC threshold lines on EMG charts with matching channel colors for clear reference.
     - Flagging of "good" contractions based on muscle-specific MVC thresholds for performance tracking.
     - Created SessionConfigPanel component focused on per-muscle configuration.
+- **Clinical Assessment Features**:
+    - **Implemented Borg CR10 RPE scale** for subjective exertion measurement.
+    - Added a `SubjectiveFatigueCard` component to display patient-reported exertion levels.
+    - Enhanced statistical display with mean ± standard deviation format for EMG metrics.
+    - Added a "Patient Outcomes" tab in the Settings panel for configuring subjective metrics.
 
 🚧 In Progress:
-- End-to-end testing of the full analysis and visualization pipeline, especially the new caching layers.
+- **Major Backend Refactoring for Stateless Architecture**: Moving to a completely stateless backend approach where all data is returned in a single API call.
+- **Streamlining Backend Code**: Removing server-side plotting relics and focusing on core data processing.
+- **Enhancing EMG Analysis**: Implementing improved clinical metrics for rehabilitation assessment.
 
 ### Recent Changes
+*   **Implemented Borg CR10 Scale for Rating of Perceived Exertion**:
+    *   **Updated `SubjectiveFatigueCard` Component**: Modified the component to accurately reflect the Borg CR10 scale with proper labels and color coding.
+    *   **Enhanced Settings Panel**: Updated the "Patient Outcomes" tab with correct terminology and scale descriptions.
+    *   **Improved Clinical Relevance**: Aligned the subjective exertion measurement with established clinical standards.
+*   **New Refactoring Plan Defined**:
+    *   **Stateless Backend Approach**: Redesigning the backend to be fully stateless, processing data on-demand without relying on saving files between requests.
+    *   **Streamlined Data Flow**: Modifying the `/upload` endpoint to return all EMG signal data in one go, eliminating the need for subsequent `/raw-data` requests.
+    *   **Enhanced EMG Analysis**: Implementing more advanced clinical metrics for better rehabilitation assessment.
 *   **Frontend Refactoring**:
     *   **Optimized `EMGChart`**: To improve user experience during data loads, an `isLoading` prop was added to display a spinner. To enhance performance, `useMemo` and `useCallback` were implemented to prevent costly re-renders and calculations.
     *   **Centralized Performance Metrics**: Created a new `usePerformanceMetrics` hook to encapsulate all business logic related to calculating performance scores (overall, muscle-specific, symmetry, etc.). This makes the logic reusable, testable, and separate from the UI.
@@ -69,75 +84,62 @@
     *   **Enhanced Muscle Selection**: Updated `MuscleSelector` to work with the view mode system and use consistent colors.
     *   **Fixed Tooltip Issues**: Resolved runtime errors by properly structuring `TooltipProvider` components to avoid nesting.
     *   **Improved Muscle Naming**: Enhanced `SettingsPanel` with structured dropdowns for muscle groups and sides.
-*   **Game Session Analysis Enhancement**:
-    *   **MVC Threshold Analysis**: Added ability to set MVC value and threshold percentage for evaluating contraction quality.
-    *   **Performance Tracking**: Implemented expected contractions count and good contractions tracking.
-    *   **Visual Reference**: Added MVC threshold line on EMG charts for clear visual feedback.
-    *   **Configuration UI**: Created SessionConfigPanel for easy parameter input.
-*   **Interactive Chart Improvements**:
-    *   **Zoom/Pan Functionality**: Added Brush component to EMG charts for better data exploration.
-    *   **Visual Threshold Line**: Added ReferenceLine for MVC threshold visualization.
-    *   **Enhanced EMGChart**: Updated to support both single and comparison views with consistent colors.
-*   **Performance & Caching**: The application has undergone a significant performance refactor.
-    *   **Backend Caching**: The `/upload` endpoint now uses a `sha256` hash of the file content and all processing parameters as a cache key. On a cache hit, the previously generated result is returned immediately. On a miss, the result is generated and then a marker file containing the path to the result is stored in `data/cache`.
-    *   **Data Pre-Serialization**: On a cache miss, the `/upload` endpoint now saves not only the main analysis JSON but also a `_raw_emg.json` file containing all extracted signal data (raw, activated, time axis, etc.).
-    *   **Optimized Raw Data Endpoint**: The `/raw-data/{result_id}/{channel}` endpoint has been completely rewritten to read from the pre-serialized `_raw_emg.json` file, eliminating the need to re-open and re-process the original C3D file. This makes fetching data for plots significantly faster.
-    *   **Asynchronous Operations**: CPU-bound and I/O-bound operations in the backend (file processing, plotting) are now wrapped in `FastAPI.concurrency.run_in_threadpool` to keep the API responsive.
-    *   **Frontend Caching**: The `useEmgDataFetching` hook now uses a simple in-memory `Map` to cache downsampled plot data, preventing repeat API calls when switching between recently viewed channels.
-*   **Updated Data Models**: The backend and frontend data models (`EMGRawData`, `ChannelAnalyticsData`, `SessionConfig`) have been updated to include `activated_data`, `contractions`, and game session parameters to support the new data flow.
-*   **Bug Fixes**: 
-    *   Fixed TypeScript error in `useGameSessionData.ts` where `metadata.duration` could be null but was expected to be a number.
-    *   Fixed runtime errors related to tooltip rendering by properly structuring `TooltipProvider` components.
 
 ## Active Development Focus
 
 ### Priority Areas
-1.  **Stability and Testing**:
-    *   Thoroughly test the new caching mechanisms on both the frontend and backend to ensure correctness and handle edge cases (e.g., stale cache markers).
-    *   Validate the end-to-end data flow now that the performance optimizations are in place.
-    *   Test the new game-specific features with real-world usage scenarios.
-    *   Test the UI improvements with different datasets and view modes.
-2.  **Code Cleanup**:
-    *   Review the changes in `api.py` for clarity and maintainability.
-3.  **Documentation**:
-    *   Ensure all memory bank files are up-to-date with the new architecture and features.
+1.  **Backend Streamlining & Core Data Flow**:
+    *   Remove server-side plotting relics (functions, methods, and files related to plot generation).
+    *   Modify `/upload` endpoint to return all EMG signal data in one response.
+    *   Adapt frontend to use the bundled signal data instead of making separate `/raw-data` requests.
+2.  **Backend Logic & Resilient Channel Handling**:
+    *   Integrate new `emg_analysis.py` with advanced clinical metrics.
+    *   Refactor `processor.py` to handle channels flexibly and use the new analysis methods.
+    *   Update frontend types to match the enhanced backend models.
+3.  **Frontend Chart Enhancements**:
+    *   Implement RMS envelope as the primary signal display.
+    *   Make raw EMG display optional in charts.
+    *   Visualize detected contraction periods directly on charts.
+4.  **Final Clean-up & Documentation**:
+    *   Centralize backend configuration.
+    *   Review and refine frontend channel logic.
+    *   Add comprehensive code comments and documentation updates.
 
 ## Current Decisions and Discoveries
 
 ### Architecture
-- **Caching is King**: The performance issues have been addressed with a multi-layered caching strategy (backend request hashing, data pre-serialization, frontend in-memory cache). This is the new standard for the application.
-- **Process Once, Read Many**: The new backend pattern is to perform all heavy processing a single time during the initial `/upload` call and save all necessary artifacts (results, raw data). Subsequent requests should be lightweight read operations against these artifacts.
-- **Robust Cache Key**: The backend cache key is a hash of file content AND processing parameters. This is the most reliable way to ensure cache correctness. Filename-based caching is not robust enough.
-- **Per-Muscle MVC Values**: From a clinical perspective, each muscle should have its own MVC value due to anatomical differences in size, fiber composition, and electrode placement. This provides more accurate assessment for rehabilitation purposes.
-- **Game-Specific Analysis**: The application now supports game-specific analysis parameters, allowing for more targeted evaluation of EMG data in the context of rehabilitation games.
-- **Consistent UI Components**: The application now uses a centralized color system and reusable components for a more consistent and intuitive user experience.
+- **Stateless Backend**: Moving to a completely stateless backend approach where all data is processed on-demand and returned in a single API call, ideal for deployment on free-tier services like Render.
+- **Clarity First**: Following the principle that "Clarity is King" - making the code easy to understand is a top priority.
+- **No Breaking UI Changes**: The refactoring will maintain the same user experience while improving the internals.
+- **Frontend-Focused Visualization**: All plotting will be done client-side with Recharts, eliminating server-side image generation.
+- **Robust Channel Handling**: Implementing more flexible channel naming and detection to handle various C3D file formats.
+- **Clinical Relevance**: Enhancing the EMG analysis with more advanced metrics for better rehabilitation assessment, focusing on contraction quality and fatigue estimation.
+- **Standardized Clinical Measures**: Using established clinical scales like the Borg CR10 Scale for Rating of Perceived Exertion to ensure relevance and validity of patient-reported outcomes.
 
 ### Troubleshooting
-- **File System as Database**: The application is now using the file system more like a database, with a cache directory and separate files for different data types (results, raw EMG). This is a fast and simple approach but requires careful management of paths and potential stale files.
+- **File System as Database**: The current approach uses the file system for data storage, which will be replaced by a stateless model where all necessary data is returned directly in API responses.
 - **TypeScript Null Safety**: Careful attention to nullable types is required, especially when dealing with optional parameters like `metadata.duration`.
 - **Tooltip Component Structure**: Radix UI tooltips require careful structuring to avoid runtime errors. The `TooltipProvider` should be used at the root level to avoid nesting issues.
 
 ## Next Steps
 
 ### Immediate Tasks
-1.  Perform a full user-flow test: upload a file, verify cache hit on re-upload, switch between plot modes, and review all analytics tabs to confirm stability and speed.
-2.  Test the new game session parameters and MVC threshold analysis with real rehabilitation scenarios.
-3.  Test the zoom/pan functionality with different datasets to ensure it works well with varying data densities.
-4.  Test the new UI components with different view modes and muscle selections.
-5.  Update the rest of the memory bank to reflect the new architecture and features.
+1.  Implement Phase 1 of the refactoring plan:
+    *   Remove server-side plotting relics from the backend.
+    *   Modify the `/upload` endpoint to return all EMG signal data.
+    *   Adapt the frontend to use the bundled signal data.
+2.  Begin Phase 2 with the integration of the new `emg_analysis.py` module.
+3.  Update backend models to support the enhanced analysis capabilities.
 
 ### Future Considerations
-1.  A more robust cache-clearing mechanism or TTL (Time To Live) policy.
-2.  Database integration remains a valid future step for more complex querying and data management.
-3.  CI/CD pipeline for automated testing and deployment.
-4.  Additional game-specific analysis features based on user feedback.
+1.  Database integration for more complex querying and data management.
+2.  CI/CD pipeline for automated testing and deployment.
+3.  Additional game-specific analysis features based on user feedback.
+4.  Further enhancement of patient-reported outcomes with additional clinical scales.
 
 ## Current Focus
-- Optimize backend performance with caching and async operations.
-- Enhance user experience with interactive charts and game-specific analysis tools.
-- Improve UI consistency and intuitiveness with reusable components and a centralized color system.
-
-## Recent Changes
-- Updated `start_dev.sh` for improved dependency handling and server startup.
-- Implemented UI improvements for better consistency and user experience.
-- Fixed tooltip rendering issues to resolve runtime errors. 
+- Implement the stateless backend architecture for better deployment flexibility.
+- Enhance EMG analysis with more clinically relevant metrics.
+- Improve chart visualization to better represent muscle activity and contraction quality.
+- Ensure code clarity and maintainability throughout the refactoring process.
+- Align all clinical measures with established standards in rehabilitation medicine. 

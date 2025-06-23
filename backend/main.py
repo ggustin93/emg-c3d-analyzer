@@ -25,14 +25,15 @@ except ImportError as e:
     logger.error(traceback.format_exc())
     sys.exit(1)
 
-# Check if data directories exist and create them if needed
+# Check if temporary directory exists and create it if needed
 try:
-    data_dirs = ["data/uploads", "data/results", "data/plots"]
-    for dir_path in data_dirs:
-        Path(dir_path).mkdir(parents=True, exist_ok=True)
-    logger.info("Data directories verified")
+    # In the stateless architecture, we only need a temporary directory for file uploads during processing
+    # These files will not persist between requests
+    temp_dir = "data/temp_uploads"
+    Path(temp_dir).mkdir(parents=True, exist_ok=True)
+    logger.info(f"Temporary upload directory verified: {temp_dir}")
 except Exception as e:
-    logger.error(f"Failed to create data directories: {e}")
+    logger.error(f"Failed to create temporary directory: {e}")
     logger.error(traceback.format_exc())
     sys.exit(1)
 

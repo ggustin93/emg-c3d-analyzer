@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import DownsamplingControl from './app/DownsamplingControl';
+import { Slider } from "./ui/slider";
 
 interface SettingsPanelProps {
   sessionParams: GameSessionParameters;
