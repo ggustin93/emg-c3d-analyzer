@@ -29,7 +29,7 @@ const PatientOutcomesCard: React.FC<PatientOutcomesCardProps> = ({
             <div className="flex items-center justify-between">
               <Label htmlFor="subjective-fatigue">Perceived Exertion Level (0-10)</Label>
               <span className="text-sm font-medium">
-                {sessionParams.subjective_fatigue_level ?? 0}
+                {sessionParams.subjective_fatigue_level ?? 5}
               </span>
             </div>
             <Slider
@@ -37,7 +37,7 @@ const PatientOutcomesCard: React.FC<PatientOutcomesCardProps> = ({
               min={0}
               max={10}
               step={1}
-              value={[sessionParams.subjective_fatigue_level ?? 0]}
+              value={[sessionParams.subjective_fatigue_level ?? 5]}
               onValueChange={(values: number[]) => {
                 onParamsChange({
                   ...sessionParams,

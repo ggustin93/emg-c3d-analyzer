@@ -167,175 +167,175 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer group">
               <CardHeader className="flex flex-col items-center text-center pb-4 relative">
-                <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-1">
-                  {sessionParams ? (
-                    <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
-                  ) : (
-                    channel
-                  )} Performance
+          <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-1">
+            {sessionParams ? (
+              <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
+            ) : (
+              channel
+            )} Performance
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p>Performance score for this specific muscle, combining contraction count and quality metrics</p>
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
+          <p className={`text-sm font-bold ${scoreColors.text} mb-2`}>{scoreColors.label}</p>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <CircleDisplay 
+                  value={totalScore} 
+                  label="" 
+                  color={scoreColors.hex}
+                  size="lg"
+                  showPercentage={true}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p>Overall score calculated as the average between:
+                <br />• Contraction count subscore
+                <br />• Contraction quality subscore (based on MVC)
+              </p>
+            </TooltipContent>
+          </Tooltip>
+                <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </CardHeader>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+        <CardContent className="pt-0 space-y-6">
+          {/* Contraction Count */}
+          <div className="rounded-md bg-slate-50 p-4">
+            <Collapsible open={isCountDetailsOpen} onOpenChange={setIsCountDetailsOpen}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1">
+                  <h4 className="text-sm font-semibold text-gray-700">Contraction Count</h4>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs">
-                      <p>Performance score for this specific muscle, combining contraction count and quality metrics</p>
+                      <p>Number of muscle contractions detected during the session compared to expected count</p>
                     </TooltipContent>
                   </Tooltip>
-                </CardTitle>
-                <p className={`text-sm font-bold ${scoreColors.text} mb-2`}>{scoreColors.label}</p>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <CircleDisplay 
-                        value={totalScore} 
-                        label="" 
-                        color={scoreColors.hex}
-                        size="lg"
-                        showPercentage={true}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p>Overall score calculated as the average between:
-                      <br />• Contraction count subscore
-                      <br />• Contraction quality subscore (based on MVC)
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-                <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </CardHeader>
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="pt-0 space-y-6">
-              {/* Contraction Count */}
-              <div className="rounded-md bg-slate-50 p-4">
-                <Collapsible open={isCountDetailsOpen} onOpenChange={setIsCountDetailsOpen}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1">
-                      <h4 className="text-sm font-semibold text-gray-700">Contraction Count</h4>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>Number of muscle contractions detected during the session compared to expected count</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
-                        <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                    </div>
-                    {contractionScore !== null ? (
-                      <span className={`text-sm font-bold ${contractionColors.text}`}>{contractionScore}%</span>
-                    ) : (
-                      <span className="text-sm font-bold text-gray-400">N/A</span>
-                    )}
-                  </div>
-                  
-                  {contractionScore !== null && (
-                    <>
-                      <Progress 
-                        value={contractionScore} 
-                        className="h-2" 
-                        indicatorClassName={`${contractionColors.bg} opacity-80`} 
-                      />
-                      <p className="text-xs text-gray-500 text-center mt-1">
-                        {totalContractions} of {expectedContractions ?? 'N/A'} expected
-                      </p>
-                    </>
-                  )}
-
-                  <CollapsibleContent className="pt-2 space-y-4">
-                    <div className="flex justify-center items-center">
-                      <CircleDisplay 
-                        value={contractionCount} 
-                        total={expectedContractions ?? undefined}
-                        label="Performed" 
-                        color={contractionColors.hex} 
-                        size="md"
-                        showPercentage={false}
-                        showExpected={true}
-                      />
-                    </div>
-
-                    {/* Contraction Type Breakdown - Moved here from bottom section */}
-                    <div className="mt-2">
-                      <ContractionTypeBreakdown
-                        shortContractions={shortContractions}
-                        shortGoodContractions={shortGoodContractions}
-                        longContractions={longContractions}
-                        longGoodContractions={longGoodContractions}
-                        expectedShortContractions={expectedShortContractions}
-                        expectedLongContractions={expectedLongContractions}
-                        contractionDurationThreshold={contractionDurationThreshold}
-                        color={scoreHexColor}
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                  <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
+                    <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                </div>
+                {contractionScore !== null ? (
+                  <span className={`text-sm font-bold ${contractionColors.text}`}>{contractionScore}%</span>
+                ) : (
+                  <span className="text-sm font-bold text-gray-400">N/A</span>
+                )}
               </div>
+              
+              {contractionScore !== null && (
+                <>
+                  <Progress 
+                    value={contractionScore} 
+                    className="h-2" 
+                    indicatorClassName={`${contractionColors.bg} opacity-80`} 
+                  />
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    {totalContractions} of {expectedContractions ?? 'N/A'} expected
+                  </p>
+                </>
+              )}
 
-              {/* Contraction Quality */}
-              <div className="rounded-md bg-slate-50 p-4">
-                <Collapsible open={isQualityDetailsOpen} onOpenChange={setIsQualityDetailsOpen}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1">
-                      <h4 className="text-sm font-semibold text-gray-700">Contraction Quality</h4>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>Percentage of contractions that met the required MVC threshold, indicating good quality.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
-                        <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                    </div>
-                    {goodContractionCount !== null && totalContractions > 0 ? (
-                      <span className={`text-sm font-bold ${goodContractionColors.text}`}>
-                        {goodContractionPercentage}%
-                      </span>
-                    ) : (
-                      <span className="text-sm font-bold text-gray-400">N/A</span>
-                    )}
-                  </div>
-                  
-                  {goodContractionCount !== null && totalContractions > 0 && (
-                    <>
-                      <Progress 
-                        value={goodContractionPercentage} 
-                        className="h-2" 
-                        indicatorClassName={`${goodContractionColors.bg} opacity-80`} 
-                      />
-                      <p className="text-xs text-gray-500 text-center mt-1">
-                        {goodContractionCount} of {totalContractions} good quality
-                      </p>
-                    </>
-                  )}
+              <CollapsibleContent className="pt-2 space-y-4">
+                <div className="flex justify-center items-center">
+                  <CircleDisplay 
+                    value={contractionCount} 
+                    total={expectedContractions ?? undefined}
+                    label="Performed" 
+                    color={contractionColors.hex} 
+                    size="md"
+                    showPercentage={false}
+                    showExpected={true}
+                  />
+                </div>
 
-                  <CollapsibleContent className="pt-2 space-y-4">
-                    <div className="flex justify-around items-center">
-                      <CircleDisplay 
-                        value={goodContractionCount} 
-                        total={totalContractions}
-                        label="Good Quality" 
-                        color={goodContractionColors.hex} 
-                        size="md"
-                        showPercentage={false}
-                        showExpected={true}
-                      />
-                    </div>
-                    <div className="text-xs text-center text-gray-500">
-                      <p><span className="font-bold">{goodContractionCount}</span> of <span className="font-bold">{totalContractions}</span> contractions met the quality threshold.</p>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                {/* Contraction Type Breakdown - Moved here from bottom section */}
+                <div className="mt-2">
+                  <ContractionTypeBreakdown
+                    shortContractions={shortContractions}
+                    shortGoodContractions={shortGoodContractions}
+                    longContractions={longContractions}
+                    longGoodContractions={longGoodContractions}
+                    expectedShortContractions={expectedShortContractions}
+                    expectedLongContractions={expectedLongContractions}
+                    contractionDurationThreshold={contractionDurationThreshold}
+                    color={scoreHexColor}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          {/* Contraction Quality */}
+          <div className="rounded-md bg-slate-50 p-4">
+            <Collapsible open={isQualityDetailsOpen} onOpenChange={setIsQualityDetailsOpen}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1">
+                  <h4 className="text-sm font-semibold text-gray-700">Contraction Quality</h4>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>Percentage of contractions that met the required MVC threshold, indicating good quality.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
+                    <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                </div>
+                {goodContractionCount !== null && totalContractions > 0 ? (
+                  <span className={`text-sm font-bold ${goodContractionColors.text}`}>
+                    {goodContractionPercentage}%
+                  </span>
+                ) : (
+                  <span className="text-sm font-bold text-gray-400">N/A</span>
+                )}
               </div>
-            </CardContent>
+              
+              {goodContractionCount !== null && totalContractions > 0 && (
+                <>
+                  <Progress 
+                    value={goodContractionPercentage} 
+                    className="h-2" 
+                    indicatorClassName={`${goodContractionColors.bg} opacity-80`} 
+                  />
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    {goodContractionCount} of {totalContractions} good quality
+                  </p>
+                </>
+              )}
+
+              <CollapsibleContent className="pt-2 space-y-4">
+                <div className="flex justify-around items-center">
+                  <CircleDisplay 
+                    value={goodContractionCount} 
+                    total={totalContractions}
+                    label="Good Quality" 
+                    color={goodContractionColors.hex} 
+                    size="md"
+                    showPercentage={false}
+                    showExpected={true}
+                  />
+                </div>
+                <div className="text-xs text-center text-gray-500">
+                  <p><span className="font-bold">{goodContractionCount}</span> of <span className="font-bold">{totalContractions}</span> contractions met the quality threshold.</p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </CardContent>
           </CollapsibleContent>
         </Collapsible>
       </Card>

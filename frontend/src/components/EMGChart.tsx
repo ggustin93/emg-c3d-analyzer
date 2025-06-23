@@ -14,6 +14,7 @@ import {
 import { getColorForChannel } from '../lib/colorMappings';
 import { FilterMode } from './app/ChannelFilter';
 import { GameSessionParameters } from '../types/emg';
+import SignalTypeSwitch from './app/SignalTypeSwitch';
 
 const Spinner = () => (
   <div className="flex items-center justify-center space-x-2">
@@ -40,6 +41,10 @@ export interface MultiChannelEMGChartProps {
   muscle_color_mapping?: Record<string, string>;
   sessionParams?: GameSessionParameters;
   isLoading?: boolean;
+  plotMode?: 'raw' | 'activated';
+  setPlotMode?: (mode: 'raw' | 'activated') => void;
+  onParamsChange?: (params: GameSessionParameters) => void;
+  showSignalSwitch?: boolean;
 }
 
 const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({ 
@@ -51,9 +56,14 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   channel_muscle_mapping = {},
   muscle_color_mapping = {},
   sessionParams,
-  isLoading = false
+  isLoading = false,
+  plotMode: externalPlotMode,
+  setPlotMode,
+  onParamsChange,
+  showSignalSwitch = false
 }) => {
-  const plotMode = sessionParams?.show_raw_signals ? 'raw' : 'activated';
+  const internalPlotMode = sessionParams?.show_raw_signals ? 'raw' : 'activated';
+  const plotMode = externalPlotMode || internalPlotMode;
 
   // Debug logging
   console.log('EMGChart render:', { 
@@ -276,9 +286,21 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }
 
   return (
-    <div className="w-full h-[500px] border border-gray-200 rounded-lg p-4 box-border shadow-sm">
+    <div className="w-full h-[500px] border border-gray-200 rounded-lg p-4 box-border shadow-sm relative">
+        {showSignalSwitch && sessionParams && setPlotMode && onParamsChange && (
+            <div className="absolute top-2 right-12 z-10 bg-white/80 backdrop-blur-sm rounded-md px-2 py-1 shadow-sm">
+                <SignalTypeSwitch
+                    plotMode={plotMode}
+                    setPlotMode={setPlotMode}
+                    sessionParams={sessionParams}
+                    onParamsChange={onParamsChange}
+                    disabled={isLoading}
+                    compact={true}
+                />
+            </div>
+        )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 25 }}>
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" label={{ value: "Time (s)", position: "bottom" }} tick={{ fontSize: 10 }} />
           <YAxis 
@@ -288,9 +310,9 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
           />
           <Tooltip formatter={(value: number, name: string) => {
             try {
-              return [`${value.toExponential(3)} mV`, name || ''];
+              return [`${value.toExponential(3)} mV`, getMuscleName(name)];
             } catch (error) {
-              return [`${value.toExponential(3)} mV`, name || ''];
+              return [`${value.toExponential(3)} mV`, name];
             }
           }} labelFormatter={(label: number) => `Time: ${label.toFixed(3)}s`} />
           <Legend 
@@ -347,7 +369,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             />
           )}
 
-          <Brush dataKey="time" height={30} stroke="#1abc9c" y={430} />
+          <Brush dataKey="time" height={30} stroke="#1abc9c" />
         </LineChart>
       </ResponsiveContainer>
     </div>

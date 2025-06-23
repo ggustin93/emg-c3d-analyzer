@@ -66,6 +66,7 @@ function App() {
       session_expected_contractions: 12,
       session_expected_contractions_ch1: null,
       session_expected_contractions_ch2: null,
+      subjective_fatigue_level: 5,
       channel_muscle_mapping: {
         "CH1": "Left Quadriceps",
         "CH2": "Right Quadriceps"
@@ -185,7 +186,8 @@ function App() {
         "Right Quadriceps": "#ef4444"  // Red
       },
       session_mvc_values: {},
-      session_mvc_threshold_percentages: {}
+      session_mvc_threshold_percentages: {},
+      subjective_fatigue_level: prev.subjective_fatigue_level ?? 5
     }));
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
 

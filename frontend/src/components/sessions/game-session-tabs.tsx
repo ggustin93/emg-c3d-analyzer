@@ -316,6 +316,11 @@ export default function GameSessionTabs({
               channel_muscle_mapping={sessionParams.channel_muscle_mapping}
               muscle_color_mapping={sessionParams.muscle_color_mapping}
               sessionParams={sessionParams}
+              isLoading={appIsLoading}
+              showSignalSwitch={true}
+              plotMode={plotMode}
+              setPlotMode={setPlotMode}
+              onParamsChange={onSessionParamsChange}
             />
             
             {/* Analytics Panel - Integrated from the EMG Analytics tab */}

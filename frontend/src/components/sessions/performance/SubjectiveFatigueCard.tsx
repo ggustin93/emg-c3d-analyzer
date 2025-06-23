@@ -6,12 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { useFatigueColors } from '@/hooks/useFatigueColors';
 
 interface SubjectiveFatigueCardProps {
-  fatigueLevel: number; // 0-10 scale
+  fatigueLevel?: number; // 0-10 scale
   showBadge?: boolean;
 }
 
 const SubjectiveFatigueCard: React.FC<SubjectiveFatigueCardProps> = ({
-  fatigueLevel,
+  fatigueLevel = 5,
   showBadge = false
 }) => {
   const normalizedFatigue = Math.max(0, Math.min(10, fatigueLevel));
