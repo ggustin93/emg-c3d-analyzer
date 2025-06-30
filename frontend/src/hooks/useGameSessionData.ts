@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { GameSession, EMGDataPoint, EMGMetrics, GameParameters as AppGameParameters } from '@/types/session'; // Assuming path alias or correct relative path
-import type { EMGAnalysisResult, EmgSignalData } from '../types/emg';
+import type { EMGAnalysisResult, EMGChannelSignalData } from '../types/emg';
 import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
-import { EmgDataFetchingControls } from './useEmgDataFetching';
 
 export interface GameSessionDataControls {
   currentGameSession: GameSession | null;
@@ -17,11 +16,10 @@ export interface GameSessionDataControls {
 
 export const useGameSessionData = (
   analysisResult: EMGAnalysisResult | null,
-  mainPlotChannel1Data: EmgSignalData | null, // From useEmgDataFetching
-  mainPlotChannel2Data: EmgSignalData | null, // From useEmgDataFetching
+  mainPlotChannel1Data: EMGChannelSignalData | null, // From usePlotDataProcessor
+  mainPlotChannel2Data: EMGChannelSignalData | null, // From usePlotDataProcessor
   mainPlotChannel1Name: string | null,      // From useChannelManagement
-  mainPlotChannel2Name: string | null,      // From useChannelManagement
-  fetcherControls: Pick<EmgDataFetchingControls, 'fetchChannelRawData'>
+  mainPlotChannel2Name: string | null       // From useChannelManagement
 ): GameSessionDataControls => {
   const [currentGameSession, setCurrentGameSession] = useState<GameSession | null>(null);
   const [currentEMGTimeSeriesDataForTabs, setCurrentEMGTimeSeriesDataForTabs] = useState<CombinedChartDataPoint[]>([]);
@@ -29,8 +27,6 @@ export const useGameSessionData = (
   const [rightQuadChannelForTabs, setRightQuadChannelForTabs] = useState<string | null>(null);
   const [tabsDataLoading, setTabsDataLoading] = useState<boolean>(false);
   const [tabsDataError, setTabsDataError] = useState<string | null>(null);
-
-  const { fetchChannelRawData } = fetcherControls;
 
   const determineChannelsForTabs = useCallback((result: EMGAnalysisResult) => {
     // Check if result.analytics exists and is an object
@@ -96,27 +92,30 @@ export const useGameSessionData = (
     setRightQuadChannelForTabs(finalRightChannel);
   }, []);
 
-  // Effect to fetch data for GameSessionTabs chart
+  // Effect to process data for GameSessionTabs chart
   useEffect(() => {
     if (!analysisResult?.file_id || (!leftQuadChannelForTabs && !rightQuadChannelForTabs)) {
       setCurrentEMGTimeSeriesDataForTabs([]);
       return;
     }
 
-    const fetchData = async () => {
+    const processData = () => {
       setTabsDataLoading(true);
       setTabsDataError(null);
-      let leftData: EmgSignalData | null = null;
-      let rightData: EmgSignalData | null = null;
+      let leftData: EMGChannelSignalData | null = null;
+      let rightData: EMGChannelSignalData | null = null;
       let errorMessages: string[] = [];
 
-      if (leftQuadChannelForTabs) {
-        leftData = await fetchChannelRawData(analysisResult.file_id, leftQuadChannelForTabs);
-        if (!leftData) errorMessages.push(`Failed to load data for ${leftQuadChannelForTabs}`);
+      if (leftQuadChannelForTabs && analysisResult.emg_signals[leftQuadChannelForTabs]) {
+        leftData = analysisResult.emg_signals[leftQuadChannelForTabs];
+      } else if (leftQuadChannelForTabs) {
+        errorMessages.push(`Failed to find data for ${leftQuadChannelForTabs}`);
       }
-      if (rightQuadChannelForTabs) {
-        rightData = await fetchChannelRawData(analysisResult.file_id, rightQuadChannelForTabs);
-        if (!rightData) errorMessages.push(`Failed to load data for ${rightQuadChannelForTabs}`);
+      
+      if (rightQuadChannelForTabs && analysisResult.emg_signals[rightQuadChannelForTabs]) {
+        rightData = analysisResult.emg_signals[rightQuadChannelForTabs];
+      } else if (rightQuadChannelForTabs) {
+        errorMessages.push(`Failed to find data for ${rightQuadChannelForTabs}`);
       }
 
       if (errorMessages.length > 0) {
@@ -157,8 +156,8 @@ export const useGameSessionData = (
       setTabsDataLoading(false);
     };
 
-    fetchData();
-  }, [analysisResult?.file_id, leftQuadChannelForTabs, rightQuadChannelForTabs, fetchChannelRawData]);
+    processData();
+  }, [analysisResult, leftQuadChannelForTabs, rightQuadChannelForTabs]);
 
   // Effect to derive GameSession object
   useEffect(() => {

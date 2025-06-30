@@ -1,25 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import type { EmgSignalData, StatsData, EMGAnalysisResult } from '../types/emg';
-import { DownsamplingControls } from './useDataDownsampling'; // Assuming useDataDownsampling exports this
+import type { EMGChannelSignalData, StatsData, EMGAnalysisResult } from '../types/emg';
+import { DownsamplingControls } from './useDataDownsampling';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-
-// Simple in-memory cache
-const cache = new Map<string, EmgSignalData>();
-
-export interface EmgDataFetchingControls {
-  plotChannel1Data: EmgSignalData | null;
-  plotChannel2Data: EmgSignalData | null;
+export interface PlotDataProcessorControls {
+  plotChannel1Data: EMGChannelSignalData | null;
+  plotChannel2Data: EMGChannelSignalData | null;
   currentStats: StatsData | null;
-  dataFetchingLoading: boolean;
-  dataFetchingError: string | null;
-  fetchChannelRawData: (fileId: string, channelName: string) => Promise<EmgSignalData | null>;
+  dataProcessingLoading: boolean;
+  dataProcessingError: string | null;
   resetPlotDataAndStats: () => void;
 }
 
-const calculateStats = (values: number[], timeAxis: number[]): StatsData | null => {
-  if (!values || values.length === 0) return null;
+const calculateStats = (data: EMGChannelSignalData): StatsData | null => {
+  if (!data || !data.data || data.data.length === 0) return null;
+  
+  const values = data.data;
   let minVal = values[0];
   let maxVal = values[0];
   let sum = 0;
@@ -32,169 +27,97 @@ const calculateStats = (values: number[], timeAxis: number[]): StatsData | null 
     min: minVal,
     max: maxVal,
     avg: sum / values.length,
-    duration: timeAxis[timeAxis.length - 1]?.toFixed(2) || '0',
+    duration: data.time_axis[data.time_axis.length - 1]?.toFixed(2) || '0',
     samples: values.length,
   };
 };
 
-export const useEmgDataFetching = (
+export const usePlotDataProcessor = (
   analysisResult: EMGAnalysisResult | null,
   plotChannel1Name: string | null,
   plotChannel2Name: string | null,
   selectedChannelForStats: string | null,
   downsamplingControls: DownsamplingControls
-): EmgDataFetchingControls => {
-  const [plotChannel1Data, setPlotChannel1Data] = useState<EmgSignalData | null>(null);
-  const [plotChannel2Data, setPlotChannel2Data] = useState<EmgSignalData | null>(null);
+): PlotDataProcessorControls => {
+  const [plotChannel1Data, setPlotChannel1Data] = useState<EMGChannelSignalData | null>(null);
+  const [plotChannel2Data, setPlotChannel2Data] = useState<EMGChannelSignalData | null>(null);
   const [currentStats, setCurrentStats] = useState<StatsData | null>(null);
-  const [dataFetchingLoading, setDataFetchingLoading] = useState<boolean>(false);
-  const [dataFetchingError, setDataFetchingError] = useState<string | null>(null);
+  const [dataProcessingLoading, setDataProcessingLoading] = useState<boolean>(false);
+  const [dataProcessingError, setDataProcessingError] = useState<string | null>(null);
 
   const { dataPoints, downsampleData } = downsamplingControls;
 
-  const fetchChannelRawData = useCallback(async (fileId: string, channelName: string): Promise<EmgSignalData | null> => {
-    if (!fileId || !channelName) return null;
-    
-    const cacheKey = `${fileId}-${channelName}-${dataPoints}`;
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey)!;
-    }
-
-    try {
-      const response = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId}/${channelName}`);
-      const fetchedData = response.data;
-      if (!fetchedData.data || !Array.isArray(fetchedData.data)) {
-        console.error(`Invalid raw data format for ${channelName}`);
-        return null;
-      }
-      if (fetchedData.data.length === 0) {
-        console.warn(`Raw data for channel ${channelName} is empty.`);
-        return { ...fetchedData, data: [], time_axis: [] };
-      }
-      const { data: optimizedData, timeAxis: optimizedTimeAxis } = downsampleData(fetchedData.data, fetchedData.time_axis, dataPoints);
-      const result = { ...fetchedData, channel_name: channelName, data: optimizedData, time_axis: optimizedTimeAxis };
+  const processAndSetChannelData = useCallback((channelName: string | null, setter: React.Dispatch<React.SetStateAction<EMGChannelSignalData | null>>) => {
+    if (analysisResult && channelName && analysisResult.emg_signals[channelName]) {
+      const signalData = analysisResult.emg_signals[channelName];
+      const { data: optimizedData, timeAxis: optimizedTimeAxis } = downsampleData(signalData.data, signalData.time_axis, dataPoints);
       
-      cache.set(cacheKey, result); // Store the processed (downsampled) data in cache
-      return result;
-    } catch (err: any) {
-      console.error(`Error fetching raw EMG data for ${channelName}:`, err);
-      return null;
-    }
-  }, [dataPoints, downsampleData]);
-
-  // Effect to fetch data for plotChannel1
-  useEffect(() => {
-    if (analysisResult?.file_id && plotChannel1Name) {
-      setDataFetchingLoading(true);
-      setDataFetchingError(null);
-      fetchChannelRawData(analysisResult.file_id, plotChannel1Name).then(data => {
-        setPlotChannel1Data(data);
-        if (!plotChannel2Name) setDataFetchingLoading(false); // Only stop loading if ch2 is not being fetched
-        if (!data) setDataFetchingError(prevError => prevError ? `${prevError}, Failed to load ${plotChannel1Name}` : `Failed to load data for ${plotChannel1Name}`);
+      setter({ 
+        ...signalData,
+        data: optimizedData, 
+        time_axis: optimizedTimeAxis 
       });
     } else {
-      setPlotChannel1Data(null);
-      if (!plotChannel2Name) setDataFetchingLoading(false); // Stop loading if ch1 cleared and ch2 inactive
+      setter(null);
     }
-  }, [analysisResult?.file_id, plotChannel1Name, fetchChannelRawData, plotChannel2Name]);
-
-  // Effect to fetch data for plotChannel2
-  useEffect(() => {
-    if (analysisResult?.file_id && plotChannel2Name) {
-      // If ch1 is also active, loading is already true. If not, set it.
-      if (!plotChannel1Name || !plotChannel1Data) setDataFetchingLoading(true);
-      setDataFetchingError(null); // Clear previous error before new fetch
-      fetchChannelRawData(analysisResult.file_id, plotChannel2Name).then(data => {
-        setPlotChannel2Data(data);
-        setDataFetchingLoading(false); // Always stop loading after the second channel fetch completes
-        if (!data) setDataFetchingError(prevError => prevError ? `${prevError}, Failed to load ${plotChannel2Name}` : `Failed to load data for ${plotChannel2Name}`);
-      });
-    } else {
-      setPlotChannel2Data(null);
-      // Only stop loading if ch1 is also inactive
-      if (!plotChannel1Name) setDataFetchingLoading(false);
-    }
-  }, [analysisResult?.file_id, plotChannel2Name, fetchChannelRawData, plotChannel1Name, plotChannel1Data]);
+  }, [analysisResult, dataPoints, downsampleData]);
   
-  // Consolidate error messages
+  // Effect to process data for plotChannel1
   useEffect(() => {
-      let ch1Error = plotChannel1Name && !plotChannel1Data ? `Failed to load ${plotChannel1Name}` : null;
-      let ch2Error = plotChannel2Name && !plotChannel2Data ? `Failed to load ${plotChannel2Name}` : null;
+    setDataProcessingLoading(true);
+    processAndSetChannelData(plotChannel1Name, setPlotChannel1Data);
+    // Loading state will be turned off in the combined effect below
+  }, [analysisResult, plotChannel1Name, processAndSetChannelData]);
 
-      // This effect runs after data fetching effects. Check if data is still null after trying to fetch.
-      // This is a simplified error check. More robust would involve checking loading states too.
-      if (analysisResult?.file_id) { // Only set errors if we expected to fetch
-        if (plotChannel1Name && !plotChannel1Data && !dataFetchingLoading) {
-            ch1Error = `Failed to load data for ${plotChannel1Name}`;
-        }
-        if (plotChannel2Name && !plotChannel2Data && !dataFetchingLoading) {
-            ch2Error = `Failed to load data for ${plotChannel2Name}`;
-        }
-      }
-
-      if (ch1Error && ch2Error) {
-        setDataFetchingError(`${ch1Error}, ${ch2Error}`);
-      } else if (ch1Error) {
-        setDataFetchingError(ch1Error);
-      } else if (ch2Error) {
-        setDataFetchingError(ch2Error);
-      } else if (!dataFetchingLoading) { // Clear error if no specific errors and not loading
-        setDataFetchingError(null);
-      }
-  }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name, analysisResult?.file_id, dataFetchingLoading]);
-
-  // Effect to fetch data for the selected stats channel
+  // Effect to process data for plotChannel2
   useEffect(() => {
-    if (analysisResult?.file_id && selectedChannelForStats) {
-      // For stats, we should always fetch the "Raw" signal if it exists.
-      const statsChannelName = `${selectedChannelForStats} Raw`;
-      
-      // We can reuse the fetchChannelRawData but we don't downsample for stats
-      // to get the real min/max/avg. We create a temporary non-downsampling fetcher.
-      const fetchFullRawData = async (fileId: string, channelName: string): Promise<EmgSignalData | null> => {
-          if (!fileId || !channelName) return null;
-          try {
-            const response = await axios.get<EmgSignalData>(`${API_BASE_URL}/raw-data/${fileId}/${channelName}`);
-            const fetchedData = response.data;
-            if (!fetchedData.data || !Array.isArray(fetchedData.data) || fetchedData.data.length === 0) {
-              console.error(`Invalid or empty raw data for stats channel ${channelName}`);
-              return null;
-            }
-            // Return full data, no downsampling
-            return { ...fetchedData, channel_name: channelName };
-          } catch (err) {
-            console.error(`Error fetching raw EMG data for stats channel ${channelName}:`, err);
-            return null;
-          }
-      };
-      
-      fetchFullRawData(analysisResult.file_id, statsChannelName).then(data => {
-        if (data) {
-            setCurrentStats(calculateStats(data.data, data.time_axis));
-        } else {
-            setCurrentStats(null);
-        }
-      });
+    setDataProcessingLoading(true);
+    processAndSetChannelData(plotChannel2Name, setPlotChannel2Data);
+    // Loading state will be turned off in the combined effect below
+  }, [analysisResult, plotChannel2Name, processAndSetChannelData]);
+
+  // Effect to calculate stats for the selected channel
+  useEffect(() => {
+    if (analysisResult && selectedChannelForStats && analysisResult.emg_signals[selectedChannelForStats]) {
+      const signalData = analysisResult.emg_signals[selectedChannelForStats];
+      // Note: stats are calculated on the original, non-downsampled data which is what we have in emg_signals
+      setCurrentStats(calculateStats(signalData));
     } else {
       setCurrentStats(null);
     }
-  }, [analysisResult?.file_id, selectedChannelForStats]);
+  }, [analysisResult, selectedChannelForStats]);
+  
+  // Effect to manage loading and error states
+  useEffect(() => {
+    // If either channel is selected but its data is not yet processed, we are loading.
+    const isLoading = (!!plotChannel1Name && !plotChannel1Data) || (!!plotChannel2Name && !plotChannel2Data);
+    setDataProcessingLoading(isLoading);
 
+    let error = null;
+    if (plotChannel1Name && !plotChannel1Data && !isLoading) {
+      error = `Data for channel "${plotChannel1Name}" not found in analysis result.`;
+    }
+    if (plotChannel2Name && !plotChannel2Data && !isLoading) {
+      error = error ? `${error} Also, data for "${plotChannel2Name}" not found.` : `Data for channel "${plotChannel2Name}" not found in analysis result.`;
+    }
+    setDataProcessingError(error);
+    
+  }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
+  
   const resetPlotDataAndStats = useCallback(() => {
     setPlotChannel1Data(null);
     setPlotChannel2Data(null);
     setCurrentStats(null);
-    setDataFetchingLoading(false);
-    setDataFetchingError(null);
+    setDataProcessingLoading(false);
+    setDataProcessingError(null);
   }, []);
 
   return {
     plotChannel1Data,
     plotChannel2Data,
     currentStats,
-    dataFetchingLoading,
-    dataFetchingError,
-    fetchChannelRawData, // Exposing this if it needs to be called directly elsewhere, e.g. for GameSessionTabs
+    dataProcessingLoading,
+    dataProcessingError,
     resetPlotDataAndStats,
   };
 }; 

@@ -90,6 +90,13 @@ class ProcessingOptions(BaseModel):
     smoothing_window: int = Field(DEFAULT_SMOOTHING_WINDOW, description="Window size for smoothing the signal")
     # MVC related params are now part of GameSessionParameters, passed to processor
 
+class EMGChannelSignalData(BaseModel):
+    sampling_rate: float
+    time_axis: List[float]
+    data: List[float] # This will hold the primary C3D signal (e.g., "CH1 Raw")
+    rms_envelope: Optional[List[float]] = None # For the calculated RMS envelope
+    activated_data: Optional[List[float]] = None # If you have a separate "activated" signal processing step
+
 class EMGAnalysisResult(BaseModel):
     """Model for the complete EMG analysis result."""
     file_id: str
@@ -98,7 +105,7 @@ class EMGAnalysisResult(BaseModel):
     metadata: GameMetadata # Will include GameSessionParameters
     analytics: Dict[str, ChannelAnalytics]
     available_channels: List[str]
-    plots: Dict[str, str] = {}
+    emg_signals: Dict[str, EMGChannelSignalData]
     user_id: Optional[str] = None
     session_id: Optional[str] = None
     patient_id: Optional[str] = None

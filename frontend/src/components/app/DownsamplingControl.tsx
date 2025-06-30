@@ -1,13 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { EmgSignalData } from '@/types/emg'; // Adjust path as needed
+import type { EMGChannelSignalData } from '@/types/emg'; // Adjust path as needed
 
 interface DownsamplingControlProps {
   dataPoints: number;
   setDataPoints: (points: number) => void;
-  plotChannel1Data: EmgSignalData | null;
-  plotChannel2Data: EmgSignalData | null;
+  plotChannel1Data: EMGChannelSignalData | null;
+  plotChannel2Data: EMGChannelSignalData | null;
 }
 
 const DownsamplingControl: React.FC<DownsamplingControlProps> = ({

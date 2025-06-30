@@ -3,7 +3,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { GameSessionParameters, EmgSignalData } from '../types/emg';
+import { GameSessionParameters, EMGChannelSignalData } from '../types/emg';
 import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
 import { getMuscleColor } from '../lib/colorMappings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -23,18 +23,17 @@ import {
 } from "./ui/select";
 import DownsamplingControl from './app/DownsamplingControl';
 import { Slider } from "./ui/slider";
+import { useSessionStore } from '../store/sessionStore';
 
 interface SettingsPanelProps {
-  sessionParams: GameSessionParameters;
-  onParamsChange: (params: GameSessionParameters) => void;
   muscleChannels: string[];
   disabled: boolean;
   plotMode: 'raw' | 'activated';
   setPlotMode: (mode: 'raw' | 'activated') => void;
   dataPoints: number;
   setDataPoints: (points: number) => void;
-  plotChannel1Data: EmgSignalData | null;
-  plotChannel2Data: EmgSignalData | null;
+  plotChannel1Data: EMGChannelSignalData | null;
+  plotChannel2Data: EMGChannelSignalData | null;
 }
 
 // Common muscle groups for therapists
@@ -94,8 +93,6 @@ const combineMuscleParts = (parts: MuscleNameParts): string => {
 };
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
-  sessionParams,
-  onParamsChange,
   muscleChannels,
   disabled,
   plotMode,
@@ -105,6 +102,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   plotChannel1Data,
   plotChannel2Data,
 }) => {
+  const { sessionParams, setSessionParams } = useSessionStore();
   // State to track if we're in edit mode
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("muscles");
@@ -148,13 +146,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
     
     if (needsUpdate) {
-      onParamsChange({
+      setSessionParams({
         ...sessionParams,
         channel_muscle_mapping: updatedMapping,
         muscle_color_mapping: updatedColorMapping
       });
     }
-  }, [muscleChannels, channelMuscleMapping, muscleColorMapping, sessionParams, onParamsChange]);
+  }, [muscleChannels, channelMuscleMapping, muscleColorMapping, sessionParams, setSessionParams]);
   
   const handleMuscleNameChange = (channel: string, muscleName: string) => {
     const updatedMapping = {
@@ -162,7 +160,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       [channel]: muscleName
     };
     
-    onParamsChange({
+    setSessionParams({
       ...sessionParams,
       channel_muscle_mapping: updatedMapping
     });
@@ -201,7 +199,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       [muscleName]: colorValue
     };
     
-    onParamsChange({
+    setSessionParams({
       ...sessionParams,
       muscle_color_mapping: updatedColorMapping
     });
@@ -224,7 +222,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       defaultColorMapping[rightQuadName] = '#ef4444'; // Red
     }
     
-    onParamsChange({
+    setSessionParams({
       ...sessionParams,
       channel_muscle_mapping: defaultMapping,
       muscle_color_mapping: defaultColorMapping
@@ -446,7 +444,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     const newMode = checked ? 'activated' : 'raw';
                     setPlotMode(newMode);
                     // Sync with session params
-                    onParamsChange({
+                    setSessionParams({
                       ...sessionParams,
                       show_raw_signals: newMode === 'raw'
                     });
@@ -459,15 +457,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
             <div className="space-y-2 p-2 rounded-md border">
               <Label>Data Display Options</Label>
-              <p className="font-normal text-sm text-slate-500">
-                Control the number of data points shown in the plot.
-              </p>
-              <DownsamplingControl 
-                dataPoints={dataPoints}
-                setDataPoints={setDataPoints}
-                plotChannel1Data={plotChannel1Data}
-                plotChannel2Data={plotChannel2Data}
-              />
+              <div className="flex flex-col space-y-3">
+                <Label htmlFor="downsampling-points">Data Points for Plot</Label>
+                <DownsamplingControl
+                  dataPoints={dataPoints}
+                  setDataPoints={setDataPoints}
+                  plotChannel1Data={plotChannel1Data}
+                  plotChannel2Data={plotChannel2Data}
+                />
+              </div>
             </div>
           </TabsContent>
         </Tabs>

@@ -3,18 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { GameSessionParameters } from '@/types/emg';
+import { useSessionStore } from '@/store/sessionStore';
 
 interface PatientOutcomesCardProps {
-  sessionParams: GameSessionParameters;
-  onParamsChange: (params: GameSessionParameters) => void;
   disabled: boolean;
 }
 
 const PatientOutcomesCard: React.FC<PatientOutcomesCardProps> = ({
-  sessionParams,
-  onParamsChange,
   disabled,
 }) => {
+  const { sessionParams, setSessionParams } = useSessionStore();
   return (
     <Card>
       <CardHeader>
@@ -39,8 +37,7 @@ const PatientOutcomesCard: React.FC<PatientOutcomesCardProps> = ({
               step={1}
               value={[sessionParams.subjective_fatigue_level ?? 5]}
               onValueChange={(values: number[]) => {
-                onParamsChange({
-                  ...sessionParams,
+                setSessionParams({
                   subjective_fatigue_level: values[0]
                 });
               }}

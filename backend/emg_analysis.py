@@ -304,6 +304,31 @@ def calculate_mav(signal: np.ndarray, sampling_rate: int) -> Dict[str, float]:
     return {"mav": float(mav)}
 
 
+def moving_rms(signal: np.ndarray, window_size: int) -> np.ndarray:
+    """
+    Calculates the moving Root Mean Square (RMS) of a signal.
+    This is often used to create a smooth envelope of the EMG signal.
+
+    Args:
+        signal (np.ndarray): The input signal, expected to be rectified (all positive).
+        window_size (int): The size of the moving window in samples.
+
+    Returns:
+        np.ndarray: The moving RMS of the signal.
+    """
+    if window_size <= 0:
+        return np.array([])
+    
+    # Ensure window size is not larger than signal length
+    window_size = min(window_size, len(signal))
+    
+    squared_signal = np.power(signal, 2)
+    window = np.ones(window_size) / float(window_size)
+    
+    # Use 'same' mode to ensure output is same length as input
+    return np.sqrt(np.convolve(squared_signal, window, 'same'))
+
+
 # --- Foundational Function for Spectral Analysis ---
 
 def _calculate_psd(signal: np.ndarray, sampling_rate: int) -> tuple[np.ndarray, np.ndarray] | tuple[None, None]:

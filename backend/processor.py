@@ -24,7 +24,7 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions
+from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms
 from .models import GameSessionParameters
 
 # Default parameters for EMG processing
@@ -153,10 +153,17 @@ class GHOSTLYC3DProcessor:
                         continue
 
                     time_axis = np.arange(len(signal_data)) / sampling_rate
+
+                    # Calculate RMS envelope
+                    rms_env_window_samples = int((100 / 1000) * sampling_rate)
+                    calculated_rms_envelope = moving_rms(signal_data, rms_env_window_samples).tolist()
+
                     emg_data[channel_name] = {
                         'data': signal_data.tolist(),
                         'time_axis': time_axis.tolist(),
-                        'sampling_rate': sampling_rate
+                        'sampling_rate': sampling_rate,
+                        'rms_envelope': calculated_rms_envelope,
+                        'activated_data': None  # This can be populated later if needed
                     }
                 except IndexError:
                     errors.append(f"Data index out of range for channel {channel_name}")
@@ -390,84 +397,47 @@ class GHOSTLYC3DProcessor:
         Process the C3D file and return complete analysis results.
         """
         self.load_file()
-        c3d_metadata = self.extract_metadata()
-        
-        # Store the session game parameters that were used for this processing run
-        self.session_game_params_used = session_game_params
-        
-        # Combine C3D metadata with session game parameters for the final metadata object
-        final_metadata_dict = {**c3d_metadata, "session_parameters_used": session_game_params.model_dump()}
-        self.game_metadata = final_metadata_dict
-
-        self.extract_emg_data()
-        
-        self.calculate_analytics(
+        self.game_metadata = self.extract_metadata()
+        self.emg_data = self.extract_emg_data()
+        self.analytics = self.calculate_analytics(
             threshold_factor=processing_opts.threshold_factor,
             min_duration_ms=processing_opts.min_duration_ms,
             smoothing_window=processing_opts.smoothing_window,
             session_params=session_game_params
         )
-
+        
         return {
             "metadata": self.game_metadata,
             "analytics": self.analytics,
             "available_channels": list(self.emg_data.keys())
         }
 
-    def plot_ghostly_report(self, save_path: str):
-        """Generates and saves the GHOSTLY-style summary report."""
-        if not self.game_metadata or not self.analytics or not self.emg_data:
-            self.process_file()
-
-        return plot_ghostly_report(game_metadata=self.game_metadata,
-                                   analytics_data=self.analytics,
-                                   emg_data=self.emg_data,
-                                   save_path=save_path,
-                                   show_plot=False)
-
-    def plot_emg_with_contractions(self, channel: str, save_path: str):
+    def _determine_effective_mvc_threshold(self, logical_muscle_name: str, session_params: GameSessionParameters) -> Optional[float]:
         """
-        Plots the EMG signal with identified contractions for a given channel.
-
+        Determine the effective MVC threshold for a given muscle.
+        
         Args:
-            channel: Name of the EMG channel to plot
-            save_path: Path to save the plot
+            logical_muscle_name: Name of the muscle
+            session_params: Session parameters including MVC values and thresholds
+            
+        Returns:
+            Effective MVC threshold for the muscle
         """
-        if channel not in self.emg_data:
-            raise ValueError(f"Channel {channel} not found in EMG data")
+        # If no specific value, but there is a global one, use it as a fallback
+        if session_params.session_mvc_value is not None and session_params.session_mvc_threshold_percentage is not None:
+             return session_params.session_mvc_value * (session_params.session_mvc_threshold_percentage / 100.0)
 
-        # Get base channel name without 'Raw' or 'activated' suffix
-        base_name = channel.replace(' Raw', '').replace(' activated', '')
-        
-        # Get signal data
-        signal_data = np.array(self.emg_data[channel]['data'])
-        time_axis = np.array(self.emg_data[channel]['time_axis'])
-        
-        # Get contractions from analytics if available
-        contractions = []
-        if base_name in self.analytics and 'contractions' in self.analytics[base_name]:
-            contractions = self.analytics[base_name]['contractions']
-        
-        # Get analytics for the channel
-        analytics = self.analytics.get(base_name, None)
-        
-        # Use the imported plotting function
-        return plot_emg_with_contractions(
-            channel_name=channel,
-            signal_data=signal_data,
-            time_axis=time_axis,
-            contractions=contractions,
-            analytics=analytics,
-            save_path=save_path,
-            show_plot=False
-        )
+        return None # No MVC-based threshold can be determined
 
-    def recalculate_scores(self, result_data: Dict, session_game_params: GameSessionParameters) -> Dict:
+    def recalculate_scores_from_data(self,
+                                     existing_analytics: Dict,
+                                     session_game_params: GameSessionParameters
+                                    ) -> Dict:
         """
         Recalculate scores for an existing result with updated session parameters.
         
         Args:
-            result_data: The existing result data
+            existing_analytics: The existing result data
             session_game_params: Updated session parameters
             
         Returns:
@@ -477,15 +447,15 @@ class GHOSTLYC3DProcessor:
         self.session_game_params_used = session_game_params
         
         # Update the metadata with the new session parameters
-        updated_metadata = result_data.get('metadata', {})
+        updated_metadata = existing_analytics.get('metadata', {})
         updated_metadata['session_parameters_used'] = session_game_params.model_dump()
         
         # Get the existing analytics
-        existing_analytics = result_data.get('analytics', {})
+        existing_analytics = existing_analytics.get('analytics', {})
         updated_analytics = {}
         
         # Get available channels
-        available_channels = result_data.get('available_channels', [])
+        available_channels = existing_analytics.keys()
         
         # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
         base_names = sorted(list(set(

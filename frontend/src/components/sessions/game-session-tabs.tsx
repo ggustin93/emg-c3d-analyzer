@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { GameSession, EMGMetrics as FrontendEMGMetrics } from '@/types/session';
-import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EmgSignalData, GameSessionParameters } from '../../types/emg';
+import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EMGChannelSignalData, GameSessionParameters } from '../../types/emg';
 import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon, GearIcon } from '@radix-ui/react-icons';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
 import MetricCard from './metric-card';
@@ -25,6 +25,7 @@ import SettingsPanel from '../SettingsPanel';
 import ChannelFilter from '../app/ChannelFilter';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import PatientOutcomesCard from '../app/PatientOutcomesCard';
+import { useSessionStore } from '@/store/sessionStore';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -57,14 +58,12 @@ interface GameSessionTabsProps {
   dataPoints: number;
   setDataPoints: (points: number) => void;
   handleDataPointsChange: (value: number) => void;
-  mainPlotChannel1Data: EmgSignalData | null;
-  mainPlotChannel2Data: EmgSignalData | null;
+  mainPlotChannel1Data: EMGChannelSignalData | null;
+  mainPlotChannel2Data: EMGChannelSignalData | null;
   activeTab: string;
   onTabChange: (value: string) => void;
   plotMode: 'raw' | 'activated';
   setPlotMode: (mode: 'raw' | 'activated') => void;
-  sessionParams: GameSessionParameters;
-  onSessionParamsChange: (params: GameSessionParameters) => void;
   onRecalculateScores?: () => void;
   appIsLoading: boolean;
 }
@@ -92,12 +91,10 @@ export default function GameSessionTabs({
   onTabChange,
   plotMode,
   setPlotMode,
-  sessionParams,
-  onSessionParamsChange,
   onRecalculateScores,
   appIsLoading,
 }: GameSessionTabsProps) {
-
+  const { sessionParams, setSessionParams } = useSessionStore();
   // Add state to store analytics data for all channels
   const [allChannelsData, setAllChannelsData] = useState<Record<string, ChannelAnalyticsData | null>>({});
   const [viewMode, setViewMode] = useState<FilterMode>('comparison');
@@ -320,7 +317,6 @@ export default function GameSessionTabs({
               showSignalSwitch={true}
               plotMode={plotMode}
               setPlotMode={setPlotMode}
-              onParamsChange={onSessionParamsChange}
             />
             
             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
@@ -371,8 +367,6 @@ export default function GameSessionTabs({
             </CardHeader>
             <CardContent>
               <ScoringConfigPanel
-                sessionParams={sessionParams}
-                onParamsChange={onSessionParamsChange}
                 onRecalculate={onRecalculateScores}
                 disabled={appIsLoading}
                 availableChannels={muscleChannels}
@@ -380,8 +374,6 @@ export default function GameSessionTabs({
             </CardContent>
           </Card>
           <SettingsPanel 
-            sessionParams={sessionParams}
-            onParamsChange={onSessionParamsChange}
             muscleChannels={muscleChannels}
             disabled={appIsLoading}
             plotMode={plotMode}
@@ -392,8 +384,6 @@ export default function GameSessionTabs({
             plotChannel2Data={mainPlotChannel2Data}
           />
           <PatientOutcomesCard
-            sessionParams={sessionParams}
-            onParamsChange={onSessionParamsChange}
             disabled={appIsLoading}
           />
         </div>

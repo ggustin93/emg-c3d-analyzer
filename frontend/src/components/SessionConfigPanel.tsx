@@ -9,22 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Switch } from "./ui/switch";
 import MuscleNameDisplay from "./MuscleNameDisplay";
+import { useSessionStore } from '../store/sessionStore';
 
 interface ScoringConfigPanelProps {
-  sessionParams: GameSessionParameters;
-  onParamsChange: (params: GameSessionParameters) => void;
   onRecalculate?: () => void;
   disabled: boolean;
   availableChannels?: string[];
 }
 
 const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({ 
-  sessionParams, 
-  onParamsChange, 
   onRecalculate,
   disabled,
   availableChannels = []
 }) => {
+  const { sessionParams, setSessionParams } = useSessionStore();
+  
   // Extract muscle channels (CH1, CH2, etc.) from available channels
   const muscleChannels = availableChannels
     .filter(ch => !ch.includes(' ')) // Filter out channels with spaces (like "CH1 Raw")
@@ -73,9 +72,9 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     
     // Only trigger update if changes were made
     if (hasChanges) {
-      onParamsChange(updatedParams);
+      setSessionParams(updatedParams);
     }
-  }, [sessionParams, muscleChannels, onParamsChange]);
+  }, [sessionParams, muscleChannels, setSessionParams]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,7 +104,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
       updatedParams.session_expected_long_right = Math.floor(halfExpected / 2);
     }
 
-    onParamsChange(updatedParams);
+    setSessionParams(updatedParams);
   };
 
   // Handle channel-specific MVC value changes
@@ -125,7 +124,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
       }
     };
 
-    onParamsChange(updatedParams);
+    setSessionParams(updatedParams);
   };
 
   // Handle channel-specific MVC threshold percentage changes
@@ -143,7 +142,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
       }
     };
 
-    onParamsChange(updatedParams);
+    setSessionParams(updatedParams);
   };
 
   // Validate that the sum of channel contractions matches the total
@@ -248,18 +247,9 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                       onChange={(e) => handleChannelMVCChange(channel, e.target.value)}
                       placeholder="e.g., 1.5"
                       min="0" step="0.0001"
-                      className="pr-8 pl-6 text-sm h-8"
-                      data-auto-initialized={(typeof mvcValue === 'number' && mvcValue > 0) ? 'true' : 'false'}
                       disabled={disabled}
+                      className="pr-10"
                     />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">mV</span>
-                    {mvcValue && (
-                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </span>
-                    )}
                   </div>
                 </div>
                 
@@ -268,28 +258,27 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                   <div className="flex items-center">
                     <Label htmlFor={`threshold_${channel}`} className="text-xs font-medium flex-grow">MVC Threshold (%)</Label>
                   </div>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      id={`threshold_${channel}`}
-                      value={thresholdValue}
-                      onChange={(e) => handleChannelThresholdChange(channel, e.target.value)}
-                      placeholder="e.g., 75"
-                      min="0" max="100" step="1"
-                      className="pr-8 text-sm h-8"
-                      disabled={disabled}
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-400">%</span>
-                  </div>
+                  <Input
+                    type="number"
+                    id={`threshold_${channel}`}
+                    value={thresholdValue}
+                    onChange={(e) => handleChannelThresholdChange(channel, e.target.value)}
+                    placeholder="e.g., 70"
+                    min="0" max="100" step="1"
+                    disabled={disabled}
+                  />
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* Expected Contractions Section */}
         <div className="space-y-2">
-          <div className="flex items-center">
-            <Label htmlFor="session_expected_contractions" className="text-sm font-medium flex-grow">Expected Contractions (Total)</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="session_expected_contractions" className="text-sm font-medium flex-grow">
+              Expected Contractions (Total)
+            </Label>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="text-slate-400 hover:text-slate-600 cursor-help">
@@ -299,9 +288,8 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="w-[200px] text-xs">
-                  Total number of contractions expected in this session.
-                  Used to calculate performance score.
+                <p className="w-[250px] text-xs">
+                  Set the total number of expected muscle contractions for this session. This is used to calculate completion scores.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -318,61 +306,19 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
           />
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <Label htmlFor="contraction_duration_threshold" className="text-sm font-medium flex-grow">
-              Short/Long Threshold
-            </Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="w-[200px] text-xs">
-                  Duration threshold in milliseconds to distinguish between short and long contractions. 
-                  Contractions shorter than this value are considered "short".
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="relative">
-            <Input
-              type="number"
-              id="contraction_duration_threshold"
-              name="contraction_duration_threshold"
-              value={sessionParams.contraction_duration_threshold ?? 250}
-              onChange={handleChange}
-              placeholder="e.g., 250"
-              min="100" step="50"
-              className="pr-8"
-              disabled={disabled}
-            />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-slate-400">ms</span>
-          </div>
-        </div>
-
-        <Collapsible 
-          open={isAdvancedOpen} 
-          onOpenChange={setIsAdvancedOpen}
-          className="border rounded-md p-2"
-        >
-          <CollapsibleTrigger className="flex w-full items-center justify-between p-2 hover:bg-slate-50 rounded">
-            <span className="text-sm font-medium">Advanced Scoring Parameters</span>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
+        {/* Advanced Contraction Settings */}
+        <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium cursor-pointer">
+            Advanced Contraction Settings
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              className={`transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`}
             >
               <path d="M6 9l6 6 6-6" />
             </svg>
@@ -533,4 +479,4 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   );
 };
 
-export default ScoringConfigPanel; 
+export default ScoringConfigPanel;

@@ -21,17 +21,6 @@ export interface StatsData {
   samples: number;
 }
 
-export interface EmgSignalData {
-  channel_name: string;
-  sampling_rate: number;
-  data: number[];
-  time_axis: number[];
-  activated_data?: number[];
-  contractions?: Contraction[];
-  original_length?: number;
-  url?: string; 
-}
-
 export interface StatsPanelProps {
   stats?: StatsData | null;
   channelAnalytics?: ChannelAnalyticsData | null;
@@ -151,6 +140,14 @@ export interface ChannelAnalyticsData {
   mvc_threshold_used?: number;
 }
 
+export interface EMGChannelSignalData {
+  sampling_rate: number;
+  time_axis: number[];
+  data: number[]; // This will hold the primary C3D signal (e.g., "CH1 Raw")
+  rms_envelope?: number[]; // For the calculated RMS envelope
+  activated_data?: number[]; // If you have a separate "activated" signal processing step
+}
+
 export interface EMGAnalysisResult {
   file_id: string;
   timestamp: string;
@@ -158,10 +155,10 @@ export interface EMGAnalysisResult {
   metadata: GameMetadata;
   analytics: { [channelName: string]: ChannelAnalyticsData };
   available_channels: string[];
+  emg_signals: { [channelName: string]: EMGChannelSignalData };
   user_id?: string | null;
   session_id?: string | null;
   patient_id?: string | null;
-  plots?: { [key: string]: string };
   overall_score?: number;
   symmetry_score?: number;
 } 

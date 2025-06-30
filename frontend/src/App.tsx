@@ -15,13 +15,14 @@ import ScoringConfigPanel from "./components/SessionConfigPanel"; // Import the 
 // Import hooks
 import { useDataDownsampling } from "./hooks/useDataDownsampling";
 import { useChannelManagement } from "./hooks/useChannelManagement";
-import { useEmgDataFetching } from "./hooks/useEmgDataFetching";
+import { usePlotDataProcessor } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
 import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/EMGChart"; // This type might move later
 import SessionLoader from "./components/SessionLoader";
 import { Button } from "./components/ui/button";
+import { useSessionStore } from './store/sessionStore';
 
 // Import Stagewise components
 import { StagewiseToolbar } from "@stagewise/toolbar-react";
@@ -39,50 +40,12 @@ function App() {
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
   
-  // State for session parameters
-  const [sessionParams, setSessionParams] = useState<GameSessionParameters>(() => {
-    // Try to load saved params from localStorage
-    const savedParams = localStorage.getItem('emg_session_params');
-    if (savedParams) {
-      try {
-        const parsed = JSON.parse(savedParams);
-        // Ensure required objects exist
-        return {
-          ...parsed,
-          channel_muscle_mapping: parsed.channel_muscle_mapping || {},
-          muscle_color_mapping: parsed.muscle_color_mapping || {},
-          session_mvc_values: parsed.session_mvc_values || {},
-          session_mvc_threshold_percentages: parsed.session_mvc_threshold_percentages || {}
-        };
-      } catch (e) {
-        console.error('Failed to parse saved session params:', e);
-      }
-    }
-    
-    // Default values if no saved params exist
-    return {
-      session_mvc_value: 0.00015,
-      session_mvc_threshold_percentage: 75,
-      session_expected_contractions: 12,
-      session_expected_contractions_ch1: null,
-      session_expected_contractions_ch2: null,
-      subjective_fatigue_level: 5,
-      channel_muscle_mapping: {
-        "CH1": "Left Quadriceps",
-        "CH2": "Right Quadriceps"
-      },
-      muscle_color_mapping: {
-        "Left Quadriceps": "#3b82f6", // Blue
-        "Right Quadriceps": "#ef4444"  // Red
-      },
-      session_mvc_values: {},
-      session_mvc_threshold_percentages: {}
-    };
-  });
+  // State for session parameters from Zustand store
+  const { sessionParams, setSessionParams, resetSessionParams } = useSessionStore();
   
   // Save sessionParams to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('emg_session_params', JSON.stringify(sessionParams));
+    // This is now handled by the persist middleware in Zustand
   }, [sessionParams]);
   
   // Initialize hooks
@@ -135,11 +98,10 @@ function App() {
     plotChannel1Data,
     plotChannel2Data,
     currentStats,
-    dataFetchingLoading,
-    dataFetchingError,
-    fetchChannelRawData,
+    dataProcessingLoading,
+    dataProcessingError,
     resetPlotDataAndStats,
-  } = useEmgDataFetching(
+  } = usePlotDataProcessor(
     analysisResult, 
     plotChannel1Name, 
     plotChannel2Name, 
@@ -158,11 +120,10 @@ function App() {
     resetGameSessionData,
   } = useGameSessionData(
     analysisResult,
-    plotChannel1Data, // Pass main plot data for context if needed by session logic
+    plotChannel1Data,
     plotChannel2Data,
     plotChannel1Name,
-    plotChannel2Name,
-    { fetchChannelRawData } // Pass the fetcher for tab-specific data
+    plotChannel2Name
   );
 
   const resetState = useCallback(() => {
@@ -173,23 +134,8 @@ function App() {
     resetGameSessionData();
     setSelectedChannelForStats(null);
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
-    
-    // Reset muscle color mappings to defaults while preserving other session params
-    setSessionParams(prev => ({
-      ...prev,
-      channel_muscle_mapping: {
-        "CH1": "Left Quadriceps",
-        "CH2": "Right Quadriceps"
-      },
-      muscle_color_mapping: {
-        "Left Quadriceps": "#3b82f6", // Blue
-        "Right Quadriceps": "#ef4444"  // Red
-      },
-      session_mvc_values: {},
-      session_mvc_threshold_percentages: {},
-      subjective_fatigue_level: prev.subjective_fatigue_level ?? 5
-    }));
-  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData]);
+    resetSessionParams();
+  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult) => {
     resetState();
@@ -231,55 +177,14 @@ function App() {
   }, [resetState]);
 
   // Function to handle recalculating scores with updated parameters
+  // This is now handled client-side by updating sessionParams
+  // The 'recalculate' button is now a 'refresh' of the analysis with new params
   const handleRecalculateScores = useCallback(async () => {
-    if (!analysisResult) return;
-    
-    setIsLoading(true);
-    setAppError(null);
-    
-    try {
-      // Create FormData for the recalculation request
-      const formData = new FormData();
-      formData.append('result_id', analysisResult.file_id);
-      
-      // Add all session parameters to the form data
-      if (sessionParams) {
-        Object.keys(sessionParams).forEach(key => {
-          const value = sessionParams[key];
-          if (value !== null && value !== undefined) {
-            if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping' || 
-                key === 'session_mvc_values' || key === 'session_mvc_threshold_percentages') {
-              formData.append(key, JSON.stringify(value || {}));
-            } else {
-              formData.append(key, String(value));
-            }
-          }
-        });
-      }
-
-      // Send the request to recalculate scores
-      const recalculateResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/recalculate-scores', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!recalculateResponse.ok) {
-        const errorData = await recalculateResponse.json();
-        throw new Error(errorData.detail || 'Score recalculation failed.');
-      }
-
-      const resultData = await recalculateResponse.json();
-      handleSuccess(resultData);
-      
-      // Switch to the Game Stats tab after recalculation
-      setActiveTab("game-stats");
-      
-    } catch (error: any) {
-      handleError(error.message || 'An unknown error occurred while recalculating scores.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [analysisResult, sessionParams, handleSuccess, handleError]);
+    // This is now a client-side only operation, we just need to trigger re-renders
+    // The hooks should be designed to react to changes in sessionParams
+    console.log("Re-evaluating with new session parameters.", sessionParams);
+    // The actual recalculation will happen within the hooks that depend on sessionParams
+  }, [sessionParams]);
 
   const handleQuickSelect = useCallback(async (filename: string) => {
     setIsLoading(true);
@@ -422,8 +327,8 @@ function App() {
   const currentChannelAnalytics: ChannelAnalyticsData | null = 
     analysisResult && selectedChannelForStats ? analysisResult.analytics[selectedChannelForStats] : null;
 
-  const appIsLoading = isLoading || dataFetchingLoading || tabsDataLoading;
-  const combinedError = [appError, dataFetchingError, tabsDataError].filter(Boolean).join("; ");
+  const appIsLoading = isLoading || dataProcessingLoading || tabsDataLoading;
+  const combinedError = [appError, dataProcessingError, tabsDataError].filter(Boolean).join("; ");
 
   // Calculate actual MVC threshold for the plot if params are set
   const mvcThresholdForPlot = useMemo(() => {
@@ -495,9 +400,6 @@ function App() {
               onTabChange={setActiveTab}
               plotMode={plotMode}
               setPlotMode={setPlotMode}
-              sessionParams={sessionParams}
-              onSessionParamsChange={setSessionParams}
-              onRecalculateScores={handleRecalculateScores}
               appIsLoading={isLoading}
             />
           )}
