@@ -88,3 +88,39 @@ yarn-error.log*
 
 .cursor
 data/cache/*
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
+*.pyc
+
+# Dependency directories
+node_modules/
+.venv/
+venv/
+
+# Build outputs
+build/
+dist/
+
+# Log files
+logs/
+*.log
+
+# Temp files
+.dev_pids
+
+# Data files - these can be large and are generated
+backend/data/
+data/
+
+# Test artifacts
+backend/tests/data/cache/
+backend/tests/data/plots/
+backend/tests/data/results/
+backend/tests/data/uploads/
+coverage.xml
+.coverage
+htmlcov/

@@ -1,0 +1,20 @@
+# Development and testing dependencies for GHOSTLY+ EMG Analyzer
+
+# Testing frameworks
+pytest>=7.4.0
+pytest-cov>=4.1.0
+httpx>=0.24.1  # Required for FastAPI TestClient
+
+# Development tools
+black>=23.7.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.5.1
+
+# Backend dependencies (also in pyproject.toml)
+fastapi>=0.115.0
+pydantic>=2.11.0
+python-multipart>=0.0.9
+numpy>=2.2.0
+scipy>=1.15.0
+ezc3d>=1.5.0 
