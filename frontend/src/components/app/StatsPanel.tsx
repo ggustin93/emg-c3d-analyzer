@@ -25,6 +25,8 @@ interface StatsPanelComponentProps extends ExternalStatsPanelProps {
   viewMode: FilterMode;
   onFilterChange: (mode: FilterMode, channel?: string) => void;
   isInitializingComparison?: boolean;
+  plotMode: 'raw' | 'activated';
+  setPlotMode: (mode: 'raw' | 'activated') => void;
 }
 
 // Function to calculate performance score based on good contractions vs expected
@@ -179,7 +181,9 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   allChannelsData = {},
   viewMode,
   onFilterChange,
-  isInitializingComparison = false
+  isInitializingComparison = false,
+  plotMode,
+  setPlotMode
 }) => {
   // const [viewMode, setViewMode] = useState<FilterMode>('single'); // State is now lifted
   
@@ -227,11 +231,13 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
         </div>
         <div className="mt-4">
-          <ChannelFilter 
+          <ChannelFilter
             availableChannels={availableChannels}
             sessionParams={sessionParams || { channel_muscle_mapping: {}, muscle_color_mapping: {} }}
             activeFilter={{ mode: viewMode, channel: selectedChannel }}
             onFilterChange={onFilterChange}
+            plotMode={plotMode}
+            setPlotMode={setPlotMode}
           />
         </div>
       </div>
@@ -245,11 +251,13 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
           Select a muscle to view its detailed analytics.
         </p>
         <div className="mt-4">
-          <ChannelFilter 
+          <ChannelFilter
             availableChannels={availableChannels}
             sessionParams={sessionParams || { channel_muscle_mapping: {}, muscle_color_mapping: {} }}
             activeFilter={{ mode: viewMode, channel: selectedChannel }}
             onFilterChange={onFilterChange}
+            plotMode={plotMode}
+            setPlotMode={setPlotMode}
           />
         </div>
       </div>

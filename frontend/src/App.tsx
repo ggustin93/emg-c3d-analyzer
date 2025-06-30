@@ -324,9 +324,6 @@ function App() {
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
-  const currentChannelAnalytics: ChannelAnalyticsData | null = 
-    analysisResult && selectedChannelForStats ? analysisResult.analytics[selectedChannelForStats] : null;
-
   const appIsLoading = isLoading || dataProcessingLoading || tabsDataLoading;
   const combinedError = [appError, dataProcessingError, tabsDataError].filter(Boolean).join("; ");
 
@@ -389,7 +386,6 @@ function App() {
               selectedChannelForStats={selectedChannelForStats}
               setSelectedChannelForStats={setSelectedChannelForStats}
               currentStats={currentStats}
-              currentChannelAnalyticsData={currentChannelAnalytics}
               mainChartData={mainCombinedChartData}
               dataPoints={downsamplingControls.dataPoints}
               setDataPoints={downsamplingControls.setDataPoints}

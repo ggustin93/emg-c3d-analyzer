@@ -26,6 +26,7 @@ import ChannelFilter from '../app/ChannelFilter';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import PatientOutcomesCard from '../app/PatientOutcomesCard';
 import { useSessionStore } from '@/store/sessionStore';
+import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -51,7 +52,6 @@ interface GameSessionTabsProps {
   setSelectedChannelForStats: (name: string | null) => void;
   
   currentStats: StatsData | null;
-  currentChannelAnalyticsData: ChannelAnalyticsData | null;
   
   mainChartData: CombinedChartDataPoint[];
 
@@ -80,7 +80,6 @@ export default function GameSessionTabs({
   selectedChannelForStats,
   setSelectedChannelForStats,
   currentStats,
-  currentChannelAnalyticsData,
   mainChartData,
   dataPoints,
   setDataPoints,
@@ -95,53 +94,38 @@ export default function GameSessionTabs({
   appIsLoading,
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
+  const liveAnalytics = useLiveAnalytics(analysisResult);
+
   // Add state to store analytics data for all channels
-  const [allChannelsData, setAllChannelsData] = useState<Record<string, ChannelAnalyticsData | null>>({});
   const [viewMode, setViewMode] = useState<FilterMode>('comparison');
   const [isInitializingComparison, setIsInitializingComparison] = useState(false);
+
+  const allChannelsData = liveAnalytics;
+  const currentChannelAnalyticsData = selectedChannelForStats && liveAnalytics
+    ? liveAnalytics[selectedChannelForStats]
+    : null;
   
   // This effect will run when the component mounts or when dependencies change.
   // It's responsible for pre-loading all channel data for comparison view.
   useEffect(() => {
     // Only run this logic if there are muscle channels to process.
-    if (muscleChannels.length > 0 && analysisResult?.analytics) {
+    if (muscleChannels.length > 0 && liveAnalytics) {
       console.log('Pre-loading all channel analytics for comparison mode.');
       
       // Set the loading state to true.
       setIsInitializingComparison(true);
       
-      // Create a new object to hold the analytics data for all channels.
-      const allData: Record<string, ChannelAnalyticsData | null> = {};
-      
-      // Iterate over the muscle channels and populate the data object.
-      muscleChannels.forEach(channel => {
-        allData[channel] = analysisResult.analytics[channel] || null;
-      });
-      
-      // Update the state with the complete data set.
-      setAllChannelsData(allData);
       
       // Set the loading state to false once data is ready.
       setIsInitializingComparison(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [muscleChannels, analysisResult?.analytics]); // Dependency on analytics object
+  }, [muscleChannels, liveAnalytics]); // Dependency on analytics object
   
-  // This effect ensures that any updates to a single channel's analytics
-  // (e.g., from recalculation) are merged into the main data set.
-  useEffect(() => {
-    if (currentChannelAnalyticsData && selectedChannelForStats) {
-      setAllChannelsData(prev => ({
-        ...prev,
-        [selectedChannelForStats]: currentChannelAnalyticsData
-      }));
-    }
-  }, [currentChannelAnalyticsData, selectedChannelForStats]);
   
   // This effect resets the data when the entire analysis result is cleared.
   useEffect(() => {
     if (!analysisResult) {
-      setAllChannelsData({});
       setViewMode('comparison'); // Reset to default view
     }
   }, [analysisResult]);
@@ -293,15 +277,15 @@ export default function GameSessionTabs({
 
       <TabsContent value="plots">
         <Card>
-          <CardHeader>
-          </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent className="pt-4">
             {sessionParams && muscleChannels.length > 0 && (
               <ChannelFilter
                 availableChannels={muscleChannels}
                 sessionParams={sessionParams}
                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
                 onFilterChange={handleFilterChange}
+                plotMode={plotMode}
+                setPlotMode={setPlotMode}
               />
             )}
             <EMGChart 
@@ -321,11 +305,9 @@ export default function GameSessionTabs({
             
             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-medium">EMG Analytics</h3>
-                  <p className="text-sm text-muted-foreground">Detailed metrics for the selected muscle group.</p>
-                </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-medium">EMG Analytics</h3>
+                <p className="text-sm text-muted-foreground">Detailed metrics for the selected muscle group.</p>
               </div>
               
               <StatsPanel 
@@ -338,10 +320,12 @@ export default function GameSessionTabs({
                 isEMGAnalyticsTab={true}
                 contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
                 sessionParams={sessionParams}
-                allChannelsData={allChannelsData}
+                allChannelsData={allChannelsData ?? undefined}
                 viewMode={viewMode}
                 onFilterChange={handleFilterChange}
                 isInitializingComparison={isInitializingComparison}
+                plotMode={plotMode}
+                setPlotMode={setPlotMode}
               />
             </div>
           </CardContent>
@@ -376,8 +360,6 @@ export default function GameSessionTabs({
           <SettingsPanel 
             muscleChannels={muscleChannels}
             disabled={appIsLoading}
-            plotMode={plotMode}
-            setPlotMode={setPlotMode}
             dataPoints={dataPoints}
             setDataPoints={setDataPoints}
             plotChannel1Data={mainPlotChannel1Data}

@@ -79,35 +79,39 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
       
       let goodContractions = 0;
-      if (channelData.contractions && Array.isArray(channelData.contractions) && mvcThreshold !== null) {
-        goodContractions = channelData.contractions.filter(c => c.max_amplitude >= mvcThreshold!).length;
+      let shortContractions = 0;
+      let longContractions = 0;
+      let shortGoodContractions = 0;
+      let longGoodContractions = 0;
+      
+      const durationThreshold = sessionParams.contraction_duration_threshold ?? 250;
+
+      if (channelData.contractions && Array.isArray(channelData.contractions)) {
+        channelData.contractions.forEach((c: Contraction) => {
+          const isGood = mvcThreshold !== null && c.max_amplitude >= mvcThreshold;
+          
+          if (isGood) goodContractions++;
+
+          if (c.duration_ms < durationThreshold) {
+            shortContractions++;
+            if (isGood) shortGoodContractions++;
+          } else {
+            longContractions++;
+            if (isGood) longGoodContractions++;
+          }
+        });
       } else {
         goodContractions = channelData.good_contraction_count || 0;
       }
 
       const totalContractions = channelData.contraction_count || 0;
-
+      
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
       const totalScore = calculateTotalScore(contractionScore, goodContractionScore);
       const scoreColors = getScoreColors(totalScore);
       
       muscleScores.push(totalScore);
-
-      let shortContractions = 0, longContractions = 0;
-      let shortGoodContractions = 0, longGoodContractions = 0;
-
-      if (channelData.contractions && Array.isArray(channelData.contractions)) {
-        channelData.contractions.forEach((c: Contraction) => {
-          if (c.duration_ms < contractionDurationThreshold) {
-            shortContractions++;
-            if (c.is_good) shortGoodContractions++;
-          } else {
-            longContractions++;
-            if (c.is_good) longGoodContractions++;
-          }
-        });
-      }
 
       muscleData.push({
         channelName,

@@ -11,10 +11,11 @@ interface SessionState {
 const defaultSessionParams: GameSessionParameters = {
   session_mvc_value: 0.00015,
   session_mvc_threshold_percentage: 75,
-  session_expected_contractions: 12,
-  session_expected_contractions_ch1: null,
-  session_expected_contractions_ch2: null,
+  session_expected_contractions: 24,
+  session_expected_contractions_ch1: 12,
+  session_expected_contractions_ch2: 12,
   subjective_fatigue_level: 5,
+  contraction_duration_threshold: 2000, // Default to 2 seconds
   channel_muscle_mapping: {
     "CH1": "Left Quadriceps",
     "CH2": "Right Quadriceps"

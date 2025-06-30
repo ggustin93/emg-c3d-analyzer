@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Switch } from "./ui/switch";
 import MuscleNameDisplay from "./MuscleNameDisplay";
 import { useSessionStore } from '../store/sessionStore';
+import { Slider } from "./ui/slider";
 
 interface ScoringConfigPanelProps {
   onRecalculate?: () => void;
@@ -271,6 +272,32 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
               </div>
             );
           })}
+        </div>
+
+        {/* Analysis Thresholds Section */}
+        <div className="flex items-center gap-2 pt-4">
+          <h4 className="text-sm font-medium">Analysis Thresholds</h4>
+        </div>
+        <div className="space-y-4 border rounded-md p-3">
+          <div className="space-y-2">
+            <Label>Contraction Duration Threshold</Label>
+            <div className="flex items-center space-x-4">
+              <Slider
+                value={[sessionParams.contraction_duration_threshold || 2000]}
+                onValueChange={(value) => setSessionParams({ contraction_duration_threshold: value[0] })}
+                min={100}
+                max={5000}
+                step={100}
+                disabled={disabled}
+              />
+              <div className="w-24 text-right">
+                <span>{(sessionParams.contraction_duration_threshold || 2000) / 1000}s</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">
+              Defines the boundary between a "short" and a "long" contraction.
+            </p>
+          </div>
         </div>
 
         {/* Expected Contractions Section */}

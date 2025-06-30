@@ -28,8 +28,6 @@ import { useSessionStore } from '../store/sessionStore';
 interface SettingsPanelProps {
   muscleChannels: string[];
   disabled: boolean;
-  plotMode: 'raw' | 'activated';
-  setPlotMode: (mode: 'raw' | 'activated') => void;
   dataPoints: number;
   setDataPoints: (points: number) => void;
   plotChannel1Data: EMGChannelSignalData | null;
@@ -95,8 +93,6 @@ const combineMuscleParts = (parts: MuscleNameParts): string => {
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
   muscleChannels,
   disabled,
-  plotMode,
-  setPlotMode,
   dataPoints,
   setDataPoints,
   plotChannel1Data,
@@ -427,33 +423,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <p className="text-sm text-slate-500">
               Configure how EMG signals are displayed in charts and visualizations.
             </p>
-
-            <div className="flex items-center justify-between space-x-2 p-2 rounded-md border">
-              <Label htmlFor="plot-mode-switch" className="flex flex-col space-y-1">
-                <span>Signal Type</span>
-                <span className="font-normal text-sm text-slate-500">
-                  Switch between Raw and Activated signals.
-                </span>
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="plot-mode-switch">Raw</Label>
-                <Switch
-                  id="plot-mode-switch"
-                  checked={plotMode === 'activated'}
-                  onCheckedChange={(checked: boolean) => {
-                    const newMode = checked ? 'activated' : 'raw';
-                    setPlotMode(newMode);
-                    // Sync with session params
-                    setSessionParams({
-                      ...sessionParams,
-                      show_raw_signals: newMode === 'raw'
-                    });
-                  }}
-                  disabled={disabled}
-                />
-                <Label htmlFor="plot-mode-switch">Activated</Label>
-              </div>
-            </div>
 
             <div className="space-y-2 p-2 rounded-md border">
               <Label>Data Display Options</Label>
