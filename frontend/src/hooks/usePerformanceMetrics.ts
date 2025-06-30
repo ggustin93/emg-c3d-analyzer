@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { EMGAnalysisResult, Contraction } from '../types/emg';
+import { EMGAnalysisResult, Contraction, GameSessionParameters } from '../types/emg';
 import { getScoreColors } from '@/hooks/useScoreColors';
+import { useSessionStore } from '@/store/sessionStore';
 
 const calculateContractionScore = (count: number, expected: number | null): number => {
   if (!expected || expected <= 0) return 100;
@@ -26,7 +27,18 @@ const calculateOverallScore = (muscleScores: number[]): number => {
   return Math.round(sum / muscleScores.length);
 };
 
+const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
+  const mvcValue = params.session_mvc_values?.[channelName] ?? params.session_mvc_value ?? 0;
+  const thresholdPercent = params.session_mvc_threshold_percentages?.[channelName] ?? params.session_mvc_threshold_percentage ?? 75;
+
+  if (mvcValue === null || mvcValue === undefined) return null;
+
+  return mvcValue * (thresholdPercent / 100);
+};
+
 export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, contractionDurationThreshold: number = 250) => {
+  const { sessionParams } = useSessionStore();
+
   const performanceData = useMemo(() => {
     if (!analysisResult?.analytics) {
       return {
@@ -49,11 +61,11 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       let expectedContractions: number | null = null;
       let expectedShortContractions: number | undefined;
       let expectedLongContractions: number | undefined;
-      const params = analysisResult.metadata.session_parameters_used;
+      const params = sessionParams;
 
       if (params) {
-        const perChannelKey = `session_expected_contractions_ch${index + 1}`;
-        expectedContractions = (params as any)[perChannelKey] ?? params.session_expected_contractions ?? null;
+        const perChannelKey = `session_expected_contractions_ch${index + 1}` as keyof typeof params;
+        expectedContractions = (params[perChannelKey] as number | null) ?? params.session_expected_contractions ?? null;
         
         if (index === 0) {
           expectedShortContractions = typeof params.session_expected_short_left === 'number' ? params.session_expected_short_left : undefined;
@@ -64,8 +76,16 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
         }
       }
       
+      const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
+      
+      let goodContractions = 0;
+      if (channelData.contractions && Array.isArray(channelData.contractions) && mvcThreshold !== null) {
+        goodContractions = channelData.contractions.filter(c => c.max_amplitude >= mvcThreshold!).length;
+      } else {
+        goodContractions = channelData.good_contraction_count || 0;
+      }
+
       const totalContractions = channelData.contraction_count || 0;
-      const goodContractions = channelData.good_contraction_count || 0;
 
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
@@ -123,11 +143,11 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       }
     }
 
-    const durationThreshold = analysisResult?.metadata.session_parameters_used?.contraction_duration_threshold ?? contractionDurationThreshold;
+    const durationThreshold = sessionParams?.contraction_duration_threshold ?? contractionDurationThreshold;
 
     return { muscleData, overallScore, overallScoreLabel, symmetryScore, durationThreshold };
 
-  }, [analysisResult, contractionDurationThreshold]);
+  }, [analysisResult, contractionDurationThreshold, sessionParams]);
 
   return performanceData;
 }; 
