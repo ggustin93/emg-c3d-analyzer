@@ -3,8 +3,10 @@ import { useSessionStore } from '@/store/sessionStore';
 import { EMGAnalysisResult, GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 
 const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
-  const mvcValue = params.session_mvc_values?.[channelName] ?? params.session_mvc_value ?? 0;
-  const thresholdPercent = params.session_mvc_threshold_percentages?.[channelName] ?? params.session_mvc_threshold_percentage ?? 75;
+  if (!params) return null;
+  
+  const mvcValue = (params.session_mvc_values || {})[channelName] ?? params.session_mvc_value ?? 0;
+  const thresholdPercent = (params.session_mvc_threshold_percentages || {})[channelName] ?? params.session_mvc_threshold_percentage ?? 75;
 
   if (mvcValue === null || mvcValue === undefined) return null;
 
@@ -15,7 +17,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
   const { sessionParams } = useSessionStore();
 
   const liveAnalytics = useMemo(() => {
-    if (!analysisResult?.analytics) {
+    if (!analysisResult?.analytics || !sessionParams) {
       return null;
     }
 

@@ -48,7 +48,7 @@ export const usePlotDataProcessor = (
   const { dataPoints, downsampleData } = downsamplingControls;
 
   const processAndSetChannelData = useCallback((channelName: string | null, setter: React.Dispatch<React.SetStateAction<EMGChannelSignalData | null>>) => {
-    if (analysisResult && channelName && analysisResult.emg_signals[channelName]) {
+    if (analysisResult && analysisResult.emg_signals && channelName && analysisResult.emg_signals[channelName]) {
       const signalData = analysisResult.emg_signals[channelName];
       const { data: optimizedData, timeAxis: optimizedTimeAxis } = downsampleData(signalData.data, signalData.time_axis, dataPoints);
       
@@ -78,7 +78,7 @@ export const usePlotDataProcessor = (
 
   // Effect to calculate stats for the selected channel
   useEffect(() => {
-    if (analysisResult && selectedChannelForStats && analysisResult.emg_signals[selectedChannelForStats]) {
+    if (analysisResult && analysisResult.emg_signals && selectedChannelForStats && analysisResult.emg_signals[selectedChannelForStats]) {
       const signalData = analysisResult.emg_signals[selectedChannelForStats];
       // Note: stats are calculated on the original, non-downsampled data which is what we have in emg_signals
       setCurrentStats(calculateStats(signalData));
