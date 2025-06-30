@@ -78,6 +78,10 @@
 ✅ **Frontend Logic Refactoring**:
     - ✅ **Encapsulated performance calculation logic into a `usePerformanceMetrics` hook.**
     - ✅ **Simplified `PerformanceCard` to use the new hook.**
+    - ✅ **Created a `useLiveAnalytics` hook to provide reactive, client-side recalculation of all channel analytics.**
+✅ **Fully Reactive Frontend**:
+    - ✅ **Implemented a global Zustand store (`useSessionStore`)** as the single source of truth for all session parameters.
+    - ✅ **All analytics and performance metrics are now fully reactive.** Changes to MVC values, expected contraction counts, or duration thresholds in the UI instantly trigger recalculations and update all relevant components (`StatsPanel`, `PerformanceCard`, `MuscleComparisonTable`).
 ✅ **Frontend Caching**: Implemented in-memory caching for plot data to avoid redundant API calls.
 ✅ API Integration for all core features.
 ✅ UI Components from `shadcn/ui`.

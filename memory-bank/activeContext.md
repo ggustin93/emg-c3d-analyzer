@@ -115,6 +115,7 @@
 - **Robust Channel Handling**: Implementing more flexible channel naming and detection to handle various C3D file formats.
 - **Clinical Relevance**: Enhancing the EMG analysis with more advanced metrics for better rehabilitation assessment, focusing on contraction quality and fatigue estimation.
 - **Standardized Clinical Measures**: Using established clinical scales like the Borg CR10 Scale for Rating of Perceived Exertion to ensure relevance and validity of patient-reported outcomes.
+- **Reactive Frontend Architecture**: The frontend is now fully reactive. A centralized Zustand store manages all session parameters. Key components and analytics hooks subscribe to this store, allowing for instant, client-side recalculation of all metrics when settings are changed. This provides a highly interactive and responsive user experience for therapists.
 
 ### Troubleshooting
 - **File System as Database**: The current approach uses the file system for data storage, which will be replaced by a stateless model where all necessary data is returned directly in API responses.
@@ -124,12 +125,10 @@
 ## Next Steps
 
 ### Immediate Tasks
-1.  Implement Phase 1 of the refactoring plan:
-    *   Remove server-side plotting relics from the backend.
-    *   Modify the `/upload` endpoint to return all EMG signal data.
-    *   Adapt the frontend to use the bundled signal data.
-2.  Begin Phase 2 with the integration of the new `emg_analysis.py` module.
-3.  Update backend models to support the enhanced analysis capabilities.
+1.  **Merge `feature/backend-streamlining` into `main`**: The feature branch is now complete and stable. All frontend enhancements and the new reactive architecture should be merged.
+2.  Review and remove any remaining unused code or feature flags related to the old, static architecture.
+3.  Begin Phase 2 of the backend refactoring with the integration of the new `emg_analysis.py` module.
+4.  Update backend models to support the enhanced analysis capabilities.
 
 ### Future Considerations
 1.  Database integration for more complex querying and data management.

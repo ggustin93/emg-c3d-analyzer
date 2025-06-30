@@ -89,6 +89,8 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
   - `usePlotDataProcessor`: Processes EMG signal data for visualization (downsampling, etc.).
   - `useGameSessionData`: Manages the state of the `GameSession` object.
   - `usePerformanceMetrics`: Calculates performance metrics from analysis results.
+- **Zustand for Global State**: A centralized Zustand store (`useSessionStore`) holds all patient-specific session parameters (MVC values, thresholds, etc.). This is the single source of truth for configuration.
+- **Reactive Hooks**: Custom hooks (`usePerformanceMetrics`, `useLiveAnalytics`) subscribe to the Zustand store. When parameters in the store change, these hooks automatically re-calculate analytics and performance scores, triggering seamless UI updates.
 - **Enhanced Visualization**:
   - RMS envelope as the primary signal display for better clinical interpretation.
   - Optional raw EMG display for detailed analysis when needed.
