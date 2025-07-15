@@ -175,63 +175,77 @@
 
 ---
 
-## **Phase 3: Frontend Chart Enhancements (Leveraging New Data)** 🎯 **NEXT**
+## **Phase 4: Final Clean-up & Documentation** ✅ **COMPLETED**
 
-**Goal:** Make `EMGChart.tsx` display more clinically relevant information.
+*   [x] **Task 4.1: Centralize Backend Configuration**
+    *   **File:** `backend/config.py`
+        *   **Action:** ✅ Configuration file already exists with comprehensive settings for EMG processing parameters, API configuration, CORS settings, and server configuration.
+        *   All constants properly centralized and imported by other modules.
+    *   **Why:** Good practice for organization.
 
-*   [ ] **Task 3.1: Plot RMS Envelope as Primary Signal**
-    *   **File:** `frontend/src/EMGChart.tsx`
-        *   **Action 1 (Data Preparation):** Ensure `mainCombinedChartData` (prepared in `App.tsx` or `GameSessionTabs.tsx`) now includes points for the RMS envelope. When iterating through `analysisResult.emg_signals[channelName]`, also extract `rms_envelope` data.
-            *   Example point in `mainCombinedChartData`: `{ time: 0.1, "CH1 Raw": 0.05, "CH1 Raw_rms_envelope": 0.02, ... }`
-        *   **Action 2 (Plotting):**
-            *   For each selected channel, render a `<Line />` for its RMS envelope (e.g., `dataKey={`${channelName}_rms_envelope`}`).
-            *   Style this line as the most prominent one (e.g., main channel color, thicker).
-    *   **Why:** RMS envelope is a clearer representation of muscle activity magnitude over time than raw EMG for many clinical assessments.
+*   [x] **Task 4.2: Review and Refine Frontend Channel Logic**
+    *   **Files:** `frontend/src/hooks/useChannelManagement.ts`, `frontend/src/components/app/ChannelSelection.tsx`, `ChannelFilter.tsx`, `SettingsPanel.tsx` (Muscle Naming).
+    *   **Action:** ✅ Verified that:
+        *   The list of channels available for selection originates from raw C3D channel names (`Object.keys(analysisResult.analytics)`).
+        *   The `sessionParams.channel_muscle_mapping` is used only for display purposes in `MuscleNameDisplay` component and dropdown labels.
+        *   Internal state correctly stores/uses underlying raw C3D channel names for data access.
+        *   The "Muscle Naming" tab in `SettingsPanel` lists raw C3D channel names and allows mapping to friendly muscle names.
+    *   **Why:** Critical for the resilient channel naming strategy to work seamlessly.
 
-*   [ ] **Task 3.2: Make Raw EMG Display Optional in Chart**
-    *   **File:** `frontend/src/SettingsPanel.tsx` (or near the chart)
-        *   **Action:** Add a `Switch` component: "Show Raw EMG Signal". Store its state (e.g., in `sessionParams` or local component state if not meant to be persistent).
-    *   **File:** `frontend/src/EMGChart.tsx`
-        *   **Action:** Conditionally render the `<Line />` for the raw EMG data (`dataKey={channelName}`) based on the "Show Raw EMG" toggle state.
-        *   Style raw EMG: Light grey, thinner line.
-    *   **Why:** Raw EMG can be noisy. Giving users the option to hide it cleans up the primary view.
+*   [x] **Task 4.3: Code Comments and Documentation Updates**
+    *   **Action:** ✅ Added comprehensive comments and updated documentation:
+        *   **Backend Comments:** Added detailed comments in `processor.py` explaining resilient channel handling, signal selection strategy, and stateless architecture.
+        *   **Frontend Comments:** Added comments in `App.tsx` explaining the bundled data pattern and client-side processing.
+        *   **README Updates:** Updated main, backend, and frontend README files to reflect stateless architecture, advanced analysis capabilities, and resilient channel handling.
+    *   **Why:** Makes the project understandable and showcases design decisions.
 
-*   [ ] **Task 3.3: Visualize Detected Contraction Periods**
-    *   **File:** `frontend/src/EMGChart.tsx`
-        *   **Action:** For the currently selected channel(s) being plotted:
-            *   Get the `contractions` array from `analysisResult.analytics[channelName].contractions`.
-            *   Map over this array and render a Recharts `<ReferenceArea />` for each contraction:
-                *   `x1={contraction.start_time_ms / 1000}`
-                *   `x2={contraction.end_time_ms / 1000}`
-                *   `y1={0}` (or a small value on the y-axis to define its bottom edge)
-                *   `y2={yAxisDomain[0] * 0.1}` (e.g., a small fixed height at the bottom of the chart, or make it dynamic based on `contraction.max_amplitude` if desired for variable height shading).
-                *   `fill`: Use channel color with some transparency.
-                *   `fillOpacity`: Maybe `0.3` if `contraction.is_good`, `0.15` otherwise.
-    *   **Why:** Provides clear visual markers for when the algorithm detected muscle activity, correlating with the RMS envelope and raw signal.
+This list prioritizes backend stability and efficiency first (stateless, bundled response), then integrates the advanced analysis, makes channel handling robust, and finally enhances the frontend charts to display the new relevant data. This sequence should provide significant improvements with a clear progression. Good luck!
 
 ---
 
-## **Phase 4: Final Clean-up & Documentation**
+## **Future Enhancement: Clinically Sound EMG Statistical Analysis**
 
-*   [ ] **Task 4.1: Centralize Backend Configuration**
-    *   **File:** `backend/config.py`
-        *   **Action:** Create this file. Move default processing parameters (e.g., `DEFAULT_THRESHOLD_FACTOR` from `models.py`) and any other global constants here.
-        *   If you are not saving *any* files in the stateless model, then `UPLOAD_DIR`, `RESULTS_DIR` are not needed. If you *temporarily* save the uploaded C3D during processing, a temp dir config might go here.
-    *   **Why:** Good practice for organization.
+**🩺 Clinical Assessment**: Current values show potential issues requiring PhD-level biomedical validation:
 
-*   [ ] **Task 4.2: Review and Refine Frontend Channel Logic**
-    *   **Files:** `frontend/src/hooks/useChannelManagement.ts`, `frontend/src/components/app/ChannelSelection.tsx`, `ChannelFilter.tsx`, `SettingsPanel.tsx` (Muscle Naming).
-    *   **Action:** Ensure that:
-        *   The list of channels available for selection *always* originates from the raw C3D channel names (i.e., `Object.keys(analysisResult.analytics)` or `analysisResult.available_channels` which should be the same).
-        *   The `sessionParams.channel_muscle_mapping` is consistently used *only for display purposes* (e.g., in `MuscleNameDisplay` component, select dropdown labels).
-        *   When a user selects a "muscle" in the UI, the internal state correctly stores/uses the underlying raw C3D channel name for data fetching/access.
-        *   The "Muscle Naming" tab in `SettingsPanel` correctly lists raw C3D channel names and allows users to map them to friendly muscle names, updating `sessionParams.channel_muscle_mapping`.
-    *   **Why:** Critical for the resilient channel naming strategy to work seamlessly.
+### Current Value Analysis
+- **RMS/MAV**: Extremely low (10^-5 mV) - likely needs amplitude scaling verification
+- **Fatigue Index**: 6.66e-14 is clinically meaningless - calculation error probable
+- **MPF/MDF**: Reasonable (96-112 Hz) but need population statistics
 
-*   [ ] **Task 4.3: Code Comments and Documentation Updates**
-    *   **Action:** Go through all modified files (backend and frontend).
-        *   Add comments explaining *why* changes were made, especially for the new data flow, signal choices for analysis, and how channel names are handled.
-        *   Update READMEs (main, backend, frontend) to reflect the new stateless architecture, the advanced analysis capabilities, and the resilient channel handling. Explain that all plotting is client-side.
-    *   **Why:** Makes the project understandable and showcases your design decisions.
+### Implementation Requirements
 
-This list prioritizes backend stability and efficiency first (stateless, bundled response), then integrates the advanced analysis, makes channel handling robust, and finally enhances the frontend charts to display the new relevant data. This sequence should provide significant improvements with a clear progression. Good luck!
+**Time Estimate**: 2-3 days for clinically sound implementation
+
+**Core Components**:
+1. **Statistical Windows** (6-8 hours)
+   - 250ms sliding windows with 50% overlap
+   - Per-channel and aggregate statistics
+   - Temporal trend analysis
+
+2. **Clinical Validation** (8-10 hours)
+   - Amplitude scaling verification (µV vs mV)
+   - Reference range comparison
+   - Outlier detection and handling
+
+3. **Advanced Statistics** (4-6 hours)
+   - Population moments (mean, std, skew, kurtosis)
+   - Confidence intervals
+   - Statistical significance testing
+
+### Biomedical Considerations
+
+**Critical Issues**:
+- **Amplitude Units**: Verify µV scaling (typical EMG: 50-2000 µV)
+- **Fatigue Index**: Implement proper slope analysis (-0.1 to -0.5 Hz/s typical)
+- **Clinical Ranges**: MPF 20-250 Hz, MDF 50-150 Hz for surface EMG
+
+**Recommended Metrics**:
+```
+RMS: 50-500 µV (muscle-dependent)
+MAV: 30-300 µV (typically 60-80% of RMS)
+MPF: 80-150 Hz (healthy muscle)
+MDF: 60-120 Hz (fatigue → decrease)
+Fatigue Index: -0.1 to -0.5 Hz/s (spectral slope)
+```
+
+**Implementation Priority**: High - current values suggest measurement/calculation errors affecting clinical utility.

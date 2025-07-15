@@ -214,7 +214,15 @@ class GHOSTLYC3DProcessor:
         
         all_analytics = {}
         
+        # RESILIENT CHANNEL HANDLING:
+        # The system preserves raw C3D channel names as keys but extracts base names for analysis.
+        # This approach allows the system to handle various C3D naming conventions while maintaining 
+        # data integrity and supporting user-defined muscle mappings for display purposes.
+        
         # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
+        # This pattern accommodates different C3D naming conventions:
+        # - "CH1 Raw" and "CH1 activated" -> base name "CH1"
+        # - "EMG Left Quad Raw" and "EMG Left Quad activated" -> base name "EMG Left Quad"
         base_names = sorted(list(set(
             name.replace(' Raw', '').replace(' activated', '') 
             for name in self.emg_data.keys()
@@ -278,19 +286,27 @@ class GHOSTLYC3DProcessor:
                         channel_analytics[func_name] = None
 
             # --- Contraction Analysis ---
-            # Prefer activated signal for contraction analysis, fall back to raw if needed
+            # SIGNAL SELECTION STRATEGY:
+            # The system uses a hierarchical approach to select the most appropriate signal for contraction analysis:
+            # 1. Prefer "activated" signals (processed by GHOSTLY game) for contraction detection
+            # 2. Fall back to "Raw" signals if activated signals are not available
+            # 3. Use base channel name as final fallback for different C3D naming conventions
+            # This ensures robust analysis across various C3D file formats and processing pipelines.
+            
             signal_for_contraction = None
             activated_channel_name = f"{base_name} activated"
             
             if activated_channel_name in self.emg_data:
+                # Use activated signal - preferred for contraction analysis
                 signal_for_contraction = np.array(self.emg_data[activated_channel_name]['data'])
                 sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
             elif raw_channel_name in self.emg_data:
+                # Fall back to raw signal if activated is not available
                 signal_for_contraction = np.array(self.emg_data[raw_channel_name]['data'])
                 sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
                 channel_errors['contractions_source'] = "Used Raw signal for contractions (Activated not found)"
             else:
-                # Try the base name itself as a fallback
+                # Try the base name itself as a fallback for different naming conventions
                 if base_name in self.emg_data:
                     signal_for_contraction = np.array(self.emg_data[base_name]['data'])
                     sampling_rate = self.emg_data[base_name]['sampling_rate']
@@ -393,6 +409,18 @@ class GHOSTLYC3DProcessor:
                     ) -> Dict:
         """
         Process the C3D file and return complete analysis results.
+        
+        STATELESS ARCHITECTURE:
+        This method implements a stateless processing pattern where all analysis is performed
+        in-memory and results are returned in a single comprehensive response. No files are
+        persisted to disk, making the system ideal for cloud deployment and eliminating
+        the need for cache management or cleanup processes.
+        
+        The bundled response includes:
+        - Complete metadata from the C3D file
+        - All calculated analytics for each channel
+        - List of available channels for frontend consumption
+        - All signal data (raw, activated, RMS envelopes) for client-side visualization
         """
         self.load_file()
         self.game_metadata = self.extract_metadata()

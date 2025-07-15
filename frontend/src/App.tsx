@@ -138,6 +138,13 @@ function App() {
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult) => {
+    // BUNDLED DATA PATTERN:
+    // The backend now returns all necessary data in a single response, implementing a stateless
+    // architecture. This includes complete EMG signals, analytics, and metadata in one payload,
+    // eliminating the need for additional API calls and enabling immediate visualization.
+    // The emg_signals field contains all signal data (raw, activated, RMS envelopes) needed
+    // for client-side plotting and analysis.
+    
     resetState();
     setAnalysisResult(data);
     updateChannelsAfterUpload(data);
