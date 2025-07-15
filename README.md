@@ -11,6 +11,8 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 
 *   **GHOSTLY-Specific C3D Processing:** Ingests C3D files from the GHOSTLY game and distinguishes between "Raw" and "Activated" EMG signals based on GHOSTLY's specific channel naming conventions.
 *   **EMG Analytics (WIP):** Calculates basic metrics for muscle fatigue and activity, including RMS, MAV, MPF, MDF, and Dimitrov's Fatigue Index. *Note: Statistical analysis and clinical validation are currently in development.*
+*   **Contractions Detection & Analysis:** Identifies muscle contractions using adaptive thresholding with configurable parameters for duration and amplitude, providing detailed metrics on contraction count, duration, and intensity.
+*   **Performance Analysis of Rehabilitation Sessions:** Evaluates rehabilitation progress through analysis of contractions and exercise quality metrics compared to the rehabilitation protocol.
 *   **Interactive Visualization:** Real-time EMG signal plotting with multi-channel comparison and basic performance metrics dashboard.
 *   **Session Configuration:** Game session parameter management with MVC threshold settings and basic performance tracking.
 *   **Stateless Architecture:** Optimized for cloud deployment with efficient data bundling and client-side processing.
@@ -105,22 +107,22 @@ The frontend defaults to connecting to the backend at `http://localhost:8080`. T
 ```
 emg-c3d-analyzer/
 ├── backend/            # FastAPI application source
-│   ├── api.py         # REST API endpoints
-│   ├── processor.py   # C3D file processing
+│   ├── api.py          # REST API endpoints
+│   ├── processor.py    # C3D file processing logic
 │   ├── emg_analysis.py # EMG metrics calculation
-│   └── models.py      # Data models & validation
+│   ├── models.py       # Data models (Pydantic)
+│   └── tests/          # Backend tests
 ├── frontend/           # React TypeScript application
-│   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── store/         # Zustand state management
-│   │   └── types/         # TypeScript definitions
-│   └── build/         # Production build output
-├── data/               # (Git-ignored) File processing workspace
-├── logs/               # (Git-ignored) Development server logs
+│   ├── public/         # Static assets and index.html
+│   └── src/            # Application source code
+│       ├── components/ # Reusable UI components
+│       ├── hooks/      # Custom React hooks
+│       ├── store/      # Zustand state management
+│       ├── types/      # TypeScript type definitions
+│       └── utils/      # Utility functions
 ├── memory-bank/        # Agent-maintained project documentation
-├── assets/             # Static assets and screenshots
-├── start_dev.sh        # Automated development environment setup
+├── assets/             # Project assets (images, etc.)
+├── start_dev.sh        # Development environment setup script
 └── README.md
 ```
 
@@ -136,7 +138,6 @@ emg-c3d-analyzer/
 - **Export Capabilities**: Data export in standard research formats (CSV, MATLAB, etc.)
 - **Advanced Filtering**: Configurable EMG signal preprocessing options
 - **Performance Optimization**: Enhanced processing speed for large C3D files
-
 
 ## License
 
