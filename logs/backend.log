@@ -1,14 +1,5 @@
-INFO:     127.0.0.1:49664 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49664 - "GET /raw-data/5ace1282-1b6f-4480-b5dc-50fab6d19a2a/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49666 - "GET /raw-data/5ace1282-1b6f-4480-b5dc-50fab6d19a2a/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49669 - "GET /raw-data/5ace1282-1b6f-4480-b5dc-50fab6d19a2a/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49670 - "GET /raw-data/5ace1282-1b6f-4480-b5dc-50fab6d19a2a/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49666 - "GET /raw-data/5ace1282-1b6f-4480-b5dc-50fab6d19a2a/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52355 - "POST /upload HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52355 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH1%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52363 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52365 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH1%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52367 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH2%20activated HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52367 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52380 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH2%20Raw HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52380 - "GET /raw-data/03a12b89-6121-461c-8a27-92e29ed5031a/CH1%20Raw HTTP/1.1" 200 OK
+Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
+Initializing MVC threshold percentage for CH1 to default: 75.0%
+Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
+Initializing MVC threshold percentage for CH2 to default: 75.0%
+INFO:     127.0.0.1:55480 - "POST /upload HTTP/1.1" 200 OK

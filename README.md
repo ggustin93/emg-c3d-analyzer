@@ -9,14 +9,18 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 
 *   **Intelligent C3D Processing:** Ingests C3D files and automatically distinguishes between "Raw" and "Activated" EMG signals for scientifically valid analysis.
 *   **Comprehensive EMG Analytics:** Calculates key metrics for muscle fatigue and activity, including RMS, MAV, MPF, MDF, and Dimitrov's Fatigue Index.
-*   **Interactive Visualization:** Generates plots of EMG signals and provides a clean UI for reviewing analytics.
-*   **Decoupled & Modern Stack:** Built with a FastAPI backend and a React/TypeScript frontend.
+*   **Interactive Visualization:** Real-time EMG signal plotting with multi-channel comparison and performance metrics dashboard.
+*   **Clinical Assessment Tools:** Game session analysis with MVC threshold management and performance scoring.
+*   **Stateless Architecture:** Optimized for cloud deployment with efficient data bundling and client-side processing.
+*   **Modern Technology Stack:** Built with FastAPI backend and React/TypeScript frontend with comprehensive state management.
 
 ## Technology Stack
 
-*   **Backend:** Python 3.10+, FastAPI, Poetry
-*   **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui
-*   **Analysis:** `ezc3d`, `pandas`, `numpy`, `scipy`
+*   **Backend:** Python 3.10+, FastAPI, Poetry, Uvicorn
+*   **Frontend:** React 19, TypeScript, Tailwind CSS, shadcn/ui, Zustand
+*   **Visualization:** Recharts for interactive EMG signal plotting
+*   **Scientific Libraries:** `ezc3d`, `pandas`, `numpy`, `scipy` for EMG analysis
+*   **Development:** Automated setup scripts, comprehensive testing, ESLint/TypeScript
 
 ---
 
@@ -83,12 +87,22 @@ The frontend defaults to connecting to the backend at `http://localhost:8080`. T
 ```
 emg-c3d-analyzer/
 ├── backend/            # FastAPI application source
-├── frontend/           # React application source
-├── data/               # (Git-ignored) For C3D uploads and results
-├── logs/               # (Git-ignored) For development server logs
+│   ├── api.py         # REST API endpoints
+│   ├── processor.py   # C3D file processing
+│   ├── emg_analysis.py # EMG metrics calculation
+│   └── models.py      # Data models & validation
+├── frontend/           # React TypeScript application
+│   ├── src/
+│   │   ├── components/    # UI components
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── store/         # Zustand state management
+│   │   └── types/         # TypeScript definitions
+│   └── build/         # Production build output
+├── data/               # (Git-ignored) File processing workspace
+├── logs/               # (Git-ignored) Development server logs
 ├── memory-bank/        # Agent-maintained project documentation
-├── assets/             # Static assets like images
-├── start_dev.sh        # Main development script
+├── assets/             # Static assets and screenshots
+├── start_dev.sh        # Automated development environment setup
 └── README.md
 ```
 

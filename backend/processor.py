@@ -27,19 +27,17 @@ import json
 from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms
 from .models import GameSessionParameters
 
-# Default parameters for EMG processing
-DEFAULT_SAMPLING_RATE = 1000  # Hz
-DEFAULT_THRESHOLD_FACTOR = 0.3  # 30% of max amplitude
-DEFAULT_MIN_DURATION_MS = 50  # Minimum contraction duration in ms
-DEFAULT_SMOOTHING_WINDOW = 25  # Smoothing window size in samples
-
-# Visualization settings
-EMG_COLOR = '#1abc9c'  # Teal color for EMG signal
-CONTRACTION_COLOR = '#3498db'  # Blue color for contractions
-ACTIVITY_COLORS = {
-    'jumping': '#1abc9c',  # Teal
-    'shooting': '#e67e22'  # Orange
-}
+# Import configuration
+from .config import (
+    DEFAULT_SAMPLING_RATE,
+    DEFAULT_THRESHOLD_FACTOR,
+    DEFAULT_MIN_DURATION_MS,
+    DEFAULT_SMOOTHING_WINDOW,
+    RMS_ENVELOPE_WINDOW_MS,
+    EMG_COLOR,
+    CONTRACTION_COLOR,
+    ACTIVITY_COLORS
+)
 
 
 class GHOSTLYC3DProcessor:
@@ -155,7 +153,7 @@ class GHOSTLYC3DProcessor:
                     time_axis = np.arange(len(signal_data)) / sampling_rate
 
                     # Calculate RMS envelope
-                    rms_env_window_samples = int((100 / 1000) * sampling_rate)
+                    rms_env_window_samples = int((RMS_ENVELOPE_WINDOW_MS / 1000) * sampling_rate)
                     calculated_rms_envelope = moving_rms(signal_data, rms_env_window_samples).tolist()
 
                     emg_data[channel_name] = {

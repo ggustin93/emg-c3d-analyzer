@@ -29,8 +29,8 @@ except ImportError as e:
 try:
     # In the stateless architecture, we only need a temporary directory for file uploads during processing
     # These files will not persist between requests
-    temp_dir = "data/temp_uploads"
-    Path(temp_dir).mkdir(parents=True, exist_ok=True)
+    from .config import ensure_temp_dir
+    temp_dir = ensure_temp_dir()
     logger.info(f"Temporary upload directory verified: {temp_dir}")
 except Exception as e:
     logger.error(f"Failed to create temporary directory: {e}")
@@ -40,13 +40,15 @@ except Exception as e:
 # If running directly (for development)
 if __name__ == "__main__":
     try:
-        # Get port from environment variable or use default
-        port = int(os.environ.get("PORT", 8080))
-        host = os.environ.get("HOST", "0.0.0.0")
+        # Get configuration from config module
+        from .config import get_port, get_host, get_log_level
+        port = get_port()
+        host = get_host()
+        log_level = get_log_level()
         
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
         # Remove reload=True to avoid the warning in production
-        uvicorn.run("backend.api:app", host=host, port=port, log_level="info")
+        uvicorn.run("backend.api:app", host=host, port=port, log_level=log_level)
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())

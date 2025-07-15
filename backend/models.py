@@ -11,11 +11,22 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
 
-# Default parameters
-DEFAULT_THRESHOLD_FACTOR = 0.3
-DEFAULT_MIN_DURATION_MS = 50
-DEFAULT_SMOOTHING_WINDOW = 25
-DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0
+# Import default parameters from config
+from .config import (
+    DEFAULT_THRESHOLD_FACTOR,
+    DEFAULT_MIN_DURATION_MS,
+    DEFAULT_SMOOTHING_WINDOW,
+    DEFAULT_MVC_THRESHOLD_PERCENTAGE
+)
+
+class TemporalAnalysisStats(BaseModel):
+    """Statistics for temporal analysis of EMG metrics."""
+    mean_value: Optional[float] = None
+    std_value: Optional[float] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    valid_windows: Optional[int] = None
+    coefficient_of_variation: Optional[float] = None
 
 class Contraction(BaseModel):
     start_time_ms: float
@@ -45,6 +56,11 @@ class ChannelAnalytics(BaseModel):
     # New fields for game stats
     mvc_threshold_actual_value: Optional[float] = None
     good_contraction_count: Optional[int] = None
+    
+    # Temporal analysis fields
+    rms_temporal_stats: Optional[TemporalAnalysisStats] = None
+    mav_temporal_stats: Optional[TemporalAnalysisStats] = None
+    fatigue_index_temporal_stats: Optional[TemporalAnalysisStats] = None
 
 
 class GameSessionParameters(BaseModel):
