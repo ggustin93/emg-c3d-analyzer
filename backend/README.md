@@ -35,7 +35,7 @@ The backend implements a **bundled response pattern** that eliminates the need f
 The backend implements **flexible C3D channel processing** to handle various naming conventions:
 
 - **Raw Channel Names**: Preserves original C3D channel names as data keys
-- **Activated Signal Detection**: Automatically detects and processes both "Raw" and "activated" signal variants
+- **Activated Signal Detection**: Automatically detects and processes both "Raw" and "activated" signal variants *Note: Research ongoing to understand GHOSTLY's "Activated" channel processing for optimal analysis implementation*
 - **Muscle Mapping Support**: Supports user-defined channel-to-muscle name mappings for display purposes
 - **Fallback Mechanisms**: Gracefully handles missing or differently named channels
 

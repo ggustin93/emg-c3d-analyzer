@@ -184,7 +184,9 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                       </TooltipProvider>
                     </div>
                     {(group.title === 'Amplitude Metrics' || group.title === 'Fatigue Metrics') && (
-                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">WIP</Badge>
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                        Temporal Stats Coming Soon
+                      </Badge>
                     )}
                   </div>
                 </td>
@@ -193,7 +195,7 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                 <tr key={metric.key} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                     {metric.label}
-                    {metric.std_key && <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>}
+                    {metric.std_key && <span className="text-xs text-muted-foreground ml-1">(average)</span>}
                   </td>
                   {channelsWithData.map((channel) => {
                     const data = channelsData[channel];

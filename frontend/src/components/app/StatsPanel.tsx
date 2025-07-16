@@ -473,26 +473,36 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                   </div>
                 </div>
 
-                {/* --- Amplitude Metrics --- */}
+                {/* --- Amplitude Analysis --- */}
                 <div className="p-4 border rounded-lg bg-white">
                   <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
                     <div className="flex items-center">
                       <span>Amplitude Analysis</span>
                       <MetricTooltip tooltip={expertTooltips.amplitudeMetrics} />
                     </div>
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 ml-2">WIP</Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                        Temporal Stats Coming Soon
+                      </Badge>
+                    </div>
                   </h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="font-medium text-gray-700">RMS <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="font-medium text-gray-700">
+                        RMS 
+                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                      </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.rms, displayAnalytics.std_rms, 'mV', { useScientificNotation: true })}
+                        {formatValue(displayAnalytics.rms, undefined, 'mV', { useScientificNotation: true })}
                       </p>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-700">MAV <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="font-medium text-gray-700">
+                        MAV 
+                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                      </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mav, displayAnalytics.std_mav, 'mV', { useScientificNotation: true })}
+                        {formatValue(displayAnalytics.mav, undefined, 'mV', { useScientificNotation: true })}
                       </p>
                     </div>
                     <div>
@@ -511,25 +521,38 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <span>Fatigue Analysis</span>
                       <MetricTooltip tooltip={expertTooltips.fatigueMetrics} />
                     </div>
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 ml-2">WIP</Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                        Temporal Stats Coming Soon
+                      </Badge>
+                    </div>
                   </h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="font-medium text-gray-700">MPF <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="font-medium text-gray-700">
+                        MPF 
+                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                      </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mpf, displayAnalytics.std_mpf, 'Hz')}
+                        {formatValue(displayAnalytics.mpf, undefined, 'Hz')}
                       </p>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-700">MDF <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="font-medium text-gray-700">
+                        MDF 
+                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                      </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mdf, displayAnalytics.std_mdf, 'Hz')}
+                        {formatValue(displayAnalytics.mdf, undefined, 'Hz')}
                       </p>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-700">Fatigue Index (FI) <span className="text-xs text-muted-foreground">(avg ± std)</span></p>
+                      <p className="font-medium text-gray-700">
+                        Fatigue Index (FI) 
+                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                      </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.fatigue_index_fi_nsm5, displayAnalytics.std_fatigue_index_fi_nsm5, '', { useScientificNotation: true, precision: 2 })}
+                        {formatValue(displayAnalytics.fatigue_index_fi_nsm5, undefined, '', { useScientificNotation: true, precision: 2 })}
                       </p>
                     </div>
                   </div>

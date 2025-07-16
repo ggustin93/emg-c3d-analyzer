@@ -52,6 +52,7 @@
     - Added a "Patient Outcomes" tab in the Settings panel for configuring subjective metrics.
 
 🚧 In Progress:
+- **Temporal Analysis Implementation**: Implementing windowed temporal analysis for EMG metrics to provide mean ± standard deviation statistics for clinical variability assessment.
 - **Major Backend Refactoring for Stateless Architecture**: Moving to a completely stateless backend approach where all data is returned in a single API call.
 - **Streamlining Backend Code**: Removing server-side plotting relics and focusing on core data processing.
 - **Enhancing EMG Analysis**: Implementing improved clinical metrics for rehabilitation assessment.
@@ -84,23 +85,40 @@
     *   **Enhanced Muscle Selection**: Updated `MuscleSelector` to work with the view mode system and use consistent colors.
     *   **Fixed Tooltip Issues**: Resolved runtime errors by properly structuring `TooltipProvider` components to avoid nesting.
     *   **Improved Muscle Naming**: Enhanced `SettingsPanel` with structured dropdowns for muscle groups and sides.
+*   **Temporal Analysis Investigation & UI Improvements**:
+    *   **Identified Missing Backend Functionality**: Discovered that while frontend was correctly configured to display standard deviation values (avg ± std), the backend was not implementing temporal analysis calculations.
+    *   **Created Comprehensive Implementation Plan**: Developed detailed temporal analysis implementation plan (`memory-bank/temporal-analysis-implementation-plan.md`) with 4-phase approach covering core functions, integration, and clinical validation.
+    *   **Improved UI Honesty**: Updated `StatsPanel.tsx` and `MuscleComparisonTable.tsx` to remove misleading "(avg ± std)" labels and replace with "(overall)" indicators, adding "Temporal Stats Coming Soon" badges to clearly communicate current capabilities and future plans.
+    *   **Enhanced Clinical Terminology**: Replaced "(overall)" labels with "(average)" in both `StatsPanel.tsx` and `MuscleComparisonTable.tsx` to align with biomedical standards and improve clinical clarity.
+    *   **Maintained Clinical Relevance**: Ensured UI changes preserve the intent to provide clinically meaningful temporal statistics while being transparent about current implementation status.
+*   **Activated Channels Research Initiative**:
+    *   **Created Research Documentation**: Developed `memory-bank/activated-channels-research.md` to document critical questions about GHOSTLY's "Activated" channel processing.
+    *   **Hypothesis Formation**: Documented hypothesis that "Activated" channels are pre-processed signals specifically designed for contraction detection.
+    *   **Critical Questions Identified**: Prepared comprehensive questions for colleague regarding processing pipeline, signal characteristics, and temporal analysis implications.
+    *   **Implementation Impact Assessment**: Analyzed how "Activated" channel processing affects our temporal analysis strategy and metric calculations.
 
 ## Active Development Focus
 
 ### Priority Areas
-1.  **Backend Streamlining & Core Data Flow**:
+1.  **Temporal Analysis Implementation**:
+    *   Create temporal analysis module (`backend/temporal_analysis.py`) with windowing and statistical functions.
+    *   Add temporal analysis configuration parameters to backend config.
+    *   Integrate temporal analysis with existing EMG analysis functions.
+    *   Modify `processor.py` to populate `*_temporal_stats` objects with calculated statistics.
+    *   Validate temporal analysis with known EMG signals and clinical review.
+2.  **Backend Streamlining & Core Data Flow**:
     *   Remove server-side plotting relics (functions, methods, and files related to plot generation).
     *   Modify `/upload` endpoint to return all EMG signal data in one response.
     *   Adapt frontend to use the bundled signal data instead of making separate `/raw-data` requests.
-2.  **Backend Logic & Resilient Channel Handling**:
+3.  **Backend Logic & Resilient Channel Handling**:
     *   Integrate new `emg_analysis.py` with advanced clinical metrics.
     *   Refactor `processor.py` to handle channels flexibly and use the new analysis methods.
     *   Update frontend types to match the enhanced backend models.
-3.  **Frontend Chart Enhancements**:
+4.  **Frontend Chart Enhancements**:
     *   Implement RMS envelope as the primary signal display.
     *   Make raw EMG display optional in charts.
     *   Visualize detected contraction periods directly on charts.
-4.  **Final Clean-up & Documentation**:
+5.  **Final Clean-up & Documentation**:
     *   Centralize backend configuration.
     *   Review and refine frontend channel logic.
     *   Add comprehensive code comments and documentation updates.

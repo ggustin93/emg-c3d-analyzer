@@ -9,7 +9,7 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 
 ## Core Features
 
-*   **GHOSTLY-Specific C3D Processing:** Ingests C3D files from the GHOSTLY game and distinguishes between "Raw" and "Activated" EMG signals based on GHOSTLY's specific channel naming conventions.
+*   **GHOSTLY-Specific C3D Processing:** Ingests C3D files from the GHOSTLY game and distinguishes between "Raw" and "Activated" EMG signals based on GHOSTLY's specific channel naming conventions. *Note: Research is ongoing to understand the processing applied to "Activated" channels for optimal temporal analysis implementation.*
 *   **EMG Analytics (WIP):** Calculates basic metrics for muscle fatigue and activity, including RMS, MAV, MPF, MDF, and Dimitrov's Fatigue Index. *Note: Statistical analysis and clinical validation are currently in development.*
 *   **Contractions Detection & Analysis:** Identifies muscle contractions using adaptive thresholding with configurable parameters for duration and amplitude, providing detailed metrics on contraction count, duration, and intensity.
 *   **Performance Analysis of Rehabilitation Sessions:** Evaluates rehabilitation progress through analysis of contractions and exercise quality metrics compared to the rehabilitation protocol.
