@@ -25,7 +25,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   scoreHexColor,
   muscleCount,
   symmetryScore,
-  subjectiveFatigueLevel=5
+  subjectiveFatigueLevel
 }) => {
   const scoreData = [
     { name: 'Score', value: Math.min(totalScore, 100) },

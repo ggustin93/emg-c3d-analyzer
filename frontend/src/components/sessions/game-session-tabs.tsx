@@ -24,7 +24,6 @@ import ScoringConfigPanel from '../SessionConfigPanel';
 import SettingsPanel from '../SettingsPanel';
 import ChartControlHeader from '../ChartControlHeader';
 import { useScoreColors } from '@/hooks/useScoreColors';
-import PatientOutcomesCard from '../app/PatientOutcomesCard';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 
@@ -355,48 +354,28 @@ export default function GameSessionTabs({
        
         <PerformanceCard 
           analysisResult={analysisResult}
-          contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
           sessionParams={sessionParams}
+          contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? undefined}
         />
       </TabsContent>
 
-      <TabsContent value="settings">
-        <div className="grid grid-cols-1 gap-4">
-          
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg"> Session Parameters</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScoringConfigPanel
-                onRecalculate={onRecalculateScores}
-                disabled={appIsLoading}
-                availableChannels={muscleChannels}
-              />
-            </CardContent>
-          </Card>
-          <SettingsPanel 
-            muscleChannels={muscleChannels}
-            disabled={appIsLoading}
-            dataPoints={dataPoints}
-            setDataPoints={setDataPoints}
-            plotChannel1Data={mainPlotChannel1Data}
-            plotChannel2Data={mainPlotChannel2Data}
-            showGoodContractions={showGoodContractions}
-            setShowGoodContractions={setShowGoodContractions}
-            showPoorContractions={showPoorContractions}
-            setShowPoorContractions={setShowPoorContractions}
-            showContractionAreas={showContractionAreas}
-            setShowContractionAreas={setShowContractionAreas}
-            showContractionDots={showContractionDots}
-            setShowContractionDots={setShowContractionDots}
-          />
-          <PatientOutcomesCard
-            disabled={appIsLoading}
-          />
-          
-        </div>
+      <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">
+        <SettingsPanel
+          muscleChannels={muscleChannels}
+          disabled={appIsLoading}
+          dataPoints={dataPoints}
+          setDataPoints={setDataPoints}
+          plotChannel1Data={mainPlotChannel1Data}
+          plotChannel2Data={mainPlotChannel2Data}
+          showGoodContractions={showGoodContractions && showContractionHighlights}
+          setShowGoodContractions={setShowGoodContractions}
+          showPoorContractions={showPoorContractions && showContractionHighlights}
+          setShowPoorContractions={setShowPoorContractions}
+          showContractionAreas={showContractionAreas && showContractionHighlights}
+          setShowContractionAreas={setShowContractionAreas}
+          showContractionDots={showContractionDots && showContractionHighlights}
+          setShowContractionDots={setShowContractionDots}
+        />
       </TabsContent>
     </Tabs>
   );

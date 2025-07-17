@@ -32,7 +32,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         scoreHexColor={overallScoreLabel?.hex}
         muscleCount={muscleData.length}
         symmetryScore={symmetryScore}
-        subjectiveFatigueLevel={sessionParams?.subjective_fatigue_level}
+        subjectiveFatigueLevel={sessionParams?.post_session_rpe as number | undefined}
       />
       {analysisResult && muscleData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

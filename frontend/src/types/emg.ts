@@ -65,7 +65,6 @@ export interface GameSessionParameters {
   expected_contractions?: number;
   mvc_threshold_factor?: number;
   mvc_thresholds?: { [muscleName: string]: number };
-  subjective_fatigue_level?: number; // 0-10 scale for patient-reported fatigue
 }
 
 // For the backend response structure
