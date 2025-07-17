@@ -49,7 +49,7 @@ function App() {
   }, [sessionParams]);
   
   // Initialize hooks
-  const downsamplingControls = useDataDownsampling(2000);
+  const downsamplingControls = useDataDownsampling(2500);
   const { initializeMvcValues } = useMvcInitialization();
   const { ensureDefaultMuscleGroups } = useMuscleDefaults();
   const {

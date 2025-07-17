@@ -1,3 +1,123 @@
-(node:63190) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:33096) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:63190) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:33096) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:24:8
+TS1192: Module '"/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/frontend/src/components/SettingsPanel"' has no default export.
+    22 | import { Label } from "@/components/ui/label"
+    23 | import ScoringConfigPanel from '../SessionConfigPanel';
+  > 24 | import SettingsPanel from '../SettingsPanel';
+       |        ^^^^^^^^^^^^^
+    25 | import ChartControlHeader from '../ChartControlHeader';
+    26 | import { useScoreColors } from '@/hooks/useScoreColors';
+    27 | import PatientOutcomesCard from '../app/PatientOutcomesCard';
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/SettingsPanel.tsx
+TS1005: '</' expected.
+
+ERROR in src/components/SettingsPanel.tsx:253:6
+TS17008: JSX element 'div' has no corresponding closing tag.
+    251 |
+    252 |   return (
+  > 253 |     <div className="space-y-4">
+        |      ^^^
+    254 |       {/* Display Settings Card */}
+    255 |       <Card>
+    256 |         <CardHeader>
+
+ERROR in src/components/SettingsPanel.tsx:656:1
+TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+    654 |     </Card>
+    655 |   );
+  > 656 | };
+        | ^
+    657 |
+    658 | export default SettingsPanel; 
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+
+ERROR in src/components/sessions/game-session-tabs.tsx:301:17
+TS2322: Type 'boolean | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+    299 |                 showContractionHighlights={showContractionHighlights}
+    300 |                 setShowContractionHighlights={setShowContractionHighlights}
+  > 301 |                 hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+        |                 ^^^^^^^^^^^^^^^^^^
+    302 |                 isLoading={appIsLoading}
+    303 |               />
+    304 |             )}
+

@@ -12,8 +12,9 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 *   **GHOSTLY-Specific C3D Processing:** Ingests C3D files from the GHOSTLY game and distinguishes between "Raw" and "Activated" EMG signals based on GHOSTLY's specific channel naming conventions. *Note: Research is ongoing to understand the processing applied to "Activated" channels for optimal temporal analysis implementation.*
 *   **EMG Analytics (WIP):** Calculates basic metrics for muscle fatigue and activity, including RMS, MAV, MPF, MDF, and Dimitrov's Fatigue Index. *Note: Statistical analysis and clinical validation are currently in development.*
 *   **Contractions Detection & Analysis:** Identifies muscle contractions using adaptive thresholding with configurable parameters for duration and amplitude, providing detailed metrics on contraction count, duration, and intensity.
+*   **Advanced Contraction Visualization:** Real-time visual feedback with background highlighting for contraction periods and peak markers with quality indicators (✓/✗). Features interactive toggle controls for Good/Poor contractions and Areas/Dots visibility.
 *   **Performance Analysis of Rehabilitation Sessions:** Evaluates rehabilitation progress through analysis of contractions and exercise quality metrics compared to the rehabilitation protocol.
-*   **Interactive Visualization:** Real-time EMG signal plotting with multi-channel comparison and basic performance metrics dashboard.
+*   **Interactive Visualization:** Real-time EMG signal plotting with multi-channel comparison, comprehensive performance metrics dashboard, and dynamic legend showing contraction quality statistics.
 *   **Session Configuration:** Game session parameter management with MVC threshold settings and basic performance tracking.
 *   **Stateless Architecture:** Optimized for cloud deployment with efficient data bundling and client-side processing.
 *   **Modern Technology Stack:** Built with FastAPI backend and React/TypeScript frontend with Zustand state management.
@@ -128,11 +129,19 @@ emg-c3d-analyzer/
 - **Algorithm Validation**: Clinical validation of EMG analysis algorithms with reference datasets
 - **Documentation**: Comprehensive API documentation and EMG analysis methodology
 
+### ✅ Recently Completed
+- **Contraction Visualization System** (July 2025): Complete implementation with ReferenceArea background highlighting and ReferenceDot peak markers
+- **Interactive Chart Controls**: Toggle controls for Good/Poor contractions and Areas/Dots visibility
+- **Dynamic Legend System**: Real-time contraction quality statistics and MVC threshold display
+- **Enhanced XAxis Configuration**: Proper decimal time coordinate positioning for scatter plot elements
+
 ### 🔜 Planned Features
 - **Multi-session Analysis**: Compare EMG data across multiple GHOSTLY game sessions
 - **Export Capabilities**: Data export in standard research formats (CSV, MATLAB, etc.)
 - **Advanced Filtering**: Configurable EMG signal preprocessing options
 - **Performance Optimization**: Enhanced processing speed for large C3D files
+- **Contraction Analytics Export**: Export contraction data for clinical reports
+- **Enhanced User Experience**: Hover tooltips and animation transitions
 
 ## License
 

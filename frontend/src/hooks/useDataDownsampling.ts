@@ -1,4 +1,4 @@
-import { useState, useCallback, ChangeEvent } from "react";
+import { useState, useCallback } from "react";
 
 export interface DownsamplingControls {
   dataPoints: number;

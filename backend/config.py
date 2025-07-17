@@ -17,7 +17,13 @@ DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
 
 # --- Analysis Parameters ---
 RMS_ENVELOPE_WINDOW_MS = 100  # Window size for RMS envelope calculation in ms
-MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them
+
+# Contraction Detection Parameters
+MERGE_THRESHOLD_MS = 500  # Maximum time gap between contractions to merge them (ms)
+                          # Clinical rationale: 500ms accommodates brief signal drops during 
+                          # sustained contractions typical in rehabilitation exercises.
+                          # This prevents physiologically single contractions from being
+                          # split into multiple detected events due to EMG signal oscillations.
 REFRACTORY_PERIOD_MS = 0  # Minimum time after contraction before detecting new one
 
 # --- Visualization Settings ---
@@ -27,6 +33,29 @@ ACTIVITY_COLORS = {
     'jumping': '#1abc9c',  # Teal
     'shooting': '#e67e22'  # Orange
 }
+
+# Contraction Quality Visual Cues
+CONTRACTION_QUALITY_COLORS = {
+    'good': {
+        'background': 'rgba(34, 197, 94, 0.15)',  # Green with transparency
+        'border': '#22c55e',
+        'badge': '#16a34a'
+    },
+    'poor': {
+        'background': 'rgba(239, 68, 68, 0.15)',  # Red with transparency
+        'border': '#ef4444',
+        'badge': '#dc2626'
+    },
+    'subthreshold': {
+        'background': 'rgba(156, 163, 175, 0.1)',  # Gray with transparency
+        'border': '#9ca3af',
+        'badge': '#6b7280'
+    }
+}
+
+# Contraction Visualization Settings
+CONTRACTION_HIGHLIGHT_OPACITY = 0.15  # Default opacity for contraction highlights
+CONTRACTION_BADGE_SIZE = 4  # Radius of quality badges in pixels
 
 # --- File Processing ---
 # For stateless architecture, we only need temporary directories

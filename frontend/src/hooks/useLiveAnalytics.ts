@@ -35,8 +35,11 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
       let goodLongContractionCount = 0;
       let goodShortContractionCount = 0;
 
+      let updatedContractions = originalChannelData.contractions;
+      
       if (originalChannelData.contractions && Array.isArray(originalChannelData.contractions)) {
-        originalChannelData.contractions.forEach(c => {
+        // Update contractions with is_good property
+        updatedContractions = originalChannelData.contractions.map(c => {
           const isGood = mvcThreshold !== null && c.max_amplitude >= mvcThreshold;
           if (isGood) {
             goodContractions++;
@@ -48,6 +51,12 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
             longContractionCount++;
             if (isGood) goodLongContractionCount++;
           }
+          
+          return {
+            ...c,
+            is_good: isGood,
+            is_long: c.duration_ms >= durationThreshold
+          };
         });
       } else {
         goodContractions = originalChannelData.good_contraction_count ?? 0;
@@ -59,6 +68,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
       
       updatedAnalytics[channelName] = {
         ...originalChannelData,
+        contractions: updatedContractions,
         good_contraction_count: goodContractions,
         mvc_threshold_actual_value: mvcThreshold,
         long_contraction_count: longContractionCount,

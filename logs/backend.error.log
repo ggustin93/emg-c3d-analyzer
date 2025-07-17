@@ -1,6 +1,6 @@
 INFO:     Will watch for changes in these directories: ['/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
-INFO:     Started reloader process [63041] using StatReload
-INFO:     Started server process [63061]
+INFO:     Started reloader process [32826] using StatReload
+INFO:     Started server process [32849]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
