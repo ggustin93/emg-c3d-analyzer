@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import ScoringConfigPanel from '../SessionConfigPanel';
 import SettingsPanel from '../SettingsPanel';
-import ChannelFilter from '../app/ChannelFilter';
+import ChartControlHeader from '../ChartControlHeader';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import PatientOutcomesCard from '../app/PatientOutcomesCard';
 import { useSessionStore } from '@/store/sessionStore';
@@ -98,7 +98,17 @@ export default function GameSessionTabs({
 
   // Add state to store analytics data for all channels
   const [viewMode, setViewMode] = useState<FilterMode>('comparison');
+  
   const [isInitializingComparison, setIsInitializingComparison] = useState(false);
+  
+  // Contraction visualization state - simplified to one toggle
+  const [showContractionHighlights, setShowContractionHighlights] = useState(true);
+  
+  // Individual contraction controls with defaults (both areas and dots shown by default)
+  const [showGoodContractions, setShowGoodContractions] = useState(true);
+  const [showPoorContractions, setShowPoorContractions] = useState(true);
+  const [showContractionAreas, setShowContractionAreas] = useState(true);
+  const [showContractionDots, setShowContractionDots] = useState(true);
 
   const allChannelsData = liveAnalytics;
   const currentChannelAnalyticsData = selectedChannelForStats && liveAnalytics
@@ -279,13 +289,17 @@ export default function GameSessionTabs({
         <Card>
           <CardContent className="pt-4">
             {sessionParams && muscleChannels.length > 0 && (
-              <ChannelFilter
+              <ChartControlHeader
                 availableChannels={muscleChannels}
                 sessionParams={sessionParams}
                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
                 onFilterChange={handleFilterChange}
                 plotMode={plotMode}
                 setPlotMode={setPlotMode}
+                showContractionHighlights={showContractionHighlights}
+                setShowContractionHighlights={setShowContractionHighlights}
+                hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+                isLoading={appIsLoading}
               />
             )}
             <EMGChart 
@@ -298,9 +312,14 @@ export default function GameSessionTabs({
               muscle_color_mapping={sessionParams.muscle_color_mapping}
               sessionParams={sessionParams}
               isLoading={appIsLoading}
-              showSignalSwitch={true}
+              showSignalSwitch={false}
               plotMode={plotMode}
               setPlotMode={setPlotMode}
+              analytics={liveAnalytics}
+              showGoodContractions={showContractionHighlights && showGoodContractions}
+              showPoorContractions={showContractionHighlights && showPoorContractions}
+              showContractionAreas={showContractionHighlights && showContractionAreas}
+              showContractionDots={showContractionHighlights && showContractionDots}
             />
             
             {/* Analytics Panel - Integrated from the EMG Analytics tab */}
@@ -364,10 +383,19 @@ export default function GameSessionTabs({
             setDataPoints={setDataPoints}
             plotChannel1Data={mainPlotChannel1Data}
             plotChannel2Data={mainPlotChannel2Data}
+            showGoodContractions={showGoodContractions}
+            setShowGoodContractions={setShowGoodContractions}
+            showPoorContractions={showPoorContractions}
+            setShowPoorContractions={setShowPoorContractions}
+            showContractionAreas={showContractionAreas}
+            setShowContractionAreas={setShowContractionAreas}
+            showContractionDots={showContractionDots}
+            setShowContractionDots={setShowContractionDots}
           />
           <PatientOutcomesCard
             disabled={appIsLoading}
           />
+          
         </div>
       </TabsContent>
     </Tabs>

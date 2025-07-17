@@ -32,6 +32,15 @@ interface SettingsPanelProps {
   setDataPoints: (points: number) => void;
   plotChannel1Data: EMGChannelSignalData | null;
   plotChannel2Data: EMGChannelSignalData | null;
+  // Contraction visualization controls
+  showGoodContractions?: boolean;
+  setShowGoodContractions?: (show: boolean) => void;
+  showPoorContractions?: boolean;
+  setShowPoorContractions?: (show: boolean) => void;
+  showContractionAreas?: boolean;
+  setShowContractionAreas?: (show: boolean) => void;
+  showContractionDots?: boolean;
+  setShowContractionDots?: (show: boolean) => void;
 }
 
 // Common muscle groups for therapists
@@ -97,6 +106,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   setDataPoints,
   plotChannel1Data,
   plotChannel2Data,
+  showGoodContractions = true,
+  setShowGoodContractions,
+  showPoorContractions = true,
+  setShowPoorContractions,
+  showContractionAreas = true,
+  setShowContractionAreas,
+  showContractionDots = true,
+  setShowContractionDots,
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   // State to track if we're in edit mode
@@ -233,41 +250,148 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const uniqueMuscleNames = Object.values(channelMuscleMapping).filter(Boolean) as string[];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Display & Channel Settings</CardTitle>
-          <Button 
-            onClick={toggleEditMode} 
-            variant="outline" 
-            size="sm"
-            disabled={disabled}
-            className="flex items-center gap-1"
-          >
-            {isEditing ? (
-              <>
-                <CheckIcon className="h-4 w-4" />
-                <span>Save</span>
-              </>
-            ) : (
-              <>
-                <Pencil1Icon className="h-4 w-4" />
-                <span>Edit</span>
-              </>
-            )}
-          </Button>
-        </div>
-        <CardDescription>
-          Configure muscle names, colors, and plot display options.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="muscles" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="muscles">Muscle Names</TabsTrigger>
-            <TabsTrigger value="colors">Colors</TabsTrigger>
-            <TabsTrigger value="plot">Plot</TabsTrigger>
-          </TabsList>
+    <div className="space-y-4">
+      {/* Display Settings Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Display Settings</CardTitle>
+          <CardDescription>
+            Configure chart visualization options and contraction display preferences.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Data Display Options */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-gray-700">Data Display Options</h4>
+            <div className="space-y-3">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="downsampling-points">Data Points for Plot</Label>
+                <DownsamplingControl
+                  dataPoints={dataPoints}
+                  setDataPoints={setDataPoints}
+                  plotChannel1Data={plotChannel1Data}
+                  plotChannel2Data={plotChannel2Data}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Contraction Visualization Settings */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-gray-700">Contraction Visualization</h4>
+            <p className="text-xs text-slate-500">
+              Configure how muscle contractions are displayed when "Contraction Highlights" is enabled.
+            </p>
+            
+            <div className="space-y-4">
+              {/* Contraction Quality Controls */}
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-gray-600">Contraction Quality</h5>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <Label htmlFor="show-good-contractions" className="text-sm">Show Good Contractions</Label>
+                    </div>
+                    <Switch
+                      id="show-good-contractions"
+                      checked={showGoodContractions}
+                      onCheckedChange={setShowGoodContractions}
+                      disabled={disabled || !setShowGoodContractions}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <Label htmlFor="show-poor-contractions" className="text-sm">Show Poor Contractions</Label>
+                    </div>
+                    <Switch
+                      id="show-poor-contractions"
+                      checked={showPoorContractions}
+                      onCheckedChange={setShowPoorContractions}
+                      disabled={disabled || !setShowPoorContractions}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Display Style Controls */}
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-gray-600">Display Style</h5>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-2 bg-blue-300 border border-blue-600 rounded-sm"></div>
+                      <Label htmlFor="show-contraction-areas" className="text-sm">Show Contraction Areas</Label>
+                    </div>
+                    <Switch
+                      id="show-contraction-areas"
+                      checked={showContractionAreas}
+                      onCheckedChange={setShowContractionAreas}
+                      disabled={disabled || !setShowContractionAreas}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full border border-blue-600"></div>
+                      <Label htmlFor="show-contraction-dots" className="text-sm">Show Contraction Dots</Label>
+                    </div>
+                    <Switch
+                      id="show-contraction-dots"
+                      checked={showContractionDots}
+                      onCheckedChange={setShowContractionDots}
+                      disabled={disabled || !setShowContractionDots}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Information */}
+            <div className="p-3 bg-blue-50 rounded-md">
+              <p className="text-xs text-blue-800">
+                <strong>Note:</strong> Areas highlight the duration of contractions, while dots mark peak contraction points. These settings apply when the "Contraction Highlights" toggle is enabled.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Channel Settings Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Channel Settings</CardTitle>
+            <Button 
+              onClick={toggleEditMode} 
+              variant="outline" 
+              size="sm"
+              disabled={disabled}
+              className="flex items-center gap-1"
+            >
+              {isEditing ? (
+                <>
+                  <CheckIcon className="h-4 w-4" />
+                  <span>Save</span>
+                </>
+              ) : (
+                <>
+                  <Pencil1Icon className="h-4 w-4" />
+                  <span>Edit</span>
+                </>
+              )}
+            </Button>
+          </div>
+          <CardDescription>
+            Configure muscle names and colors for EMG channels.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="muscles" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="muscles">Muscle Names</TabsTrigger>
+              <TabsTrigger value="colors">Colors</TabsTrigger>
+            </TabsList>
           
           <TabsContent value="muscles" className="space-y-4 mt-4">
             <p className="text-sm text-slate-500">
@@ -418,25 +542,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             )}
           </TabsContent>
-          
-          <TabsContent value="plot" className="space-y-4 mt-4">
-            <p className="text-sm text-slate-500">
-              Configure how EMG signals are displayed in charts and visualizations.
-            </p>
-
-            <div className="space-y-2 p-2 rounded-md border">
-              <Label>Data Display Options</Label>
-              <div className="flex flex-col space-y-3">
-                <Label htmlFor="downsampling-points">Data Points for Plot</Label>
-                <DownsamplingControl
-                  dataPoints={dataPoints}
-                  setDataPoints={setDataPoints}
-                  plotChannel1Data={plotChannel1Data}
-                  plotChannel2Data={plotChannel2Data}
-                />
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
         
         <div className="pt-4 flex justify-end">
@@ -451,6 +556,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
 
