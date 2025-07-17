@@ -298,7 +298,7 @@ export default function GameSessionTabs({
                 setPlotMode={setPlotMode}
                 showContractionHighlights={showContractionHighlights}
                 setShowContractionHighlights={setShowContractionHighlights}
-                hasContractionData={liveAnalytics && Object.keys(liveAnalytics).length > 0}
+                hasContractionData={!!(liveAnalytics && Object.keys(liveAnalytics).length > 0)}
                 isLoading={appIsLoading}
               />
             )}
