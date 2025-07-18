@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import CollapsibleSettingsCard from './CollapsibleSettingsCard';
+import UnifiedSettingsCard from './UnifiedSettingsCard';
 import ChartDisplaySettings from './ChartDisplaySettings';
 import ChannelConfiguration from './ChannelConfiguration';
 import ContractionVisualizationSettings from './ContractionVisualizationSettings';
 import { EMGChannelSignalData } from '../../types/emg';
+import { EyeOpenIcon } from '@radix-ui/react-icons';
 
 interface DisplaySettingsProps {
   muscleChannels: string[];
@@ -23,15 +24,17 @@ interface DisplaySettingsProps {
 }
 
 const DisplaySettings: React.FC<DisplaySettingsProps> = (props) => {
-  const [isDisplaySettingsOpen, setIsDisplaySettingsOpen] = useState(true);
+  const [isDisplaySettingsOpen, setIsDisplaySettingsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <CollapsibleSettingsCard
+    <UnifiedSettingsCard
       title="Display Settings"
-      description="Chart visualization, channel configuration and contraction display preferences."
+      description="Chart visualization, channel configuration and contraction display preferences"
       isOpen={isDisplaySettingsOpen}
       onOpenChange={setIsDisplaySettingsOpen}
+      icon={<EyeOpenIcon className="h-5 w-5 text-purple-500" />}
+      accentColor="purple-500"
     >
       <ChartDisplaySettings
         dataPoints={props.dataPoints}
@@ -48,7 +51,7 @@ const DisplaySettings: React.FC<DisplaySettingsProps> = (props) => {
       <ContractionVisualizationSettings
         {...props}
       />
-    </CollapsibleSettingsCard>
+    </UnifiedSettingsCard>
   );
 };
 

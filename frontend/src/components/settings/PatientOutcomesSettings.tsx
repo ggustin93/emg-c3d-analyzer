@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useSessionStore } from '../../store/sessionStore';
-import CollapsibleSettingsCard from './CollapsibleSettingsCard';
+import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { PersonIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;
@@ -15,11 +16,13 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
   const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(false);
 
   return (
-    <CollapsibleSettingsCard
+    <UnifiedSettingsCard
       title="Patient Reported Outcomes"
       description={isDebugMode ? 'PRO data (editable in debug mode)' : 'Patient outcomes imported from GHOSTLY+ mobile app'}
       isOpen={isPatientOutcomesOpen}
       onOpenChange={setIsPatientOutcomesOpen}
+      icon={<PersonIcon className="h-5 w-5 text-indigo-500" />}
+      accentColor="indigo-500"
     >
       <TooltipProvider>
         {/* Perceived Exertion */}
@@ -28,11 +31,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
             <h4 className="text-sm font-medium text-gray-700">Perceived Exertion (Borg CR10)</h4>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </span>
+                <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="w-[300px] text-xs">
@@ -103,7 +102,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
           </div>
         )}
       </TooltipProvider>
-    </CollapsibleSettingsCard>
+    </UnifiedSettingsCard>
   );
 };
 

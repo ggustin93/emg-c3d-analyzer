@@ -21,7 +21,7 @@ const ClinicalParametersSettings: React.FC<ClinicalParametersSettingsProps> = ({
   return (
     <CollapsibleSettingsCard
       title="Clinical Parameters"
-      description={isDebugMode ? 'Clinical parameters (editable in debug mode)' : 'MVC values and thresholds computed from initial assessment'}
+      description={isDebugMode ? 'Clinical rehabilitation parameters (editable in debug mode)' : 'MVC values and therapeutic thresholds computed from initial assessment'}
       isOpen={isClinicalParametersOpen}
       onOpenChange={setIsClinicalParametersOpen}
     >

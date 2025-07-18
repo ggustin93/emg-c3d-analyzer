@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useSessionStore } from '../../store/sessionStore';
-import CollapsibleSettingsCard from './CollapsibleSettingsCard';
+import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Slider } from "../ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { TargetIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '../MuscleNameDisplay';
 
 interface SessionGoalsSettingsProps {
@@ -34,11 +35,13 @@ const SessionGoalsSettings: React.FC<SessionGoalsSettingsProps> = ({ muscleChann
   };
 
   return (
-    <CollapsibleSettingsCard
+    <UnifiedSettingsCard
       title="Session Goals"
-      description="Therapy session targets and contraction thresholds."
+      description="Therapy session targets and contraction thresholds"
       isOpen={isSessionGoalsOpen}
       onOpenChange={setIsSessionGoalsOpen}
+      icon={<TargetIcon className="h-5 w-5 text-green-500" />}
+      accentColor="green-500"
     >
       <TooltipProvider>
         {/* Expected Contractions */}
@@ -53,11 +56,7 @@ const SessionGoalsSettings: React.FC<SessionGoalsSettingsProps> = ({ muscleChann
                 </Label>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-slate-400 hover:text-slate-600 cursor-help">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </span>
+                    <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="w-[250px] text-xs">
@@ -159,7 +158,7 @@ const SessionGoalsSettings: React.FC<SessionGoalsSettingsProps> = ({ muscleChann
           </div>
         </div>
       </TooltipProvider>
-    </CollapsibleSettingsCard>
+    </UnifiedSettingsCard>
   );
 };
 
