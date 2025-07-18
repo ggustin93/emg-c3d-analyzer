@@ -207,7 +207,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
   return (
     <Card className="border-2 border-blue-100 bg-blue-50/30">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-800">
+        <CardTitle className="flex items-center gap-2 text-blue-800 text-sm">
           <MixerHorizontalIcon className="h-5 w-5" />
           Performance Scoring Equation
           <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800">
