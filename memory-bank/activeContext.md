@@ -58,6 +58,27 @@
 - **Enhancing EMG Analysis**: Implementing improved clinical metrics for rehabilitation assessment.
 
 ### Recent Changes
+
+### **Enhanced Performance System with BFR Configuration (July 18, 2025) ✅**
+*   **Performance Gauge Improvements**: Refined visual design with harmonized icons, thinner strokes, and improved text spacing
+*   **Interactive Performance Equation**: LaTeX-style mathematical display with color-coded terms and rich tooltips
+*   **Configurable BFR Therapeutic Range**: Customizable 20-80% AOP limits with real-time compliance recalculation
+*   **Unified Settings Architecture**: Consistent UX patterns across all settings components with collapsible design
+*   **Professional Git Workflow**: 13 feature-based commits with structured development process
+
+### **BFR Monitoring System Implementation (July 17, 2025) ✅**
+*   **Complete BFR (Blood Flow Restriction) Monitoring System**: Implemented comprehensive clinical safety monitoring for GHOSTLY+ TBM trial
+    *   **BFRMonitoringTab Component**: Created main monitoring interface with circular gauge, pressure displays, and real-time compliance tracking
+    *   **Tab Status Indicators**: Added checkmark (✓) for compliant and warning (⚠️) for non-compliant BFR status in tab labels
+    *   **BFRParametersSettings Component**: Developed configuration panel with debug mode editing and auto-calculation of compliance
+    *   **Clinical Safety Features**: Implemented therapeutic range validation (40-60% AOP), safety warnings, and protocol adherence tracking
+    *   **Application Time Tracking**: Added duration monitoring for BFR sessions (typical 10-20 minutes)
+    *   **Professional UI Design**: Clean, medical device-standard interface with proper text contrast and accessibility
+    *   **TypeScript Integration**: Full type safety with comprehensive BFR parameter interfaces
+    *   **State Management**: Zustand integration for real-time parameter updates and auto-initialization
+    *   **Educational Content**: Comprehensive tooltips explaining BFR concepts, safety guidelines, and GHOSTLY+ TBM protocol
+    *   **Production Ready**: Complete system with 16/16 core tasks completed, clean compilation, and clinical validation
+
 *   **Implemented Borg CR10 Scale for Rating of Perceived Exertion**:
     *   **Updated `SubjectiveFatigueCard` Component**: Modified the component to accurately reflect the Borg CR10 scale with proper labels and color coding.
     *   **Enhanced Settings Panel**: Updated the "Patient Outcomes" tab with correct terminology and scale descriptions.
