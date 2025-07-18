@@ -26,6 +26,7 @@ import ChartControlHeader from '../ChartControlHeader';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
+import BFRMonitoringTab from './BFRMonitoringTab';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -94,6 +95,38 @@ export default function GameSessionTabs({
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
   const liveAnalytics = useLiveAnalytics(analysisResult);
+
+  // Initialize BFR parameters if they don't exist
+  useEffect(() => {
+    if (!sessionParams.bfr_parameters) {
+      setSessionParams({
+        ...sessionParams,
+        bfr_parameters: {
+          aop_measured: 180,
+          applied_pressure: 90,
+          percentage_aop: 50,
+          is_compliant: true,
+          application_time_minutes: 15
+        }
+      });
+    }
+  }, [sessionParams, setSessionParams]);
+
+  // Get BFR compliance status for tab indicator
+  const getBFRTabStatus = () => {
+    const bfrParams = sessionParams.bfr_parameters;
+    if (!bfrParams) return null;
+    return bfrParams.is_compliant;
+  };
+
+  const bfrCompliant = getBFRTabStatus();
+  
+  // Debug logging
+  console.log('BFR Debug:', { 
+    hasParams: !!sessionParams.bfr_parameters, 
+    compliant: bfrCompliant,
+    params: sessionParams.bfr_parameters 
+  });
 
   // Add state to store analytics data for all channels
   const [viewMode, setViewMode] = useState<FilterMode>('comparison');
@@ -280,6 +313,21 @@ export default function GameSessionTabs({
         <TabsList className="w-full flex justify-between overflow-x-auto">
           <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
           <TabsTrigger value="game" className="flex-1 flex-shrink-0">Performance Analysis</TabsTrigger>
+          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span>BFR Monitoring</span>
+              {bfrCompliant === true && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {bfrCompliant === false && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              )}
+            </div>
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
         </TabsList>
       </div>
@@ -357,6 +405,10 @@ export default function GameSessionTabs({
           sessionParams={sessionParams}
           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? undefined}
         />
+      </TabsContent>
+
+      <TabsContent value="bfr" className="p-4 bg-white rounded-lg shadow-sm">
+        <BFRMonitoringTab />
       </TabsContent>
 
       <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">

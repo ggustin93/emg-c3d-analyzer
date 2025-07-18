@@ -1,7 +1,9 @@
 import { EMGAnalysisResult, GameSessionParameters } from '../../types/emg';
 import MusclePerformanceCard from './performance/MusclePerformanceCard';
 import OverallPerformanceCard from './performance/OverallPerformanceCard';
+import EnhancedPerformanceCard from './performance/EnhancedPerformanceCard';
 import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
+import { useSessionStore } from '@/store/sessionStore';
 
 export interface PerformanceCardProps {
   analysisResult: EMGAnalysisResult | null;
@@ -14,6 +16,9 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   contractionDurationThreshold = 250,
   sessionParams,
 }) => {
+  const { sessionParams: storeSessionParams } = useSessionStore();
+  const isEnhancedScoringEnabled = storeSessionParams?.enhanced_scoring?.enabled || false;
+  
   const { 
     muscleData, 
     overallScore, 
@@ -22,6 +27,12 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     durationThreshold 
   } = usePerformanceMetrics(analysisResult, contractionDurationThreshold);
 
+  // Si le scoring avancé est activé, utiliser le nouveau composant
+  if (isEnhancedScoringEnabled) {
+    return <EnhancedPerformanceCard analysisResult={analysisResult} />;
+  }
+
+  // Sinon, utiliser l'ancien système
   return (
     <div className="space-y-6">
       <OverallPerformanceCard
