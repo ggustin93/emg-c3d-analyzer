@@ -4,6 +4,7 @@ import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
+import { Slider } from "../ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { HeartIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 
@@ -22,13 +23,15 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
     applied_pressure: 90,
     percentage_aop: 50,
     is_compliant: true,
-    application_time_minutes: 15
+    application_time_minutes: 15,
+    therapeutic_range_min: 40,
+    therapeutic_range_max: 60
   };
 
   // Calculate percentage and compliance
-  const calculateBFRMetrics = (aop: number, applied: number) => {
+  const calculateBFRMetrics = (aop: number, applied: number, minRange: number = 40, maxRange: number = 60) => {
     const percentage = aop > 0 ? (applied / aop) * 100 : 0;
-    const isCompliant = percentage >= 40 && percentage <= 60;
+    const isCompliant = percentage >= minRange && percentage <= maxRange;
     return { percentage, isCompliant };
   };
 
@@ -38,7 +41,9 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
     // Recalculate percentage and compliance
     const { percentage, isCompliant } = calculateBFRMetrics(
       newParams.aop_measured, 
-      newParams.applied_pressure
+      newParams.applied_pressure,
+      newParams.therapeutic_range_min,
+      newParams.therapeutic_range_max
     );
     
     newParams.percentage_aop = percentage;
@@ -55,13 +60,13 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
       return {
         badge: "PASS",
         color: "bg-green-100 text-green-800",
-        message: "Within therapeutic range (40-60% AOP)"
+        message: `Within therapeutic range (${bfrParams.therapeutic_range_min}-${bfrParams.therapeutic_range_max}% AOP)`
       };
     } else {
       return {
         badge: "FAIL",
         color: "bg-red-100 text-red-800",
-        message: bfrParams.percentage_aop > 60 ? "TOO HIGH - Risk of tissue damage" : "TOO LOW - Ineffective therapy"
+        message: bfrParams.percentage_aop > bfrParams.therapeutic_range_max ? "TOO HIGH - Risk of tissue damage" : "TOO LOW - Ineffective therapy"
       };
     }
   };
@@ -89,7 +94,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               <TooltipContent>
                 <p className="w-[300px] text-xs">
                   Blood Flow Restriction (BFR) training applies partial pressure to limbs during low-intensity exercise. 
-                  The therapeutic range is 40-60% of Arterial Occlusion Pressure (AOP). 
+                  The therapeutic range is configurable (default: 40-60% of Arterial Occlusion Pressure). 
                   Pressures outside this range may be ineffective or unsafe.
                 </p>
               </TooltipContent>
@@ -179,6 +184,66 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                   <Badge className={`${complianceStatus.color} text-xs`}>
                     {complianceStatus.badge}
                   </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Therapeutic Range Configuration */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Therapeutic Range Configuration</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-3 w-3 text-gray-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="w-[250px] text-xs">
+                      Adjust the acceptable range for BFR therapy. Standard range is 40-60% AOP, 
+                      but may be modified based on patient condition and clinical protocol.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-600">Minimum % AOP</Label>
+                  <div className="space-y-1">
+                    <Slider
+                      value={[bfrParams.therapeutic_range_min]}
+                      onValueChange={([value]) => updateBFRParameters('therapeutic_range_min', value)}
+                      min={20}
+                      max={50}
+                      step={5}
+                      disabled={disabled}
+                      className="h-2"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>20%</span>
+                      <span className="font-medium text-gray-700">{bfrParams.therapeutic_range_min}%</span>
+                      <span>50%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-600">Maximum % AOP</Label>
+                  <div className="space-y-1">
+                    <Slider
+                      value={[bfrParams.therapeutic_range_max]}
+                      onValueChange={([value]) => updateBFRParameters('therapeutic_range_max', value)}
+                      min={50}
+                      max={80}
+                      step={5}
+                      disabled={disabled}
+                      className="h-2"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>50%</span>
+                      <span className="font-medium text-gray-700">{bfrParams.therapeutic_range_max}%</span>
+                      <span>80%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

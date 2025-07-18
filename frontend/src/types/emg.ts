@@ -130,8 +130,10 @@ export interface GameSessionParameters {
     aop_measured: number;      // Arterial Occlusion Pressure in mmHg
     applied_pressure: number;  // Applied pressure in mmHg
     percentage_aop: number;    // Calculated percentage of AOP
-    is_compliant: boolean;     // Within 40-60% therapeutic range
+    is_compliant: boolean;     // Within therapeutic range
     application_time_minutes?: number; // Duration of BFR application in minutes
+    therapeutic_range_min: number;     // Minimum acceptable % AOP (default: 40)
+    therapeutic_range_max: number;     // Maximum acceptable % AOP (default: 60)
   };
   
   // RPE Parameters
