@@ -4,8 +4,11 @@ import { useSessionStore } from '../store/sessionStore';
 import DebugModeSwitch from './settings/DebugModeSwitch';
 import DisplaySettings from './settings/DisplaySettings';
 import SessionGoalsSettings from './settings/SessionGoalsSettings';
-import ClinicalParametersSettings from './settings/ClinicalParametersSettings';
 import PatientOutcomesSettings from './settings/PatientOutcomesSettings';
+import BFRParametersSettings from './settings/BFRParametersSettings';
+import ScoringWeightsSettings from './settings/ScoringWeightsSettings';
+import ContractionDetectionSettings from './settings/ContractionDetectionSettings';
+import ExperimentalFeaturesSettings from './settings/ExperimentalFeaturesSettings';
 
 interface SettingsPanelProps {
   muscleChannels: string[];
@@ -79,11 +82,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   return (
     <div className="space-y-4">
-      <DebugModeSwitch
-        isDebugMode={isDebugMode}
-        setIsDebugMode={setIsDebugMode}
-        disabled={disabled}
-      />
       <DisplaySettings
         muscleChannels={muscleChannels}
         disabled={disabled}
@@ -104,14 +102,25 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         muscleChannels={muscleChannels}
         disabled={disabled}
       />
-      <ClinicalParametersSettings
+      <ScoringWeightsSettings 
         muscleChannels={muscleChannels}
         disabled={disabled}
         isDebugMode={isDebugMode}
       />
+      <ContractionDetectionSettings />
       <PatientOutcomesSettings
         disabled={disabled}
         isDebugMode={isDebugMode}
+      />
+      <BFRParametersSettings
+        disabled={disabled}
+        isDebugMode={isDebugMode}
+      />
+      <ExperimentalFeaturesSettings />
+      <DebugModeSwitch
+        isDebugMode={isDebugMode}
+        setIsDebugMode={setIsDebugMode}
+        disabled={disabled}
       />
     </div>
   );
