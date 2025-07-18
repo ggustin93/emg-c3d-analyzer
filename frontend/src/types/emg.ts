@@ -3,6 +3,72 @@ export interface EMGPoint {
   value: number;
 }
 
+export interface ContractionDetectionParameters {
+  // Paramètres de base
+  threshold_factor: number;          // 0.1-0.5 (défaut: 0.3)
+  min_duration_ms: number;          // 10-200ms (défaut: 50ms)
+  smoothing_window_ms: number;      // 10-100ms (défaut: 25ms)
+  
+  // Paramètres avancés
+  merge_threshold_ms: number;       // 100-1000ms (défaut: 500ms)
+  refractory_period_ms: number;     // 0-500ms (défaut: 0ms)
+  
+  // Seuils de qualité thérapeutique
+  quality_threshold_ms: number;     // 100-5000ms (défaut: 2000ms) - Seuil adaptatif pour la qualité de contraction
+  mvc_threshold_percentage: number; // 50-100% (défaut: 75%) - Seuil MVC pour activation thérapeutique
+}
+
+export interface GameScoreNormalization {
+  algorithm: 'linear' | 'logarithmic' | 'custom';
+  min_score: number;
+  max_score: number;
+  custom_parameters?: Record<string, any>;
+}
+
+export interface ScoringWeights {
+  completion: number;         // 0.20
+  mvcQuality: number;        // 0.30
+  qualityThreshold: number;  // 0.15 - Seuil adaptatif de qualité
+  symmetry: number;          // 0.20
+  effort: number;            // 0.15
+  gameScore: number;         // 0.00 (expérimental)
+}
+
+export interface ComponentScore {
+  value: number;
+  count: number;
+  total: number;
+  formula: string;
+}
+
+export interface MusclePerformanceData {
+  muscleName: string;
+  totalScore: number;
+  components: {
+    completion: ComponentScore;
+    mvcQuality: ComponentScore;
+    qualityThreshold: ComponentScore;
+  };
+}
+
+export interface EnhancedPerformanceData {
+  // Niveau Global
+  overallScore: number;
+  
+  // Niveau Par Muscle
+  leftMuscle: MusclePerformanceData;
+  rightMuscle: MusclePerformanceData;
+  
+  // Métriques Inter-Muscles
+  symmetryScore: number;
+  effortScore: number;
+  gameScoreNormalized: number;
+  
+  // Configuration
+  weights: ScoringWeights;
+  isDebugMode: boolean;
+}
+
 export interface Contraction {
   start_time_ms: number;
   end_time_ms: number;
@@ -59,8 +125,38 @@ export interface GameSessionParameters {
   // Thresholds
   contraction_duration_threshold?: number | null;
   
-  // Allow string indexing for dynamic access
-  [key: string]: Record<string, string | number | null> | boolean | number | null | undefined;
+  // BFR Parameters
+  bfr_parameters?: {
+    aop_measured: number;      // Arterial Occlusion Pressure in mmHg
+    applied_pressure: number;  // Applied pressure in mmHg
+    percentage_aop: number;    // Calculated percentage of AOP
+    is_compliant: boolean;     // Within 40-60% therapeutic range
+    application_time_minutes?: number; // Duration of BFR application in minutes
+  };
+  
+  // RPE Parameters
+  pre_session_rpe?: number | null;
+  post_session_rpe?: number | null;
+  
+  // Enhanced Performance Scoring
+  enhanced_scoring?: {
+    enabled: boolean;
+    weights: ScoringWeights;
+    game_score_normalization?: GameScoreNormalization;
+  };
+  
+  // Contraction Detection Parameters
+  contraction_detection?: ContractionDetectionParameters;
+  
+  // Experimental Features
+  experimental_features?: {
+    enabled: boolean;
+    allow_game_score_weight?: boolean;
+    allow_detection_params?: boolean;
+  };
+  
+  // Allow string indexing for dynamic access (excluding specific typed properties)
+  [key: string]: any;
 
   expected_contractions?: number;
   mvc_threshold_factor?: number;
