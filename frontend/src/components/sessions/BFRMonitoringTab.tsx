@@ -16,7 +16,9 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
     applied_pressure: 90,
     percentage_aop: 50,
     is_compliant: true,
-    application_time_minutes: 15
+    application_time_minutes: 15,
+    therapeutic_range_min: 40,
+    therapeutic_range_max: 60
   };
 
   const getComplianceStatus = () => {
