@@ -24,7 +24,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
       {/* Interactive Equation */}
       <div className="flex flex-wrap items-center gap-2 mb-4 text-sm font-mono">
-        <span className="font-bold text-gray-800 text-base">P<sub>overall</sub> =</span>
+        <span className="font-bold text-gray-800 text-base">P<sub>rehab</sub> =</span>
         
         <TooltipProvider>
           <Tooltip>
@@ -67,7 +67,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
           
           <Tooltip>
             <TooltipTrigger className={`${componentColors.qualityThreshold.text} ${componentColors.qualityThreshold.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₃ · S<sub>quality</sub>
+              w₃ · S<sub>duration</sub>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <div>
@@ -144,6 +144,14 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
         </TooltipProvider>
       </div>
       
+      {/* Architecture Note */}
+      <div className="mb-3 p-2 bg-gradient-to-r from-green-50 to-blue-50 rounded border border-green-200">
+        <div className="text-xs text-gray-700">
+          <span className="font-medium text-green-800">🏗️ Hierarchical Structure:</span> 
+          <span className="ml-1">This equation will evolve into a hierarchical system with <strong>Compliance Score</strong> as a composite sub-metric containing MVC + Duration + Completion + BFR + Effort components.</span>
+        </div>
+      </div>
+
       {/* Structured Information */}
       <div className="bg-white rounded-lg p-3 border border-blue-200 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
