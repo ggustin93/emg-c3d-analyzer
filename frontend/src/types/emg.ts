@@ -31,6 +31,7 @@ export interface ScoringWeights {
   qualityThreshold: number;  // 0.15 - Seuil adaptatif de qualité
   symmetry: number;          // 0.20
   effort: number;            // 0.15
+  compliance: number;        // 0.10 - BFR compliance
   gameScore: number;         // 0.00 (expérimental)
 }
 
@@ -62,6 +63,7 @@ export interface EnhancedPerformanceData {
   // Métriques Inter-Muscles
   symmetryScore: number;
   effortScore: number;
+  complianceScore: number;
   gameScoreNormalized: number;
   
   // Configuration

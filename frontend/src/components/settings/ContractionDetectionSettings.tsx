@@ -41,7 +41,7 @@ const DETECTION_PRESETS = {
     merge_threshold_ms: 300,
     refractory_period_ms: 0,
     quality_threshold_ms: 1500,
-    mvc_threshold_percentage: 70
+    mvc_threshold_percentage: 75
   },
   conservative: {
     threshold_factor: 0.4,

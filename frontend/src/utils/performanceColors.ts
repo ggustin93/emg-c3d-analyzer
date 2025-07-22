@@ -92,47 +92,52 @@ export const getEffortColor = (score: number) => {
 };
 
 // Couleurs spécifiques pour chaque composant de l'équation (cohérentes avec l'UI)
-export const getComponentColors = () => ({
-  completion: {
-    hex: '#3b82f6',
-    text: 'text-blue-600',
-    hover: 'hover:bg-blue-50',
-    name: 'Session Completion',
-    description: 'Percentage of expected contractions completed during the session'
-  },
-  mvcQuality: {
-    hex: '#059669',
-    text: 'text-emerald-600',
-    hover: 'hover:bg-emerald-50',
-    name: 'MVC Quality',
-    description: 'Percentage of contractions reaching therapeutic intensity (≥75% MVC)'
-  },
-  qualityThreshold: {
-    hex: '#d97706',
-    text: 'text-amber-600',
-    hover: 'hover:bg-amber-50',
-    name: 'Quality Threshold',
-    description: 'Percentage of contractions meeting adaptive quality threshold (≥2000ms)'
-  },
-  symmetry: {
-    hex: '#7c3aed',
-    text: 'text-purple-600',
-    hover: 'hover:bg-purple-50',
-    name: 'Bilateral Symmetry',
-    description: 'Balance between left and right muscle performance'
-  },
-  effort: {
-    hex: '#dc2626',
-    text: 'text-red-600',
-    hover: 'hover:bg-red-50',
-    name: 'Subjective Effort',
-    description: 'Perceived exertion assessment using Borg CR10 scale'
-  },
-  gameScore: {
-    hex: '#6b7280',
-    text: 'text-gray-600',
-    hover: 'hover:bg-gray-50',
-    name: 'Game Performance',
-    description: 'Normalized GHOSTLY game score (experimental feature)'
-  }
-});
+export const getComponentColors = (sessionParams?: any) => {
+  const mvcThreshold = sessionParams?.session_mvc_threshold_percentage ?? 75;
+  const durationThreshold = sessionParams?.contraction_duration_threshold ?? 2000;
+
+  return {
+    completion: {
+      hex: '#3b82f6',
+      text: 'text-blue-600',
+      hover: 'hover:bg-blue-50',
+      name: 'Session Completion',
+      description: 'Percentage of expected contractions completed during the session'
+    },
+    mvcQuality: {
+      hex: '#059669',
+      text: 'text-emerald-600',
+      hover: 'hover:bg-emerald-50',
+      name: 'MVC Quality',
+      description: `Percentage of contractions reaching therapeutic intensity (≥${mvcThreshold}% MVC)`
+    },
+    qualityThreshold: {
+      hex: '#d97706',
+      text: 'text-amber-600',
+      hover: 'hover:bg-amber-50',
+      name: 'Quality Threshold',
+      description: `Percentage of contractions meeting adaptive quality threshold (≥${durationThreshold}ms)`
+    },
+    symmetry: {
+      hex: '#7c3aed',
+      text: 'text-purple-600',
+      hover: 'hover:bg-purple-50',
+      name: 'Bilateral Symmetry',
+      description: 'Balance between left and right muscle performance'
+    },
+    effort: {
+      hex: '#dc2626',
+      text: 'text-red-600',
+      hover: 'hover:bg-red-50',
+      name: 'Subjective Effort',
+      description: 'Perceived exertion assessment using Borg CR10 scale'
+    },
+    gameScore: {
+      hex: '#6b7280',
+      text: 'text-gray-600',
+      hover: 'hover:bg-gray-50',
+      name: 'Game Performance',
+      description: 'Normalized GHOSTLY game score (experimental feature)'
+    }
+  };
+};

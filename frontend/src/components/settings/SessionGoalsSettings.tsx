@@ -128,35 +128,6 @@ const SessionGoalsSettings: React.FC<SessionGoalsSettingsProps> = ({ muscleChann
             )}
           </div>
         </div>
-
-        {/* Contraction Duration Threshold */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-700">Quality Thresholds</h4>
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>Minimum Contraction Duration</Label>
-              <div className="flex items-center space-x-4">
-                <Slider
-                  value={[sessionParams.contraction_duration_threshold || 2000]}
-                  onValueChange={(value) => setSessionParams({ 
-                    ...sessionParams,
-                    contraction_duration_threshold: value[0] 
-                  })}
-                  min={100}
-                  max={5000}
-                  step={100}
-                  disabled={disabled}
-                />
-                <div className="w-24 text-right">
-                  <span>{(sessionParams.contraction_duration_threshold || 2000) / 1000}s</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-500">
-                Focus on longest possible contractions for therapeutic benefit.
-              </p>
-            </div>
-          </div>
-        </div>
       </TooltipProvider>
     </UnifiedSettingsCard>
   );

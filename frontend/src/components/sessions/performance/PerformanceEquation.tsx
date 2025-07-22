@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDownIcon, MixerHorizontalIcon, GearIcon } from '@radix-ui/react-icons';
 import { ScoringWeights } from '@/types/emg';
 import { getComponentColors } from '@/utils/performanceColors';
+import { useSessionStore } from '@/store/sessionStore';
 
 interface PerformanceEquationProps {
   weights: ScoringWeights;
@@ -16,7 +17,8 @@ interface PerformanceEquationProps {
 
 const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, compact = false, showSettingsLink = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const componentColors = getComponentColors();
+  const { sessionParams } = useSessionStore();
+  const componentColors = getComponentColors(sessionParams);
 
   const EquationComponent = () => (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
@@ -54,7 +56,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
                 <p className="text-sm text-emerald-800 mb-2">{componentColors.mvcQuality.description}</p>
                 <div className="bg-emerald-50 p-2 rounded text-xs space-y-1">
                   <p><strong>Current weight:</strong> {(weights.mvcQuality * 100).toFixed(0)}%</p>
-                  <p><strong>Threshold:</strong> ≥75% of Maximum Voluntary Contraction</p>
+                  <p><strong>Threshold:</strong> ≥{sessionParams?.session_mvc_threshold_percentage ?? 75}% of Maximum Voluntary Contraction</p>
                   <p><strong>Clinical importance:</strong> Ensures therapeutic intensity</p>
                 </div>
               </div>
@@ -73,7 +75,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
                 <p className="text-sm text-amber-800 mb-2">{componentColors.qualityThreshold.description}</p>
                 <div className="bg-amber-50 p-2 rounded text-xs space-y-1">
                   <p><strong>Current weight:</strong> {(weights.qualityThreshold * 100).toFixed(0)}%</p>
-                  <p><strong>Default threshold:</strong> ≥2000ms (2 seconds)</p>
+                  <p><strong>Current threshold:</strong> ≥{sessionParams?.contraction_duration_threshold ?? 2000}ms ({((sessionParams?.contraction_duration_threshold ?? 2000) / 1000).toFixed(1)} seconds)</p>
                   <p><strong>Adaptive:</strong> Increases with patient progress</p>
                 </div>
               </div>

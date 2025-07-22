@@ -15,6 +15,7 @@ import {
 import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMetrics';
 import { getPerformanceColor, getSymmetryColor, getEffortColor, getComponentColors } from '@/utils/performanceColors';
 import PerformanceEquation from './PerformanceEquation';
+import { useSessionStore } from '@/store/sessionStore';
 
 interface EnhancedPerformanceCardProps {
   analysisResult: EMGAnalysisResult | null;
@@ -43,6 +44,7 @@ interface MetricRowProps {
 interface MuscleDetailCardProps {
   muscle: MusclePerformanceData;
   weights: any;
+  sessionParams?: any;
 }
 
 interface ComponentRowProps {
@@ -236,7 +238,7 @@ const ComponentRow: React.FC<ComponentRowProps> = ({ name, component, tooltip })
   );
 };
 
-const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights }) => {
+const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights, sessionParams }) => {
   const muscleColors = getPerformanceColor(muscle.totalScore);
   
   return (
@@ -261,7 +263,7 @@ const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights }) 
       <ComponentRow
         name="MVC Quality"
         component={muscle.components.mvcQuality}
-        tooltip="Percentage of contractions reaching therapeutic intensity (≥75% MVC). Ensures adequate muscle activation for rehabilitation progress."
+        tooltip={`Percentage of contractions reaching therapeutic intensity (≥${sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC). Ensures adequate muscle activation for rehabilitation progress.`}
       />
       <ComponentRow
         name="Quality Threshold"
@@ -275,7 +277,8 @@ const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights }) 
 
 const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analysisResult }) => {
   const enhancedData = useEnhancedPerformanceMetrics(analysisResult);
-  const componentColors = getComponentColors();
+  const { sessionParams } = useSessionStore();
+  const componentColors = getComponentColors(sessionParams);
 
   if (!enhancedData) {
     return (
@@ -342,8 +345,8 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
                 </div>
                 <ul className="space-y-1 text-sm">
                   <li>• <span className={componentColors.completion.text}>Session completion</span>: Expected contractions completed</li>
-                  <li>• <span className={componentColors.mvcQuality.text}>MVC quality</span>: Therapeutic intensity (≥75% MVC)</li>
-                  <li>• <span className={componentColors.qualityThreshold.text}>Quality threshold</span>: Adaptive duration (≥2000ms)</li>
+                  <li>• <span className={componentColors.mvcQuality.text}>MVC quality</span>: Therapeutic intensity (≥{sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC)</li>
+                  <li>• <span className={componentColors.qualityThreshold.text}>Quality threshold</span>: Adaptive duration (≥{sessionParams?.contraction_duration_threshold ?? 2000}ms)</li>
                   <li>• <span className={componentColors.symmetry.text}>Bilateral balance</span>: Left-right symmetry</li>
                   <li>• <span className={componentColors.effort.text}>Perceived exertion</span>: Optimal therapeutic effort</li>
                   {weights.gameScore > 0 && (
@@ -407,8 +410,8 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
 
         {/* Détails par Muscle */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MuscleDetailCard muscle={leftMuscle} weights={weights} />
-          <MuscleDetailCard muscle={rightMuscle} weights={weights} />
+          <MuscleDetailCard muscle={leftMuscle} weights={weights} sessionParams={sessionParams} />
+          <MuscleDetailCard muscle={rightMuscle} weights={weights} sessionParams={sessionParams} />
         </div>
 
         {/* Game Score Section (if available) */}

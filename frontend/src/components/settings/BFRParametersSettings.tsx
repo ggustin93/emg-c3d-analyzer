@@ -92,11 +92,17 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                 <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="w-[300px] text-xs">
-                  Blood Flow Restriction (BFR) training applies partial pressure to limbs during low-intensity exercise. 
-                  The therapeutic range is configurable (default: 40-60% of Arterial Occlusion Pressure). 
-                  Pressures outside this range may be ineffective or unsafe.
-                </p>
+                <div className="w-[300px] text-xs space-y-2">
+                  <p>
+                    Blood Flow Restriction (BFR) training applies partial pressure to limbs during low-intensity exercise. 
+                    The therapeutic range is configurable (default: 40-60% of Arterial Occlusion Pressure).
+                  </p>
+                  <div className="bg-blue-50 p-2 rounded">
+                    <p><strong>Compliance:</strong> Whether BFR parameters are within the safe therapeutic range.</p>
+                    <p><strong>PASS:</strong> Within range (safe and effective)</p>
+                    <p><strong>FAIL:</strong> Outside range (too low = ineffective, too high = unsafe)</p>
+                  </div>
+                </div>
               </TooltipContent>
             </Tooltip>
           </div>

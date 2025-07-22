@@ -60,7 +60,7 @@ export const useMvcInitialization = () => {
                     channelAnalytics.mvc_threshold_actual_value !== undefined && 
                     channelAnalytics.mvc_threshold_actual_value !== null) {
             // Fallback to deriving from threshold if max_amplitude is not available
-            const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 70;
+            const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 75;
             const rawMvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
             const mvcValue = formatMVCValue(rawMvcValue);
             console.log(`Initializing MVC value for ${channel} from threshold: ${mvcValue}`);
@@ -77,7 +77,7 @@ export const useMvcInitialization = () => {
         if (newSessionMVCThresholdPercentages[channel] === undefined) {
           // Use global threshold percentage as fallback if available
           newSessionMVCThresholdPercentages[channel] = sessionParamsUsed.session_mvc_threshold_percentage !== undefined ?
-            sessionParamsUsed.session_mvc_threshold_percentage : 70;
+            sessionParamsUsed.session_mvc_threshold_percentage : 75;
         }
       });
     }

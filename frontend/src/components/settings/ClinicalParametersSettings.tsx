@@ -21,14 +21,14 @@ const ClinicalParametersSettings: React.FC<ClinicalParametersSettingsProps> = ({
   return (
     <CollapsibleSettingsCard
       title="Clinical Parameters"
-      description={isDebugMode ? 'Clinical rehabilitation parameters (editable in debug mode)' : 'MVC values and therapeutic thresholds computed from initial assessment'}
+      description={isDebugMode ? 'Clinical rehabilitation parameters (editable in debug mode)' : 'Patient-specific MVC values computed from initial assessment'}
       isOpen={isClinicalParametersOpen}
       onOpenChange={setIsClinicalParametersOpen}
     >
       <TooltipProvider>
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium text-gray-700">MVC Analysis</h4>
+            <h4 className="text-sm font-medium text-gray-700">MVC Values (Read-Only)</h4>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="text-slate-400 hover:text-slate-600 cursor-help">
@@ -39,76 +39,52 @@ const ClinicalParametersSettings: React.FC<ClinicalParametersSettingsProps> = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p className="w-[300px] text-xs">
-                  MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.
+                  MVC (Maximum Voluntary Contraction) values represent the patient's maximum muscle strength capacity.
+                  Values are auto-computed from C3D files, mobile app data, or shared database.
+                  <strong>Note:</strong> MVC thresholds for quality assessment are configured in "Quality Thresholds & Detection Parameters".
                 </p>
               </TooltipContent>
             </Tooltip>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-800">
+            <strong>Note:</strong> MVC threshold percentages for contraction quality assessment are configured in the "Quality Thresholds & Detection Parameters" section below.
           </div>
           
           <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
             {muscleChannels2.map((channel) => {
               const mvcValue = sessionParams.session_mvc_values?.[channel];
-              const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 70;
               
               return (
                 <div key={channel} className="space-y-2">
                   <h5 className="text-sm font-medium">
                     <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
                   </h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <Label className="text-xs text-slate-600">MVC Value</Label>
-                      {isDebugMode ? (
-                        <Input
-                          type="number"
-                          value={mvcValue ?? ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || null;
-                            setSessionParams({
-                              ...sessionParams,
-                              session_mvc_values: {
-                                ...(sessionParams.session_mvc_values || {}),
-                                [channel]: value
-                              }
-                            });
-                          }}
-                          placeholder="Auto"
-                          step="0.0001"
-                          disabled={disabled}
-                          className="h-8 text-xs"
-                        />
-                      ) : (
-                        <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                          {mvcValue ? `${mvcValue.toExponential(3)} mV` : 'Auto-computed'}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs text-slate-600">Threshold</Label>
-                      {isDebugMode ? (
-                        <Input
-                          type="number"
-                          value={thresholdValue}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 70;
-                            setSessionParams({
-                              ...sessionParams,
-                              session_mvc_threshold_percentages: {
-                                ...(sessionParams.session_mvc_threshold_percentages || {}),
-                                [channel]: value
-                              }
-                            });
-                          }}
-                          min="0" max="100"
-                          disabled={disabled}
-                          className="h-8 text-xs"
-                        />
-                      ) : (
-                        <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                          {thresholdValue}%
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    <Label className="text-xs text-slate-600">MVC Value</Label>
+                    {isDebugMode ? (
+                      <Input
+                        type="number"
+                        value={mvcValue ?? ''}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || null;
+                          setSessionParams({
+                            ...sessionParams,
+                            session_mvc_values: {
+                              ...(sessionParams.session_mvc_values || {}),
+                              [channel]: value
+                            }
+                          });
+                        }}
+                        placeholder="Auto"
+                        step="0.0001"
+                        disabled={disabled}
+                        className="h-8 text-xs"
+                      />
+                    ) : (
+                      <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
+                        {mvcValue ? `${mvcValue.toExponential(3)} mV` : 'Auto-computed'}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -118,7 +94,8 @@ const ClinicalParametersSettings: React.FC<ClinicalParametersSettingsProps> = ({
           {!isDebugMode && (
             <div className="p-3 bg-blue-50 rounded-md">
               <p className="text-xs text-blue-800">
-                <strong>Note:</strong> MVC values are automatically computed from C3D files, mobile app data, or shared database. Enable Debug Mode to manually adjust these values.
+                <strong>Note:</strong> MVC values are automatically computed from C3D files, mobile app data, or shared database. 
+                Enable Debug Mode to manually adjust these values. MVC thresholds are configured in Quality Thresholds section.
               </p>
             </div>
           )}

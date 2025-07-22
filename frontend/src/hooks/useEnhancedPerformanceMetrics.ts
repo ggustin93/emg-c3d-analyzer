@@ -15,10 +15,11 @@ import { useSessionStore } from '@/store/sessionStore';
 // Presets par défaut
 export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
   completion: 0.20,
-  mvcQuality: 0.30,
+  mvcQuality: 0.25,
   qualityThreshold: 0.15,
-  symmetry: 0.20,
+  symmetry: 0.15,
   effort: 0.15,
+  compliance: 0.10,
   gameScore: 0.00
 };
 
@@ -26,17 +27,19 @@ export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
   completion: 0.15,
   mvcQuality: 0.35,
   qualityThreshold: 0.20,
-  symmetry: 0.20,
+  symmetry: 0.15,
   effort: 0.10,
+  compliance: 0.05,
   gameScore: 0.00
 };
 
 export const EXPERIMENTAL_WITH_GAME_WEIGHTS: ScoringWeights = {
   completion: 0.15,
-  mvcQuality: 0.25,
+  mvcQuality: 0.20,
   qualityThreshold: 0.10,
   symmetry: 0.15,
   effort: 0.10,
+  compliance: 0.05,
   gameScore: 0.25
 };
 
@@ -79,6 +82,17 @@ const calculateEffortScore = (preRPE?: number | null, postRPE?: number | null): 
   if (change < 0 || change > 6) return 40;
   
   return 50; // Fallback
+};
+
+// Fonction pour calculer le score de compliance BFR
+const calculateComplianceScore = (bfrParameters?: any): number => {
+  if (!bfrParameters) return 50; // Score neutre si pas de données BFR
+  
+  // BFR compliance basé sur is_compliant du système BFR
+  if (bfrParameters.is_compliant === true) return 100;
+  if (bfrParameters.is_compliant === false) return 0;
+  
+  return 50; // Fallback pour données incertaines
 };
 
 // Fonction pour calculer les métriques d'un muscle
@@ -150,9 +164,8 @@ export const useEnhancedPerformanceMetrics = (
     const isDebugMode = sessionParams.experimental_features?.enabled || false;
     
     // Paramètres d'analyse
-    const expectedContractions = sessionParams.session_expected_contractions || 36;
-    const durationThreshold = detectionParams.quality_threshold_ms;
-    const mvcThreshold = detectionParams.mvc_threshold_percentage;
+    const durationThreshold = sessionParams.contraction_duration_threshold || detectionParams.quality_threshold_ms;
+    const mvcThreshold = sessionParams.session_mvc_threshold_percentage || detectionParams.mvc_threshold_percentage;
     
     // Récupération des données des muscles
     const channelNames = Object.keys(analysisResult.analytics).sort();
@@ -161,12 +174,18 @@ export const useEnhancedPerformanceMetrics = (
       return null; // Nous avons besoin de deux muscles (L/R)
     }
     
-    // Calcul des métriques pour chaque muscle
+    // Calcul des métriques pour chaque muscle avec leurs objectifs spécifiques
     const leftChannelData = analysisResult.analytics[channelNames[0]];
     const rightChannelData = analysisResult.analytics[channelNames[1]];
     
-    let leftMuscle = calculateMuscleMetrics(leftChannelData, expectedContractions, durationThreshold, mvcThreshold);
-    let rightMuscle = calculateMuscleMetrics(rightChannelData, expectedContractions, durationThreshold, mvcThreshold);
+    // Get per-channel expected contractions, fallback to split total
+    const leftExpectedContractions = sessionParams.session_expected_contractions_ch1 || 
+      Math.ceil((sessionParams.session_expected_contractions || 36) / 2);
+    const rightExpectedContractions = sessionParams.session_expected_contractions_ch2 || 
+      Math.floor((sessionParams.session_expected_contractions || 36) / 2);
+    
+    let leftMuscle = calculateMuscleMetrics(leftChannelData, leftExpectedContractions, durationThreshold, mvcThreshold);
+    let rightMuscle = calculateMuscleMetrics(rightChannelData, rightExpectedContractions, durationThreshold, mvcThreshold);
     
     leftMuscle.muscleName = "Left";
     rightMuscle.muscleName = "Right";
@@ -197,6 +216,9 @@ export const useEnhancedPerformanceMetrics = (
       sessionParams.pre_session_rpe,
       sessionParams.post_session_rpe
     );
+    
+    // Calcul du score de compliance BFR
+    const complianceScore = calculateComplianceScore(sessionParams.bfr_parameters);
     
     // Calcul du score de jeu normalisé
     const gameScoreNormalized = normalizeGameScore(

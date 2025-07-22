@@ -338,7 +338,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   {muscleChannels2.map((channel) => {
                     const mvcValue = sessionParams.session_mvc_values?.[channel];
-                    const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 70;
+                    const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 75;
                     
                     return (
                       <div key={channel} className="space-y-2">
@@ -380,7 +380,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                                 type="number"
                                 value={thresholdValue}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 70;
+                                  const value = parseInt(e.target.value) || 75;
                                   setSessionParams({
                                     ...sessionParams,
                                     session_mvc_threshold_percentages: {

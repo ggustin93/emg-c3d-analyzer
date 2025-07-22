@@ -66,7 +66,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
       // Initialize threshold percentage if not set
       if (!updatedParams.session_mvc_threshold_percentages![channel]) {
         updatedParams.session_mvc_threshold_percentages![channel] = 
-          updatedParams.session_mvc_threshold_percentage || 70;
+          updatedParams.session_mvc_threshold_percentage || 75;
         hasChanges = true;
       }
     });
@@ -132,7 +132,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   const handleChannelThresholdChange = (channel: string, value: string) => {
     let numValue: number | null = parseFloat(value);
     if (isNaN(numValue)) {
-      numValue = 70; // Default to 70% if invalid
+      numValue = 75; // Default to 75% if invalid
     }
 
     const updatedParams = {
@@ -215,7 +215,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
           {muscleChannels.map((channel, index) => {
             const muscleName = sessionParams.channel_muscle_mapping?.[channel] || channel;
             const mvcValue = sessionParams.session_mvc_values?.[channel] ?? '';
-            const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 70;
+            const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 75;
             
             return (
               <div key={channel} className="space-y-3 pb-3 border-b last:border-b-0 last:pb-0">
@@ -264,7 +264,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                     id={`threshold_${channel}`}
                     value={thresholdValue}
                     onChange={(e) => handleChannelThresholdChange(channel, e.target.value)}
-                    placeholder="e.g., 70"
+                    placeholder="e.g., 75"
                     min="0" max="100" step="1"
                     disabled={disabled}
                   />
