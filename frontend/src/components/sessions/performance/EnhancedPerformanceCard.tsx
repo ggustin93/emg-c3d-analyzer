@@ -304,6 +304,7 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
     rightMuscle, 
     symmetryScore, 
     effortScore, 
+    complianceScore,
     gameScoreNormalized, 
     weights,
     isDebugMode 
@@ -404,6 +405,30 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
           />
         </div>
 
+        {/* Compliance Score */}
+        <div className="grid grid-cols-1 gap-4">
+          <PerformanceGauge
+            title="BFR Compliance"
+            value={complianceScore}
+            icon={<ActivityLogIcon className="h-5 w-5 mr-2 text-green-500" />}
+            colorFunction={getPerformanceColor}
+            tooltip={
+              <div>
+                <p className="font-medium mb-2">BFR therapeutic compliance score</p>
+                <p className="text-sm">Adherence to Blood Flow Restriction parameters:</p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Intensity relative to MVC (≥75% threshold)</li>
+                  <li>• Number of contractions vs expected</li>
+                  <li>• Patient-specific contraction timing</li>
+                  <li>• BFR Arterial Occlusion Pressure (AOP)</li>
+                </ul>
+                <p className="mt-2 text-xs text-gray-600">
+                  Optimal compliance ensures therapeutic effectiveness of BFR rehabilitation protocols.
+                </p>
+              </div>
+            }
+          />
+        </div>
 
         {/* Performance Equation */}
         <PerformanceEquation weights={weights} compact={true} showSettingsLink={true} />
