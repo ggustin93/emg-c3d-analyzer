@@ -191,11 +191,6 @@ const ComponentRow: React.FC<ComponentRowProps> = ({ name, component, tooltip, i
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{name}</span>
-          {isComplianceMetric && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-              ⚕️
-            </span>
-          )}
           <Tooltip>
             <TooltipTrigger>
               <InfoCircledIcon className="h-3 w-3 text-muted-foreground" />
@@ -261,33 +256,24 @@ const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights, se
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-      {/* Therapeutic Compliance Metrics */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-          <span className="text-sm font-medium text-gray-700">Therapeutic Compliance</span>
-        </div>
-        <div className="pl-4 space-y-3">
-          <ComponentRow
-            name="Completion"
-            component={muscle.components.completion}
-            tooltip="Percentage of expected contractions completed in this session. Measures exercise completion (e.g., 12 contractions per muscle). [Compliance Metric]"
-            isComplianceMetric={true}
-          />
-          <ComponentRow
-            name="MVC Quality"
-            component={muscle.components.mvcQuality}
-            tooltip={`Percentage of contractions reaching therapeutic intensity (≥${sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC). Ensures adequate muscle activation for rehabilitation progress. [Compliance Metric]`}
-            isComplianceMetric={true}
-          />
-          <ComponentRow
-            name="Duration Quality"
-            component={muscle.components.qualityThreshold}
-            tooltip="Percentage of contractions meeting adaptive duration threshold for rehabilitation. Patient-specific threshold (3s → 10s) that adapts as endurance improves during therapy. [Compliance Metric]"
-            isComplianceMetric={true}
-          />
-        </div>
-      </div>
+        <ComponentRow
+          name="Completion"
+          component={muscle.components.completion}
+          tooltip="Percentage of expected contractions completed in this session. Measures exercise completion (e.g., 12 contractions per muscle)."
+          isComplianceMetric={true}
+        />
+        <ComponentRow
+          name="MVC Quality"
+          component={muscle.components.mvcQuality}
+          tooltip={`Percentage of contractions reaching therapeutic intensity (≥${sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC). Ensures adequate muscle activation for rehabilitation progress.`}
+          isComplianceMetric={true}
+        />
+        <ComponentRow
+          name="Duration Quality"
+          component={muscle.components.qualityThreshold}
+          tooltip="Percentage of contractions meeting adaptive duration threshold for rehabilitation. Patient-specific threshold (3s → 10s) that adapts as endurance improves during therapy."
+          isComplianceMetric={true}
+        />
     </CardContent>
   </Card>
   );
@@ -417,6 +403,56 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
                 </ul>
                 <p className="mt-2 text-xs text-gray-600">
                   Proper perceived exertion ensures therapeutic effectiveness while preventing overexertion during rehabilitation.
+                </p>
+              </div>
+            }
+          />
+        </div>
+
+        {/* Additional Performance Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Compliance Score - Average of Left/Right */}
+          <PerformanceGauge
+            title="Therapeutic Compliance"
+            value={(enhancedData.leftMuscle.totalScore + enhancedData.rightMuscle.totalScore) / 2}
+            icon={<svg className="h-5 w-5 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            colorFunction={getPerformanceColor}
+            tooltip={
+              <div>
+                <p className="font-medium mb-2">Average therapeutic compliance across both muscles</p>
+                <p className="text-sm">Combined assessment of protocol adherence:</p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• <strong>Left:</strong> {enhancedData.leftMuscle.totalScore.toFixed(0)}% compliance</li>
+                  <li>• <strong>Right:</strong> {enhancedData.rightMuscle.totalScore.toFixed(0)}% compliance</li>
+                  <li>• <strong>Components:</strong> Completion + MVC Quality + Duration Quality</li>
+                </ul>
+                <p className="mt-2 text-xs text-gray-600">
+                  Measures adherence to rehabilitation protocol parameters across both muscle groups.
+                </p>
+              </div>
+            }
+          />
+
+          {/* Game Score */}
+          <PerformanceGauge
+            title="GHOSTLY Game Score"
+            value={gameScoreNormalized}
+            icon={<svg className="h-5 w-5 mr-2 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>}
+            colorFunction={getPerformanceColor}
+            tooltip={
+              <div>
+                <p className="font-medium mb-2">Normalized game performance score</p>
+                <div className="text-sm space-y-2">
+                  <p><strong>Raw Score:</strong> {gameScoreNormalized.toFixed(0)}%</p>
+                  <p><strong>Weight in equation:</strong> {(weights.gameScore * 100).toFixed(0)}%</p>
+                  {weights.gameScore === 0 ? (
+                    <p className="text-amber-600">⚠️ Game score is available but has 0% weight. Enable in settings when normalization algorithm is validated.</p>
+                  ) : (
+                    <p className="text-green-600">✓ Game score is active with {(weights.gameScore * 100).toFixed(0)}% weight</p>
+                  )}
+                </div>
+                <p className="mt-2 text-xs text-gray-600">
+                  Patient engagement and motivation through gamified rehabilitation experience.
                 </p>
               </div>
             }
