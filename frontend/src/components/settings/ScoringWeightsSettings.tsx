@@ -32,7 +32,7 @@ const formatWeightName = (key: string): string => {
   const names: { [key: string]: string } = {
     completion: 'Session Completion',
     mvcQuality: 'Muscle Activation Quality',
-    qualityThreshold: 'Adaptive Quality Threshold',
+    qualityThreshold: 'Duration Quality',
     symmetry: 'Bilateral Balance',
     effort: 'Perceived Exertion',
     gameScore: 'Game Performance'
@@ -207,7 +207,9 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
             </div>
 
             
-            {Object.entries(weights).map(([key, value]) => (
+            {Object.entries(weights)
+              .filter(([key]) => key !== 'compliance') // Exclude compliance from weight configuration
+              .map(([key, value]) => (
               <div key={key} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label className="flex items-center gap-2">
