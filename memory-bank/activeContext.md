@@ -66,6 +66,16 @@
 *   **Unified Settings Architecture**: Consistent UX patterns across all settings components with collapsible design
 *   **Professional Git Workflow**: 13 feature-based commits with structured development process
 
+### **Therapeutic Compliance System Analysis (July 22, 2025) 🚧**
+*   **Compliance Score Definition Clarified**: Identified that therapeutic compliance should be based on 4 key parameters:
+    *   Intensity relative to MVC (≥75% threshold)
+    *   Number of contractions vs expected (12 per muscle/channel)
+    *   Patient-specific adaptive contraction time threshold (3s initial → 10s max)
+    *   BFR Arterial Occlusion Pressure within therapeutic range
+*   **UI Terminology Issues Identified**: "Quality Threshold" is ambiguous - could refer to MVC or duration
+*   **Architecture Question**: Detailed performance equation (Scomp + SMVC + Squal + Ssym + Seffort) vs simplified approach (Treatment Compliance + Symmetry + Engagement) - decision pending
+*   **Next Steps Defined**: Need to refactor Left/Right Performance cards to better highlight compliance-related metrics
+
 ### **BFR Monitoring System Implementation (July 17, 2025) ✅**
 *   **Complete BFR (Blood Flow Restriction) Monitoring System**: Implemented comprehensive clinical safety monitoring for GHOSTLY+ TBM trial
     *   **BFRMonitoringTab Component**: Created main monitoring interface with circular gauge, pressure displays, and real-time compliance tracking
