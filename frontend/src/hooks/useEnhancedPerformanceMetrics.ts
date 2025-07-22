@@ -243,6 +243,7 @@ export const useEnhancedPerformanceMetrics = (
       rightMuscle,
       symmetryScore,
       effortScore,
+      complianceScore,
       gameScoreNormalized,
       weights,
       isDebugMode
