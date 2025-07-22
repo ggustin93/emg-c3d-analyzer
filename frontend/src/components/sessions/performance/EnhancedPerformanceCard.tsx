@@ -51,6 +51,7 @@ interface ComponentRowProps {
   name: string;
   component: ComponentScore;
   tooltip: string;
+  isComplianceMetric?: boolean;
 }
 
 const PerformanceGauge: React.FC<PerformanceGaugeProps> = ({ 
@@ -182,7 +183,7 @@ const MetricRow: React.FC<MetricRowProps> = ({
   </div>
 );
 
-const ComponentRow: React.FC<ComponentRowProps> = ({ name, component, tooltip }) => {
+const ComponentRow: React.FC<ComponentRowProps> = ({ name, component, tooltip, isComplianceMetric = false }) => {
   const componentColors = getPerformanceColor(component.value);
   
   return (
@@ -190,6 +191,11 @@ const ComponentRow: React.FC<ComponentRowProps> = ({ name, component, tooltip })
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{name}</span>
+          {isComplianceMetric && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+              ⚕️
+            </span>
+          )}
           <Tooltip>
             <TooltipTrigger>
               <InfoCircledIcon className="h-3 w-3 text-muted-foreground" />
@@ -255,21 +261,33 @@ const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights, se
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-      <ComponentRow
-        name="Completion"
-        component={muscle.components.completion}
-        tooltip="Percentage of expected contractions completed in this session. Measures exercise completion (e.g., 12 contractions per muscle)."
-      />
-      <ComponentRow
-        name="MVC Quality"
-        component={muscle.components.mvcQuality}
-        tooltip={`Percentage of contractions reaching therapeutic intensity (≥${sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC). Ensures adequate muscle activation for rehabilitation progress.`}
-      />
-      <ComponentRow
-        name="Quality Threshold"
-        component={muscle.components.qualityThreshold}
-        tooltip="Percentage of contractions meeting adaptive quality threshold for rehabilitation. Patient-specific threshold that adapts as strength improves during therapy."
-      />
+      {/* Therapeutic Compliance Metrics */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium text-gray-700">Therapeutic Compliance</span>
+        </div>
+        <div className="pl-4 space-y-3">
+          <ComponentRow
+            name="Completion"
+            component={muscle.components.completion}
+            tooltip="Percentage of expected contractions completed in this session. Measures exercise completion (e.g., 12 contractions per muscle). [Compliance Metric]"
+            isComplianceMetric={true}
+          />
+          <ComponentRow
+            name="MVC Quality"
+            component={muscle.components.mvcQuality}
+            tooltip={`Percentage of contractions reaching therapeutic intensity (≥${sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC). Ensures adequate muscle activation for rehabilitation progress. [Compliance Metric]`}
+            isComplianceMetric={true}
+          />
+          <ComponentRow
+            name="Duration Quality"
+            component={muscle.components.qualityThreshold}
+            tooltip="Percentage of contractions meeting adaptive duration threshold for rehabilitation. Patient-specific threshold (3s → 10s) that adapts as endurance improves during therapy. [Compliance Metric]"
+            isComplianceMetric={true}
+          />
+        </div>
+      </div>
     </CardContent>
   </Card>
   );
