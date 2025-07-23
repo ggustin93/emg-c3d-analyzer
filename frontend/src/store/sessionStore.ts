@@ -25,7 +25,27 @@ const defaultSessionParams: GameSessionParameters = {
     "Right Quadriceps": "#ef4444"  // Red
   },
   session_mvc_values: {},
-  session_mvc_threshold_percentages: {}
+  session_mvc_threshold_percentages: {},
+  bfr_parameters: {
+    left: {
+      aop_measured: 165,
+      applied_pressure: 82,
+      percentage_aop: 49.7,
+      is_compliant: true,
+      therapeutic_range_min: 40,
+      therapeutic_range_max: 60,
+      application_time_minutes: 15
+    },
+    right: {
+      aop_measured: 195,
+      applied_pressure: 98,
+      percentage_aop: 50.3,
+      is_compliant: true,
+      therapeutic_range_min: 40,
+      therapeutic_range_max: 60,
+      application_time_minutes: 15
+    }
+  }
 };
 
 export const useSessionStore = create<SessionState>()(

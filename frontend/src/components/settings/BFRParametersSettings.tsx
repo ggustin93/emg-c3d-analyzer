@@ -18,27 +18,14 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(false);
 
-  // Get BFR parameters or set defaults for left/right structure
-  const bfrParams = sessionParams.bfr_parameters || {
-    left: {
-      aop_measured: 165,
-      applied_pressure: 82,
-      percentage_aop: 49.7,
-      is_compliant: true,
-      therapeutic_range_min: 40,
-      therapeutic_range_max: 60,
-      application_time_minutes: 15
-    },
-    right: {
-      aop_measured: 195,
-      applied_pressure: 98,
-      percentage_aop: 50.3,
-      is_compliant: true,
-      therapeutic_range_min: 40,
-      therapeutic_range_max: 60,
-      application_time_minutes: 15
-    }
-  };
+  // Get BFR parameters from session store - should always be defined due to store defaults
+  const bfrParams = sessionParams.bfr_parameters;
+  
+  // Safety check - should not be needed with proper store defaults
+  if (!bfrParams) {
+    console.error('BFR parameters not found in session store - check store initialization');
+    return null;
+  }
 
   // Calculate percentage and compliance
   const calculateBFRMetrics = (aop: number, applied: number, minRange: number = 40, maxRange: number = 60) => {
