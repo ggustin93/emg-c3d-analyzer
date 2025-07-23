@@ -502,5 +502,111 @@ export const GHOSTLYScoreTooltip: React.FC<{
   </ClinicalTooltip>
 );
 
+// Preset for Applied Pressure explanation
+export const AppliedPressureTooltip: React.FC<{
+  pressureValue?: number;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  children?: React.ReactNode;
+}> = ({ pressureValue, side = 'top', children }) => (
+  <ClinicalTooltip
+    title="Applied Pressure"
+    description="The actual therapeutic pressure applied to the limb during BFR training"
+    sections={[
+      {
+        title: "Clinical Definition:",
+        type: "list",
+        items: [
+          { description: "Actual cuff pressure delivered to the patient's limb" },
+          { description: "Measured in millimeters of mercury (mmHg)" },
+          { description: "Calculated as a percentage of the patient's individual AOP" }
+        ]
+      },
+      {
+        title: "Clinical Application:",
+        type: "list",
+        items: [
+          { description: "Applied via pneumatic cuff around the proximal limb" },
+          { description: "Partially restricts arterial blood flow during exercise" },
+          { description: "Creates hypoxic environment promoting muscle adaptation" }
+        ]
+      },
+      ...(pressureValue ? [{
+        title: "Current Session:",
+        type: "table" as const,
+        items: [
+          { label: "Applied Pressure", value: `${pressureValue} mmHg` }
+        ]
+      }] : []),
+      {
+        title: "Safety Considerations:",
+        type: "list",
+        items: [
+          { description: "Must remain within therapeutic range (40-60% AOP)" },
+          { description: "Continuously monitored for patient safety" },
+          { description: "Immediately adjustable if pressure drifts outside range" }
+        ]
+      }
+    ]}
+    side={side}
+    variant="compact"
+  >
+    {children}
+  </ClinicalTooltip>
+);
+
+// Preset for AOP (Arterial Occlusion Pressure) explanation
+export const AOPTooltip: React.FC<{
+  aopValue?: number;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  children?: React.ReactNode;
+}> = ({ aopValue, side = 'top', children }) => (
+  <ClinicalTooltip
+    title="AOP - Arterial Occlusion Pressure"
+    description="The minimum pressure required to completely stop arterial blood flow to the limb"
+    sections={[
+      {
+        title: "Clinical Measurement:",
+        type: "list",
+        items: [
+          { description: "Determined using Doppler ultrasound during assessment" },
+          { description: "Individual measurement for each patient and limb" },
+          { description: "Typically ranges 120-250 mmHg depending on anatomy" },
+          { description: "Measured at rest before any therapeutic intervention" }
+        ]
+      },
+      {
+        title: "Influencing Factors:",
+        type: "list",
+        items: [
+          { description: "Limb circumference and muscle mass" },
+          { description: "Patient age and cardiovascular status" },
+          { description: "Cuff width and positioning" },
+          { description: "Individual anatomical variations" }
+        ]
+      },
+      ...(aopValue ? [{
+        title: "Patient-Specific Measurement:",
+        type: "table" as const,
+        items: [
+          { label: "AOP", value: `${aopValue} mmHg` }
+        ]
+      }] : []),
+      {
+        title: "Clinical Significance:",
+        type: "list",
+        items: [
+          { description: "Baseline for calculating safe therapeutic pressures" },
+          { description: "Ensures individualized BFR prescription" },
+          { description: "Critical for maintaining therapeutic efficacy and safety" }
+        ]
+      }
+    ]}
+    side={side}
+    variant="compact"
+  >
+    {children}
+  </ClinicalTooltip>
+);
+
 // Export other preset tooltips as needed
 export default ClinicalTooltip;
