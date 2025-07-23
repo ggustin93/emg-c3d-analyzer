@@ -7,7 +7,7 @@ import { Badge } from "../ui/badge";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { HeartIcon } from '@radix-ui/react-icons';
-import ClinicalTooltip from "../ui/clinical-tooltip";
+import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "../ui/clinical-tooltip";
 
 interface BFRParametersSettingsProps {
   disabled: boolean;
@@ -123,7 +123,11 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Arterial Occlusion Pressure (AOP)</Label>
+                <Label className="text-sm font-medium">Arterial Occlusion Pressure (</Label>
+                <AOPTooltip aopValue={sideParams.aop_measured} side="top">
+                  <span className="text-sm font-medium text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
+                </AOPTooltip>
+                <Label className="text-sm font-medium">)</Label>
                 <ClinicalTooltip
                   title="Arterial Occlusion Pressure (AOP)"
                   description="The minimum pressure required to completely occlude arterial blood flow to the limb"
@@ -172,7 +176,10 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
             
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Applied Pressure</Label>
+                <AppliedPressureTooltip pressureValue={sideParams.applied_pressure} side="top">
+                  <span className="text-sm font-medium text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
+                </AppliedPressureTooltip>
+                <Label className="text-sm font-medium"> Pressure</Label>
                 <ClinicalTooltip
                   title="Applied Pressure"
                   description="The actual pressure applied to the limb during BFR training"
