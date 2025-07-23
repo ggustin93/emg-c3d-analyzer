@@ -102,13 +102,24 @@ export default function GameSessionTabs({
       setSessionParams({
         ...sessionParams,
         bfr_parameters: {
-          aop_measured: 180,
-          applied_pressure: 90,
-          percentage_aop: 50,
-          is_compliant: true,
-          application_time_minutes: 15,
-          therapeutic_range_min: 40,
-          therapeutic_range_max: 60
+          left: {
+            aop_measured: 180,
+            applied_pressure: 90,
+            percentage_aop: 50,
+            is_compliant: true,
+            therapeutic_range_min: 40,
+            therapeutic_range_max: 60,
+            application_time_minutes: 15
+          },
+          right: {
+            aop_measured: 180,
+            applied_pressure: 90,
+            percentage_aop: 50,
+            is_compliant: true,
+            therapeutic_range_min: 40,
+            therapeutic_range_max: 60,
+            application_time_minutes: 15
+          }
         }
       });
     }
@@ -118,7 +129,8 @@ export default function GameSessionTabs({
   const getBFRTabStatus = () => {
     const bfrParams = sessionParams.bfr_parameters;
     if (!bfrParams) return null;
-    return bfrParams.is_compliant;
+    // Overall compliance requires both left and right to be compliant
+    return bfrParams.left.is_compliant && bfrParams.right.is_compliant;
   };
 
   const bfrCompliant = getBFRTabStatus();
