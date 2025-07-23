@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSessionStore } from '../../store/sessionStore';
 import { Badge } from "../ui/badge";
-import ClinicalTooltip from "../ui/clinical-tooltip";
+import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "../ui/clinical-tooltip";
 
 interface BFRMonitoringTabProps {
   className?: string;
@@ -346,11 +346,19 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
-                    <div className="text-xs text-gray-600 mb-1">Applied</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                      <AppliedPressureTooltip pressureValue={bfrParams.left.applied_pressure} side="top">
+                        <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
+                      </AppliedPressureTooltip>
+                    </div>
                     <div className="text-sm font-bold text-blue-600">{bfrParams.left.applied_pressure} mmHg</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-600 mb-1">AOP</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                      <AOPTooltip aopValue={bfrParams.left.aop_measured} side="top">
+                        <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
+                      </AOPTooltip>
+                    </div>
                     <div className="text-sm font-bold text-gray-700">{bfrParams.left.aop_measured} mmHg</div>
                   </div>
                 </div>
@@ -381,11 +389,19 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
-                    <div className="text-xs text-gray-600 mb-1">Applied</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                      <AppliedPressureTooltip pressureValue={bfrParams.right.applied_pressure} side="top">
+                        <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
+                      </AppliedPressureTooltip>
+                    </div>
                     <div className="text-sm font-bold text-blue-600">{bfrParams.right.applied_pressure} mmHg</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-600 mb-1">AOP</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                      <AOPTooltip aopValue={bfrParams.right.aop_measured} side="top">
+                        <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
+                      </AOPTooltip>
+                    </div>
                     <div className="text-sm font-bold text-gray-700">{bfrParams.right.aop_measured} mmHg</div>
                   </div>
                 </div>
