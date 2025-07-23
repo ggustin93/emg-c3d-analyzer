@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { StarIcon, InfoCircledIcon, ExclamationTriangleIcon, ActivityLogIcon, MixerHorizontalIcon } from '@radix-ui/react-icons';
+import { StarIcon, InfoCircledIcon, ExclamationTriangleIcon, ActivityLogIcon, MixerHorizontalIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { 
   EnhancedPerformanceData, 
@@ -15,6 +15,8 @@ import {
 import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMetrics';
 import { getPerformanceColor, getSymmetryColor, getEffortColor, getComponentColors } from '@/utils/performanceColors';
 import PerformanceEquation from './PerformanceEquation';
+import CompactMetricCard from './CompactMetricCard';
+import TherapeuticComplianceAccordion from './TherapeuticComplianceAccordion';
 import { useSessionStore } from '@/store/sessionStore';
 
 interface EnhancedPerformanceCardProps {
@@ -30,6 +32,7 @@ interface PerformanceGaugeProps {
   unit?: string;
   maxValue?: number;
   showProgressBar?: boolean;
+  size?: 'large' | 'medium';
 }
 
 interface MetricRowProps {
@@ -62,15 +65,19 @@ const PerformanceGauge: React.FC<PerformanceGaugeProps> = ({
   tooltip, 
   unit = '%',
   maxValue = 100,
-  showProgressBar = true
+  showProgressBar = false,
+  size = 'medium'
 }) => {
   const colors = colorFunction(value);
   const normalizedValue = Math.max(0, Math.min(maxValue, value));
   const percentage = (normalizedValue / maxValue) * 100;
 
+  // Ensure at least 2% is visible for 0 scores to show the color
+  const displayPercentage = percentage === 0 ? 2 : percentage;
+
   const scoreData = [
-    { name: 'Score', value: percentage },
-    { name: 'Remaining', value: Math.max(0, 100 - percentage) },
+    { name: 'Score', value: displayPercentage },
+    { name: 'Remaining', value: Math.max(0, 100 - displayPercentage) },
   ];
 
   return (
@@ -93,16 +100,16 @@ const PerformanceGauge: React.FC<PerformanceGaugeProps> = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center space-y-4">
-          {/* Circular Gauge - Extra Large Size */}
-          <div className="relative w-48 h-48">
+          {/* Circular Gauge - Enhanced Size */}
+          <div className={`relative ${size === 'large' ? 'w-64 h-64' : 'w-52 h-52'}`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={scoreData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={72}
-                  outerRadius={84}
+                  innerRadius={size === 'large' ? 92 : 78}
+                  outerRadius={size === 'large' ? 108 : 94}
                   startAngle={90}
                   endAngle={450}
                   paddingAngle={0}
@@ -116,10 +123,10 @@ const PerformanceGauge: React.FC<PerformanceGaugeProps> = ({
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex items-center justify-center flex-col">
-              <span className={`text-4xl font-bold ${colors.text}`}>
+              <span className={`${size === 'large' ? 'text-6xl' : 'text-5xl'} font-bold ${colors.text}`}>
                 {normalizedValue}{unit}
               </span>
-              <span className="text-sm text-gray-500 text-center leading-tight px-2">
+              <span className={`${size === 'large' ? 'text-base' : 'text-sm'} text-gray-500 text-center leading-tight px-2 mt-1`}>
                 {colors.label}
               </span>
             </div>
@@ -280,6 +287,7 @@ const MuscleDetailCard: React.FC<MuscleDetailCardProps> = ({ muscle, weights, se
 };
 
 const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analysisResult }) => {
+  const [complianceOpen, setComplianceOpen] = useState(false);
   const enhancedData = useEnhancedPerformanceMetrics(analysisResult);
   const { sessionParams } = useSessionStore();
   const componentColors = getComponentColors(sessionParams);
@@ -314,146 +322,231 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
     isDebugMode 
   } = enhancedData;
 
+  const therapeuticComplianceScore = (leftMuscle.totalScore + rightMuscle.totalScore) / 2;
+  const gameLevel = analysisResult?.metadata?.level || null;
+
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        {/* Three Main Gauges */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="space-y-8">
+        {/* Primary Performance Gauges - Restored Large Size */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Overall Performance Gauge */}
-          <PerformanceGauge
-            title="Overall Performance"
-            value={overallScore}
-            icon={<StarIcon className="h-5 w-5 mr-2 text-yellow-500" />}
-            colorFunction={getPerformanceColor}
-            tooltip={
-              <div>
-                <p className="font-medium mb-2">Comprehensive rehabilitation performance score</p>
-                <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs mb-2">
-                  <div className="flex flex-wrap items-center gap-1">
-                    <span className="font-bold">P =</span>
-                    <span className={componentColors.completion.text}>{(weights.completion * 100).toFixed(0)}% · S<sub>comp</sub></span>
-                    <span>+</span>
-                    <span className={componentColors.mvcQuality.text}>{(weights.mvcQuality * 100).toFixed(0)}% · S<sub>MVC</sub></span>
-                    <span>+</span>
-                    <span className={componentColors.qualityThreshold.text}>{(weights.qualityThreshold * 100).toFixed(0)}% · S<sub>qual</sub></span>
-                    <span>+</span>
-                    <span className={componentColors.symmetry.text}>{(weights.symmetry * 100).toFixed(0)}% · S<sub>sym</sub></span>
-                    <span>+</span>
-                    <span className={componentColors.effort.text}>{(weights.effort * 100).toFixed(0)}% · S<sub>effort</sub></span>
+          <div className="flex flex-col">
+            <PerformanceGauge
+              title="Overall Performance Score"
+              value={overallScore}
+              icon={<StarIcon className="h-5 w-5 mr-2 text-yellow-600" />}
+              colorFunction={getPerformanceColor}
+              size="large"
+              tooltip={
+                <div>
+                  <p className="font-medium mb-2">Combined score based on all muscle performance</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Weighted composite assessment of therapeutic effectiveness
+                  </p>
+                  <div className="text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span>Therapeutic Compliance:</span>
+                      <span className="font-medium">{(weights.completion * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Muscle Symmetry:</span>
+                      <span className="font-medium">{(weights.symmetry * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Subjective Effort:</span>
+                      <span className="font-medium">{(weights.effort * 100).toFixed(0)}%</span>
+                    </div>
                     {weights.gameScore > 0 && (
-                      <>
-                        <span>+</span>
-                        <span className={componentColors.gameScore.text}>{(weights.gameScore * 100).toFixed(0)}% · S<sub>game</sub></span>
-                      </>
+                      <div className="flex justify-between">
+                        <span>Game Performance:</span>
+                        <span className="font-medium">{(weights.gameScore * 100).toFixed(0)}%</span>
+                      </div>
                     )}
                   </div>
                 </div>
-                <ul className="space-y-1 text-sm">
-                  <li>• <span className={componentColors.completion.text}>Session completion</span>: Expected contractions completed</li>
-                  <li>• <span className={componentColors.mvcQuality.text}>MVC quality</span>: Therapeutic intensity (≥{sessionParams?.session_mvc_threshold_percentage ?? 75}% MVC)</li>
-                  <li>• <span className={componentColors.qualityThreshold.text}>Quality threshold</span>: Adaptive duration (≥{sessionParams?.contraction_duration_threshold ?? 2000}ms)</li>
-                  <li>• <span className={componentColors.symmetry.text}>Bilateral balance</span>: Left-right symmetry</li>
-                  <li>• <span className={componentColors.effort.text}>Perceived exertion</span>: Optimal therapeutic effort</li>
-                  {weights.gameScore > 0 && (
-                    <li>• <span className={componentColors.gameScore.text}>Game performance</span>: GHOSTLY score (experimental)</li>
-                  )}
-                </ul>
-                <p className="mt-2 text-xs text-gray-600">
-                  Mathematical model evaluating single-session performance across multiple clinical dimensions.
-                </p>
-              </div>
-            }
-          />
-          
-          {/* Muscle Symmetry Gauge */}
-          <PerformanceGauge
-            title="Muscle Symmetry"
-            value={symmetryScore}
-            icon={<svg className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
-            colorFunction={getSymmetryColor}
-            tooltip={
-              <div>
-                <p>Bilateral muscle balance critical for rehabilitation:</p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  <li>• 100%: Ideal rehabilitation balance</li>
-                  <li>• 70-99%: Minor imbalance, typical during recovery</li>
-                  <li>• Below 70%: Significant imbalance, may require intervention</li>
-                </ul>
-                <p className="mt-2 text-xs text-gray-600">
-                  Balanced muscle activation is essential for optimal recovery and preventing compensation patterns.
-                </p>
-              </div>
-            }
-          />
-          
-          {/* Subjective Effort Gauge */}
-          <PerformanceGauge
-            title="Subjective Effort"
-            value={effortScore}
-            icon={<svg className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
-            colorFunction={getEffortColor}
-            tooltip={
-              <div>
-                <p>Therapeutic effort assessment using RPE scale:</p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  <li>• Optimal: +2 to +4 points (ideal therapeutic workload)</li>
-                  <li>• Good: +1 or +5 points (acceptable intensity)</li>
-                  <li>• Moderate: 0 or +6 points (may need adjustment)</li>
-                  <li>• Suboptimal: Negative or {'>'}+6 points (requires intervention)</li>
-                </ul>
-                <p className="mt-2 text-xs text-gray-600">
-                  Proper perceived exertion ensures therapeutic effectiveness while preventing overexertion during rehabilitation.
-                </p>
-              </div>
-            }
-          />
+              }
+            />
+          </div>
+
+          {/* Therapeutic Compliance Gauge */}
+          <div className="flex flex-col">
+            <PerformanceGauge
+              title="Therapeutic Compliance"
+              value={therapeuticComplianceScore}
+              icon={<svg className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+              colorFunction={getPerformanceColor}
+              size="large"
+              tooltip={
+                <div>
+                  <p className="font-medium mb-2">Exercise execution quality</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Average compliance across both muscles
+                  </p>
+                  <div className="text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span>Left Muscle:</span>
+                      <span className="font-medium">{leftMuscle.totalScore.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Right Muscle:</span>
+                      <span className="font-medium">{rightMuscle.totalScore.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Click "View Details" below for breakdown
+                  </p>
+                </div>
+              }
+            />
+            
+            {/* Simplified Details Toggle */}
+            <div className="mt-6">
+              <button
+                onClick={() => setComplianceOpen(!complianceOpen)}
+                className="w-full px-4 py-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+              >
+                <span>{complianceOpen ? 'Hide Details' : 'View Details'}</span>
+                <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${complianceOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Additional Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Compliance Score - Average of Left/Right */}
-          <PerformanceGauge
-            title="Therapeutic Compliance"
-            value={(enhancedData.leftMuscle.totalScore + enhancedData.rightMuscle.totalScore) / 2}
-            icon={<svg className="h-5 w-5 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-            colorFunction={getPerformanceColor}
+        {/* Detailed Compliance Information - Progressive Disclosure */}
+        {complianceOpen && (
+          <Card className="bg-gray-50 border-gray-200">
+            <CardContent className="p-0">
+              <TherapeuticComplianceAccordion
+                leftMuscle={leftMuscle}
+                rightMuscle={rightMuscle}
+                averageScore={therapeuticComplianceScore}
+                isOpen={true}
+                onToggle={() => {}}
+                sessionParams={sessionParams}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Secondary Metrics - Improved Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Muscle Symmetry Card */}
+          <CompactMetricCard
+            title="Muscle Symmetry"
+            value={symmetryScore}
+            icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+            color={getSymmetryColor(symmetryScore).text}
+            subtitle={getSymmetryColor(symmetryScore).label}
             tooltip={
               <div>
-                <p className="font-medium mb-2">Average therapeutic compliance across both muscles</p>
-                <p className="text-sm">Combined assessment of protocol adherence:</p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  <li>• <strong>Left:</strong> {enhancedData.leftMuscle.totalScore.toFixed(0)}% compliance</li>
-                  <li>• <strong>Right:</strong> {enhancedData.rightMuscle.totalScore.toFixed(0)}% compliance</li>
-                  <li>• <strong>Components:</strong> Completion + MVC Quality + Duration Quality</li>
-                </ul>
-                <p className="mt-2 text-xs text-gray-600">
-                  Measures adherence to rehabilitation protocol parameters across both muscle groups.
+                <p className="font-medium mb-2">Bilateral muscle balance assessment</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  Measures left-right muscle performance balance
                 </p>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Perfect balance:</span>
+                    <span className="font-medium">100%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Excellent:</span>
+                    <span className="font-medium">90-99%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Minor imbalance:</span>
+                    <span className="font-medium">70-89%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Significant:</span>
+                    <span className="font-medium">{'<'}70%</span>
+                  </div>
+                </div>
               </div>
             }
           />
 
-          {/* Game Score */}
-          <PerformanceGauge
-            title="GHOSTLY Game Score"
-            value={gameScoreNormalized}
-            icon={<svg className="h-5 w-5 mr-2 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>}
-            colorFunction={getPerformanceColor}
+          {/* Subjective Effort Card */}
+          <CompactMetricCard
+            title="Subjective Effort"
+            value={effortScore}
+            icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+            color={getEffortColor(effortScore).text}
+            subtitle={getEffortColor(effortScore).label}
             tooltip={
               <div>
-                <p className="font-medium mb-2">Normalized game performance score</p>
-                <div className="text-sm space-y-2">
-                  <p><strong>Raw Score:</strong> {gameScoreNormalized.toFixed(0)}%</p>
-                  <p><strong>Weight in equation:</strong> {(weights.gameScore * 100).toFixed(0)}%</p>
-                  {weights.gameScore === 0 ? (
-                    <p className="text-amber-600">⚠️ Game score is available but has 0% weight. Enable in settings when normalization algorithm is validated.</p>
-                  ) : (
-                    <p className="text-green-600">✓ Game score is active with {(weights.gameScore * 100).toFixed(0)}% weight</p>
-                  )}
-                </div>
-                <p className="mt-2 text-xs text-gray-600">
-                  Patient engagement and motivation through gamified rehabilitation experience.
+                <p className="font-medium mb-2">Perceived exertion assessment</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  Based on RPE change during session
                 </p>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Optimal effort:</span>
+                    <span className="font-medium">+2 to +4 RPE</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Good effort:</span>
+                    <span className="font-medium">+1 or +5 RPE</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Suboptimal:</span>
+                    <span className="font-medium">{'<'}0 or {'>'}6 RPE</span>
+                  </div>
+                </div>
+              </div>
+            }
+          />
+
+          {/* Game Score Card */}
+          <CompactMetricCard
+            title="GHOSTLY Score"
+            value={analysisResult?.metadata?.score || 0}
+            unit="pts"
+            icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>}
+            color={getPerformanceColor(gameScoreNormalized).text}
+            subtitle={gameLevel ? `Level ${gameLevel} • ${gameScoreNormalized.toFixed(0)}% normalized` : `${gameScoreNormalized.toFixed(0)}% normalized`}
+            badge={
+              weights.gameScore === 0 && (
+                <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                  Experimental
+                </Badge>
+              )
+            }
+            tooltip={
+              <div>
+                <p className="font-medium mb-2">Game engagement metrics</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  GHOSTLY platform performance tracking
+                </p>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Raw Score:</span>
+                    <span className="font-medium">{analysisResult?.metadata?.score || 0} pts</span>
+                  </div>
+                  {gameLevel && (
+                    <div className="flex justify-between">
+                      <span>Level:</span>
+                      <span className="font-medium">{gameLevel}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Normalized:</span>
+                    <span className="font-medium">{gameScoreNormalized.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Weight in Overall:</span>
+                    <span className="font-medium">{(weights.gameScore * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+                {weights.gameScore === 0 ? (
+                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                    ⚠️ Currently excluded from Overall Performance calculation
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                    ✓ Included with {(weights.gameScore * 100).toFixed(0)}% weight
+                  </p>
+                )}
               </div>
             }
           />
@@ -462,48 +555,8 @@ const EnhancedPerformanceCard: React.FC<EnhancedPerformanceCardProps> = ({ analy
         {/* Performance Equation */}
         <PerformanceEquation weights={weights} compact={true} showSettingsLink={true} />
 
-        {/* Détails par Muscle */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MuscleDetailCard muscle={leftMuscle} weights={weights} sessionParams={sessionParams} />
-          <MuscleDetailCard muscle={rightMuscle} weights={weights} sessionParams={sessionParams} />
-        </div>
+        {/* Old Muscle Detail Cards - Remove these once accordion is validated */}
 
-        {/* Game Score Section (if available) */}
-        {analysisResult?.metadata?.score !== undefined && (
-          <Card>
-            <CardHeader>
-              <CardTitle>GHOSTLY Game Score</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <MetricRow
-                name="Normalized Game Score"
-                value={gameScoreNormalized}
-                weight={weights.gameScore}
-                tooltip={
-                  <div>
-                    <p>Score from the GHOSTLY game normalized to 0-100%</p>
-                    <p className="text-xs mt-1">Raw score: {analysisResult.metadata.score}</p>
-                    <p className="text-xs mt-1 text-amber-600">
-                      Note: Algorithm under development
-                    </p>
-                  </div>
-                }
-                formula="Game-specific normalization (TBD)"
-                showWarning={weights.gameScore > 0}
-              />
-              
-              {weights.gameScore === 0 && (
-                <Alert className="text-xs">
-                  <InfoCircledIcon className="h-3 w-3" />
-                  <AlertDescription>
-                    Game score is available but has 0% weight. 
-                    Enable in settings when normalization algorithm is validated.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
         {/* Debug Info */}
         {isDebugMode && (

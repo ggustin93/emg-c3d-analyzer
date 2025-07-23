@@ -7,7 +7,7 @@ import { ChevronDownIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import ContractionTypeBreakdown from './ContractionTypeBreakdown';
 import { GameSessionParameters } from '../../../types/emg';
 import MuscleNameDisplay from '../../MuscleNameDisplay';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ComplianceTooltip, MuscleComplianceScoreTooltip, CompletionRateTooltip, IntensityQualityTooltip, DurationQualityTooltip } from '@/components/ui/clinical-tooltip';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useScoreColors } from '@/hooks/useScoreColors';
@@ -32,6 +32,9 @@ interface MusclePerformanceCardProps {
   expectedLongContractions?: number;
   contractionDurationThreshold?: number;
   sessionParams?: GameSessionParameters;
+  averageContractionTime?: number; // in milliseconds
+  mvcValue?: number; // Current MVC value
+  mvcThreshold?: number; // MVC threshold (75% of MVC)
 }
 
 const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
@@ -53,11 +56,15 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   expectedShortContractions,
   expectedLongContractions,
   contractionDurationThreshold = 250,
-  sessionParams
+  sessionParams,
+  averageContractionTime,
+  mvcValue,
+  mvcThreshold
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isCountDetailsOpen, setIsCountDetailsOpen] = useState(false);
   const [isQualityDetailsOpen, setIsQualityDetailsOpen] = useState(false);
+  const [isDurationDetailsOpen, setIsDurationDetailsOpen] = useState(false);
 
   const scoreData = [
     { name: 'Score', value: totalScore },
@@ -157,12 +164,16 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   const goodContractionPercentage = totalContractions > 0 ? Math.round((goodContractionCount / totalContractions) * 100) : 0;
   const goodContractionColors = useScoreColors(goodContractionPercentage);
 
+  // Calculate duration quality score (contractions meeting duration threshold)
+  const longContractionsCount = longContractions;
+  const durationQualityPercentage = totalContractions > 0 ? Math.round((longContractionsCount / totalContractions) * 100) : 0;
+  const durationQualityColors = useScoreColors(durationQualityPercentage);
+
   // Get colors for the overall score
   const scoreColors = useScoreColors(totalScore);
 
   return (
-    <TooltipProvider>
-      <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer group">
@@ -172,37 +183,25 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
             ) : (
               channel
-            )} Performance
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <p>Performance score for this specific muscle, combining contraction count and quality metrics</p>
-              </TooltipContent>
-            </Tooltip>
+            )} Compliance
+            <ComplianceTooltip side="top" />
           </CardTitle>
           <p className={`text-sm font-bold ${scoreColors.text} mb-2`}>{scoreColors.label}</p>
           
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <CircleDisplay 
-                  value={totalScore} 
-                  label="" 
-                  color={scoreColors.hex}
-                  size="lg"
-                  showPercentage={true}
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              <p>Overall score calculated as the average between:
-                <br />• Contraction count subscore
-                <br />• Contraction quality subscore (based on MVC)
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          <MuscleComplianceScoreTooltip 
+            contractionDurationThreshold={contractionDurationThreshold}
+            side="top"
+          >
+            <div>
+              <CircleDisplay 
+                value={totalScore} 
+                label="" 
+                color={scoreColors.hex}
+                size="lg"
+                showPercentage={true}
+              />
+            </div>
+          </MuscleComplianceScoreTooltip>
                 <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </CardHeader>
             </div>
@@ -214,15 +213,8 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
             <Collapsible open={isCountDetailsOpen} onOpenChange={setIsCountDetailsOpen}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1">
-                  <h4 className="text-sm font-semibold text-gray-700">Contraction Count</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p>Number of muscle contractions detected during the session compared to expected count</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <h4 className="text-sm font-semibold text-gray-700">Completion Rate</h4>
+                  <CompletionRateTooltip side="top" />
                   <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
                     <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -242,7 +234,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     indicatorClassName={`${contractionColors.bg} opacity-80`} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
-                    {totalContractions} of {expectedContractions ?? 'N/A'} expected
+                    {totalContractions} contractions detected (short: {shortContractions}, long: {longContractions})
                   </p>
                 </>
               )}
@@ -282,15 +274,8 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
             <Collapsible open={isQualityDetailsOpen} onOpenChange={setIsQualityDetailsOpen}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1">
-                  <h4 className="text-sm font-semibold text-gray-700">Contraction Quality</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p>Percentage of contractions that met the required MVC threshold, indicating good quality.</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <h4 className="text-sm font-semibold text-gray-700">Intensity Quality</h4>
+                  <IntensityQualityTooltip side="top" />
                   <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
                     <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -328,9 +313,101 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     showPercentage={false}
                     showExpected={true}
                   />
+                  {mvcValue && mvcThreshold && (
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">{mvcValue.toExponential(1)}</div>
+                        <div className="text-xs text-gray-500">MVC Value (µV)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-amber-600">{mvcThreshold.toExponential(1)}</div>
+                        <div className="text-xs text-gray-500">75% Threshold (µV)</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="text-xs text-center text-gray-500">
                   <p><span className="font-bold">{goodContractionCount}</span> of <span className="font-bold">{totalContractions}</span> contractions met the quality threshold.</p>
+                  {mvcValue && mvcThreshold && (
+                    <p className="mt-1">
+                      <span className="font-medium">Intensity requirement:</span> ≥{mvcThreshold.toExponential(2)} µV (75% of {mvcValue.toExponential(2)} µV MVC)
+                    </p>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          {/* Duration Quality */}
+          <div className="rounded-md bg-slate-50 p-4">
+            <Collapsible open={isDurationDetailsOpen} onOpenChange={setIsDurationDetailsOpen}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1">
+                  <h4 className="text-sm font-semibold text-gray-700">Duration Quality</h4>
+                  <DurationQualityTooltip 
+                    contractionDurationThreshold={contractionDurationThreshold}
+                    side="top" 
+                  />
+                  <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
+                    <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                </div>
+                {totalContractions > 0 ? (
+                  <span className={`text-sm font-bold ${durationQualityColors.text}`}>
+                    {durationQualityPercentage}%
+                  </span>
+                ) : (
+                  <span className="text-sm font-bold text-gray-400">N/A</span>
+                )}
+              </div>
+              
+              {totalContractions > 0 && (
+                <>
+                  <Progress 
+                    value={durationQualityPercentage} 
+                    className="h-2" 
+                    indicatorClassName={`${durationQualityColors.bg} opacity-80`} 
+                  />
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    {longContractionsCount} of {totalContractions} met duration threshold
+                  </p>
+                </>
+              )}
+
+              <CollapsibleContent className="pt-2 space-y-4">
+                <div className="flex justify-around items-center">
+                  <CircleDisplay 
+                    value={longContractionsCount} 
+                    total={totalContractions}
+                    label="Good Duration" 
+                    color={durationQualityColors.hex} 
+                    size="md"
+                    showPercentage={false}
+                    showExpected={true}
+                  />
+                  {averageContractionTime && (
+                    <CircleDisplay 
+                      value={Math.round(averageContractionTime / 1000 * 10) / 10} 
+                      label="Avg Time (s)" 
+                      color="#6366f1" 
+                      size="md"
+                      showPercentage={false}
+                      showExpected={false}
+                    />
+                  )}
+                </div>
+                <div className="text-xs text-center text-gray-500 space-y-2">
+                  <div>
+                    <p><span className="font-bold">{longContractionsCount}</span> of <span className="font-bold">{totalContractions}</span> contractions lasted ≥{(contractionDurationThreshold / 1000).toFixed(1)}s.</p>
+                    {averageContractionTime && (
+                      <p className="mt-1">
+                        <span className="font-medium">Average duration:</span> {(averageContractionTime / 1000).toFixed(1)}s across all contractions
+                      </p>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-gray-300">
+                    <p className="italic">Duration metrics assess muscle endurance and contraction control quality.</p>
+                  </div>
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -339,7 +416,6 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
           </CollapsibleContent>
         </Collapsible>
       </Card>
-    </TooltipProvider>
   );
 };
 

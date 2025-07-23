@@ -88,7 +88,17 @@ const calculateEffortScore = (preRPE?: number | null, postRPE?: number | null): 
 const calculateComplianceScore = (bfrParameters?: any): number => {
   if (!bfrParameters) return 50; // Score neutre si pas de données BFR
   
-  // BFR compliance basé sur is_compliant du système BFR
+  // Handle new left/right structure
+  if (bfrParameters.left && bfrParameters.right) {
+    const leftCompliant = bfrParameters.left.is_compliant === true;
+    const rightCompliant = bfrParameters.right.is_compliant === true;
+    
+    if (leftCompliant && rightCompliant) return 100;
+    if (!leftCompliant && !rightCompliant) return 0;
+    return 75; // Partial compliance (one side compliant)
+  }
+  
+  // Legacy structure fallback
   if (bfrParameters.is_compliant === true) return 100;
   if (bfrParameters.is_compliant === false) return 0;
   

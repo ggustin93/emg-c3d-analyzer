@@ -14,8 +14,8 @@ const calculateGoodContractionScore = (goodCount: number, totalCount: number): n
   return Math.round((goodCount / totalCount) * 100);
 };
 
-const calculateTotalScore = (subscore1: number | null, subscore2: number | null): number => {
-  const scores = [subscore1, subscore2].filter(s => s !== null) as number[];
+const calculateTotalScore = (subscore1: number | null, subscore2: number | null, subscore3: number | null): number => {
+  const scores = [subscore1, subscore2, subscore3].filter(s => s !== null) as number[];
   if (scores.length === 0) return 0;
   const sum = scores.reduce((a, b) => a + b, 0);
   return Math.round(sum / scores.length);
@@ -53,6 +53,12 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
     const muscleScores: number[] = [];
     const muscleData: any[] = [];
     const channelNames = Object.keys(analysisResult.analytics).sort();
+    
+    // Aggregate contraction data across all channels
+    let aggregateContractions = 0;
+    let aggregateGoodContractions = 0;
+    let aggregateExpectedContractions = 0;
+    let allContractionDurations: number[] = [];
 
     channelNames.forEach((channelName, index) => {
       const channelData = analysisResult.analytics[channelName];
@@ -83,6 +89,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       let longContractions = 0;
       let shortGoodContractions = 0;
       let longGoodContractions = 0;
+      let muscleContractionDurations: number[] = [];
       
       const durationThreshold = sessionParams.contraction_duration_threshold ?? 250;
 
@@ -91,6 +98,12 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
           const isGood = mvcThreshold !== null && c.max_amplitude >= mvcThreshold;
           
           if (isGood) goodContractions++;
+          
+          // Collect duration for overall average calculation
+          if (c.duration_ms && c.duration_ms > 0) {
+            allContractionDurations.push(c.duration_ms);
+            muscleContractionDurations.push(c.duration_ms);
+          }
 
           if (c.duration_ms < durationThreshold) {
             shortContractions++;
@@ -106,12 +119,25 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
 
       const totalContractions = channelData.contraction_count || 0;
       
+      // Calculate muscle-specific average contraction time
+      const muscleAverageContractionTime = muscleContractionDurations.length > 0 
+        ? muscleContractionDurations.reduce((sum, duration) => sum + duration, 0) / muscleContractionDurations.length
+        : undefined;
+      
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
-      const totalScore = calculateTotalScore(contractionScore, goodContractionScore);
+      const durationQualityScore = totalContractions > 0 ? Math.round((longContractions / totalContractions) * 100) : 0;
+      const totalScore = calculateTotalScore(contractionScore, goodContractionScore, durationQualityScore);
       const scoreColors = getScoreColors(totalScore);
       
       muscleScores.push(totalScore);
+      
+      // Aggregate data across all channels
+      aggregateContractions += channelData.contraction_count || 0;
+      aggregateGoodContractions += goodContractions;
+      if (expectedContractions) {
+        aggregateExpectedContractions += expectedContractions;
+      }
 
       muscleData.push({
         channelName,
@@ -131,6 +157,9 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
         longGoodContractions,
         expectedShortContractions,
         expectedLongContractions,
+        averageContractionTime: muscleAverageContractionTime,
+        mvcValue: sessionParams.session_mvc_values?.[channelName] ?? sessionParams.session_mvc_value ?? null,
+        mvcThreshold,
       });
     });
 
@@ -148,8 +177,23 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
     }
 
     const durationThreshold = sessionParams?.contraction_duration_threshold ?? contractionDurationThreshold;
+    
+    // Calculate average contraction time
+    const averageContractionTime = allContractionDurations.length > 0 
+      ? allContractionDurations.reduce((sum, duration) => sum + duration, 0) / allContractionDurations.length
+      : undefined;
 
-    return { muscleData, overallScore, overallScoreLabel, symmetryScore, durationThreshold };
+    return { 
+      muscleData, 
+      overallScore, 
+      overallScoreLabel, 
+      symmetryScore, 
+      durationThreshold,
+      averageContractionTime,
+      totalContractions: aggregateContractions,
+      totalGoodContractions: aggregateGoodContractions,
+      totalExpectedContractions: aggregateExpectedContractions > 0 ? aggregateExpectedContractions : undefined
+    };
 
   }, [analysisResult, contractionDurationThreshold, sessionParams]);
 

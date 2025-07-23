@@ -127,15 +127,26 @@ export interface GameSessionParameters {
   // Thresholds
   contraction_duration_threshold?: number | null;
   
-  // BFR Parameters
+  // BFR Parameters - separate monitoring for left and right muscles
   bfr_parameters?: {
-    aop_measured: number;      // Arterial Occlusion Pressure in mmHg
-    applied_pressure: number;  // Applied pressure in mmHg
-    percentage_aop: number;    // Calculated percentage of AOP
-    is_compliant: boolean;     // Within therapeutic range
-    application_time_minutes?: number; // Duration of BFR application in minutes
-    therapeutic_range_min: number;     // Minimum acceptable % AOP (default: 40)
-    therapeutic_range_max: number;     // Maximum acceptable % AOP (default: 60)
+    left: {
+      aop_measured: number;      // Arterial Occlusion Pressure in mmHg
+      applied_pressure: number;  // Applied pressure in mmHg
+      percentage_aop: number;    // Calculated percentage of AOP
+      is_compliant: boolean;     // Within therapeutic range
+      therapeutic_range_min: number;     // Minimum acceptable % AOP (default: 40)
+      therapeutic_range_max: number;     // Maximum acceptable % AOP (default: 60)
+      application_time_minutes?: number; // Duration of BFR application for left muscle
+    };
+    right: {
+      aop_measured: number;      // Arterial Occlusion Pressure in mmHg
+      applied_pressure: number;  // Applied pressure in mmHg
+      percentage_aop: number;    // Calculated percentage of AOP
+      is_compliant: boolean;     // Within therapeutic range
+      therapeutic_range_min: number;     // Minimum acceptable % AOP (default: 40)
+      therapeutic_range_max: number;     // Maximum acceptable % AOP (default: 60)
+      application_time_minutes?: number; // Duration of BFR application for right muscle
+    };
   };
   
   // RPE Parameters

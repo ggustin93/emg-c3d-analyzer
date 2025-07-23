@@ -145,51 +145,11 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
       </div>
       
       {/* Architecture Note */}
-      <div className="mb-3 p-2 bg-gradient-to-r from-green-50 to-blue-50 rounded border border-green-200">
+      <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded border border-green-200">
         <div className="text-xs text-gray-700">
           <span className="font-medium text-green-800">🏗️ Hierarchical Structure:</span> 
           <span className="ml-1">This equation will evolve into a hierarchical system with <strong>Compliance Score</strong> as a composite sub-metric containing MVC + Duration + Completion + BFR + Effort components.</span>
         </div>
-      </div>
-
-      {/* Structured Information */}
-      <div className="bg-white rounded-lg p-3 border border-blue-200 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-          <div>
-            <h4 className="font-semibold text-gray-800 mb-1 flex items-center gap-1">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Weights
-            </h4>
-            <p className="text-gray-600">Σwᵢ = 1.00 (Sum equals 100%)</p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-800 mb-1 flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              Clinical Ranges
-            </h4>
-            <div className="space-y-1 text-gray-600">
-              <p>• 70-100%: Good to Excellent</p>
-              <p>• 50-69%: Needs Improvement</p>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-800 mb-1 flex items-center gap-1">
-              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-              Adaptation
-            </h4>
-            <p className="text-gray-600">Real-time threshold adjustment based on patient progress</p>
-          </div>
-        </div>
-        
-        {/* Settings Link */}
-        {showSettingsLink && (
-          <div className="pt-2 border-t border-blue-200">
-            <button className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors">
-              <GearIcon className="h-3 w-3" />
-              Adjust scoring weights
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
