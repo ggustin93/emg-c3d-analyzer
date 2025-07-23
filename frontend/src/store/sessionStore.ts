@@ -26,8 +26,7 @@ const defaultSessionParams: GameSessionParameters = {
   },
   session_mvc_values: {},
   session_mvc_threshold_percentages: {},
-  pre_session_rpe: 3,  // Light to moderate effort before session (RPE 1-10 scale)
-  post_session_rpe: 6, // Moderate to hard effort after BFR training session
+  post_session_rpe: 6, // Moderate to hard perceived exertion after game session (RPE 1-10 scale)
   bfr_parameters: {
     left: {
       aop_measured: 165,
