@@ -9,6 +9,7 @@ import BFRParametersSettings from './settings/BFRParametersSettings';
 import ScoringWeightsSettings from './settings/ScoringWeightsSettings';
 import ContractionDetectionSettings from './settings/ContractionDetectionSettings';
 import ExperimentalFeaturesSettings from './settings/ExperimentalFeaturesSettings';
+import { Badge } from './ui/badge';
 
 interface SettingsPanelProps {
   muscleChannels: string[];
@@ -81,47 +82,68 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   }, [muscleChannels, sessionParams.channel_muscle_mapping, sessionParams.muscle_color_mapping, setSessionParams]);
 
   return (
-    <div className="space-y-4">
-      <DisplaySettings
-        muscleChannels={muscleChannels}
-        disabled={disabled}
-        dataPoints={dataPoints}
-        setDataPoints={setDataPoints}
-        plotChannel1Data={plotChannel1Data}
-        plotChannel2Data={plotChannel2Data}
-        showGoodContractions={showGoodContractions}
-        setShowGoodContractions={setShowGoodContractions}
-        showPoorContractions={showPoorContractions}
-        setShowPoorContractions={setShowPoorContractions}
-        showContractionAreas={showContractionAreas}
-        setShowContractionAreas={setShowContractionAreas}
-        showContractionDots={showContractionDots}
-        setShowContractionDots={setShowContractionDots}
-      />
-      <SessionGoalsSettings
-        muscleChannels={muscleChannels}
-        disabled={disabled}
-      />
-      <ScoringWeightsSettings 
-        muscleChannels={muscleChannels}
-        disabled={disabled}
-        isDebugMode={isDebugMode}
-      />
-      <ContractionDetectionSettings />
-      <PatientOutcomesSettings
-        disabled={disabled}
-        isDebugMode={isDebugMode}
-      />
-      <BFRParametersSettings
-        disabled={disabled}
-        isDebugMode={isDebugMode}
-      />
-      <ExperimentalFeaturesSettings />
+    <div className="space-y-6">
+      {/* Debug Mode Control - Always at top for easy access */}
       <DebugModeSwitch
         isDebugMode={isDebugMode}
         setIsDebugMode={setIsDebugMode}
         disabled={disabled}
       />
+      
+      {/* Standard Settings - Always visible */}
+      <div className="space-y-4">
+        {/* Display & Visualization Settings */}
+        <DisplaySettings
+          muscleChannels={muscleChannels}
+          disabled={disabled}
+          dataPoints={dataPoints}
+          setDataPoints={setDataPoints}
+          plotChannel1Data={plotChannel1Data}
+          plotChannel2Data={plotChannel2Data}
+          showGoodContractions={showGoodContractions}
+          setShowGoodContractions={setShowGoodContractions}
+          showPoorContractions={showPoorContractions}
+          setShowPoorContractions={setShowPoorContractions}
+          showContractionAreas={showContractionAreas}
+          setShowContractionAreas={setShowContractionAreas}
+          showContractionDots={showContractionDots}
+          setShowContractionDots={setShowContractionDots}
+        />
+        
+        {/* Session Goals Settings */}
+        <SessionGoalsSettings
+          muscleChannels={muscleChannels}
+          disabled={disabled}
+        />
+        
+        {/* Contraction Detection Settings */}
+        <ContractionDetectionSettings />
+        
+        {/* Experimental Features - Always visible but collapsed */}
+        <ExperimentalFeaturesSettings />
+      </div>
+      
+      {/* Clinical & Performance Settings - Always visible but collapsible */}
+      <div className="space-y-4">
+        {/* Performance Scoring System (includes Clinical Parameters) */}
+        <ScoringWeightsSettings 
+          muscleChannels={muscleChannels}
+          disabled={disabled}
+          isDebugMode={isDebugMode}
+        />
+        
+        {/* Patient Assessment - Always visible */}
+        <PatientOutcomesSettings
+          disabled={disabled}
+          isDebugMode={isDebugMode}
+        />
+        
+        {/* BFR Parameters - Always visible */}
+        <BFRParametersSettings
+          disabled={disabled}
+          isDebugMode={isDebugMode}
+        />
+      </div>
     </div>
   );
 };

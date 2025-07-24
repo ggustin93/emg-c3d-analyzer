@@ -52,7 +52,7 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           side={side} 
           sideOffset={10}
           className={cn(
-            "max-w-sm z-[100] bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100",
+            "max-w-sm z-[100] bg-yellow-50",
             "border border-amber-300 shadow-xl p-0 overflow-hidden",
             className
           )}
@@ -83,7 +83,7 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
               {sections.map((section, idx) => (
                 <div 
                   key={idx} 
-                  className="bg-white/80 rounded-md p-2 border border-amber-200"
+                  className="bg-white rounded-md p-2 border border-amber-200"
                 >
                   {section.title && (
                     <p className={cn(
@@ -424,32 +424,33 @@ export const RPEScoreTooltip: React.FC<{
 }> = ({ side = 'top', children }) => (
   <ClinicalTooltip
     title="Subjective Effort Score"
-    description="Patient-reported exertion appropriateness based on RPE change during session"
+    description="Patient-reported exertion assessment based on post-session RPE using Borg CR10 Scale"
     sections={[
       {
-        title: "Clinical Formula:",
+        title: "Scoring Formula:",
         type: "formula",
         items: [
-          { value: "ΔRPE = RPE_post - RPE_pre" }
+          { value: "S_effort = f(RPE_post) where RPE_post ∈ [0,10]" }
         ]
       },
       {
-        title: "Therapeutic Window:",
+        title: "Therapeutic Scoring Ranges:",
         type: "list",
         items: [
-          { label: "ΔRPE = +2 to +3", description: "Optimal therapeutic stimulus (100%)", color: "text-emerald-600" },
-          { label: "ΔRPE = +1", description: "Minimal effort (60%)", color: "text-yellow-600" },
-          { label: "ΔRPE = 0", description: "Insufficient stimulus (20%)", color: "text-orange-600" },
-          { label: "ΔRPE ≥ +6", description: "Excessive - reduce intensity (40%)", color: "text-red-600" }
+          { label: "RPE 4-6", description: "Optimal therapeutic stimulus (100%)", color: "text-emerald-600" },
+          { label: "RPE 3, 7", description: "Acceptable range (80%)", color: "text-green-600" },
+          { label: "RPE 2, 8", description: "Suboptimal stimulus (60%)", color: "text-yellow-600" },
+          { label: "RPE 0-1, 9-10", description: "Poor - too easy or excessive (20%)", color: "text-red-600" }
         ]
       },
       {
-        title: "Clinical Rationale:",
+        title: "Clinical Implementation:",
         type: "list",
         items: [
-          { description: "Ensures therapeutic stimulus without overexertion" },
-          { description: "Post-exercise rating using Borg CR10 Scale (0-10)" },
-          { description: "Optimal zone promotes adaptation and recovery" }
+          { description: "Only post-session RPE is used for performance scoring" },
+          { description: "Borg CR10 Scale: 0=Nothing at all, 10=Very, very hard (maximal)" },
+          { description: "Target RPE 4-6 ensures therapeutic benefit without overexertion" },
+          { description: "20% weight in overall performance calculation" }
         ]
       }
     ]}

@@ -6,6 +6,8 @@ import ClinicalTooltip from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useScoreColors } from '@/hooks/useScoreColors';
+import { useSessionStore } from '@/store/sessionStore';
+import { DEFAULT_SCORING_WEIGHTS } from '@/hooks/useEnhancedPerformanceMetrics';
 import SubjectiveFatigueCard from './SubjectiveFatigueCard';
 import MuscleSymmetryCard from './MuscleSymmetryCard';
 import GHOSTLYGameCard from './GHOSTLYGameCard';
@@ -52,6 +54,16 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   rightMuscleScore
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { sessionParams } = useSessionStore();
+  
+  // Get weights from session store or use defaults
+  const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+  
+  // Map weight keys to our component values
+  const complianceWeight = weights.compliance || 0.40;
+  const symmetryWeight = weights.symmetry || 0.25;
+  const effortWeight = weights.effort || 0.20;
+  const gameWeight = weights.gameScore || 0.15;
   const scoreData = [
     { name: 'Score', value: Math.min(totalScore, 100) },
     { name: 'Remaining', value: Math.max(0, 100 - totalScore) },
@@ -151,10 +163,10 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         title: "Evidence-Based Components:",
                         type: "list",
                         items: [
-                          { percentage: "40", label: "Therapeutic Compliance", description: "Exercise execution quality", color: "text-green-600" },
-                          { percentage: "25", label: "Muscle Symmetry", description: "Bilateral balance assessment", color: "text-purple-600" },
-                          { percentage: "20", label: "Subjective Effort", description: "RPE-based exertion evaluation", color: "text-orange-600" },
-                          { percentage: "15", label: "Game Performance", description: "Normalized engagement metric", color: "text-cyan-600" }
+                          { percentage: `${Math.round(complianceWeight * 100)}`, label: "Therapeutic Compliance", description: "Exercise execution quality", color: "text-green-600" },
+                          { percentage: `${Math.round(symmetryWeight * 100)}`, label: "Muscle Symmetry", description: "Bilateral balance assessment", color: "text-purple-600" },
+                          { percentage: `${Math.round(effortWeight * 100)}`, label: "Subjective Effort", description: "RPE-based exertion evaluation", color: "text-orange-600" },
+                          { percentage: `${Math.round(gameWeight * 100)}`, label: "Game Performance", description: "Normalized engagement metric", color: "text-cyan-600" }
                         ]
                       },
                     
@@ -192,10 +204,10 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                       {
                         type: "table",
                         items: [
-                          { label: "Therapeutic Compliance", percentage: "40", color: "text-green-600" },
-                          { label: "Muscle Symmetry", percentage: "25", color: "text-purple-600" },
-                          { label: "Subjective Effort", percentage: "20", color: "text-orange-600" },
-                          { label: "Game Performance", percentage: "15", color: "text-cyan-600" }
+                          { label: "Therapeutic Compliance", percentage: `${Math.round(complianceWeight * 100)}`, color: "text-green-600" },
+                          { label: "Muscle Symmetry", percentage: `${Math.round(symmetryWeight * 100)}`, color: "text-purple-600" },
+                          { label: "Subjective Effort", percentage: `${Math.round(effortWeight * 100)}`, color: "text-orange-600" },
+                          { label: "Game Performance", percentage: `${Math.round(gameWeight * 100)}`, color: "text-cyan-600" }
                         ]
                       }
                     ]}
@@ -217,59 +229,58 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0 space-y-6">
-          {/* Expandable Performance Equation Component */}
-          <div className="rounded-md bg-slate-50 p-4">
-            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1">
-                  <h4 className="text-sm font-semibold text-gray-700">Performance Formula</h4>
-                  <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500 transition-transform duration-200 data-[state=open]:rotate-180" />
-                  </CollapsibleTrigger>
-                </div>
-                <div className="font-mono text-sm text-slate-800">
-                  <span className="text-blue-600">P</span> = 
-                  <span className="text-green-600 mx-1">C</span> × 0.4 + 
-                  <span className="text-purple-600 mx-1">S</span> × 0.25 + 
-                  <span className="text-orange-600 mx-1">E</span> × 0.2 + 
-                  <span className="text-cyan-600 mx-1">G</span> × 0.15
+          {/* Performance Equation Component */}
+          <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 p-4 border border-slate-200">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Performance Formula</h4>
+            
+            {/* Main Formula Display - Responsive */}
+            <div className="bg-white rounded-lg p-3 shadow-sm mb-3 overflow-x-auto">
+              <div className="font-mono text-center min-w-fit">
+                <div className="text-sm sm:text-base lg:text-lg flex items-center justify-center flex-wrap gap-1">
+                  <span className="text-blue-600 font-bold">P</span>
+                  <span className="mx-1 text-gray-400">=</span>
+                  <span className="text-green-600 font-semibold">C</span>
+                  <span className="mx-0.5 text-gray-500">×</span>
+                  <span className="text-gray-700">{complianceWeight.toFixed(2)}</span>
+                  <span className="mx-1 text-gray-400">+</span>
+                  <span className="text-purple-600 font-semibold">S</span>
+                  <span className="mx-0.5 text-gray-500">×</span>
+                  <span className="text-gray-700">{symmetryWeight.toFixed(2)}</span>
+                  <span className="mx-1 text-gray-400">+</span>
+                  <span className="text-orange-600 font-semibold">E</span>
+                  <span className="mx-0.5 text-gray-500">×</span>
+                  <span className="text-gray-700">{effortWeight.toFixed(2)}</span>
+                  <span className="mx-1 text-gray-400">+</span>
+                  <span className="text-cyan-600 font-semibold">G</span>
+                  <span className="mx-0.5 text-gray-500">×</span>
+                  <span className="text-gray-700">{gameWeight.toFixed(2)}</span>
                 </div>
               </div>
-              
-              <CollapsibleContent className="pt-2 space-y-4">
-                <div className="text-xs text-slate-500 space-y-2">
-                  <div className="grid grid-cols-4 gap-3 text-center">
-                    <div className="bg-white p-3 rounded border">
-                      <div className="text-green-600 font-bold text-lg">{therapeuticComplianceScore ? Math.round(therapeuticComplianceScore) : '--'}%</div>
-                      <div className="text-xs mt-1">Compliance (C)</div>
-                    </div>
-                    <div className="bg-white p-3 rounded border">
-                      <div className="text-purple-600 font-bold text-lg">{symmetryScore ? Math.round(symmetryScore) : '--'}%</div>
-                      <div className="text-xs mt-1">Symmetry (S)</div>
-                    </div>
-                    <div className="bg-white p-3 rounded border">
-                      <div className="text-orange-600 font-bold text-lg">{subjectiveFatigueLevel ? Math.round(subjectiveFatigueLevel * 10) : '--'}%</div>
-                      <div className="text-xs mt-1">Exertion (E)</div>
-                    </div>
-                    <div className="bg-white p-3 rounded border">
-                      <div className="text-cyan-600 font-bold text-lg">{gameScore ? Math.round((gameScore / 100) * 100) : '--'}%</div>
-                      <div className="text-xs mt-1">Game (G)</div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-3 border-t border-slate-300 mt-3">
-                    <div className="text-center text-slate-600 font-medium mb-2">Calculation Breakdown</div>
-                    <div className="font-mono text-xs bg-white p-3 rounded border text-center">
-                      <span className="text-blue-600 font-bold">{Math.round((therapeuticComplianceScore || 0) * 0.4 + (symmetryScore || 0) * 0.25 + (subjectiveFatigueLevel ? subjectiveFatigueLevel * 10 : 0) * 0.2 + (gameScore ? (gameScore / 100) * 100 : 0) * 0.15)}%</span> = 
-                      <span className="text-green-600">{therapeuticComplianceScore ? Math.round(therapeuticComplianceScore) : '--'}</span> × 0.4 + 
-                      <span className="text-purple-600">{symmetryScore ? Math.round(symmetryScore) : '--'}</span> × 0.25 + 
-                      <span className="text-orange-600">{subjectiveFatigueLevel ? Math.round(subjectiveFatigueLevel * 10) : '--'}</span> × 0.2 + 
-                      <span className="text-cyan-600">{gameScore ? Math.round((gameScore / 100) * 100) : '--'}</span> × 0.15
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            </div>
+
+            {/* Component Values Grid - Responsive */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-green-100">
+                <div className="text-green-600 font-bold text-lg sm:text-xl">{therapeuticComplianceScore ? Math.round(therapeuticComplianceScore) : '--'}%</div>
+                <div className="text-xs text-gray-600 mt-0.5">Compliance</div>
+                <div className="text-xs text-green-600 font-semibold">(C)</div>
+              </div>
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-purple-100">
+                <div className="text-purple-600 font-bold text-lg sm:text-xl">{symmetryScore ? Math.round(symmetryScore) : '--'}%</div>
+                <div className="text-xs text-gray-600 mt-0.5">Symmetry</div>
+                <div className="text-xs text-purple-600 font-semibold">(S)</div>
+              </div>
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-orange-100">
+                <div className="text-orange-600 font-bold text-lg sm:text-xl">{subjectiveFatigueLevel ? Math.round(subjectiveFatigueLevel * 10) : '--'}%</div>
+                <div className="text-xs text-gray-600 mt-0.5">Exertion</div>
+                <div className="text-xs text-orange-600 font-semibold">(E)</div>
+              </div>
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-cyan-100">
+                <div className="text-cyan-600 font-bold text-lg sm:text-xl">{gameScore ? Math.round((gameScore / 100) * 100) : '--'}%</div>
+                <div className="text-xs text-gray-600 mt-0.5">Game</div>
+                <div className="text-xs text-cyan-600 font-semibold">(G)</div>
+              </div>
+            </div>
           </div>
             </CardContent>
           </CollapsibleContent>

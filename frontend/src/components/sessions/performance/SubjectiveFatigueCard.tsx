@@ -23,9 +23,11 @@ const SubjectiveFatigueCard: React.FC<SubjectiveFatigueCardProps> = ({
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle className="text-lg font-semibold flex items-center text-gray-800">
-              <ActivityLogIcon className="h-5 w-5 mr-2 text-blue-500" />
-              RPE Score
-              <RPEScoreTooltip />
+              <ActivityLogIcon className="h-5 w-5 mr-2 text-orange-500" />
+              Subjective Effort
+              <div className="ml-2">
+                <RPEScoreTooltip />
+              </div>
             </CardTitle>
           </div>
           <span className={`text-xl font-bold ${fatigueInfo.text}`}>{normalizedFatigue}/10</span>

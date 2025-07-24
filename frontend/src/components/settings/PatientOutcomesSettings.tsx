@@ -5,6 +5,8 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { PersonIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { Badge } from '../ui/badge';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;
@@ -13,38 +15,54 @@ interface PatientOutcomesSettingsProps {
 
 const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disabled, isDebugMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(false);
+  const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(true); // Always expanded in debug mode
 
   return (
     <UnifiedSettingsCard
-      title="Patient Reported Outcomes"
-      description={isDebugMode ? 'PRO data (editable in debug mode)' : 'Patient outcomes imported from GHOSTLY+ mobile app'}
+      title="👤 Patient Assessment"
+      description="Subjective effort assessment, clinical questionnaires, and mobile app integration"
       isOpen={isPatientOutcomesOpen}
       onOpenChange={setIsPatientOutcomesOpen}
-      icon={<PersonIcon className="h-5 w-5 text-indigo-500" />}
-      accentColor="indigo-500"
+      icon={<PersonIcon className="h-5 w-5 text-indigo-600" />}
+      accentColor="indigo-600"
+      badge={isDebugMode ? <Badge variant="outline" className="bg-indigo-100 text-indigo-800">Debug Mode</Badge> : undefined}
     >
       <TooltipProvider>
-        {/* Perceived Exertion */}
+        {/* Subjective Effort Assessment */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium text-gray-700">Perceived Exertion (Borg CR10)</h4>
+            <svg className="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 className="text-base font-semibold text-gray-800">Subjective Effort Assessment</h4>
             <Tooltip>
               <TooltipTrigger asChild>
                 <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="w-[300px] text-xs">
-                  Borg CR10 scale (0-10) for Rating of Perceived Exertion. Data collected through GHOSTLY+ mobile app during therapy sessions. Used to assess patient-reported exercise intensity and fatigue levels.
-                </p>
+                <div className="w-[350px] text-sm space-y-2">
+                  <p><strong>Borg CR10 Scale (0-10)</strong> for Rating of Perceived Exertion</p>
+                  <p>Only <strong>post-session RPE</strong> is used for the Subjective Effort Score (20% weight in overall performance).</p>
+                  <div className="text-xs space-y-1 mt-2 p-2 bg-gray-50 rounded">
+                    <div><strong>Scoring:</strong></div>
+                    <div>• RPE 4-6: 100% (optimal therapeutic stimulus)</div>
+                    <div>• RPE 3,7: 80% (acceptable range)</div>
+                    <div>• RPE 2,8: 60% (suboptimal stimulus)</div>
+                    <div>• RPE 0,1,9,10: 20% (poor - too easy/hard)</div>
+                  </div>
+                </div>
               </TooltipContent>
             </Tooltip>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Pre-Session RPE</Label>
-              {isDebugMode ? (
+          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            {/* Pre-Session RPE - Deprecated but kept for historical data */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700">Pre-Session RPE</Label>
+                  <Badge variant="outline" className="bg-gray-100 text-gray-600 text-xs">Historical Only</Badge>
+                </div>
                 <Input
                   type="number"
                   value={(sessionParams.pre_session_rpe as number) ?? ''}
@@ -58,18 +76,19 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
                   placeholder="0-10"
                   min="0" max="10" step="0.5"
                   disabled={disabled}
-                  className="h-8 text-xs"
+                  className="h-9 text-sm bg-gray-50"
                 />
-              ) : (
-                <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                  {(sessionParams.pre_session_rpe as number) ? `${(sessionParams.pre_session_rpe as number)}/10` : 'From mobile app'}
+                <p className="text-xs text-gray-500">
+                  ⚠️ Pre-RPE is no longer used in performance scoring. Kept for historical data only.
+                </p>
+              </div>
+              
+              {/* Post-Session RPE - Primary scoring input */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-800">Post-Session RPE</Label>
+                  <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">Scoring Input</Badge>
                 </div>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Post-Session RPE</Label>
-              {isDebugMode ? (
                 <Input
                   type="number"
                   value={(sessionParams.post_session_rpe as number) ?? ''}
@@ -83,24 +102,32 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
                   placeholder="0-10"
                   min="0" max="10" step="0.5"
                   disabled={disabled}
-                  className="h-8 text-xs"
+                  className="h-9 text-sm border-indigo-300 focus:border-indigo-500"
                 />
-              ) : (
-                <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                  {(sessionParams.post_session_rpe as number) ? `${(sessionParams.post_session_rpe as number)}/10` : 'From mobile app'}
-                </div>
-              )}
+                <p className="text-xs text-indigo-700">
+                  ✓ Primary input for Subjective Effort Score (20% weight). Target: RPE 4-6 for optimal therapeutic stimulus.
+                </p>
+              </div>
             </div>
           </div>
         </div>
         
-        {!isDebugMode && (
-          <div className="p-3 bg-green-50 rounded-md">
-            <p className="text-xs text-green-800">
-              <strong>Note:</strong> Patient Reported Outcomes are automatically imported from the GHOSTLY+ mobile application. These include validated questionnaire responses and app usage metrics collected during therapy sessions. Enable Debug Mode to manually adjust these values for testing purposes.
-            </p>
+        {/* Mobile App Integration */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <h4 className="text-base font-semibold text-gray-800">Mobile App Integration</h4>
           </div>
-        )}
+          
+          <Alert className="border-indigo-200 bg-indigo-50">
+            <InfoCircledIcon className="h-4 w-4 text-indigo-600" />
+            <AlertDescription className="text-sm text-indigo-800">
+              <strong>Production Mode:</strong> Patient Reported Outcomes are automatically imported from the GHOSTLY+ mobile application, including validated questionnaire responses and app usage metrics. Debug mode allows manual adjustment for testing purposes.
+            </AlertDescription>
+          </Alert>
+        </div>
       </TooltipProvider>
     </UnifiedSettingsCard>
   );

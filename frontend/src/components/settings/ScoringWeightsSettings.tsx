@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
-import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, StarIcon, HeartIcon } from '@radix-ui/react-icons';
+import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, TargetIcon, HeartIcon, PersonIcon, MixIcon } from '@radix-ui/react-icons';
 import { ScoringWeights, GameScoreNormalization } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import { 
@@ -30,11 +28,9 @@ const SCORING_PRESETS = {
 
 const formatWeightName = (key: string): string => {
   const names: { [key: string]: string } = {
-    completion: 'Session Completion',
-    mvcQuality: 'Muscle Activation Quality',
-    qualityThreshold: 'Duration Quality',
-    symmetry: 'Bilateral Balance',
-    effort: 'Perceived Exertion',
+    compliance: 'Therapeutic Compliance',
+    symmetry: 'Muscle Symmetry',
+    effort: 'Subjective Effort',
     gameScore: 'Game Performance'
   };
   return names[key] || key;
@@ -52,11 +48,10 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   isDebugMode = false 
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [showGameScoreSettings, setShowGameScoreSettings] = useState(false);
-  const [showClinicalParameters, setShowClinicalParameters] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isPerformanceOpen, setIsPerformanceOpen] = useState(true);
+  const [isClinicalParamsOpen, setIsClinicalParamsOpen] = useState(false);
+  const [isExperimentalOpen, setIsExperimentalOpen] = useState(false);
   
-  const isEnhancedScoringEnabled = sessionParams.enhanced_scoring?.enabled || false;
   const isExperimentalEnabled = sessionParams.experimental_features?.enabled || false;
   const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
   const gameNormalization = sessionParams.enhanced_scoring?.game_score_normalization || {
@@ -64,16 +59,12 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     min_score: 0,
     max_score: 1000
   };
-
-  const toggleEnhancedScoring = (enabled: boolean) => {
-    setSessionParams({
-      ...sessionParams,
-      enhanced_scoring: {
-        enabled,
-        weights: enabled ? DEFAULT_SCORING_WEIGHTS : weights,
-        game_score_normalization: gameNormalization
-      }
-    });
+  
+  // Compliance Score sub-component weights (default: equal weighting)
+  const complianceWeights = (sessionParams.enhanced_scoring as any)?.compliance_weights || {
+    completion: 1/3,    // Completion Rate
+    intensity: 1/3,     // Intensity Rate (≥75% MVC)
+    duration: 1/3       // Duration Rate (≥2s)
   };
 
   const updateWeights = (newWeights: ScoringWeights) => {
@@ -91,10 +82,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     setSessionParams({
       ...sessionParams,
       enhanced_scoring: {
-        enabled: isEnhancedScoringEnabled,
+        enabled: true, // Always enabled now
         weights: normalizedWeights,
-        game_score_normalization: gameNormalization
-      }
+        game_score_normalization: gameNormalization,
+        ...(complianceWeights && { compliance_weights: complianceWeights })
+      } as any
     });
   };
 
@@ -113,11 +105,39 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     setSessionParams({
       ...sessionParams,
       enhanced_scoring: {
-        enabled: isEnhancedScoringEnabled,
+        enabled: true, // Always enabled now
         weights,
-        game_score_normalization: newNormalization
-      }
+        game_score_normalization: newNormalization,
+        ...(complianceWeights && { compliance_weights: complianceWeights })
+      } as any
     });
+  };
+
+  const updateComplianceWeights = (newComplianceWeights: any) => {
+    // Normalize to ensure they sum to 1
+    const total = Object.values(newComplianceWeights).reduce((sum: number, w: any) => sum + w, 0);
+    const normalizedWeights = { ...newComplianceWeights };
+    
+    if (total > 0) {
+      Object.keys(normalizedWeights).forEach(key => {
+        normalizedWeights[key] = normalizedWeights[key] / total;
+      });
+    }
+
+    setSessionParams({
+      ...sessionParams,
+      enhanced_scoring: {
+        enabled: true,
+        weights,
+        game_score_normalization: gameNormalization,
+        ...(normalizedWeights && { compliance_weights: normalizedWeights })
+      } as any
+    });
+  };
+
+  const handleComplianceWeightChange = (key: string, value: number) => {
+    const newWeights = { ...complianceWeights, [key]: value / 100 };
+    updateComplianceWeights(newWeights);
   };
 
   const resetToDefaults = () => {
@@ -126,300 +146,450 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 
   const muscleChannels2 = muscleChannels.filter(ch => !ch.includes(' ')).slice(0, 2);
 
-  if (!isEnhancedScoringEnabled) {
-    return (
-      <UnifiedSettingsCard
-        title="Enhanced Performance Scoring"
-        description="Enable advanced scoring system with weighted performance metrics"
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        icon={<StarIcon className="h-5 w-5 text-yellow-500" />}
-        accentColor="yellow-500"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="enhanced-scoring-enable" className="text-sm font-medium">
-              Enable Enhanced Scoring
-            </Label>
-            <Switch
-              id="enhanced-scoring-enable"
-              checked={false}
-              onCheckedChange={toggleEnhancedScoring}
-            />
-          </div>
-          <Alert>
-            <InfoCircledIcon className="h-4 w-4" />
-            <AlertDescription>
-              Enable enhanced scoring to access weighted performance metrics with detailed component breakdown.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </UnifiedSettingsCard>
-    );
-  }
-
   return (
     <TooltipProvider>
-      <UnifiedSettingsCard
-        title="Enhanced Performance Scoring"
-        description="Advanced rehabilitation scoring system with weighted components for comprehensive therapeutic assessment"
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        icon={<StarIcon className="h-5 w-5 text-yellow-500" />}
-        accentColor="yellow-500"
-        badge={<Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>}
-      >
-        <div className="space-y-6">
-          {/* Activation toggle */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="enhanced-scoring-toggle" className="text-sm font-medium">
-              Enable Enhanced Scoring
-            </Label>
-            <Switch
-              id="enhanced-scoring-toggle"
-              checked={isEnhancedScoringEnabled}
-              onCheckedChange={toggleEnhancedScoring}
-            />
-          </div>
-
-          {/* Performance Equation */}
-          <PerformanceEquation weights={weights} compact={false} />
-
-          {/* Configuration des poids */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">Scoring Weights Configuration</h4>
-              <Select onValueChange={(value) => {
-                if (value !== 'custom') {
-                  applyPreset(value as keyof typeof SCORING_PRESETS);
-                }
-              }}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Preset" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Default (Balanced)</SelectItem>
-                  <SelectItem value="quality_focused">Quality Focused</SelectItem>
-                  <SelectItem value="experimental_with_game">With Game Score</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
+      <div className="space-y-6">
+        {/* 🎯 Performance Scoring System - Always visible but collapsible */}
+        <UnifiedSettingsCard
+          title="🎯 Performance Scoring System"
+          description="Mathematical model, component weights, and clinical parameters for performance assessment"
+          isOpen={isPerformanceOpen}
+          onOpenChange={setIsPerformanceOpen}
+          icon={<TargetIcon className="h-5 w-5 text-blue-600" />}
+          accentColor="blue-600"
+          badge={isDebugMode ? <Badge variant="outline" className="bg-blue-100 text-blue-800">Debug Mode</Badge> : undefined}
+        >
+          <div className="space-y-6">
+            {/* Mathematical Model Display */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 mb-3">
+                <GearIcon className="h-4 w-4 text-blue-600" />
+                <h4 className="text-sm font-semibold text-blue-900">Mathematical Model</h4>
+              </div>
+              <PerformanceEquation weights={weights} compact={false} />
             </div>
 
-            
-            {Object.entries(weights)
-              .filter(([key]) => key !== 'compliance') // Exclude compliance from weight configuration
-              .map(([key, value]) => (
-              <div key={key} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label className="flex items-center gap-2">
-                    {formatWeightName(key)}
-                    {key === 'gameScore' && (
-                      <Badge variant="outline" className="text-xs">
-                        Experimental
-                      </Badge>
-                    )}
-                  </Label>
-                  <span className="text-sm text-muted-foreground">
-                    {(value * 100).toFixed(0)}%
-                  </span>
-                </div>
-                
-                {key === 'gameScore' && value > 0 && (
-                  <Alert className="text-xs mb-2">
-                    <ExclamationTriangleIcon className="h-3 w-3" />
-                    <AlertDescription>
-                      Game score normalization algorithm is under development. 
-                      Use with caution in clinical settings.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <Slider
-                  value={[value * 100]}
-                  onValueChange={([v]) => handleWeightChange(key as keyof ScoringWeights, v)}
-                  min={0}
-                  max={key === 'gameScore' ? 50 : 100}
-                  step={5}
-                  disabled={key === 'gameScore' && !isExperimentalEnabled}
-                />
-                
-                {key === 'gameScore' && !isExperimentalEnabled && (
-                  <p className="text-xs text-muted-foreground">
-                    Enable experimental features to adjust game score weight
-                  </p>
-                )}
+            {/* Component Weights Configuration */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-base font-semibold text-gray-800">Component Weights</h4>
+                <Select onValueChange={(value) => {
+                  if (value !== 'custom') {
+                    applyPreset(value as keyof typeof SCORING_PRESETS);
+                  }
+                }}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Preset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Research Default</SelectItem>
+                    <SelectItem value="quality_focused">Compliance Focused</SelectItem>
+                    <SelectItem value="experimental_with_game">Game Emphasized</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-            
-            {/* Paramètres de normalisation du score de jeu */}
-            {weights.gameScore > 0 && (
-              <Collapsible 
-                open={showGameScoreSettings} 
-                onOpenChange={setShowGameScoreSettings}
-              >
-                <CollapsibleTrigger className="text-sm underline">
-                  Game Score Normalization Settings
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Min Expected Score</Label>
-                      <Input
-                        type="number"
-                        value={gameNormalization.min_score}
-                        onChange={(e) => updateGameNormalization('min_score', Number(e.target.value))}
-                        className="h-8"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max Expected Score</Label>
-                      <Input
-                        type="number"
-                        value={gameNormalization.max_score}
-                        onChange={(e) => updateGameNormalization('max_score', Number(e.target.value))}
-                        className="h-8"
-                      />
+
+              {Object.entries(weights)
+                .filter(([key]) => ['compliance', 'symmetry', 'effort', 'gameScore'].includes(key)) // Only show the 4 main components
+                .map(([key, value]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label className="flex items-center gap-2">
+                      {formatWeightName(key)}
+                      {key === 'gameScore' && (
+                        <Badge variant="outline" className="text-xs">
+                          Experimental
+                        </Badge>
+                      )}
+                    </Label>
+                    <span className="text-sm text-muted-foreground">
+                      {(value * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  
+                  {key === 'gameScore' && value > 0 && (
+                    <Alert className="text-xs mb-2">
+                      <ExclamationTriangleIcon className="h-3 w-3" />
+                      <AlertDescription>
+                        Game score normalization algorithm is under development. 
+                        Use with caution in clinical settings.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="space-y-1">
+                    <Slider
+                      value={[value * 100]}
+                      onValueChange={([v]) => handleWeightChange(key as keyof ScoringWeights, v)}
+                      min={0}
+                      max={key === 'gameScore' ? 50 : 100}
+                      step={1}
+                      disabled={key === 'gameScore' && !isExperimentalEnabled}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>0%</span>
+                      <span className="font-medium text-gray-700">{(value * 100).toFixed(0)}%</span>
+                      <span>{key === 'gameScore' ? '50%' : '100%'}</span>
                     </div>
                   </div>
-                  <Alert className="text-xs">
-                    <InfoCircledIcon className="h-3 w-3" />
-                    <AlertDescription>
-                      Contact GHOSTLY team for proper normalization parameters
-                    </AlertDescription>
-                  </Alert>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-            
-            {/* Boutons d'action */}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetToDefaults}
-              >
-                Reset to Default
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => applyPreset('quality_focused')}
-              >
-                Quality Focus
-              </Button>
-            </div>
-          </div>
-
-          {/* Clinical Parameters Section */}
-          {muscleChannels2.length > 0 && (
-            <Collapsible 
-              open={showClinicalParameters} 
-              onOpenChange={setShowClinicalParameters}
-            >
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-                <HeartIcon className="h-4 w-4 text-red-500" />
-                Clinical Parameters
-                <InfoCircledIcon className="h-3 w-3 text-gray-500" />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-4 mt-4 p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium text-gray-700">MVC Analysis</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-3 w-3 text-gray-500" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
-                        MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+                  
+                  {key === 'gameScore' && !isExperimentalEnabled && (
+                    <p className="text-xs text-muted-foreground">
+                      Enable experimental features to adjust game score weight
+                    </p>
+                  )}
+                </div>
+              ))}
+              
+              {/* Therapeutic Compliance Sub-Components - Always visible in debug */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 className="text-base font-semibold text-gray-800">Therapeutic Compliance Sub-Components</h4>
+                    <InfoCircledIcon className="h-3 w-3 text-gray-500" />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const equalWeights = {
+                        completion: 1/3,
+                        intensity: 1/3,
+                        duration: 1/3
+                      };
+                      updateComplianceWeights(equalWeights);
+                    }}
+                    className="text-xs h-7 px-2"
+                  >
+                    Reset to 1/3 each
+                  </Button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  {muscleChannels2.map((channel) => {
-                    const mvcValue = sessionParams.session_mvc_values?.[channel];
-                    const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 75;
+                <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm text-gray-700 mb-3">
+                    Configure the internal weighting of the Therapeutic Compliance score components. Default is equal weighting (33.3% each).
+                  </div>
+                  
+                  {Object.entries(complianceWeights).map(([key, value]) => {
+                    const numericValue = Number(value);
+                    const componentNames = {
+                      completion: 'Completion Rate',
+                      intensity: 'Intensity Rate (≥75% MVC)',
+                      duration: 'Duration Rate (≥2s)'
+                    };
                     
                     return (
-                      <div key={channel} className="space-y-2">
-                        <h5 className="text-sm font-medium">
-                          <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
-                        </h5>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <Label className="text-xs text-slate-600">MVC Value</Label>
-                            {isDebugMode ? (
-                              <Input
-                                type="number"
-                                value={mvcValue ?? ''}
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value) || null;
-                                  setSessionParams({
-                                    ...sessionParams,
-                                    session_mvc_values: {
-                                      ...(sessionParams.session_mvc_values || {}),
-                                      [channel]: value
-                                    }
-                                  });
-                                }}
-                                placeholder="Auto"
-                                step="0.0001"
-                                disabled={disabled}
-                                className="h-8 text-xs"
-                              />
-                            ) : (
-                              <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                                {mvcValue ? `${mvcValue.toExponential(3)} mV` : 'Auto-computed'}
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <Label className="text-xs text-slate-600">Threshold</Label>
-                            {isDebugMode ? (
-                              <Input
-                                type="number"
-                                value={thresholdValue}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 75;
-                                  setSessionParams({
-                                    ...sessionParams,
-                                    session_mvc_threshold_percentages: {
-                                      ...(sessionParams.session_mvc_threshold_percentages || {}),
-                                      [channel]: value
-                                    }
-                                  });
-                                }}
-                                min="0" max="100"
-                                disabled={disabled}
-                                className="h-8 text-xs"
-                              />
-                            ) : (
-                              <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                                {thresholdValue}%
-                              </div>
-                            )}
+                      <div key={key} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label className="flex items-center gap-2 text-sm font-medium">
+                            {componentNames[key as keyof typeof componentNames]}
+                          </Label>
+                          <span className="text-sm text-muted-foreground font-semibold">
+                            {(numericValue * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <Slider
+                            value={[numericValue * 100]}
+                            onValueChange={([v]) => handleComplianceWeightChange(key, v)}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>0%</span>
+                            <span className="font-medium text-gray-700">{(numericValue * 100).toFixed(1)}%</span>
+                            <span>100%</span>
                           </div>
                         </div>
                       </div>
                     );
                   })}
-                </div>
-                
-                {!isDebugMode && (
-                  <Alert>
+                  
+                  {/* Quick Preset Buttons */}
+                  <div className="flex flex-wrap gap-2 pt-3 border-t">
+                    <span className="text-xs font-medium text-gray-600 mr-2">Quick presets:</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateComplianceWeights({ completion: 0.5, intensity: 0.3, duration: 0.2 })}
+                      className="text-xs h-6 px-2"
+                    >
+                      Completion Focus (50/30/20)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateComplianceWeights({ completion: 0.2, intensity: 0.5, duration: 0.3 })}
+                      className="text-xs h-6 px-2"
+                    >
+                      Intensity Focus (20/50/30)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateComplianceWeights({ completion: 0.25, intensity: 0.25, duration: 0.5 })}
+                      className="text-xs h-6 px-2"
+                    >
+                      Duration Focus (25/25/50)
+                    </Button>
+                  </div>
+                  
+                  <Alert className="mt-3">
                     <InfoCircledIcon className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      <strong>Note:</strong> MVC values are automatically computed from C3D files, mobile app data, or shared database. Enable Debug Mode to manually adjust these values.
+                    <AlertDescription className="text-sm">
+                      <strong>Clinical Note:</strong> Completion Rate ensures all exercises are done, 
+                      Intensity Rate ensures therapeutic effectiveness (≥75% MVC), and Duration Rate 
+                      ensures adequate muscle endurance training (≥2s holds).
                     </AlertDescription>
                   </Alert>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-        </div>
-      </UnifiedSettingsCard>
+                </div>
+              </div>
+
+              {/* Clinical Parameters Section - Part of Performance Scoring */}
+              {muscleChannels2.length > 0 && (
+                <div className="border-t pt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <HeartIcon className="h-4 w-4 text-red-600" />
+                    <h4 className="text-base font-semibold text-gray-800">Clinical Parameters</h4>
+                    <Badge variant="outline" className="bg-red-100 text-red-800 text-xs">Score Computation</Badge>
+                    <InfoCircledIcon className="h-3 w-3 text-gray-500" />
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {/* MVC Analysis Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <GearIcon className="h-4 w-4 text-red-600" />
+                        <h5 className="text-sm font-semibold text-gray-800">MVC Analysis Settings</h5>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoCircledIcon className="h-4 w-4 text-gray-500" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">
+                              MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                        {muscleChannels2.map((channel) => {
+                          const mvcValue = sessionParams.session_mvc_values?.[channel];
+                          const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 75;
+                          
+                          return (
+                            <div key={channel} className="space-y-3">
+                              <h6 className="text-sm font-semibold text-gray-800">
+                                <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
+                              </h6>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700">MVC Value</Label>
+                                  {isDebugMode ? (
+                                    <Input
+                                      type="number"
+                                      value={mvcValue ?? ''}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || null;
+                                        setSessionParams({
+                                          ...sessionParams,
+                                          session_mvc_values: {
+                                            ...(sessionParams.session_mvc_values || {}),
+                                            [channel]: value
+                                          }
+                                        });
+                                      }}
+                                      placeholder="Auto"
+                                      step="0.0001"
+                                      disabled={disabled}
+                                      className="h-9 text-sm"
+                                    />
+                                  ) : (
+                                    <div className="h-9 px-3 py-2 bg-white border rounded-md text-sm text-slate-500">
+                                      {mvcValue ? `${mvcValue.toExponential(3)} mV` : 'Auto-computed'}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700">Threshold %</Label>
+                                  <Input
+                                    type="number"
+                                    value={thresholdValue}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 75;
+                                      setSessionParams({
+                                        ...sessionParams,
+                                        session_mvc_threshold_percentages: {
+                                          ...(sessionParams.session_mvc_threshold_percentages || {}),
+                                          [channel]: value
+                                        }
+                                      });
+                                    }}
+                                    min="0" max="100"
+                                    disabled={disabled}
+                                    className="h-9 text-sm"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <Alert>
+                        <InfoCircledIcon className="h-4 w-4" />
+                        <AlertDescription className="text-sm">
+                          <strong>Note:</strong> MVC values are automatically computed from C3D files, mobile app data, or shared database. {isDebugMode && 'Values can be manually adjusted in debug mode for testing purposes.'}
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+
+                    {/* Duration & Intensity Thresholds Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <GearIcon className="h-4 w-4 text-red-600" />
+                        <h5 className="text-sm font-semibold text-gray-800">Duration & Intensity Thresholds</h5>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoCircledIcon className="h-4 w-4 text-gray-500" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">
+                              Configure the minimum duration and intensity thresholds for therapeutic effectiveness. These values determine what constitutes a valid contraction for scoring purposes.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      
+                      <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Minimum Duration (seconds)</Label>
+                            <Input
+                              type="number"
+                              value={sessionParams.contraction_duration_threshold_ms ? (sessionParams.contraction_duration_threshold_ms / 1000) : 2}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 2;
+                                setSessionParams({
+                                  ...sessionParams,
+                                  contraction_duration_threshold_ms: value * 1000
+                                });
+                              }}
+                              min="0.5" max="10" step="0.5"
+                              disabled={disabled}
+                              className="h-9 text-sm"
+                            />
+                            <p className="text-xs text-gray-600">Minimum contraction duration for therapeutic effectiveness</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Minimum Intensity (% MVC)</Label>
+                            <Input
+                              type="number"
+                              value={75} // Standard threshold
+                              onChange={() => {}} // Read-only for now, could be made configurable
+                              min="50" max="90" step="5"
+                              disabled={true}
+                              className="h-9 text-sm bg-gray-100"
+                            />
+                            <p className="text-xs text-gray-600">Standard therapeutic intensity threshold (≥75% MVC)</p>
+                          </div>
+                        </div>
+                        
+                        <Alert className="mt-3">
+                          <InfoCircledIcon className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            <strong>Clinical Standards:</strong> Duration ≥2s ensures adequate muscle activation time, while intensity ≥75% MVC ensures therapeutic strength training benefit. These thresholds are based on GHOSTLY+ clinical protocol requirements.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetToDefaults}
+                >
+                  Reset to Default
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyPreset('quality_focused')}
+                >
+                  Quality Focus
+                </Button>
+              </div>
+            </div>
+          </div>
+        </UnifiedSettingsCard>
+
+        {/* 🧪 Experimental Features - Only show if experimental features are enabled */}
+        {(weights.gameScore > 0 || isDebugMode) && (
+          <UnifiedSettingsCard
+            title="🧪 Experimental Features"
+            description="Advanced features under development - use with caution in clinical settings"
+            isOpen={isExperimentalOpen}
+            onOpenChange={setIsExperimentalOpen}
+            icon={<MixIcon className="h-5 w-5 text-amber-600" />}
+            accentColor="amber-600"
+            badge={<Badge variant="outline" className="bg-amber-100 text-amber-800">Experimental</Badge>}
+          >
+            <div className="space-y-4">
+              <Alert className="border-amber-200 bg-amber-50">
+                <ExclamationTriangleIcon className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-sm text-amber-800">
+                  <strong>Warning:</strong> Game score normalization algorithm is under development. Use with caution in clinical settings.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <h4 className="text-base font-semibold text-gray-800">Game Score Normalization Settings</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Min Expected Score</Label>
+                    <Input
+                      type="number"
+                      value={gameNormalization.min_score}
+                      onChange={(e) => updateGameNormalization('min_score', Number(e.target.value))}
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Max Expected Score</Label>
+                    <Input
+                      type="number"
+                      value={gameNormalization.max_score}
+                      onChange={(e) => updateGameNormalization('max_score', Number(e.target.value))}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                
+                <Alert>
+                  <InfoCircledIcon className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Contact GHOSTLY team for proper normalization parameters based on current difficulty adjustment algorithm.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </div>
+          </UnifiedSettingsCard>
+        )}
+      </div>
     </TooltipProvider>
   );
 };

@@ -1,7 +1,6 @@
 import { EMGAnalysisResult, GameSessionParameters } from '../../types/emg';
 import MusclePerformanceCard from './performance/MusclePerformanceCard';
 import OverallPerformanceCard from './performance/OverallPerformanceCard';
-import EnhancedPerformanceCard from './performance/EnhancedPerformanceCard';
 import MuscleSymmetryCard from './performance/MuscleSymmetryCard';
 import SubjectiveFatigueCard from './performance/SubjectiveFatigueCard';
 import GHOSTLYGameCard from './performance/GHOSTLYGameCard';
@@ -33,11 +32,6 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     totalGoodContractions,
     totalExpectedContractions
   } = usePerformanceMetrics(analysisResult, contractionDurationThreshold);
-
-  // Si le scoring avancé est activé, utiliser le nouveau composant
-  if (isEnhancedScoringEnabled) {
-    return <EnhancedPerformanceCard analysisResult={analysisResult} />;
-  }
 
   // Calculate therapeutic compliance from muscle data
   const therapeuticComplianceScore = muscleData.length > 0 

@@ -12,35 +12,35 @@ import {
 } from '../types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 
-// Presets par défaut
+// Presets par défaut - Based on GHOSTLY+ TBM Clinical Trial
 export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  completion: 0.20,
-  mvcQuality: 0.25,
-  qualityThreshold: 0.15,
-  symmetry: 0.15,
-  effort: 0.15,
-  compliance: 0.10,
-  gameScore: 0.00
+  completion: 0.00,  // Not used in P_overall
+  mvcQuality: 0.00,  // Part of compliance score
+  qualityThreshold: 0.00,  // Part of compliance score
+  symmetry: 0.25,  // Muscle Symmetry
+  effort: 0.20,    // Subjective Effort (RPE)
+  compliance: 0.40,  // Therapeutic Compliance (composite)
+  gameScore: 0.15   // Game Performance
 };
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
-  completion: 0.15,
-  mvcQuality: 0.35,
-  qualityThreshold: 0.20,
-  symmetry: 0.15,
-  effort: 0.10,
-  compliance: 0.05,
-  gameScore: 0.00
+  completion: 0.00,
+  mvcQuality: 0.00,
+  qualityThreshold: 0.00,
+  symmetry: 0.30,  // Higher emphasis on bilateral balance
+  effort: 0.15,    // Lower emphasis on subjective effort
+  compliance: 0.55,  // Much higher emphasis on execution quality
+  gameScore: 0.00   // No game score
 };
 
 export const EXPERIMENTAL_WITH_GAME_WEIGHTS: ScoringWeights = {
-  completion: 0.15,
-  mvcQuality: 0.20,
-  qualityThreshold: 0.10,
-  symmetry: 0.15,
-  effort: 0.10,
-  compliance: 0.05,
-  gameScore: 0.25
+  completion: 0.00,
+  mvcQuality: 0.00,
+  qualityThreshold: 0.00,
+  symmetry: 0.20,  // Slightly lower symmetry
+  effort: 0.15,    // Lower effort weight
+  compliance: 0.35,  // Lower compliance weight
+  gameScore: 0.30   // Higher game score weight
 };
 
 export const DEFAULT_DETECTION_PARAMS: ContractionDetectionParameters = {

@@ -7,6 +7,7 @@ import { Badge } from "../ui/badge";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { HeartIcon } from '@radix-ui/react-icons';
+import { Alert, AlertDescription } from "../ui/alert";
 import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "../ui/clinical-tooltip";
 
 interface BFRParametersSettingsProps {
@@ -16,7 +17,7 @@ interface BFRParametersSettingsProps {
 
 const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled, isDebugMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(false);
+  const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(true); // Always expanded in debug mode
 
   // Get BFR parameters from session store - should always be defined due to store defaults
   const bfrParams = sessionParams.bfr_parameters;
@@ -438,17 +439,17 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
 
   return (
     <UnifiedSettingsCard
-      title="BFR Parameters"
-      description={isDebugMode ? 'Blood Flow Restriction settings for left and right muscles (editable in debug mode)' : 'BFR parameters from clinical assessment - Independent Left & Right muscle monitoring'}
+      title="🩸 BFR Parameters"
+      description="Blood Flow Restriction settings for left and right muscles with therapeutic compliance monitoring"
       isOpen={isBFRParametersOpen}
       onOpenChange={setIsBFRParametersOpen}
-      icon={<HeartIcon className="h-5 w-5 text-red-500" />}
-      accentColor="red-500"
+      icon={<HeartIcon className="h-5 w-5 text-red-600" />}
+      accentColor="red-600"
       badge={<Badge variant="outline" className={`text-xs ${overallStatus.color}`}>{overallStatus.badge}</Badge>}
     >
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-gray-700">Blood Flow Restriction - Left & Right Monitoring</h4>
+          <h4 className="text-base font-semibold text-gray-800">Blood Flow Restriction - Left & Right Monitoring</h4>
           <ClinicalTooltip
             title="BFR Independent Monitoring System"
             description="Advanced bilateral monitoring for enhanced clinical control and patient safety"
@@ -499,14 +500,13 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
           </TabsContent>
         </Tabs>
         
-        {!isDebugMode && (
-          <div className="p-3 bg-blue-50 rounded-md">
-            <p className="text-xs text-blue-800">
-              <strong>Note:</strong> BFR parameters are measured during clinical assessment and imported from the GHOSTLY+ mobile app. 
-              Enable Debug Mode to manually adjust these values for testing. Each muscle group has independent pressure settings and session durations.
-            </p>
-          </div>
-        )}
+        <Alert className="border-red-200 bg-red-50">
+          <HeartIcon className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-sm text-red-800">
+            <strong>Clinical Note:</strong> BFR parameters are measured during clinical assessment and imported from the GHOSTLY+ mobile app. 
+            Debug mode allows manual adjustment for testing. Each muscle group has independent pressure settings and session durations.
+          </AlertDescription>
+        </Alert>
       </div>
     </UnifiedSettingsCard>
   );

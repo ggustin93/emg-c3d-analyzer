@@ -20,7 +20,9 @@ const MuscleSymmetryCard: React.FC<MuscleSymmetryCardProps> = ({
           <CardTitle className="text-lg font-semibold flex items-center text-gray-800">
             <MixerHorizontalIcon className="h-5 w-5 mr-2 text-gray-500" />
             Muscle Symmetry
-            <MuscleSymmetryTooltip />
+            <div className="ml-2">
+              <MuscleSymmetryTooltip />
+            </div>
           </CardTitle>
           </div>
           <span className={`text-xl font-bold ${scoreColors.text}`}>{symmetryScore}%</span>

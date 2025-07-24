@@ -1,8 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { GHOSTLYScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { useScoreColors } from '@/hooks/useScoreColors';
 
@@ -17,7 +15,6 @@ const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
   gameScore = 0,
   gameLevel,
   normalizedScore = 0,
-  showExperimental = false
 }) => {
   const scoreColors = useScoreColors(normalizedScore);
 
@@ -30,21 +27,20 @@ const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
               </svg>
               GHOSTLY Score
-              <GHOSTLYScoreTooltip 
-                gameScore={gameScore}
-                gameLevel={gameLevel}
-                normalizedScore={normalizedScore}
-                showExperimental={showExperimental}
-              />
+              <div className="ml-2">
+                <GHOSTLYScoreTooltip 
+                  gameScore={gameScore}
+                  gameLevel={gameLevel}
+                  normalizedScore={normalizedScore}
+                />
+              </div>
             </CardTitle>
           </div>
-          {showExperimental ? (
-            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
-              Experimental
-            </Badge>
-          ) : (
-            <span className={`text-xl font-bold ${scoreColors.text}`}>{gameScore} pts</span>
-          )}
+          <div className="text-right">
+            <div className={`text-xl font-bold ${scoreColors.text}`}>
+              {Math.round(normalizedScore)}%
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Progress 
@@ -57,9 +53,9 @@ const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
             <span>High Engagement</span>
           </div>
           {gameLevel ? (
-            <p className="text-sm text-gray-500 text-center mt-2">Level {gameLevel} • {scoreColors.label}</p>
+            <p className="text-sm text-gray-500 text-center mt-2">Level {gameLevel} • {gameScore} pts • {scoreColors.label}</p>
           ) : (
-            <p className="text-sm text-gray-500 text-center mt-2">{scoreColors.label}</p>
+            <p className="text-sm text-gray-500 text-center mt-2">{gameScore} pts • {scoreColors.label}</p>
           )}
         </CardContent>
       </Card>

@@ -24,21 +24,21 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
       {/* Interactive Equation */}
       <div className="flex flex-wrap items-center gap-2 mb-4 text-sm font-mono">
-        <span className="font-bold text-gray-800 text-base">P<sub>rehab</sub> =</span>
+        <span className="font-bold text-gray-800 text-base">P<sub>overall</sub> =</span>
         
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger className={`${componentColors.completion.text} ${componentColors.completion.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₁ · S<sub>completion</sub>
+            <TooltipTrigger className={`text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors cursor-help font-medium`}>
+              w<sub>c</sub> · S<sub>compliance</sub>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <div>
-                <p className="font-semibold text-blue-900 mb-2">{componentColors.completion.name}</p>
-                <p className="text-sm text-blue-800 mb-2">{componentColors.completion.description}</p>
-                <div className="bg-blue-50 p-2 rounded text-xs space-y-1">
-                  <p><strong>Current weight:</strong> {(weights.completion * 100).toFixed(0)}%</p>
-                  <p><strong>Formula:</strong> (C<sub>left</sub>/E<sub>left</sub> + C<sub>right</sub>/E<sub>right</sub>) ÷ 2</p>
-                  <p><strong>Example:</strong> 12/12 + 12/12 = 100%</p>
+                <p className="font-semibold text-green-900 mb-2">Therapeutic Compliance</p>
+                <p className="text-sm text-green-800 mb-2">Composite measure of exercise execution quality</p>
+                <div className="bg-green-50 p-2 rounded text-xs space-y-1">
+                  <p><strong>Current weight:</strong> {(weights.compliance * 100).toFixed(0)}%</p>
+                  <p><strong>Components:</strong> Completion + Intensity (≥75% MVC) + Duration (≥2s)</p>
+                  <p><strong>Safety Gate:</strong> BFR must be within 45-55% AOP</p>
                 </div>
               </div>
             </TooltipContent>
@@ -46,47 +46,10 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
           
           <span className="text-gray-500 font-normal">+</span>
           
-          <Tooltip>
-            <TooltipTrigger className={`${componentColors.mvcQuality.text} ${componentColors.mvcQuality.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₂ · S<sub>MVC</sub>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
-              <div>
-                <p className="font-semibold text-emerald-900 mb-2">{componentColors.mvcQuality.name}</p>
-                <p className="text-sm text-emerald-800 mb-2">{componentColors.mvcQuality.description}</p>
-                <div className="bg-emerald-50 p-2 rounded text-xs space-y-1">
-                  <p><strong>Current weight:</strong> {(weights.mvcQuality * 100).toFixed(0)}%</p>
-                  <p><strong>Threshold:</strong> ≥{sessionParams?.session_mvc_threshold_percentage ?? 75}% of Maximum Voluntary Contraction</p>
-                  <p><strong>Clinical importance:</strong> Ensures therapeutic intensity</p>
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-          
-          <span className="text-gray-500 font-normal">+</span>
-          
-          <Tooltip>
-            <TooltipTrigger className={`${componentColors.qualityThreshold.text} ${componentColors.qualityThreshold.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₃ · S<sub>duration</sub>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
-              <div>
-                <p className="font-semibold text-amber-900 mb-2">{componentColors.qualityThreshold.name}</p>
-                <p className="text-sm text-amber-800 mb-2">{componentColors.qualityThreshold.description}</p>
-                <div className="bg-amber-50 p-2 rounded text-xs space-y-1">
-                  <p><strong>Current weight:</strong> {(weights.qualityThreshold * 100).toFixed(0)}%</p>
-                  <p><strong>Current threshold:</strong> ≥{sessionParams?.contraction_duration_threshold ?? 2000}ms ({((sessionParams?.contraction_duration_threshold ?? 2000) / 1000).toFixed(1)} seconds)</p>
-                  <p><strong>Adaptive:</strong> Increases with patient progress</p>
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-          
-          <span className="text-gray-500 font-normal">+</span>
           
           <Tooltip>
             <TooltipTrigger className={`${componentColors.symmetry.text} ${componentColors.symmetry.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₄ · S<sub>symmetry</sub>
+              w<sub>s</sub> · S<sub>symmetry</sub>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <div>
@@ -105,7 +68,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
           
           <Tooltip>
             <TooltipTrigger className={`${componentColors.effort.text} ${componentColors.effort.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w₅ · S<sub>effort</sub>
+              w<sub>e</sub> · S<sub>effort</sub>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
               <div>
@@ -125,7 +88,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
               <span className="text-gray-500 font-normal">+</span>
               <Tooltip>
                 <TooltipTrigger className={`${componentColors.gameScore.text} ${componentColors.gameScore.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-                  w₆ · S<sub>game</sub>
+                  w<sub>g</sub> · S<sub>game</sub>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-sm">
                   <div>
@@ -144,11 +107,11 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
         </TooltipProvider>
       </div>
       
-      {/* Architecture Note */}
+      {/* Clinical Note */}
       <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded border border-green-200">
         <div className="text-xs text-gray-700">
-          <span className="font-medium text-green-800">🏗️ Hierarchical Structure:</span> 
-          <span className="ml-1">This equation will evolve into a hierarchical system with <strong>Compliance Score</strong> as a composite sub-metric containing MVC + Duration + Completion + BFR + Effort components.</span>
+          <span className="font-medium text-green-800">📊 Clinical Validation:</span> 
+          <span className="ml-1">Default weights are research-determined for the GHOSTLY+ TBM clinical trial. Weights are adjustable based on therapeutic goals and patient population.</span>
         </div>
       </div>
     </div>
