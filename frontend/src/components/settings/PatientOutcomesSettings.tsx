@@ -19,8 +19,8 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
 
   return (
     <UnifiedSettingsCard
-      title="👤 Patient Assessment"
-      description="Subjective effort assessment, clinical questionnaires, and mobile app integration"
+      title="Patient Reported Outcomes (ePRO)"
+      description="Patient-reported effort assessment, clinical questionnaires, and mobile app integration"
       isOpen={isPatientOutcomesOpen}
       onOpenChange={setIsPatientOutcomesOpen}
       icon={<PersonIcon className="h-5 w-5 text-indigo-600" />}

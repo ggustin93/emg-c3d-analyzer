@@ -33,8 +33,8 @@ const DisplaySettings: React.FC<DisplaySettingsProps> = (props) => {
       description="Chart visualization, channel configuration and contraction display preferences"
       isOpen={isDisplaySettingsOpen}
       onOpenChange={setIsDisplaySettingsOpen}
-      icon={<EyeOpenIcon className="h-5 w-5 text-purple-500" />}
-      accentColor="purple-500"
+      icon={<EyeOpenIcon className="h-5 w-5 text-purple-600" />}
+      accentColor="purple-600"
     >
       <ChartDisplaySettings
         dataPoints={props.dataPoints}

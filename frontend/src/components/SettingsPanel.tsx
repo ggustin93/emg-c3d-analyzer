@@ -3,7 +3,7 @@ import { EMGChannelSignalData } from '../types/emg';
 import { useSessionStore } from '../store/sessionStore';
 import DebugModeSwitch from './settings/DebugModeSwitch';
 import DisplaySettings from './settings/DisplaySettings';
-import SessionGoalsSettings from './settings/SessionGoalsSettings';
+import TherapeuticParametersSettings from './settings/TherapeuticParametersSettings';
 import PatientOutcomesSettings from './settings/PatientOutcomesSettings';
 import BFRParametersSettings from './settings/BFRParametersSettings';
 import ScoringWeightsSettings from './settings/ScoringWeightsSettings';
@@ -108,26 +108,25 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           setShowContractionDots={setShowContractionDots}
         />
         
-        {/* Session Goals Settings */}
-        <SessionGoalsSettings
-          muscleChannels={muscleChannels}
-          disabled={disabled}
-        />
-        
-        {/* Contraction Detection Settings */}
-        <ContractionDetectionSettings />
       </div>
       
       {/* Clinical & Performance Settings - Always visible but collapsible */}
       <div className="space-y-4">
-        {/* Performance Scoring System (includes Clinical Parameters) */}
+        {/* Performance Scoring System */}
         <ScoringWeightsSettings 
           muscleChannels={muscleChannels}
           disabled={disabled}
           isDebugMode={isDebugMode}
         />
         
-        {/* Patient Assessment - Always visible */}
+        {/* Therapeutic Parameters - Unified session goals and clinical parameters */}
+        <TherapeuticParametersSettings
+          muscleChannels={muscleChannels}
+          disabled={disabled}
+          isDebugMode={isDebugMode}
+        />
+        
+        {/* Patient Reported Outcomes - Always visible */}
         <PatientOutcomesSettings
           disabled={disabled}
           isDebugMode={isDebugMode}
@@ -138,6 +137,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           disabled={disabled}
           isDebugMode={isDebugMode}
         />
+        
+        {/* Contraction Detection Settings - Last component */}
+        <ContractionDetectionSettings />
       </div>
     </div>
   );
