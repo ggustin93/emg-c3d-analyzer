@@ -63,7 +63,7 @@ const normalizeGameScore = (
   // TODO: Implémenter la vraie normalisation quand l'algorithme sera défini
   // Pour l'instant, simple mapping linéaire
   const min = normalizationParams?.min_score || 0;
-  const max = normalizationParams?.max_score || 1000;
+  const max = normalizationParams?.max_score || 100;
   
   const normalized = ((rawScore - min) / (max - min)) * 100;
   return Math.max(0, Math.min(100, normalized));

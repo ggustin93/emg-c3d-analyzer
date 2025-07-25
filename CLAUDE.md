@@ -74,19 +74,24 @@ Working through todo.md tasks to refactor for:
 - Enhanced EMG analysis integration
 - Improved frontend chart capabilities
 
-## Latest Update: Settings UX Polish & Game Metadata Resolution ✅ (July 25, 2025)
-**Status**: PRODUCTION READY - Enhanced UI polish and complete game metadata integration
+## Latest Update: Dynamic Thresholds & Game Metadata Resolution ✅ (July 25, 2025)
+**Status**: PRODUCTION READY - Complete dynamic threshold system and robust game metadata integration
 **Final Achievement**: 
+- ✅ Dynamic threshold displays: Duration Rate (muscle-specific avg) and Intensity Rate (MVC avg)
+- ✅ Game metadata data flow via component props: analysisResult → SettingsPanel → ScoringWeightsSettings
+- ✅ Robust TypeScript handling for threshold calculations with proper type filtering
+- ✅ Game Score Normalization always visible regardless of debug mode
 - ✅ Color-coded performance weight sliders with component-specific colors (green/purple/orange/cyan)
-- ✅ Game metadata data flow resolution: C3D → analysisResult → sessionParams → Settings UI
-- ✅ Robust game data display handling undefined/zero values in GHOSTLYGameCard
 - ✅ Professional medical device UI standards maintained throughout settings
 - ✅ Complete LaTeX tooltip integration for performance equation terms
 - ✅ Unified settings architecture with consistent icons and color schemes
 
-**Technical Architecture**: Enhanced UX with component-specific slider colors matching performance equation variables. Fixed game metadata persistence through Zustand store in App.tsx handleSuccess(). Robust conditional rendering for game cards supporting partial/missing data scenarios.
+**Technical Architecture**: Dynamic threshold calculation using `getAverageDurationThreshold()` and `getAverageMvcThreshold()` functions with muscle-specific parameters. Game metadata flows through React component props chain (game-session-tabs → SettingsPanel → ScoringWeightsSettings) using `analysisResult?.metadata` pattern, matching successful GHOSTLYGameCard implementation.
 
-**Critical Data Flow Pattern**: `analysisResult.metadata.{score,level}` → `sessionParams.{game_score,game_level}` → Settings display. Game metadata extracted during initial C3D processing and stored in session parameters for consistent UI access.
+**Critical Data Flow Patterns**: 
+1. **Dynamic Thresholds**: `sessionParams.session_duration_thresholds_per_muscle` → averaged → displayed as "≥{avg}s"
+2. **Game Metadata**: `analysisResult.metadata.{score,level}` → props chain → Settings display (no Zustand dependency)
+3. **Performance Scoring**: Component-specific slider colors match equation variables for visual consistency
 
 ## Previous Update: Enhanced Performance System with BFR Configuration ✅ (July 18, 2025)
 **Status**: PRODUCTION READY - Complete performance scoring with configurable BFR monitoring

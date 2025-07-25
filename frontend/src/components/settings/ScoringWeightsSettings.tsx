@@ -68,7 +68,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   const gameNormalization = sessionParams.enhanced_scoring?.game_score_normalization || {
     algorithm: 'linear' as const,
     min_score: 0,
-    max_score: 1000
+    max_score: 100
   };
   
   // Compliance Score sub-component weights (default: equal weighting)
@@ -78,14 +78,21 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     duration: 1/3       // Duration Rate (muscle-specific threshold)
   };
   
-  // Get dynamic duration threshold for display
-  const getAverageDurationThreshold = () => {
+  // Get clinically appropriate duration threshold display
+  const getDurationThresholdDisplay = () => {
     const thresholds = sessionParams.session_duration_thresholds_per_muscle;
     if (thresholds && Object.keys(thresholds).length > 0) {
       const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
-      if (values.length > 0) {
-        const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
-        return average.toFixed(1);
+      const uniqueValues = Array.from(new Set(values));
+      
+      if (uniqueValues.length === 1) {
+        // All muscles have same threshold
+        return uniqueValues[0].toFixed(1);
+      } else if (uniqueValues.length > 1) {
+        // Different thresholds per muscle - show range
+        const min = Math.min(...uniqueValues).toFixed(1);
+        const max = Math.max(...uniqueValues).toFixed(1);
+        return `${min}-${max}`;
       }
     }
     return sessionParams.contraction_duration_threshold_ms 
@@ -93,14 +100,21 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
       : '2.0';
   };
 
-  // Get dynamic MVC threshold percentage for display
-  const getAverageMvcThreshold = () => {
+  // Get clinically appropriate MVC threshold display
+  const getMvcThresholdDisplay = () => {
     const thresholds = sessionParams.session_mvc_threshold_percentages;
     if (thresholds && Object.keys(thresholds).length > 0) {
       const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
-      if (values.length > 0) {
-        const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
-        return Math.round(average);
+      const uniqueValues = Array.from(new Set(values));
+      
+      if (uniqueValues.length === 1) {
+        // All muscles have same threshold
+        return Math.round(uniqueValues[0]);
+      } else if (uniqueValues.length > 1) {
+        // Different thresholds per muscle - show range
+        const min = Math.min(...uniqueValues);
+        const max = Math.max(...uniqueValues);
+        return `${Math.round(min)}-${Math.round(max)}`;
       }
     }
     return sessionParams.session_mvc_threshold_percentage || 75;
@@ -306,7 +320,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-sm">
-                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥{getAverageMvcThreshold()}% MVC), and duration rate (≥{getAverageDurationThreshold()}s avg).
+                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥{getMvcThresholdDisplay()}% MVC), and duration rate (≥{getDurationThresholdDisplay()}s per muscle).
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -317,8 +331,8 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           const numericValue = Number(subValue);
                           const componentNames = {
                             completion: 'Completion Rate',
-                            intensity: `Intensity Rate (≥${getAverageMvcThreshold()}% MVC)`,
-                            duration: `Duration Rate (≥${getAverageDurationThreshold()}s avg)`
+                            intensity: `Intensity Rate (≥${getMvcThresholdDisplay()}% MVC)`,
+                            duration: `Duration Rate (≥${getDurationThresholdDisplay()}s per muscle)`
                           };
                           
                           return (
@@ -502,7 +516,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                       disabled={disabled}
                       className="h-9 text-sm"
                     />
-                    <p className="text-xs text-gray-500">Expected maximum</p>
+                    <p className="text-xs text-gray-500">Expected maximum (typically 100)</p>
                   </div>
                 </div>
               </div>

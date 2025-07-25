@@ -59,11 +59,11 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   // Get weights from session store or use defaults
   const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
   
-  // Map weight keys to our component values
-  const complianceWeight = weights.compliance || 0.40;
-  const symmetryWeight = weights.symmetry || 0.25;
-  const effortWeight = weights.effort || 0.20;
-  const gameWeight = weights.gameScore || 0.15;
+  // Map weight keys to our component values - use actual weights without fallbacks
+  const complianceWeight = weights.compliance;
+  const symmetryWeight = weights.symmetry;
+  const effortWeight = weights.effort;
+  const gameWeight = weights.gameScore;
   const scoreData = [
     { name: 'Score', value: Math.min(totalScore, 100) },
     { name: 'Remaining', value: Math.max(0, 100 - totalScore) },
