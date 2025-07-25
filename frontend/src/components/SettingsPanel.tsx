@@ -8,8 +8,6 @@ import PatientOutcomesSettings from './settings/PatientOutcomesSettings';
 import BFRParametersSettings from './settings/BFRParametersSettings';
 import ScoringWeightsSettings from './settings/ScoringWeightsSettings';
 import ContractionDetectionSettings from './settings/ContractionDetectionSettings';
-import ExperimentalFeaturesSettings from './settings/ExperimentalFeaturesSettings';
-import { Badge } from './ui/badge';
 
 interface SettingsPanelProps {
   muscleChannels: string[];
@@ -118,9 +116,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         
         {/* Contraction Detection Settings */}
         <ContractionDetectionSettings />
-        
-        {/* Experimental Features - Always visible but collapsed */}
-        <ExperimentalFeaturesSettings />
       </div>
       
       {/* Clinical & Performance Settings - Always visible but collapsible */}

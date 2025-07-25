@@ -56,58 +56,30 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
           </div>
           
           <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-            {/* Pre-Session RPE - Deprecated but kept for historical data */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-gray-700">Pre-Session RPE</Label>
-                  <Badge variant="outline" className="bg-gray-100 text-gray-600 text-xs">Historical Only</Badge>
-                </div>
-                <Input
-                  type="number"
-                  value={(sessionParams.pre_session_rpe as number) ?? ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || null;
-                    setSessionParams({
-                      ...sessionParams,
-                      pre_session_rpe: value
-                    });
-                  }}
-                  placeholder="0-10"
-                  min="0" max="10" step="0.5"
-                  disabled={disabled}
-                  className="h-9 text-sm bg-gray-50"
-                />
-                <p className="text-xs text-gray-500">
-                  ⚠️ Pre-RPE is no longer used in performance scoring. Kept for historical data only.
-                </p>
+            {/* Post-Session RPE - Primary scoring input */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium text-gray-800">Post-Session RPE</Label>
+                <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">Scoring Input</Badge>
               </div>
-              
-              {/* Post-Session RPE - Primary scoring input */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-gray-800">Post-Session RPE</Label>
-                  <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">Scoring Input</Badge>
-                </div>
-                <Input
-                  type="number"
-                  value={(sessionParams.post_session_rpe as number) ?? ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || null;
-                    setSessionParams({
-                      ...sessionParams,
-                      post_session_rpe: value
-                    });
-                  }}
-                  placeholder="0-10"
-                  min="0" max="10" step="0.5"
-                  disabled={disabled}
-                  className="h-9 text-sm border-indigo-300 focus:border-indigo-500"
-                />
-                <p className="text-xs text-indigo-700">
-                  ✓ Primary input for Subjective Effort Score (20% weight). Target: RPE 4-6 for optimal therapeutic stimulus.
-                </p>
-              </div>
+              <Input
+                type="number"
+                value={(sessionParams.post_session_rpe as number) ?? ''}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value) || null;
+                  setSessionParams({
+                    ...sessionParams,
+                    post_session_rpe: value
+                  });
+                }}
+                placeholder="0-10"
+                min="0" max="10" step="0.5"
+                disabled={disabled}
+                className="h-9 text-sm border-indigo-300 focus:border-indigo-500"
+              />
+              <p className="text-xs text-indigo-700">
+                ✓ Primary input for Subjective Effort Score (20% weight). Target: RPE 4-6 for optimal therapeutic stimulus.
+              </p>
             </div>
           </div>
         </div>

@@ -1,0 +1,182 @@
+{
+  "main": {
+    "id": "3df4b5bab2186bb7",
+    "type": "split",
+    "children": [
+      {
+        "id": "e151bd5e567d0d9a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e2c616ed124e1acc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "metricsDefinitions.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "metricsDefinitions"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "dde9a8d47b3bf609",
+    "type": "split",
+    "children": [
+      {
+        "id": "efef967234a9f8e6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "dddedff4773a0ded",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "5d7a2de2824499dc",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "2233bddf2cb0d5b9",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "789dcb412eec280f",
+    "type": "split",
+    "children": [
+      {
+        "id": "6713e809e070090e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eb5c6b96fc16353d",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "metricsDefinitions.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for metricsDefinitions"
+            }
+          },
+          {
+            "id": "a8f686ad61094d45",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "metricsDefinitions.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from metricsDefinitions"
+            }
+          },
+          {
+            "id": "371715eb815567c1",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "6faf982f1f6c40ba",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "metricsDefinitions.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of metricsDefinitions"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "e2c616ed124e1acc",
+  "lastOpenFiles": [
+    "metricsDefinitions.md",
+    "research/therapistDashboardUX.md",
+    "metricsDefinitions.md.tmp.25499.1753279868601",
+    "techContext.md",
+    "therapistDashboardUX.md",
+    "productContext.md",
+    "research/todo-activated-channels-research.md",
+    "activeContext.md"
+  ]
+}
