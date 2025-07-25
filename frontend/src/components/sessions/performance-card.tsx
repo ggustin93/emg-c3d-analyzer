@@ -6,6 +6,7 @@ import SubjectiveFatigueCard from './performance/SubjectiveFatigueCard';
 import GHOSTLYGameCard from './performance/GHOSTLYGameCard';
 import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
 import { useSessionStore } from '@/store/sessionStore';
+import ClinicalTooltip from '@/components/ui/clinical-tooltip';
 
 export interface PerformanceCardProps {
   analysisResult: EMGAnalysisResult | null;
@@ -60,8 +61,48 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   // Unified Grid Layout: Everything in a single, cohesive grid system
   return (
     <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm border border-slate-200">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Performance Analysis</h2>
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center justify-center gap-2">
+          Performance Analysis
+          <ClinicalTooltip
+            title="Performance Analysis Dashboard"
+            description="Multi-dimensional rehabilitation assessment combining compliance, symmetry, effort, and engagement."
+            sections={[
+              {
+                title: "Performance Formula:",
+                type: "formula",
+                items: [
+                  { 
+                    label: "P", 
+                    value: " = w<sub>c</sub>·S<sub>comp</sub> + w<sub>s</sub>·S<sub>sym</sub> + w<sub>e</sub>·S<sub>effort</sub> + w<sub>g</sub>·S<sub>game</sub>" 
+                  }
+                ]
+              },
+              {
+                title: "Components:",
+                type: "list",
+                items: [
+                  { label: "Compliance", description: "Exercise quality: completion, intensity ≥75% MVC, duration" },
+                  { label: "Symmetry", description: "Bilateral muscle balance assessment" },
+                  { label: "Effort", description: "Patient exertion (Borg CR10 scale)" },
+                  { label: "Game", description: "GHOSTLY+ engagement metrics" }
+                ]
+              },
+              {
+                title: "Applications:",
+                type: "list",
+                items: [
+                  { description: "Real-time session monitoring" },
+                  { description: "Progress tracking across sessions" },
+                  { description: "Evidence-based treatment optimization" },
+                  { description: "Patient motivation through gamification" }
+                ]
+              }
+            ]}
+            side="top"
+            triggerClassName="ml-1"
+          />
+        </h2>
         <p className="text-slate-600 text-sm">Comprehensive rehabilitation session assessment</p>
       </div>
       
