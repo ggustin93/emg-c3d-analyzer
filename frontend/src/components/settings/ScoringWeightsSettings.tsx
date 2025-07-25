@@ -91,6 +91,19 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
       : '2.0';
   };
 
+  // Get dynamic MVC threshold percentage for display
+  const getAverageMvcThreshold = () => {
+    const thresholds = sessionParams.session_mvc_threshold_percentages;
+    if (thresholds && Object.keys(thresholds).length > 0) {
+      const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
+      if (values.length > 0) {
+        const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+        return Math.round(average);
+      }
+    }
+    return sessionParams.session_mvc_threshold_percentage || 75;
+  };
+
   const updateWeights = (newWeights: ScoringWeights) => {
     // Normaliser pour que le total fasse 100%
     const total = Object.values(newWeights).reduce((sum, w) => sum + w, 0);
@@ -291,7 +304,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-sm">
-                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥75% MVC), and duration rate (≥{getAverageDurationThreshold()}s avg).
+                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥{getAverageMvcThreshold()}% MVC), and duration rate (≥{getAverageDurationThreshold()}s avg).
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -302,7 +315,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           const numericValue = Number(subValue);
                           const componentNames = {
                             completion: 'Completion Rate',
-                            intensity: 'Intensity Rate (≥75% MVC)',
+                            intensity: `Intensity Rate (≥${getAverageMvcThreshold()}% MVC)`,
                             duration: `Duration Rate (≥${getAverageDurationThreshold()}s avg)`
                           };
                           
