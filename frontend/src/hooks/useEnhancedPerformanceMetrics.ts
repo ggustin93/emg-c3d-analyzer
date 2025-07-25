@@ -17,10 +17,10 @@ export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
   completion: 0.00,  // Not used in P_overall
   mvcQuality: 0.00,  // Part of compliance score
   qualityThreshold: 0.00,  // Part of compliance score
-  symmetry: 0.25,  // Muscle Symmetry
-  effort: 0.20,    // Subjective Effort (RPE)
-  compliance: 0.40,  // Therapeutic Compliance (composite)
-  gameScore: 0.15   // Game Performance
+  symmetry: 0.30,  // Muscle Symmetry (increased from 0.25)
+  effort: 0.25,    // Subjective Effort (RPE) (increased from 0.20)
+  compliance: 0.45,  // Therapeutic Compliance (composite) (increased from 0.40)
+  gameScore: 0.00   // Game Performance (default to 0 as requested)
 };
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {

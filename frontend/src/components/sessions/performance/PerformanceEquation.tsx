@@ -21,63 +21,87 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
   const componentColors = getComponentColors(sessionParams);
 
   const EquationComponent = () => (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
-      {/* Interactive Equation */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 text-sm font-mono">
-        <span className="font-bold text-gray-800 text-base">P<sub>overall</sub> =</span>
+    <div className="py-2">
+      {/* LaTeX-style Interactive Equation */}
+      <div className="flex flex-wrap items-center gap-3 mb-4 text-lg font-serif">
+        <span className="font-bold text-gray-900 text-xl italic">P<sub className="text-base">overall</sub> =</span>
         
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger className={`text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w<sub>c</sub> · S<sub>compliance</sub>
+            <TooltipTrigger className={`text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors cursor-help font-medium italic`}>
+              w<sub className="text-sm">c</sub> · S<sub className="text-sm">compliance</sub>
             </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
+            <TooltipContent className="max-w-md">
               <div>
                 <p className="font-semibold text-green-900 mb-2">Therapeutic Compliance</p>
                 <p className="text-sm text-green-800 mb-2">Composite measure of exercise execution quality</p>
+                
+                {/* LaTeX Formula */}
+                <div className="bg-green-100 p-3 rounded text-xs font-mono mb-2">
+                  <p className="font-semibold mb-1">Formula:</p>
+                  <p>S<sub>compliance</sub> = ((S<sub>comp</sub><sup>left</sup> + S<sub>comp</sub><sup>right</sup>)/2) × C<sub>BFR</sub></p>
+                  <p className="mt-1">S<sub>comp</sub><sup>muscle</sup> = w<sub>comp</sub>·R<sub>comp</sub> + w<sub>int</sub>·R<sub>int</sub> + w<sub>dur</sub>·R<sub>dur</sub></p>
+                </div>
+                
                 <div className="bg-green-50 p-2 rounded text-xs space-y-1">
                   <p><strong>Current weight:</strong> {(weights.compliance * 100).toFixed(0)}%</p>
                   <p><strong>Components:</strong> Completion + Intensity (≥75% MVC) + Duration (≥2s)</p>
-                  <p><strong>Safety Gate:</strong> BFR must be within 45-55% AOP</p>
+                  <p><strong>BFR Safety Gate:</strong> C<sub>BFR</sub> = 1.0 if pressure ∈ [45%, 55%] AOP, else 0.0</p>
                 </div>
               </div>
             </TooltipContent>
           </Tooltip>
           
-          <span className="text-gray-500 font-normal">+</span>
-          
+          <span className="text-gray-600 font-serif text-lg mx-1">+</span>
           
           <Tooltip>
-            <TooltipTrigger className={`${componentColors.symmetry.text} ${componentColors.symmetry.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w<sub>s</sub> · S<sub>symmetry</sub>
+            <TooltipTrigger className={`${componentColors.symmetry.text} ${componentColors.symmetry.hover} px-2 py-1 rounded transition-colors cursor-help font-medium italic`}>
+              w<sub className="text-sm">s</sub> · S<sub className="text-sm">symmetry</sub>
             </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
+            <TooltipContent className="max-w-md">
               <div>
                 <p className="font-semibold text-purple-900 mb-2">{componentColors.symmetry.name}</p>
                 <p className="text-sm text-purple-800 mb-2">{componentColors.symmetry.description}</p>
+                
+                {/* LaTeX Formula */}
+                <div className="bg-purple-100 p-3 rounded text-xs font-mono mb-2">
+                  <p className="font-semibold mb-1">Formula:</p>
+                  <p>S<sub>symmetry</sub> = (1 - |S<sub>comp</sub><sup>left</sup> - S<sub>comp</sub><sup>right</sup>|/(S<sub>comp</sub><sup>left</sup> + S<sub>comp</sub><sup>right</sup>)) × 100</p>
+                </div>
+                
                 <div className="bg-purple-50 p-2 rounded text-xs space-y-1">
                   <p><strong>Current weight:</strong> {(weights.symmetry * 100).toFixed(0)}%</p>
-                  <p><strong>Formula:</strong> (1 - |S<sub>left</sub> - S<sub>right</sub>|/(S<sub>left</sub> + S<sub>right</sub>)) × 100</p>
-                  <p><strong>Goal:</strong> Prevent compensation patterns</p>
+                  <p><strong>Range:</strong> 0-100% (100% = perfect symmetry)</p>
+                  <p><strong>Goal:</strong> Prevent compensation patterns and promote bilateral muscle development</p>
                 </div>
               </div>
             </TooltipContent>
           </Tooltip>
           
-          <span className="text-gray-500 font-normal">+</span>
+          <span className="text-gray-600 font-serif text-lg mx-1">+</span>
           
           <Tooltip>
-            <TooltipTrigger className={`${componentColors.effort.text} ${componentColors.effort.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-              w<sub>e</sub> · S<sub>effort</sub>
+            <TooltipTrigger className={`${componentColors.effort.text} ${componentColors.effort.hover} px-2 py-1 rounded transition-colors cursor-help font-medium italic`}>
+              w<sub className="text-sm">e</sub> · S<sub className="text-sm">effort</sub>
             </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
+            <TooltipContent className="max-w-md">
               <div>
                 <p className="font-semibold text-red-900 mb-2">{componentColors.effort.name}</p>
                 <p className="text-sm text-red-800 mb-2">{componentColors.effort.description}</p>
+                
+                {/* LaTeX Formula */}
+                <div className="bg-red-100 p-3 rounded text-xs font-mono mb-2">
+                  <p className="font-semibold mb-1">Formula (Piecewise):</p>
+                  <p>S<sub>effort</sub> = 100% if RPE<sub>post</sub> ∈ [4,6] (optimal)</p>
+                  <p className="ml-4">= 80% if RPE<sub>post</sub> ∈ {'{3,7}'} (acceptable)</p>
+                  <p className="ml-4">= 60% if RPE<sub>post</sub> ∈ {'{2,8}'} (suboptimal)</p>
+                  <p className="ml-4">= 20% if RPE<sub>post</sub> ∈ {'{0,1,9,10}'} (poor)</p>
+                </div>
+                
                 <div className="bg-red-50 p-2 rounded text-xs space-y-1">
                   <p><strong>Current weight:</strong> {(weights.effort * 100).toFixed(0)}%</p>
-                  <p><strong>Scale:</strong> Borg CR10 (0-10 rating)</p>
-                  <p><strong>Optimal range:</strong> +2 to +4 points change</p>
+                  <p><strong>Scale:</strong> Borg CR10 (0-10 rating of perceived exertion)</p>
+                  <p><strong>Target Zone:</strong> RPE 4-6 (moderate to hard intensity)</p>
                 </div>
               </div>
             </TooltipContent>
@@ -85,19 +109,27 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
           
           {weights.gameScore > 0 && (
             <>
-              <span className="text-gray-500 font-normal">+</span>
+              <span className="text-gray-600 font-serif text-lg mx-1">+</span>
               <Tooltip>
-                <TooltipTrigger className={`${componentColors.gameScore.text} ${componentColors.gameScore.hover} px-2 py-1 rounded transition-colors cursor-help font-medium`}>
-                  w<sub>g</sub> · S<sub>game</sub>
+                <TooltipTrigger className={`${componentColors.gameScore.text} ${componentColors.gameScore.hover} px-2 py-1 rounded transition-colors cursor-help font-medium italic`}>
+                  w<sub className="text-sm">g</sub> · S<sub className="text-sm">game</sub>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
+                <TooltipContent className="max-w-md">
                   <div>
                     <p className="font-semibold text-gray-900 mb-2">{componentColors.gameScore.name}</p>
                     <p className="text-sm text-gray-800 mb-2">{componentColors.gameScore.description}</p>
+                    
+                    {/* LaTeX Formula */}
+                    <div className="bg-gray-100 p-3 rounded text-xs font-mono mb-2">
+                      <p className="font-semibold mb-1">Formula:</p>
+                      <p>S<sub>game</sub> = (game points achieved / max achievable points) × 100</p>
+                      <p className="mt-1 text-xs text-gray-600">*Max points adapt via Dynamic Difficulty Adjustment (DDA)</p>
+                    </div>
+                    
                     <div className="bg-gray-50 p-2 rounded text-xs space-y-1">
                       <p><strong>Current weight:</strong> {(weights.gameScore * 100).toFixed(0)}%</p>
                       <p className="text-amber-600"><strong>Status:</strong> ⚠️ Under development</p>
-                      <p><strong>Note:</strong> Use with caution in clinical settings</p>
+                      <p><strong>Note:</strong> Game mechanics vary by GHOSTLY game version</p>
                     </div>
                   </div>
                 </TooltipContent>
@@ -108,10 +140,10 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
       </div>
       
       {/* Clinical Note */}
-      <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded border border-green-200">
+      <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
         <div className="text-xs text-gray-700">
-          <span className="font-medium text-green-800">📊 Clinical Validation:</span> 
-          <span className="ml-1">Default weights are research-determined for the GHOSTLY+ TBM clinical trial. Weights are adjustable based on therapeutic goals and patient population.</span>
+          <span className="font-medium text-amber-800">🧪 Experimental Framework:</span> 
+          <span className="ml-1">This performance scoring system is experimental and fully customizable by therapists based on therapeutic goals. Game performance defaults to 0% (depends on game mechanics). The goal is to provide flexible assessment adapted to specific rehabilitation objectives.</span>
         </div>
       </div>
     </div>
@@ -137,22 +169,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({ weights, comp
     );
   }
 
-  return (
-    <Card className="border-2 border-blue-100 bg-blue-50/30">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-800 text-sm">
-          <MixerHorizontalIcon className="h-5 w-5" />
-          Performance Scoring Equation
-          <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800">
-            Mathematical Model
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <EquationComponent />
-      </CardContent>
-    </Card>
-  );
+  return <EquationComponent />;
 };
 
 export default PerformanceEquation;
