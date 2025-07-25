@@ -432,6 +432,7 @@ export default function GameSessionTabs({
           dataPoints={dataPoints}
           setDataPoints={setDataPoints}
           plotChannel1Data={mainPlotChannel1Data}
+          analysisResult={analysisResult}
           plotChannel2Data={mainPlotChannel2Data}
           showGoodContractions={showGoodContractions && showContractionHighlights}
           setShowGoodContractions={setShowGoodContractions}
@@ -441,7 +442,6 @@ export default function GameSessionTabs({
           setShowContractionAreas={setShowContractionAreas}
           showContractionDots={showContractionDots && showContractionHighlights}
           setShowContractionDots={setShowContractionDots}
-          analysisResult={analysisResult}
         />
       </TabsContent>
     </Tabs>

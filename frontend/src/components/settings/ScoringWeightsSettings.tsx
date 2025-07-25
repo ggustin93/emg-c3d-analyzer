@@ -78,6 +78,33 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     duration: 1/3       // Duration Rate (muscle-specific threshold)
   };
   
+  // Helper functions to calculate average thresholds
+  const getAverageDurationThreshold = () => {
+    const thresholds = sessionParams.session_duration_thresholds_per_muscle;
+    if (thresholds && Object.keys(thresholds).length > 0) {
+      const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
+      if (values.length > 0) {
+        const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+        return average;
+      }
+    }
+    return sessionParams.contraction_duration_threshold_ms 
+      ? sessionParams.contraction_duration_threshold_ms / 1000
+      : 2.0;
+  };
+
+  const getAverageMvcThreshold = () => {
+    const thresholds = sessionParams.session_mvc_threshold_percentages;
+    if (thresholds && Object.keys(thresholds).length > 0) {
+      const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
+      if (values.length > 0) {
+        const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+        return average;
+      }
+    }
+    return sessionParams.session_mvc_threshold_percentage || 75;
+  };
+
   // Get clinically appropriate duration threshold display
   const getDurationThresholdDisplay = () => {
     const thresholds = sessionParams.session_duration_thresholds_per_muscle;
@@ -89,10 +116,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         // All muscles have same threshold
         return uniqueValues[0].toFixed(1);
       } else if (uniqueValues.length > 1) {
-        // Different thresholds per muscle - show range
+        // Different thresholds per muscle - show both average and range
+        const avg = getAverageDurationThreshold();
         const min = Math.min(...uniqueValues).toFixed(1);
         const max = Math.max(...uniqueValues).toFixed(1);
-        return `${min}-${max}`;
+        return `${avg.toFixed(1)} (${min}-${max})`;
       }
     }
     return sessionParams.contraction_duration_threshold_ms 
@@ -111,10 +139,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         // All muscles have same threshold
         return Math.round(uniqueValues[0]);
       } else if (uniqueValues.length > 1) {
-        // Different thresholds per muscle - show range
+        // Different thresholds per muscle - show both average and range
+        const avg = getAverageMvcThreshold();
         const min = Math.min(...uniqueValues);
         const max = Math.max(...uniqueValues);
-        return `${Math.round(min)}-${Math.round(max)}`;
+        return `${Math.round(avg)} (${Math.round(min)}-${Math.round(max)})`;
       }
     }
     return sessionParams.session_mvc_threshold_percentage || 75;
@@ -320,7 +349,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-sm">
-                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥{getMvcThresholdDisplay()}% MVC), and duration rate (≥{getDurationThresholdDisplay()}s per muscle).
+                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥{getMvcThresholdDisplay()}% MVC), and duration rate (≥{getDurationThresholdDisplay()}s).
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -332,7 +361,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           const componentNames = {
                             completion: 'Completion Rate',
                             intensity: `Intensity Rate (≥${getMvcThresholdDisplay()}% MVC)`,
-                            duration: `Duration Rate (≥${getDurationThresholdDisplay()}s per muscle)`
+                            duration: `Duration Rate (≥${getDurationThresholdDisplay()}s)`
                           };
                           
                           return (
