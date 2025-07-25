@@ -392,9 +392,8 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 
 
 
-        {/* Game Score Normalization - Only when game score weight > 0 or in debug mode */}
-        {(weights.gameScore > 0 || isDebugMode) && (
-          <UnifiedSettingsCard
+        {/* Game Score Normalization - Always visible for configuration */}
+        <UnifiedSettingsCard
             title="Game Score Normalization"
             description="Configure how raw game scores are normalized for performance calculation"
             isOpen={isGameNormalizationOpen}
@@ -507,7 +506,6 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
               </div>
             </div>
           </UnifiedSettingsCard>
-        )}
       </div>
     </TooltipProvider>
   );
