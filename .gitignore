@@ -8,6 +8,10 @@ __pycache__/
 venv/
 env/
 
+.mcp.json
+# Claude MCP configuration
+.claude/mcp_servers.json
+.claude/.env
 # Poetry
 .poetry-cache/
 
@@ -39,6 +43,7 @@ frontend/.env.*
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
+
 
 logs/*
 
