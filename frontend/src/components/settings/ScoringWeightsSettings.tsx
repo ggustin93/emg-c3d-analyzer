@@ -73,7 +73,20 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   const complianceWeights = (sessionParams.enhanced_scoring as any)?.compliance_weights || {
     completion: 1/3,    // Completion Rate
     intensity: 1/3,     // Intensity Rate (≥75% MVC)
-    duration: 1/3       // Duration Rate (≥2s)
+    duration: 1/3       // Duration Rate (muscle-specific threshold)
+  };
+  
+  // Get dynamic duration threshold for display
+  const getAverageDurationThreshold = () => {
+    const thresholds = sessionParams.session_duration_thresholds_per_muscle;
+    if (thresholds && Object.keys(thresholds).length > 0) {
+      const values = Object.values(thresholds);
+      const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+      return average.toFixed(1);
+    }
+    return sessionParams.contraction_duration_threshold_ms 
+      ? (sessionParams.contraction_duration_threshold_ms / 1000).toFixed(1)
+      : '2.0';
   };
 
   const updateWeights = (newWeights: ScoringWeights) => {
@@ -276,7 +289,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-sm">
-                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥75% MVC), and duration rate (≥2s).
+                              Configure the internal weighting of therapeutic compliance components: completion rate, intensity rate (≥75% MVC), and duration rate (≥{getAverageDurationThreshold()}s avg).
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -288,7 +301,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                           const componentNames = {
                             completion: 'Completion Rate',
                             intensity: 'Intensity Rate (≥75% MVC)',
-                            duration: 'Duration Rate (≥2s)'
+                            duration: `Duration Rate (≥${getAverageDurationThreshold()}s avg)`
                           };
                           
                           return (
