@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { EMGChannelSignalData } from '../types/emg';
+import { EMGChannelSignalData, EMGAnalysisResult } from '../types/emg';
 import { useSessionStore } from '../store/sessionStore';
 import DebugModeSwitch from './settings/DebugModeSwitch';
 import DisplaySettings from './settings/DisplaySettings';
@@ -24,6 +24,7 @@ interface SettingsPanelProps {
   setShowContractionAreas?: (show: boolean) => void;
   showContractionDots?: boolean;
   setShowContractionDots?: (show: boolean) => void;
+  analysisResult?: EMGAnalysisResult | null;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -41,6 +42,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   setShowContractionAreas,
   showContractionDots = true,
   setShowContractionDots,
+  analysisResult,
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isDebugMode, setIsDebugMode] = useState(false);
@@ -117,6 +119,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           muscleChannels={muscleChannels}
           disabled={disabled}
           isDebugMode={isDebugMode}
+          analysisResult={analysisResult}
         />
         
         {/* Therapeutic Parameters - Unified session goals and clinical parameters */}

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, TargetIcon, MixerHorizontalIcon } from '@radix-ui/react-icons';
-import { ScoringWeights, GameScoreNormalization } from '@/types/emg';
+import { ScoringWeights, GameScoreNormalization, EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import { 
   DEFAULT_SCORING_WEIGHTS, 
@@ -49,12 +49,14 @@ interface ScoringWeightsSettingsProps {
   muscleChannels?: string[];
   disabled?: boolean;
   isDebugMode?: boolean;
+  analysisResult?: EMGAnalysisResult | null;
 }
 
 const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({ 
   muscleChannels = [], 
   disabled = false,
-  isDebugMode = false 
+  isDebugMode = false,
+  analysisResult = null
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(true);
@@ -462,13 +464,13 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Level</Label>
                     <div className="px-2 py-1 bg-white border rounded text-sm text-gray-700">
-                      {sessionParams.game_level ? `Level ${sessionParams.game_level}` : 'No level data'}
+                      {analysisResult?.metadata?.level ? `Level ${analysisResult.metadata.level}` : 'No level data'}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Points</Label>
                     <div className="px-2 py-1 bg-white border rounded text-sm text-gray-700">
-                      {sessionParams.game_score ? `${sessionParams.game_score} pts` : 'No score data'}
+                      {analysisResult?.metadata?.score !== undefined ? `${analysisResult.metadata.score} pts` : 'No score data'}
                     </div>
                   </div>
                 </div>

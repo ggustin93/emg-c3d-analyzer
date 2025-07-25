@@ -441,6 +441,7 @@ export default function GameSessionTabs({
           setShowContractionAreas={setShowContractionAreas}
           showContractionDots={showContractionDots && showContractionHighlights}
           setShowContractionDots={setShowContractionDots}
+          analysisResult={analysisResult}
         />
       </TabsContent>
     </Tabs>
