@@ -96,171 +96,227 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
     };
   };
 
-  // Component to render individual gauge
-  const BFRGauge = ({ side, title, colorIndicator }: { side: 'left' | 'right', title: string, colorIndicator: string }) => {
+  // Enhanced muscle card component with integrated session duration
+  const MuscleCard = ({ side, title, colorIndicator }: { side: 'left' | 'right', title: string, colorIndicator: string }) => {
     const params = createGaugeParams(side);
+    const radius = 75; // Larger gauge size
+    const circumference = 2 * Math.PI * radius;
+    const strokeDasharray = `${(params.percentage / 100) * circumference} ${circumference}`;
     
     return (
-      <div className="flex flex-col items-center space-y-4">
-        <div className="flex items-center gap-2">
-          <div className={`w-4 h-4 ${colorIndicator} rounded-full`}></div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <ClinicalTooltip
-            title={`${title} BFR Monitoring`}
-            description="Independent pressure monitoring for enhanced clinical control and safety"
-            sections={[
-              {
-                title: "Clinical Advantages:",
-                type: "list",
-                items: [
-                  { label: "Asymmetric treatment", description: "Different pressures for each limb based on injury patterns" },
-                  { label: "Injury accommodation", description: "Reduced pressure on affected side during rehabilitation" },
-                  { label: "Progressive training", description: "Gradual pressure increases per side for optimal adaptation" },
-                  { label: "Safety monitoring", description: "Individual compliance checking prevents bilateral overload" }
-                ]
-              },
-              {
-                title: "Therapeutic Benefit:",
-                type: "list",
-                items: [
-                  { description: "Each muscle group optimized independently for maximum therapeutic benefit and safety" }
-                ]
-              }
-            ]}
-            side="right"
-          />
-        </div>
-        
-        <div className="relative">
-          <svg width="140" height="140" className="transform -rotate-90">
-            {/* Background circle */}
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius}
-              stroke="#e5e7eb"
-              strokeWidth="8"
-              fill="none"
+      <div className="bg-white rounded-xl p-8 border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`w-5 h-5 ${colorIndicator} rounded-full`}></div>
+            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+            <ClinicalTooltip
+              title={`${title} BFR Monitoring`}
+              description="Independent pressure monitoring for enhanced clinical control and safety"
+              sections={[
+                {
+                  title: "Clinical Advantages:",
+                  type: "list",
+                  items: [
+                    { label: "Asymmetric treatment", description: "Different pressures for each limb based on injury patterns" },
+                    { label: "Injury accommodation", description: "Reduced pressure on affected side during rehabilitation" },
+                    { label: "Progressive training", description: "Gradual pressure increases per side for optimal adaptation" },
+                    { label: "Safety monitoring", description: "Individual compliance checking prevents bilateral overload" }
+                  ]
+                }
+              ]}
+              side="right"
             />
-            {/* Progress arc */}
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius}
-              stroke={params.complianceStatus.gaugeColor}
-              strokeWidth="8"
-              fill="none"
-              strokeDasharray={params.strokeDasharray}
-              strokeLinecap="round"
-              className="transition-all duration-500 ease-in-out"
-            />
-            {/* Therapeutic range indicators */}
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius - 4}
-              stroke="#dc2626"
-              strokeWidth="2"
-              fill="none"
-              strokeDasharray={`${(40 / 100) * params.circumference} ${params.circumference}`}
-              strokeLinecap="round"
-              opacity="0.3"
-            />
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius - 4}
-              stroke="#059669"
-              strokeWidth="3"
-              fill="none"
-              strokeDasharray={`${(20 / 100) * params.circumference} ${params.circumference}`}
-              strokeDashoffset={`${-(40 / 100) * params.circumference}`}
-              strokeLinecap="round"
-              opacity="0.4"
-            />
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius - 4}
-              stroke="#dc2626"
-              strokeWidth="2"
-              fill="none"
-              strokeDasharray={`${(40 / 100) * params.circumference} ${params.circumference}`}
-              strokeDashoffset={`${-(60 / 100) * params.circumference}`}
-              strokeLinecap="round"
-              opacity="0.3"
-            />
-            <circle
-              cx="70"
-              cy="70"
-              r={params.radius + 6}
-              stroke="#059669"
-              strokeWidth="2"
-              fill="none"
-              strokeDasharray="2 2"
-              strokeDashoffset={`${-(50 / 100) * params.circumference}`}
-              opacity="0.8"
-            />
-          </svg>
+          </div>
           
-          {/* Center text with clinical tooltip */}
+          {/* Status Badge */}
           <ClinicalTooltip
-            title="BFR Pressure Calculation"
+            title={`${side.charAt(0).toUpperCase() + side.slice(1)} Muscle BFR Compliance`}
+            description={params.complianceStatus.message}
             sections={[
               {
-                title: "Clinical Formula:",
-                type: "formula",
+                title: "Safety Guidelines:",
+                type: "list",
                 items: [
-                  { value: `${params.sideParams.applied_pressure} mmHg ÷ ${params.sideParams.aop_measured} mmHg × 100 = ${params.percentage.toFixed(1)}%` }
-                ]
-              },
-              {
-                type: "table",
-                items: [
-                  { label: "Current", value: `${params.percentage.toFixed(1)}% of AOP` },
-                  { label: "Target", value: "50% (optimal therapeutic)" },
-                  { label: "Safe Range", value: `${params.sideParams.therapeutic_range_min}-${params.sideParams.therapeutic_range_max}%` }
+                  { label: `Below ${params.sideParams.therapeutic_range_min}%`, description: "Ineffective therapy - insufficient vascular occlusion" },
+                  { label: `${params.sideParams.therapeutic_range_min}-${params.sideParams.therapeutic_range_max}%`, description: "Therapeutic range - optimal muscle adaptation stimulus" },
+                  { label: `Above ${params.sideParams.therapeutic_range_max}%`, description: "Risk of tissue damage - excessive vascular occlusion" }
                 ]
               }
             ]}
-            side="top"
+            side="bottom"
           >
-            <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-              <div className="text-2xl font-bold text-gray-900 mb-1">
-                {params.percentage.toFixed(1)}%
-              </div>
-              <div className="text-xs text-gray-500 font-medium">of AOP</div>
-              <div className="text-xs text-gray-400 mt-1">
-                Target: 50%
+            <div className={`${params.complianceStatus.color} px-4 py-2 text-sm font-semibold rounded-full border-2 shadow-sm cursor-help`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${params.sideParams.is_compliant ? 'bg-emerald-600' : 'bg-red-600'}`}></div>
+                {params.complianceStatus.badge}
               </div>
             </div>
           </ClinicalTooltip>
         </div>
         
-        {/* Status Badge with clinical tooltip */}
-        <ClinicalTooltip
-          title={`${side.charAt(0).toUpperCase() + side.slice(1)} Muscle BFR Compliance`}
-          description={params.complianceStatus.message}
-          sections={[
-            {
-              title: "Safety Guidelines:",
-              type: "list",
-              items: [
-                { label: `Below ${params.sideParams.therapeutic_range_min}%`, description: "Ineffective therapy - insufficient vascular occlusion" },
-                { label: `${params.sideParams.therapeutic_range_min}-${params.sideParams.therapeutic_range_max}%`, description: "Therapeutic range - optimal muscle adaptation stimulus" },
-                { label: `Above ${params.sideParams.therapeutic_range_max}%`, description: "Risk of tissue damage - excessive vascular occlusion" }
-              ]
-            }
-          ]}
-          side="bottom"
-        >
-          <div className={`${params.complianceStatus.color} px-4 py-2 text-xs font-semibold rounded-full border-2 shadow-sm cursor-help`}>
-            <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${params.sideParams.is_compliant ? 'bg-emerald-600' : 'bg-red-600'}`}></div>
-              {params.complianceStatus.badge}
+        <div className="flex items-center justify-between">
+          {/* Larger Gauge */}
+          <div className="relative">
+            <svg width="180" height="180" className="transform -rotate-90">
+              {/* Background circle */}
+              <circle
+                cx="90"
+                cy="90"
+                r={radius}
+                stroke="#e5e7eb"
+                strokeWidth="10"
+                fill="none"
+              />
+              {/* Progress arc */}
+              <circle
+                cx="90"
+                cy="90"
+                r={radius}
+                stroke={params.complianceStatus.gaugeColor}
+                strokeWidth="10"
+                fill="none"
+                strokeDasharray={strokeDasharray}
+                strokeLinecap="round"
+                className="transition-all duration-500 ease-in-out"
+              />
+              {/* Therapeutic range indicators */}
+              <circle
+                cx="90"
+                cy="90"
+                r={radius - 6}
+                stroke="#dc2626"
+                strokeWidth="3"
+                fill="none"
+                strokeDasharray={`${(40 / 100) * circumference} ${circumference}`}
+                strokeLinecap="round"
+                opacity="0.3"
+              />
+              <circle
+                cx="90"
+                cy="90"
+                r={radius - 6}
+                stroke="#059669"
+                strokeWidth="4"
+                fill="none"
+                strokeDasharray={`${(20 / 100) * circumference} ${circumference}`}
+                strokeDashoffset={`${-(40 / 100) * circumference}`}
+                strokeLinecap="round"
+                opacity="0.4"
+              />
+              <circle
+                cx="90"
+                cy="90"
+                r={radius - 6}
+                stroke="#dc2626"
+                strokeWidth="3"
+                fill="none"
+                strokeDasharray={`${(40 / 100) * circumference} ${circumference}`}
+                strokeDashoffset={`${-(60 / 100) * circumference}`}
+                strokeLinecap="round"
+                opacity="0.3"
+              />
+            </svg>
+            
+            {/* Center text with clinical tooltip */}
+            <ClinicalTooltip
+              title="BFR Pressure Calculation"
+              sections={[
+                {
+                  title: "Clinical Formula:",
+                  type: "formula",
+                  items: [
+                    { value: `${params.sideParams.applied_pressure} mmHg ÷ ${params.sideParams.aop_measured} mmHg × 100 = ${params.percentage.toFixed(1)}%` }
+                  ]
+                },
+                {
+                  type: "table",
+                  items: [
+                    { label: "Current", value: `${params.percentage.toFixed(1)}% of AOP` },
+                    { label: "Target", value: "50% (optimal therapeutic)" },
+                    { label: "Safe Range", value: `${params.sideParams.therapeutic_range_min}-${params.sideParams.therapeutic_range_max}%` }
+                  ]
+                }
+              ]}
+              side="top"
+            >
+              <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {params.percentage.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-500 font-medium">of AOP</div>
+                <div className="text-sm text-gray-400 mt-1">
+                  Target: 50%
+                </div>
+              </div>
+            </ClinicalTooltip>
+          </div>
+          
+          {/* Integrated Information Panel */}
+          <div className="flex-1 ml-8 space-y-6">
+            {/* Pressure Details */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Pressure Details
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-white rounded border">
+                  <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    <AppliedPressureTooltip pressureValue={params.sideParams.applied_pressure} side="top">
+                      <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
+                    </AppliedPressureTooltip>
+                  </div>
+                  <div className="text-lg font-bold text-green-600">{params.sideParams.applied_pressure} mmHg</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded border">
+                  <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    <AOPTooltip aopValue={params.sideParams.aop_measured} side="top">
+                      <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
+                    </AOPTooltip>
+                  </div>
+                  <div className="text-lg font-bold text-blue-600">{params.sideParams.aop_measured} mmHg</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Session Duration - Integrated */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Session Duration
+                <ClinicalTooltip
+                  title="Session Duration"
+                  description="BFR application time for this muscle"
+                  sections={[
+                    {
+                      title: "Clinical Rationale:",
+                      type: "list",
+                      items: [
+                        { description: "Individual muscle fatigue management and recovery optimization" },
+                        { description: "Differential therapeutic protocols based on injury severity" },
+                        { description: "Patient-specific treatment progression and tolerance levels" }
+                      ]
+                    }
+                  ]}
+                  side="top"
+                />
+              </h4>
+              <div className="text-center p-3 bg-white rounded border">
+                <div className="text-2xl font-bold text-gray-900">
+                  {params.sideParams.application_time_minutes || 'N/A'} min
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {params.sideParams.application_time_minutes ? 'Active session' : 'Not started'}
+                </div>
+              </div>
             </div>
           </div>
-        </ClinicalTooltip>
+        </div>
       </div>
     );
   };
@@ -301,161 +357,16 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
         <p className="text-sm text-gray-600">Blood Flow Restriction Protocol Status - Independent Left & Right Muscle Monitoring</p>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-          {/* Dual Gauge Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <BFRGauge side="left" title="Left Muscle" colorIndicator="bg-blue-500" />
-            <BFRGauge side="right" title="Right Muscle" colorIndicator="bg-red-500" />
-          </div>
-
-          {/* Detailed Information Panel */}
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Left Muscle Pressure Details */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="text-sm text-gray-700 font-medium mb-3 flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>Left Muscle Pressure</span>
-                  <ClinicalTooltip
-                    title="Arterial Occlusion Pressure (AOP)"
-                    description="The minimum pressure required to completely occlude arterial blood flow to the limb"
-                    sections={[
-                      {
-                        title: "Clinical Measurement:",
-                        type: "list",
-                        items: [
-                          { description: "Determined using Doppler ultrasound during clinical assessment" },
-                          { description: "Typically ranges 120-250 mmHg depending on limb circumference and patient factors" },
-                          { description: "Must be measured individually for each limb due to anatomical variations" }
-                        ]
-                      },
-                      {
-                        title: "Applied Pressure:",
-                        type: "list",
-                        items: [
-                          { description: "Therapeutic pressure applied during BFR training (40-60% of AOP)" },
-                          { description: "Calculated to optimize muscle adaptation while maintaining safety" },
-                          { description: "Can be adjusted independently for each muscle group" }
-                        ]
-                      }
-                    ]}
-                    side="right"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                      <AppliedPressureTooltip pressureValue={bfrParams.left.applied_pressure} side="top">
-                        <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
-                      </AppliedPressureTooltip>
-                    </div>
-                    <div className="text-sm font-bold text-blue-600">{bfrParams.left.applied_pressure} mmHg</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                      <AOPTooltip aopValue={bfrParams.left.aop_measured} side="top">
-                        <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
-                      </AOPTooltip>
-                    </div>
-                    <div className="text-sm font-bold text-gray-700">{bfrParams.left.aop_measured} mmHg</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Right Muscle Pressure Details */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="text-sm text-gray-700 font-medium mb-3 flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span>Right Muscle Pressure</span>
-                  <ClinicalTooltip
-                    title="Right Muscle Independent Settings"
-                    description="Independent pressure configuration enables personalized rehabilitation protocols"
-                    sections={[
-                      {
-                        title: "Clinical Applications:",
-                        type: "list",
-                        items: [
-                          { description: "Compensation for dominant limb strength differences" },
-                          { description: "Post-injury protection with reduced pressure protocols" },
-                          { description: "Bilateral strength balancing through asymmetric loading" },
-                          { description: "Progressive therapeutic advancement per individual limb tolerance" }
-                        ]
-                      }
-                    ]}
-                    side="left"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                      <AppliedPressureTooltip pressureValue={bfrParams.right.applied_pressure} side="top">
-                        <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
-                      </AppliedPressureTooltip>
-                    </div>
-                    <div className="text-sm font-bold text-blue-600">{bfrParams.right.applied_pressure} mmHg</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                      <AOPTooltip aopValue={bfrParams.right.aop_measured} side="top">
-                        <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
-                      </AOPTooltip>
-                    </div>
-                    <div className="text-sm font-bold text-gray-700">{bfrParams.right.aop_measured} mmHg</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Session Duration Comparison */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 mb-3">
-                    <span className="text-sm text-gray-700 font-medium">Session Duration</span>
-                    <ClinicalTooltip
-                      title="Independent Session Duration"
-                      description="Each muscle group can have different application times for optimized therapeutic outcomes"
-                      sections={[
-                        {
-                          title: "Clinical Rationale:",
-                          type: "list",
-                          items: [
-                            { description: "Individual muscle fatigue management and recovery optimization" },
-                            { description: "Differential therapeutic protocols based on injury severity" },
-                            { description: "Patient-specific treatment progression and tolerance levels" },
-                            { description: "Progressive training phases with asymmetric loading patterns" }
-                          ]
-                        }
-                      ]}
-                      side="left"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">Left</span>
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">{bfrParams.left.application_time_minutes || 'N/A'} min</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">Right</span>
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">{bfrParams.right.application_time_minutes || 'N/A'} min</div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    {(bfrParams.left.application_time_minutes || bfrParams.right.application_time_minutes) ? 'Active session' : 'Not started'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Overall Status Summary */}
-          <div className="flex flex-col items-center gap-4 mt-6">
+      {/* Main Content - Two Enhanced Muscle Cards */}
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+          <MuscleCard side="left" title="Left Muscle" colorIndicator="bg-blue-500" />
+          <MuscleCard side="right" title="Right Muscle" colorIndicator="bg-red-500" />
+        </div>
+        
+        {/* Overall Status Summary */}
+        <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
+          <div className="flex flex-col items-center gap-4">
             <ClinicalTooltip
               title="Overall BFR Compliance Status"
               description={overallStatus.message}
