@@ -2,6 +2,18 @@ import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
+import { 
+  getComplianceTooltipData,
+  completionRateTooltipData,
+  intensityQualityTooltipData,
+  getDurationQualityTooltipData,
+  muscleSymmetryTooltipData,
+  rpeScoreTooltipData,
+  getGhostlyScoreTooltipData,
+  getAppliedPressureTooltipData,
+  getAOPTooltipData,
+  type TooltipData
+} from '@/data/tooltipData';
 
 interface ClinicalTooltipProps {
   title: string;
@@ -49,32 +61,42 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           )}
         </TooltipTrigger>
         <TooltipContent 
-          side={side} 
-          sideOffset={10}
+          side="top"
+          sideOffset={0}
+          align="center"
+          avoidCollisions={false}
           className={cn(
-            "max-w-sm z-[100] bg-yellow-50",
-            "border border-amber-300 shadow-xl p-0 overflow-hidden",
+            "w-[32rem] z-[999] bg-amber-50",
+            "border-2 border-amber-300 shadow-2xl p-0 overflow-hidden rounded-lg",
+            "!fixed !top-1/2 !left-1/2 !transform !-translate-x-1/2 !-translate-y-1/2",
             className
           )}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999
+          }}
         >
           <div>
-            {/* Header */}
-            <div className="bg-amber-600 text-white px-3 py-2">
+            {/* Elegant Header */}
+            <div className="bg-amber-500 px-4 py-3">
               <p className={cn(
-                "font-semibold",
-                variant === 'compact' ? "text-xs" : "text-sm"
+                "font-bold tracking-tight text-white drop-shadow-sm",
+                variant === 'compact' ? "text-sm" : "text-base"
               )}>{title}</p>
             </div>
 
             {/* Content */}
             <div className={cn(
-              "px-3 py-2 space-y-2",
-              variant === 'compact' && "px-2 py-1.5 space-y-1.5"
+              "px-4 py-3 space-y-3",
+              variant === 'compact' && "px-3 py-2 space-y-2"
             )}>
               {/* Description */}
               {description && (
                 <p className={cn(
-                  "text-slate-700",
+                  "text-slate-700 leading-relaxed font-medium",
                   variant === 'compact' ? "text-xs" : "text-sm"
                 )}>{description}</p>
               )}
@@ -83,59 +105,75 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
               {sections.map((section, idx) => (
                 <div 
                   key={idx} 
-                  className="bg-white rounded-md p-2 border border-amber-200"
+                  className="bg-white rounded-lg p-3 border border-amber-200 shadow-sm"
                 >
                   {section.title && (
-                    <p className={cn(
-                      "font-medium text-slate-800 mb-1",
-                      variant === 'compact' ? "text-xs" : "text-sm"
-                    )}>{section.title}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
+                      <h4 className={cn(
+                        "font-bold text-slate-800",
+                        variant === 'compact' ? "text-xs" : "text-sm"
+                      )}>{section.title}</h4>
+                    </div>
                   )}
 
-                  {/* List Type */}
+                  {/* Enhanced List Type */}
                   {section.type === 'list' && (
                     <div className={cn(
-                      "space-y-1 text-slate-700",
-                      variant === 'compact' ? "text-xs space-y-0.5" : "text-sm"
+                      "space-y-2 text-slate-700",
+                      variant === 'compact' ? "text-xs space-y-1" : "text-sm"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex items-start">
-                          {item.percentage && (
-                            <span 
-                              className={cn(
-                                "font-semibold mr-1.5 tabular-nums",
-                                item.color || "text-gray-600"
-                              )}
-                            >
-                              {item.percentage}%
-                            </span>
+                        <div key={itemIdx} className="flex items-start gap-2 text-left">
+                          {item.percentage ? (
+                            <div className="flex items-start gap-2 w-full">
+                              <span 
+                                className={cn(
+                                  "font-bold text-xs px-2 py-0.5 rounded-full bg-opacity-20 border flex-shrink-0",
+                                  item.color === "text-emerald-600" && "text-emerald-700 bg-emerald-100 border-emerald-300",
+                                  item.color === "text-green-600" && "text-green-700 bg-green-100 border-green-300",
+                                  item.color === "text-yellow-600" && "text-yellow-700 bg-yellow-100 border-yellow-300",
+                                  item.color === "text-red-600" && "text-red-700 bg-red-100 border-red-300",
+                                  !item.color && "text-slate-700 bg-slate-100 border-slate-300"
+                                )}
+                              >
+                                {item.percentage}
+                              </span>
+                              <div className="flex-1">
+                                <span className="font-medium">{item.label}</span>
+                                <span className="text-slate-600 leading-relaxed ml-1">{item.description}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
+                              <div className="flex-1">
+                                {item.label && <span className="font-medium">{item.label}: </span>}
+                                <span className="text-slate-600 leading-relaxed">
+                                  {item.description}
+                                  {item.value && !item.percentage && ` ${item.value}`}
+                                </span>
+                              </div>
+                            </>
                           )}
-                          {item.icon && (
-                            <span className="mr-1.5">{item.icon}</span>
-                          )}
-                          <span>
-                            {item.label && <strong>{item.label}:</strong>}
-                            {item.description && ` ${item.description}`}
-                            {item.value && !item.percentage && ` ${item.value}`}
-                          </span>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Table Type */}
+                  {/* Enhanced Table Type */}
                   {(section.type === 'table' || !section.type) && (
                     <div className={cn(
-                      "space-y-0.5 text-slate-700",
+                      "space-y-1.5 text-slate-700",
                       variant === 'compact' ? "text-xs" : "text-sm"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex items-center justify-between">
-                          <span className="font-medium">{item.label}:</span>
+                        <div key={itemIdx} className="flex items-center justify-between py-1 border-b border-amber-100 last:border-b-0">
+                          <span className="font-semibold text-slate-800">{item.label}</span>
                           <span 
                             className={cn(
-                              "font-semibold tabular-nums",
-                              item.color || "text-slate-800"
+                              "font-bold tabular-nums px-2 py-0.5 rounded text-xs",
+                              item.color || "text-slate-800 bg-slate-100"
                             )}
                           >
                             {item.value || item.percentage}
@@ -146,21 +184,24 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
                     </div>
                   )}
 
-                  {/* Formula Type */}
+                  {/* Enhanced Formula Type */}
                   {section.type === 'formula' && (
                     <div className={cn(
-                      "font-mono bg-white p-2 rounded border border-amber-100",
-                      variant === 'compact' ? "text-xs p-1.5" : "text-sm"
+                      "bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg p-3 text-center",
+                      variant === 'compact' ? "text-sm p-2" : "text-base"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <span key={itemIdx}>
+                        <div key={itemIdx} className="font-serif italic">
                           {item.label && (
-                            <span className={item.color || "text-slate-700"}>
+                            <span className={cn("font-bold text-xl mr-2", item.color || "text-slate-800")}>
                               {item.label}
                             </span>
                           )}
-                          {item.value}
-                        </span>
+                          <span 
+                            className="text-slate-700 font-medium" 
+                            dangerouslySetInnerHTML={{ __html: String(item.value || '') }} 
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -174,7 +215,31 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   );
 };
 
-// Preset variants for common use cases
+// Data-driven tooltip renderer
+export const DataDrivenTooltip: React.FC<{
+  data: TooltipData;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  className?: string;
+  triggerClassName?: string;
+  variant?: 'default' | 'compact';
+  children?: React.ReactNode;
+}> = ({ data, side = 'right', className, triggerClassName, variant = 'default', children }) => {
+  return (
+    <ClinicalTooltip
+      title={data.title}
+      description={data.description}
+      sections={data.sections}
+      side={side}
+      className={className}
+      triggerClassName={triggerClassName}
+      variant={variant}
+    >
+      {children}
+    </ClinicalTooltip>
+  );
+};
+
+// Preset variants for common use cases (now using data constants)
 export const ComplianceTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
@@ -188,47 +253,15 @@ export const ComplianceTooltip: React.FC<{
   intensityWeight = 1/3,
   durationWeight = 1/3
 }) => {
-  // Convert to percentages for display
-  const completionPct = (completionWeight * 100).toFixed(1);
-  const intensityPct = (intensityWeight * 100).toFixed(1);
-  const durationPct = (durationWeight * 100).toFixed(1);
+  const data = getComplianceTooltipData(completionWeight, intensityWeight, durationWeight);
   
   return (
-    <ClinicalTooltip
-      title="Individual Muscle Compliance"
-      description="Measures 'how well' exercises were performed for this specific muscle during the session"
-      sections={[
-        {
-          title: "Clinical Formula:",
-          type: "formula",
-          items: [
-            { label: "S", value: ` = ${completionPct}%×Completion + ${intensityPct}%×Intensity + ${durationPct}%×Duration` }
-          ]
-        },
-        {
-          title: "Clinical Components:",
-          type: "list",
-          items: [
-            { label: `Completion (${completionPct}%)`, description: "Exercise adherence - 12 contractions expected per muscle" },
-            { label: `Intensity (${intensityPct}%)`, description: "MVC threshold achievement - ≥75% required" },
-            { label: `Duration (${durationPct}%)`, description: "Contraction time quality - ≥2.0s threshold" }
-          ]
-        },
-        {
-          title: "Clinical Interpretation:",
-          type: "list",
-          items: [
-            { percentage: "≥90", description: "Excellent exercise execution", color: "text-emerald-600" },
-            { percentage: "80-89", description: "Good protocol adherence", color: "text-green-600" },
-            { percentage: "70-79", description: "Moderate - monitor for progression", color: "text-yellow-600" },
-            { percentage: "<70", description: "Poor - protocol adjustments needed", color: "text-red-600" }
-          ]
-        }
-      ]}
+    <DataDrivenTooltip
+      data={data}
       side={side}
     >
       {children}
-    </ClinicalTooltip>
+    </DataDrivenTooltip>
   );
 };
 
@@ -280,31 +313,12 @@ export const CompletionRateTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
 }> = ({ side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Exercise Completion Assessment"
-    description="Measures exercise adherence within the session (33% weight in compliance score)"
-    sections={[
-      {
-        title: "Clinical Formula:",
-        type: "formula",
-        items: [
-          { value: "R_completion = contractions_performed / contractions_expected" }
-        ]
-      },
-      {
-        title: "GHOSTLY+ Protocol:",
-        type: "list",
-        items: [
-          { description: "Expected: 12 contractions per muscle (6 short + 6 long)" },
-          { description: "Detection: EMG amplitude & duration thresholds" },
-          { description: "Target: ≥92% completion (≥11/12)" }
-        ]
-      }
-    ]}
+  <DataDrivenTooltip
+    data={completionRateTooltipData}
     side={side}
   >
     {children}
-  </ClinicalTooltip>
+  </DataDrivenTooltip>
 );
 
 // Preset for intensity quality
@@ -312,37 +326,12 @@ export const IntensityQualityTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
 }> = ({ side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Exercise Intensity Assessment"
-    description="Measures therapeutic intensity effectiveness (34% weight in compliance score)"
-    sections={[
-      {
-        title: "Clinical Formula:",
-        type: "formula",
-        items: [
-          { value: "R_intensity = contractions_≥75%_MVC / total_contractions" }
-        ]
-      },
-      {
-        title: "Clinical Threshold:",
-        type: "list",
-        items: [
-          { description: "MVC threshold: ≥75% of maximum voluntary contraction" },
-          { description: "Target: ≥80% of contractions meet intensity requirement" }
-        ]
-      },
-      {
-        title: "Therapeutic Rationale:",
-        type: "list",
-        items: [
-          { description: "Ensures sufficient muscle activation for strength adaptation" }
-        ]
-      }
-    ]}
+  <DataDrivenTooltip
+    data={intensityQualityTooltipData}
     side={side}
   >
     {children}
-  </ClinicalTooltip>
+  </DataDrivenTooltip>
 );
 
 // Preset for duration quality
@@ -350,71 +339,30 @@ export const DurationQualityTooltip: React.FC<{
   contractionDurationThreshold?: number;
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-}> = ({ contractionDurationThreshold = 2000, side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Exercise Duration Assessment"
-    description="Measures contraction endurance quality (33% weight in compliance score)"
-    sections={[
-      {
-        title: "Clinical Formula:",
-        type: "formula",
-        items: [
-          { value: `R_duration = contractions_≥${(contractionDurationThreshold / 1000).toFixed(1)}s / total_contractions` }
-        ]
-      },
-      {
-        title: "Clinical Parameters:",
-        type: "list",
-        items: [
-          { description: `Duration threshold: ≥${(contractionDurationThreshold / 1000).toFixed(1)}s (adaptive)` },
-          { description: "Target: ≥90% of contractions meet duration requirement" },
-          { description: "Progressive increase: 2-10s over treatment course" }
-        ]
-      },
-      {
-        title: "Therapeutic Rationale:",
-        type: "list",
-        items: [
-          { description: "Assesses muscle endurance and motor control quality for functional improvement" }
-        ]
-      }
-    ]}
-    side={side}
-  >
-    {children}
-  </ClinicalTooltip>
-);
+}> = ({ contractionDurationThreshold = 2000, side = 'top', children }) => {
+  const data = getDurationQualityTooltipData(contractionDurationThreshold);
+  
+  return (
+    <DataDrivenTooltip
+      data={data}
+      side={side}
+    >
+      {children}
+    </DataDrivenTooltip>
+  );
+};
 
 // Preset for Muscle Symmetry
 export const MuscleSymmetryTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
 }> = ({ side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Muscle Symmetry Score"
-    description="Bilateral balance assessment to prevent compensation patterns and ensure equal therapeutic benefit"
-    sections={[
-      {
-        title: "Clinical Formula:",
-        type: "formula",
-        items: [
-          { value: "S = (1 - |Left - Right| / (Left + Right)) × 100" }
-        ]
-      },
-      {
-        title: "Clinical Interpretation:",
-        type: "list",
-        items: [
-          { percentage: "90-100", description: "Excellent balance (healthy range)", color: "text-emerald-600" },
-          { percentage: "70-89", description: "Minor imbalance - monitor for progression", color: "text-yellow-600" },
-          { percentage: "<70", description: "Significant imbalance - intervention recommended", color: "text-red-600" }
-        ]
-      }
-    ]}
+  <DataDrivenTooltip
+    data={muscleSymmetryTooltipData}
     side={side}
   >
     {children}
-  </ClinicalTooltip>
+  </DataDrivenTooltip>
 );
 
 // Preset for RPE Score
@@ -422,42 +370,12 @@ export const RPEScoreTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
 }> = ({ side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Subjective Effort Score"
-    description="Patient-reported exertion assessment based on post-session RPE using Borg CR10 Scale"
-    sections={[
-      {
-        title: "Scoring Formula:",
-        type: "formula",
-        items: [
-          { value: "S_effort = f(RPE_post) where RPE_post ∈ [0,10]" }
-        ]
-      },
-      {
-        title: "Therapeutic Scoring Ranges:",
-        type: "list",
-        items: [
-          { label: "RPE 4-6", description: "Optimal therapeutic stimulus (100%)", color: "text-emerald-600" },
-          { label: "RPE 3, 7", description: "Acceptable range (80%)", color: "text-green-600" },
-          { label: "RPE 2, 8", description: "Suboptimal stimulus (60%)", color: "text-yellow-600" },
-          { label: "RPE 0-1, 9-10", description: "Poor - too easy or excessive (20%)", color: "text-red-600" }
-        ]
-      },
-      {
-        title: "Clinical Implementation:",
-        type: "list",
-        items: [
-          { description: "Only post-session RPE is used for performance scoring" },
-          { description: "Borg CR10 Scale: 0=Nothing at all, 10=Very, very hard (maximal)" },
-          { description: "Target RPE 4-6 ensures therapeutic benefit without overexertion" },
-          { description: "20% weight in overall performance calculation" }
-        ]
-      }
-    ]}
+  <DataDrivenTooltip
+    data={rpeScoreTooltipData}
     side={side}
   >
     {children}
-  </ClinicalTooltip>
+  </DataDrivenTooltip>
 );
 
 // Preset for GHOSTLY Game Score
@@ -468,146 +386,56 @@ export const GHOSTLYScoreTooltip: React.FC<{
   showExperimental?: boolean;
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-}> = ({ gameScore = 0, gameLevel, normalizedScore = 0, showExperimental = false, side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Game Performance Score"
-    description="Normalized engagement metric maintaining motivation with Dynamic Difficulty Adjustment"
-    sections={[
-      {
-        title: "Clinical Formula:",
-        type: "formula",
-        items: [
-          { value: "S_game = game_points / max_achievable_points × 100" }
-        ]
-      },
-      {
-        type: "table",
-        items: [
-          { label: "Raw Score", value: `${gameScore} pts` },
-          ...(gameLevel ? [{ label: "Difficulty Level", value: gameLevel }] : []),
-          { label: "Normalized", value: `${normalizedScore.toFixed(0)}%` }
-        ]
-      },
-      {
-        type: "list",
-        items: [
-          showExperimental 
-            ? { description: "⚠️ Currently experimental - not included in Overall Performance", color: "text-amber-700" }
-            : { description: "✓ Engagement metric with 15% weight in Overall Performance", color: "text-emerald-700" }
-        ]
-      }
-    ]}
-    side={side}
-  >
-    {children}
-  </ClinicalTooltip>
-);
+}> = ({ gameScore = 0, gameLevel, normalizedScore = 0, showExperimental = false, side = 'top', children }) => {
+  const data = getGhostlyScoreTooltipData(gameScore, gameLevel, normalizedScore, showExperimental);
+  
+  return (
+    <DataDrivenTooltip
+      data={data}
+      side={side}
+    >
+      {children}
+    </DataDrivenTooltip>
+  );
+};
 
 // Preset for Applied Pressure explanation
 export const AppliedPressureTooltip: React.FC<{
   pressureValue?: number;
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-}> = ({ pressureValue, side = 'top', children }) => (
-  <ClinicalTooltip
-    title="Applied Pressure"
-    description="The actual therapeutic pressure applied to the limb during BFR training"
-    sections={[
-      {
-        title: "Clinical Definition:",
-        type: "list",
-        items: [
-          { description: "Actual cuff pressure delivered to the patient's limb" },
-          { description: "Measured in millimeters of mercury (mmHg)" },
-          { description: "Calculated as a percentage of the patient's individual AOP" }
-        ]
-      },
-      {
-        title: "Clinical Application:",
-        type: "list",
-        items: [
-          { description: "Applied via pneumatic cuff around the proximal limb" },
-          { description: "Partially restricts arterial blood flow during exercise" },
-          { description: "Creates hypoxic environment promoting muscle adaptation" }
-        ]
-      },
-      ...(pressureValue ? [{
-        title: "Current Session:",
-        type: "table" as const,
-        items: [
-          { label: "Applied Pressure", value: `${pressureValue} mmHg` }
-        ]
-      }] : []),
-      {
-        title: "Safety Considerations:",
-        type: "list",
-        items: [
-          { description: "Must remain within therapeutic range (40-60% AOP)" },
-          { description: "Continuously monitored for patient safety" },
-          { description: "Immediately adjustable if pressure drifts outside range" }
-        ]
-      }
-    ]}
-    side={side}
-    variant="compact"
-  >
-    {children}
-  </ClinicalTooltip>
-);
+}> = ({ pressureValue, side = 'top', children }) => {
+  const data = getAppliedPressureTooltipData(pressureValue);
+  
+  return (
+    <DataDrivenTooltip
+      data={data}
+      side={side}
+      variant="compact"
+    >
+      {children}
+    </DataDrivenTooltip>
+  );
+};
 
 // Preset for AOP (Arterial Occlusion Pressure) explanation
 export const AOPTooltip: React.FC<{
   aopValue?: number;
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-}> = ({ aopValue, side = 'top', children }) => (
-  <ClinicalTooltip
-    title="AOP - Arterial Occlusion Pressure"
-    description="The minimum pressure required to completely stop arterial blood flow to the limb"
-    sections={[
-      {
-        title: "Clinical Measurement:",
-        type: "list",
-        items: [
-          { description: "Determined using Doppler ultrasound during assessment" },
-          { description: "Individual measurement for each patient and limb" },
-          { description: "Typically ranges 120-250 mmHg depending on anatomy" },
-          { description: "Measured at rest before any therapeutic intervention" }
-        ]
-      },
-      {
-        title: "Influencing Factors:",
-        type: "list",
-        items: [
-          { description: "Limb circumference and muscle mass" },
-          { description: "Patient age and cardiovascular status" },
-          { description: "Cuff width and positioning" },
-          { description: "Individual anatomical variations" }
-        ]
-      },
-      ...(aopValue ? [{
-        title: "Patient-Specific Measurement:",
-        type: "table" as const,
-        items: [
-          { label: "AOP", value: `${aopValue} mmHg` }
-        ]
-      }] : []),
-      {
-        title: "Clinical Significance:",
-        type: "list",
-        items: [
-          { description: "Baseline for calculating safe therapeutic pressures" },
-          { description: "Ensures individualized BFR prescription" },
-          { description: "Critical for maintaining therapeutic efficacy and safety" }
-        ]
-      }
-    ]}
-    side={side}
-    variant="compact"
-  >
-    {children}
-  </ClinicalTooltip>
-);
+}> = ({ aopValue, side = 'top', children }) => {
+  const data = getAOPTooltipData(aopValue);
+  
+  return (
+    <DataDrivenTooltip
+      data={data}
+      side={side}
+      variant="compact"
+    >
+      {children}
+    </DataDrivenTooltip>
+  );
+};
 
 // Export other preset tooltips as needed
 export default ClinicalTooltip;
