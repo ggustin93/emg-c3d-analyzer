@@ -6,7 +6,7 @@ import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Slider } from "../ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { HeartIcon } from '@radix-ui/react-icons';
+import { HeartIcon, MixerHorizontalIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
 import { Alert, AlertDescription } from "../ui/alert";
 import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "../ui/clinical-tooltip";
 
@@ -119,36 +119,146 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
           </Badge>
         </div>
         
-        <div className="p-4 bg-slate-50 rounded-lg space-y-4">
-          {/* AOP Measured and Applied Pressure */}
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-6">
+          {/* Measured Values Section */}
+          <div className="space-y-4 p-4 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <MixerHorizontalIcon className="h-4 w-4 text-blue-600" />
+              <h5 className="text-sm font-semibold text-gray-800">Measured Values</h5>
+              {isDebugMode && <span className="text-xs font-normal text-gray-500">(Editable in debug mode)</span>}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Arterial Occlusion Pressure (</Label>
+                  <AOPTooltip aopValue={sideParams.aop_measured} side="top">
+                    <span className="text-sm font-medium text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
+                  </AOPTooltip>
+                  <Label className="text-sm font-medium">)</Label>
+                  <ClinicalTooltip
+                    title="Arterial Occlusion Pressure (AOP)"
+                    description="The minimum pressure required to completely occlude arterial blood flow to the limb"
+                    sections={[
+                      {
+                        title: "Clinical Measurement:",
+                        type: "list",
+                        items: [
+                          { description: "Determined using Doppler ultrasound during clinical assessment" },
+                          { description: "Typically ranges 120-250 mmHg depending on limb circumference" },
+                          { description: "Patient factors: age, fitness level, limb composition affect measurement" },
+                          { description: "Must be measured individually for each limb due to anatomical variations" }
+                        ]
+                      },
+                      {
+                        title: "Clinical Significance:",
+                        type: "list", 
+                        items: [
+                          { description: "Baseline for calculating therapeutic BFR pressures" },
+                          { description: "Essential for safe and effective blood flow restriction training" }
+                        ]
+                      }
+                    ]}
+                    side="right"
+                    triggerClassName="h-3 w-3"
+                  />
+                </div>
+                {isDebugMode ? (
+                  <Input
+                    type="number"
+                    value={sideParams.aop_measured}
+                    onChange={(e) => updateBFRParameters(side, 'aop_measured', parseFloat(e.target.value) || 0)}
+                    placeholder="180"
+                    min="0"
+                    max="300"
+                    step="1"
+                    disabled={disabled}
+                    className="h-8 text-xs"
+                  />
+                ) : (
+                  <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
+                    {sideParams.aop_measured} mmHg
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <AppliedPressureTooltip pressureValue={sideParams.applied_pressure} side="top">
+                    <span className="text-sm font-medium text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
+                  </AppliedPressureTooltip>
+                  <Label className="text-sm font-medium"> Pressure</Label>
+                  <ClinicalTooltip
+                    title="Applied Pressure"
+                    description="The actual pressure applied to the limb during BFR training"
+                    sections={[
+                      {
+                        title: "Clinical Formula:",
+                        type: "formula",
+                        items: [
+                          { value: "Applied Pressure = AOP × Target Percentage" }
+                        ]
+                      },
+                      {
+                        title: "Therapeutic Range:",
+                        type: "list",
+                        items: [
+                          { description: "Typically 40-60% of AOP for safe and effective therapy" },
+                          { description: "Can be adjusted based on patient tolerance and treatment goals" },
+                          { description: "Lower pressures may be used for injured or sensitive areas" },
+                          { description: "Progressive increases over treatment course for adaptation" }
+                        ]
+                      }
+                    ]}
+                    side="left"
+                    triggerClassName="h-3 w-3"
+                  />
+                </div>
+                {isDebugMode ? (
+                  <Input
+                    type="number"
+                    value={sideParams.applied_pressure}
+                    onChange={(e) => updateBFRParameters(side, 'applied_pressure', parseFloat(e.target.value) || 0)}
+                    placeholder="90"
+                    min="0"
+                    max="300"
+                    step="1"
+                    disabled={disabled}
+                    className="h-8 text-xs"
+                  />
+                ) : (
+                  <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
+                    {sideParams.applied_pressure} mmHg
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Session Duration */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Arterial Occlusion Pressure (</Label>
-                <AOPTooltip aopValue={sideParams.aop_measured} side="top">
-                  <span className="text-sm font-medium text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
-                </AOPTooltip>
-                <Label className="text-sm font-medium">)</Label>
+                <Label className="text-sm font-medium">Session Duration</Label>
                 <ClinicalTooltip
-                  title="Arterial Occlusion Pressure (AOP)"
-                  description="The minimum pressure required to completely occlude arterial blood flow to the limb"
+                  title={`${title} Session Duration`}
+                  description="Independent application time for optimized muscle-specific therapy"
                   sections={[
                     {
-                      title: "Clinical Measurement:",
+                      title: "Clinical Benefits:",
                       type: "list",
                       items: [
-                        { description: "Determined using Doppler ultrasound during clinical assessment" },
-                        { description: "Typically ranges 120-250 mmHg depending on limb circumference" },
-                        { description: "Patient factors: age, fitness level, limb composition affect measurement" },
-                        { description: "Must be measured individually for each limb due to anatomical variations" }
+                        { description: "Different fatigue management protocols per muscle group" },
+                        { description: "Asymmetric injury accommodation and protection" },
+                        { description: "Progressive training phases with individual progression" },
+                        { description: "Patient tolerance optimization per limb" }
                       ]
                     },
                     {
-                      title: "Clinical Significance:",
-                      type: "list", 
+                      title: "Typical Protocols:",
+                      type: "list",
                       items: [
-                        { description: "Baseline for calculating therapeutic BFR pressures" },
-                        { description: "Essential for safe and effective blood flow restriction training" }
+                        { description: "Standard sessions: 10-20 minutes with rest periods" },
+                        { description: "Injured limb: Reduced duration for protection" },
+                        { description: "Progressive increase: 2-5 minutes per week" }
                       ]
                     }
                   ]}
@@ -159,150 +269,115 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               {isDebugMode ? (
                 <Input
                   type="number"
-                  value={sideParams.aop_measured}
-                  onChange={(e) => updateBFRParameters(side, 'aop_measured', parseFloat(e.target.value) || 0)}
-                  placeholder="180"
+                  value={sideParams.application_time_minutes || ''}
+                  onChange={(e) => updateBFRParameters(side, 'application_time_minutes', parseFloat(e.target.value) || 0)}
+                  placeholder="15"
                   min="0"
-                  max="300"
+                  max="60"
                   step="1"
                   disabled={disabled}
                   className="h-8 text-xs"
                 />
               ) : (
                 <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                  {sideParams.aop_measured} mmHg
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <AppliedPressureTooltip pressureValue={sideParams.applied_pressure} side="top">
-                  <span className="text-sm font-medium text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
-                </AppliedPressureTooltip>
-                <Label className="text-sm font-medium"> Pressure</Label>
-                <ClinicalTooltip
-                  title="Applied Pressure"
-                  description="The actual pressure applied to the limb during BFR training"
-                  sections={[
-                    {
-                      title: "Clinical Formula:",
-                      type: "formula",
-                      items: [
-                        { value: "Applied Pressure = AOP × Target Percentage" }
-                      ]
-                    },
-                    {
-                      title: "Therapeutic Range:",
-                      type: "list",
-                      items: [
-                        { description: "Typically 40-60% of AOP for safe and effective therapy" },
-                        { description: "Can be adjusted based on patient tolerance and treatment goals" },
-                        { description: "Lower pressures may be used for injured or sensitive areas" },
-                        { description: "Progressive increases over treatment course for adaptation" }
-                      ]
-                    }
-                  ]}
-                  side="left"
-                  triggerClassName="h-3 w-3"
-                />
-              </div>
-              {isDebugMode ? (
-                <Input
-                  type="number"
-                  value={sideParams.applied_pressure}
-                  onChange={(e) => updateBFRParameters(side, 'applied_pressure', parseFloat(e.target.value) || 0)}
-                  placeholder="90"
-                  min="0"
-                  max="300"
-                  step="1"
-                  disabled={disabled}
-                  className="h-8 text-xs"
-                />
-              ) : (
-                <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                  {sideParams.applied_pressure} mmHg
+                  {sideParams.application_time_minutes || 'N/A'} minutes
                 </div>
               )}
             </div>
           </div>
 
-          {/* Calculated Values */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs text-slate-600">Percentage of AOP</Label>
-                <ClinicalTooltip
-                  title="BFR Percentage Calculation"
-                  sections={[
-                    {
-                      title: "Clinical Formula:",
-                      type: "formula",
-                      items: [
-                        { value: `${sideParams.applied_pressure} ÷ ${sideParams.aop_measured} × 100 = ${sideParams.percentage_aop.toFixed(1)}%` }
-                      ]
-                    },
-                    {
-                      title: "Therapeutic Guidelines:",
-                      type: "list",
-                      items: [
-                        { label: "Target: 50%", description: "Optimal therapeutic effectiveness" },
-                        { label: "Range: 40-60%", description: "Safe and effective therapy zone" },
-                        { description: "This ratio determines both safety and therapeutic effectiveness" }
-                      ]
-                    }
-                  ]}
-                  side="top"
-                  triggerClassName="h-2.5 w-2.5"
-                  variant="compact"
-                />
-              </div>
-              <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs font-medium">
-                {sideParams.percentage_aop.toFixed(1)}%
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs text-slate-600">Compliance Status</Label>
-                <ClinicalTooltip
-                  title="BFR Compliance Status"
-                  description="Real-time safety assessment based on therapeutic range compliance"
-                  sections={[
-                    {
-                      title: "Status Indicators:",
-                      type: "list",
-                      items: [
-                        { label: "PASS", description: "Within therapeutic range - safe and effective", color: "text-green-600" },
-                        { label: "FAIL", description: "Outside safe range - adjustment required", color: "text-red-600" }
-                      ]
-                    },
-                    {
-                      title: "Clinical Importance:",
-                      type: "list",
-                      items: [
-                        { description: "Continuous monitoring prevents unsafe pressure levels" },
-                        { description: "Ensures optimal therapeutic outcomes while maintaining safety" }
-                      ]
-                    }
-                  ]}
-                  side="top"
-                  triggerClassName="h-2.5 w-2.5"
-                  variant="compact"
-                />
-              </div>
-              <div className="h-8 flex items-center">
-                <Badge className={`${complianceStatus.color} text-xs`}>
-                  {complianceStatus.badge}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          {/* Therapeutic Range Configuration */}
-          <div className="space-y-3">
+          {/* Calculated Values Section */}
+          <div className="space-y-4 p-4 border border-green-200 rounded-lg">
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Therapeutic Range Configuration</Label>
+              <TargetIcon className="h-4 w-4 text-green-600" />
+              <h5 className="text-sm font-semibold text-gray-800">Calculated Values</h5>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-slate-600">Percentage of AOP</Label>
+                  <ClinicalTooltip
+                    title="BFR Percentage Calculation"
+                    sections={[
+                      {
+                        title: "Clinical Formula:",
+                        type: "formula",
+                        items: [
+                          { value: `${sideParams.applied_pressure} ÷ ${sideParams.aop_measured} × 100 = ${sideParams.percentage_aop.toFixed(1)}%` }
+                        ]
+                      },
+                      {
+                        title: "Therapeutic Guidelines:",
+                        type: "list",
+                        items: [
+                          { label: "Target: 50%", description: "Optimal therapeutic effectiveness" },
+                          { label: "Range: 40-60%", description: "Safe and effective therapy zone" },
+                          { description: "This ratio determines both safety and therapeutic effectiveness" }
+                        ]
+                      }
+                    ]}
+                    side="top"
+                    triggerClassName="h-2.5 w-2.5"
+                    variant="compact"
+                  />
+                </div>
+                <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs font-medium">
+                  {sideParams.percentage_aop.toFixed(1)}%
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-slate-600">Compliance Status</Label>
+                  <ClinicalTooltip
+                    title="BFR Compliance Status"
+                    description="Real-time safety assessment based on therapeutic range compliance"
+                    sections={[
+                      {
+                        title: "Status Indicators:",
+                        type: "list",
+                        items: [
+                          { label: "PASS", description: "Within therapeutic range - safe and effective", color: "text-green-600" },
+                          { label: "FAIL", description: "Outside safe range - adjustment required", color: "text-red-600" }
+                        ]
+                      },
+                      {
+                        title: "Clinical Importance:",
+                        type: "list",
+                        items: [
+                          { description: "Continuous monitoring prevents unsafe pressure levels" },
+                          { description: "Ensures optimal therapeutic outcomes while maintaining safety" }
+                        ]
+                      }
+                    ]}
+                    side="top"
+                    triggerClassName="h-2.5 w-2.5"
+                    variant="compact"
+                  />
+                </div>
+                <div className="h-8 flex items-center">
+                  <Badge className={`${complianceStatus.color} text-xs`}>
+                    {complianceStatus.badge}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Message */}
+            <div className={`p-3 rounded-md ${sideParams.is_compliant ? 'bg-green-50' : 'bg-red-50'}`}>
+              <p className={`text-xs ${sideParams.is_compliant ? 'text-green-800' : 'text-red-800'}`}>
+                <strong>{sideParams.is_compliant ? 'Safe:' : 'Warning:'}</strong> {complianceStatus.message}
+              </p>
+            </div>
+          </div>
+
+          {/* Therapeutic Range Configuration Section */}
+          <div className="space-y-4 p-4 border border-purple-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <GearIcon className="h-4 w-4 text-purple-600" />
+              <h5 className="text-sm font-semibold text-gray-800">Therapeutic Range</h5>
+              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">Customizable</Badge>
               <ClinicalTooltip
                 title="Therapeutic Range Customization"
                 description="Adjustable safety and effectiveness parameters for individualized treatment"
@@ -374,64 +449,6 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               </div>
             </div>
           </div>
-
-          {/* Session Duration for this side */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Session Duration</Label>
-              <ClinicalTooltip
-                title={`${title} Session Duration`}
-                description="Independent application time for optimized muscle-specific therapy"
-                sections={[
-                  {
-                    title: "Clinical Benefits:",
-                    type: "list",
-                    items: [
-                      { description: "Different fatigue management protocols per muscle group" },
-                      { description: "Asymmetric injury accommodation and protection" },
-                      { description: "Progressive training phases with individual progression" },
-                      { description: "Patient tolerance optimization per limb" }
-                    ]
-                  },
-                  {
-                    title: "Typical Protocols:",
-                    type: "list",
-                    items: [
-                      { description: "Standard sessions: 10-20 minutes with rest periods" },
-                      { description: "Injured limb: Reduced duration for protection" },
-                      { description: "Progressive increase: 2-5 minutes per week" }
-                    ]
-                  }
-                ]}
-                side="right"
-                triggerClassName="h-3 w-3"
-              />
-            </div>
-            {isDebugMode ? (
-              <Input
-                type="number"
-                value={sideParams.application_time_minutes || ''}
-                onChange={(e) => updateBFRParameters(side, 'application_time_minutes', parseFloat(e.target.value) || 0)}
-                placeholder="15"
-                min="0"
-                max="60"
-                step="1"
-                disabled={disabled}
-                className="h-8 text-xs"
-              />
-            ) : (
-              <div className="h-8 px-3 py-2 bg-white border rounded-md text-xs text-slate-500">
-                {sideParams.application_time_minutes || 'N/A'} minutes
-              </div>
-            )}
-          </div>
-
-          {/* Status Message */}
-          <div className={`p-3 rounded-md ${sideParams.is_compliant ? 'bg-green-50' : 'bg-red-50'}`}>
-            <p className={`text-xs ${sideParams.is_compliant ? 'text-green-800' : 'text-red-800'}`}>
-              <strong>{sideParams.is_compliant ? 'Safe:' : 'Warning:'}</strong> {complianceStatus.message}
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -439,7 +456,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
 
   return (
     <UnifiedSettingsCard
-      title="🩸 BFR Parameters"
+      title="BFR Parameters"
       description="Blood Flow Restriction settings for left and right muscles with therapeutic compliance monitoring"
       isOpen={isBFRParametersOpen}
       onOpenChange={setIsBFRParametersOpen}
@@ -499,14 +516,6 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
             <BFRSidePanel side="right" title="Right Muscle BFR Parameters" colorIndicator="bg-red-500" />
           </TabsContent>
         </Tabs>
-        
-        <Alert className="border-red-200 bg-red-50">
-          <HeartIcon className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-sm text-red-800">
-            <strong>Clinical Note:</strong> BFR parameters are measured during clinical assessment and imported from the GHOSTLY+ mobile app. 
-            Debug mode allows manual adjustment for testing. Each muscle group has independent pressure settings and session durations.
-          </AlertDescription>
-        </Alert>
       </div>
     </UnifiedSettingsCard>
   );
