@@ -52,10 +52,14 @@ const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
             <span>Low Engagement</span>
             <span>High Engagement</span>
           </div>
-          {gameLevel ? (
+          {gameLevel !== undefined && gameScore !== undefined ? (
             <p className="text-sm text-gray-500 text-center mt-2">Level {gameLevel} • {gameScore} pts • {scoreColors.label}</p>
-          ) : (
+          ) : gameScore !== undefined ? (
             <p className="text-sm text-gray-500 text-center mt-2">{gameScore} pts • {scoreColors.label}</p>
+          ) : gameLevel !== undefined ? (
+            <p className="text-sm text-gray-500 text-center mt-2">Level {gameLevel} • {scoreColors.label}</p>
+          ) : (
+            <p className="text-sm text-gray-500 text-center mt-2">No game data • {scoreColors.label}</p>
           )}
         </CardContent>
       </Card>

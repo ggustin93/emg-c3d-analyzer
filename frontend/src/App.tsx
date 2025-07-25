@@ -165,15 +165,25 @@ function App() {
       // Step 2: Initialize MVC values and thresholds
       updatedSessionParams = initializeMvcValues(data, updatedSessionParams);
       
+      // Step 3: Store game metadata if available
+      if (data.metadata.score !== undefined) {
+        updatedSessionParams.game_score = data.metadata.score;
+      }
+      if (data.metadata.level !== undefined) {
+        updatedSessionParams.game_level = Number(data.metadata.level);
+      }
+      
       // Log the updated parameters
       console.log('Setting session params from upload:', {
         availableChannels,
         channel_muscle_mapping: updatedSessionParams.channel_muscle_mapping,
         session_mvc_values: updatedSessionParams.session_mvc_values,
-        session_mvc_threshold_percentages: updatedSessionParams.session_mvc_threshold_percentages
+        session_mvc_threshold_percentages: updatedSessionParams.session_mvc_threshold_percentages,
+        game_score: updatedSessionParams.game_score,
+        game_level: updatedSessionParams.game_level
       });
       
-      // Step 3: Update the session parameters
+      // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
   }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, setActiveTab, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups]);

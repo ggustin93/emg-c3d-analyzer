@@ -44,6 +44,15 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   // Extract game data
   const gameScore = analysisResult?.metadata?.score ?? undefined;
   const gameLevel = analysisResult?.metadata?.level ? Number(analysisResult.metadata.level) : undefined;
+  
+  // Debug: Log game metadata
+  console.log('Performance Card Game Metadata:', {
+    score: analysisResult?.metadata?.score,
+    level: analysisResult?.metadata?.level,
+    gameScore,
+    gameLevel,
+    fullMetadata: analysisResult?.metadata
+  });
 
   // Extract RPE data - use post-exercise RPE (Borg CR10 scale 0-10)
   const rpeLevel = sessionParams?.post_session_rpe ?? undefined;
@@ -162,12 +171,12 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         )}
         
         {/* GHOSTLY Game Score */}
-        {gameScore !== undefined && (
+        {(gameScore !== undefined || gameLevel !== undefined) && (
           <div className="lg:col-span-2 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <GHOSTLYGameCard 
               gameScore={gameScore}
               gameLevel={gameLevel}
-              normalizedScore={gameScore ? Math.min(100, (gameScore / Math.max(gameScore, 100)) * 100) : 0}
+              normalizedScore={gameScore !== undefined ? Math.min(100, (gameScore / Math.max(gameScore || 1, 100)) * 100) : 0}
               showExperimental={true}
             />
           </div>
