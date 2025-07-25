@@ -80,9 +80,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   const getAverageDurationThreshold = () => {
     const thresholds = sessionParams.session_duration_thresholds_per_muscle;
     if (thresholds && Object.keys(thresholds).length > 0) {
-      const values = Object.values(thresholds);
-      const average = values.reduce((sum, val) => sum + val, 0) / values.length;
-      return average.toFixed(1);
+      const values = Object.values(thresholds).filter((val): val is number => typeof val === 'number');
+      if (values.length > 0) {
+        const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+        return average.toFixed(1);
+      }
     }
     return sessionParams.contraction_duration_threshold_ms 
       ? (sessionParams.contraction_duration_threshold_ms / 1000).toFixed(1)
