@@ -41,6 +41,8 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 - `@radix-ui/react-icons` (for icons)
 - `axios` (for API calls)
 - `recharts` (for client-side data visualization)
+- `@supabase/supabase-js` (for authentication and storage)
+- `zustand` (for state management)
 - Specific `shadcn/ui` components. New components are added via `npx shadcn@latest add <component-name>`.
 
 ## Development Environment

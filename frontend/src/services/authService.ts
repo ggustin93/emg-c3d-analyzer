@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { withTimeout, formatAuthError } from '../utils/authUtils'
 import type { 
   LoginCredentials, 
   ResearcherRegistration, 
@@ -58,28 +59,37 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Login failed', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
   }
 
   /**
-   * Sign out current researcher
+   * Sign out current researcher with timeout protection
    */
   static async logout(): Promise<AuthResponse<void>> {
+    const configCheck = this.checkConfiguration()
+    if (configCheck) return configCheck as AuthResponse<void>
+
     try {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await withTimeout(
+        supabase.auth.signOut(),
+        5000,
+        'Logout request timeout'
+      )
       
       if (error) {
+        console.warn('Logout error from Supabase:', error)
         return { data: null, error: error.message, success: false }
       }
 
       return { data: null, error: null, success: true }
     } catch (err) {
+      console.error('Logout failed:', err)
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Logout failed', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -115,7 +125,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Registration failed', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -140,7 +150,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to get current user', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -165,7 +175,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to get session', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -190,7 +200,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to refresh session', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -213,7 +223,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Password reset failed', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -242,7 +252,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to get profile', 
+        error: formatAuthError(err), 
         success: false 
       }
     }
@@ -272,7 +282,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to update profile', 
+        error: formatAuthError(err), 
         success: false 
       }
     }

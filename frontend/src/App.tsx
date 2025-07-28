@@ -21,17 +21,13 @@ import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/EMGChart"; // This type might move later
 import SessionLoader from "./components/SessionLoader";
+import AuthGuard from "./components/auth/AuthGuard";
+import UserProfile from "./components/auth/UserProfile";
 import { Button } from "./components/ui/button";
 import { useSessionStore } from './store/sessionStore';
+import { useAuth } from "./hooks/useAuth";
+import SupabaseStorageService from "./services/supabaseStorage";
 
-// Import Stagewise components
-import { StagewiseToolbar } from "@stagewise/toolbar-react";
-import { ReactPlugin } from "@stagewise-plugins/react";
-
-// Define Stagewise configuration
-const stagewiseConfig = {
-  plugins: [ReactPlugin],
-};
 
 function App() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
@@ -39,6 +35,9 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
+  
+  // Authentication state
+  const { isAuthenticated } = useAuth();
   
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams } = useSessionStore();
@@ -135,6 +134,7 @@ function App() {
     setSelectedChannelForStats(null);
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
     resetSessionParams();
+    setIsLoading(false); // Ensure loading state is reset
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult) => {
@@ -209,14 +209,30 @@ function App() {
     resetState();
 
     try {
-      const response = await fetch(`/samples/${filename}`);
-      if (!response.ok) throw new Error(`Could not fetch test file.`);
+      // ONLY use Supabase storage - no local samples fallback
+      if (!SupabaseStorageService.isConfigured()) {
+        throw new Error('Supabase not configured. Cannot access c3d-examples bucket.');
+      }
+
+      console.log(`Downloading from Supabase c3d-examples bucket: ${filename}`);
       
-      const blob = await response.blob();
+      // Check if the file exists in Supabase
+      const fileExists = await SupabaseStorageService.fileExists(filename);
+      if (!fileExists) {
+        throw new Error(`File '${filename}' not found in c3d-examples bucket.`);
+      }
+
+      // Download file from Supabase storage
+      const blob = await SupabaseStorageService.downloadFile(filename);
+      console.log(`Successfully downloaded from Supabase: ${filename}, size: ${blob.size} bytes`);
+      
       const file = new File([blob], filename, { type: 'application/octet-stream' });
       
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Add source metadata
+      formData.append('file_source', 'supabase_storage');
       
       // Add all session parameters to the form data
       if (sessionParams) {
@@ -233,6 +249,7 @@ function App() {
         });
       }
 
+      console.log(`Sending file to backend for processing: ${filename}`);
       const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
           method: 'POST',
           body: formData,
@@ -244,10 +261,12 @@ function App() {
       }
 
       const resultData = await uploadResponse.json();
+      console.log(`File processing completed successfully: ${filename}`);
       handleSuccess(resultData);
 
     } catch (error: any) {
-      handleError(error.message || 'An unknown error occurred while processing the test file.');
+      console.error('Error in handleQuickSelect:', error);
+      handleError(error.message || 'An unknown error occurred while processing the file.');
     } finally {
       setIsLoading(false);
     }
@@ -353,69 +372,75 @@ function App() {
 
   return (
     <>
-      {/* Stagewise Toolbar - only renders in development mode */}
-      <StagewiseToolbar config={stagewiseConfig} />
-      
       <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+        {/* Header - always shown */}
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex items-center space-x-3 mb-2">
+            <div className="flex items-center justify-between">
+              {/* Left side - Logo and title */}
+              <div className="flex items-center space-x-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <h1 className="text-3xl font-light text-slate-800 tracking-tight">EMG C3D Analyzer</h1>
               </div>
-              {analysisResult && (
-                <div className="flex items-center mt-4 space-x-4">
-                  <p className="text-sm text-slate-500">
-                    File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
-                  </p>
-                  <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
-                    Load Another File
-                  </Button>
-                </div>
-              )}
+
+              {/* Right side - User profile (only when authenticated) */}
+              {isAuthenticated && <UserProfile compact />}
             </div>
+
+            {/* File info section - only when analysis result exists */}
+            {analysisResult && (
+              <div className="flex items-center justify-center mt-4 space-x-4">
+                <p className="text-sm text-slate-500">
+                  File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
+                </p>
+                <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
+                  Load Another File
+                </Button>
+              </div>
+            )}
           </div>
         </header>
 
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-          {!analysisResult ? (
-            <SessionLoader
-              onUploadSuccess={handleSuccess}
-              onUploadError={handleError}
-              setIsLoading={setIsLoading}
-              onQuickSelect={handleQuickSelect}
-              isLoading={isLoading}
-              sessionParams={sessionParams}
-            />
-          ) : (
-            <GameSessionTabs
-              analysisResult={analysisResult}
-              mvcThresholdForPlot={null}
-              muscleChannels={muscleChannels}
-              allAvailableChannels={allAvailableChannels}
-              plotChannel1Name={plotChannel1Name}
-              setPlotChannel1Name={setPlotChannel1Name}
-              plotChannel2Name={plotChannel2Name}
-              setPlotChannel2Name={setPlotChannel2Name}
-              selectedChannelForStats={selectedChannelForStats}
-              setSelectedChannelForStats={setSelectedChannelForStats}
-              currentStats={currentStats}
-              mainChartData={mainCombinedChartData}
-              dataPoints={downsamplingControls.dataPoints}
-              setDataPoints={downsamplingControls.setDataPoints}
-              handleDataPointsChange={downsamplingControls.handleDataPointsChange}
-              mainPlotChannel1Data={plotChannel1Data}
-              mainPlotChannel2Data={plotChannel2Data}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              plotMode={plotMode}
-              setPlotMode={setPlotMode}
-              appIsLoading={isLoading}
-            />
-          )}
+          <AuthGuard>
+            {!analysisResult ? (
+              <SessionLoader
+                onUploadSuccess={handleSuccess}
+                onUploadError={handleError}
+                setIsLoading={setIsLoading}
+                onQuickSelect={handleQuickSelect}
+                isLoading={isLoading}
+                sessionParams={sessionParams}
+              />
+            ) : (
+              <GameSessionTabs
+                analysisResult={analysisResult}
+                mvcThresholdForPlot={null}
+                muscleChannels={muscleChannels}
+                allAvailableChannels={allAvailableChannels}
+                plotChannel1Name={plotChannel1Name}
+                setPlotChannel1Name={setPlotChannel1Name}
+                plotChannel2Name={plotChannel2Name}
+                setPlotChannel2Name={setPlotChannel2Name}
+                selectedChannelForStats={selectedChannelForStats}
+                setSelectedChannelForStats={setSelectedChannelForStats}
+                currentStats={currentStats}
+                mainChartData={mainCombinedChartData}
+                dataPoints={downsamplingControls.dataPoints}
+                setDataPoints={downsamplingControls.setDataPoints}
+                handleDataPointsChange={downsamplingControls.handleDataPointsChange}
+                mainPlotChannel1Data={plotChannel1Data}
+                mainPlotChannel2Data={plotChannel2Data}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                plotMode={plotMode}
+                setPlotMode={setPlotMode}
+                appIsLoading={isLoading}
+              />
+            )}
+          </AuthGuard>
 
           {appError && (
             <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-md">
@@ -431,11 +456,12 @@ function App() {
           )}
         </main>
         
+        {/* Footer - always shown */}
         <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-center justify-center text-center">
               <p className="text-sm text-slate-500">
-                GHOSTLY+ EMG C3D Analyzer | Research Project
+                EMG C3D Analyzer | Academic Research Tool
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 Developed for rehabilitation research and therapy assessment

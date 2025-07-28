@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Spinner from '@/components/ui/Spinner';
 import { 
   Dialog, 
   DialogContent, 
@@ -38,17 +39,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const { profile, user } = authState;
 
   const handleLogout = async () => {
+    // Prevent double-clicking
+    if (isLoggingOut) {
+      console.warn('Logout already in progress');
+      return;
+    }
+
     setIsLoggingOut(true);
+    setShowLogoutDialog(false); // Close dialog immediately
+    
+    // Call logout (which now redirects immediately)
     try {
-      const response = await logout();
-      if (response.success) {
-        setShowLogoutDialog(false);
-      } else {
-        console.error('Logout failed:', response.error);
-        // Optionally show user-friendly error message
-      }
+      await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('UserProfile: Logout error:', error);
+      // Even if logout fails, we should still be redirected since logout clears local state
     } finally {
       setIsLoggingOut(false);
     }
@@ -103,27 +108,69 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-3 ${className}`}>
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-          <PersonIcon className="w-4 h-4 text-blue-600" />
+      <>
+        <div className={`flex items-center gap-3 ${className}`}>
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <PersonIcon className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {displayProfile.full_name || user.email?.split('@')[0] || 'Researcher'}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {displayProfile.role.replace('_', ' ')} • {displayProfile.institution || 'Academic'}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLogoutDialog(true)}
+            className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors"
+            title="Sign out"
+          >
+            <ExitIcon className="h-4 w-4" />
+          </Button>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
-            {displayProfile.full_name || user.email}
-          </p>
-          <p className="text-xs text-gray-500 truncate">
-            {displayProfile.institution || 'Researcher'}
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowLogoutDialog(true)}
-          className="h-8 w-8 p-0"
-        >
-          <ExitIcon className="h-4 w-4" />
-        </Button>
-      </div>
+
+        {/* Logout Confirmation Dialog */}
+        <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ExclamationTriangleIcon className="w-5 h-5 text-orange-500" />
+                Confirm Sign Out
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to sign out? You'll need to sign in again to access researcher features.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowLogoutDialog(false)}
+                disabled={isLoggingOut}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="min-w-[100px]"
+              >
+                {isLoggingOut ? (
+                  <div className="flex items-center gap-2">
+                    <Spinner />
+                    <span>Signing out...</span>
+                  </div>
+                ) : (
+                  'Sign Out'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -243,7 +290,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
             >
               {isLoggingOut ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <Spinner />
                   <span>Signing out...</span>
                 </div>
               ) : (

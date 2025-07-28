@@ -84,6 +84,11 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
 ### Frontend Development Patterns
 - **Component-Based Architecture**: React components for modular UI development.
 - **UI Components**: Primarily from `shadcn/ui`.
+- **Authentication Architecture**: Complete Supabase integration with secure route protection
+  - `useAuth`: Centralized authentication hook with persistent login and state management
+  - `AuthGuard`: Route protection component that wraps protected application areas  
+  - `UserProfile`: Professional user interface with logout functionality
+  - Supabase Storage integration for secure C3D file access
 - **Custom React Hooks for State Management**:
   - `useChannelManagement`: Manages channel selection and mapping.
   - `usePlotDataProcessor`: Processes EMG signal data for visualization (downsampling, etc.).
