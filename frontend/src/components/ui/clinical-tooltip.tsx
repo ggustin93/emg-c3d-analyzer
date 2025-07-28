@@ -13,7 +13,7 @@ import {
   getAppliedPressureTooltipData,
   getAOPTooltipData,
   type TooltipData
-} from '../../data/tooltipData';
+} from '@/data/tooltipData';
 
 interface ClinicalTooltipProps {
   title: string;
