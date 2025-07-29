@@ -37,6 +37,7 @@ from .config import (
     CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS,
     ensure_temp_dir
 )
+from .export_utils import EMGDataExporter
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -64,6 +65,7 @@ async def root():
         "description": "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
         "endpoints": {
             "upload": "POST /upload - Upload and process a C3D file",
+            "export": "POST /export - Export comprehensive analysis data as JSON",
         }
     })
 
@@ -146,6 +148,91 @@ async def upload_file(file: UploadFile = File(...),
         print(f"ERROR in /upload: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+    finally:
+        if file:
+            await file.close()
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.post("/export")
+async def export_analysis_data(file: UploadFile = File(...),
+                              user_id: Optional[str] = Form(None),
+                              patient_id: Optional[str] = Form(None),
+                              session_id: Optional[str] = Form(None),
+                              # Standard processing options
+                              threshold_factor: float = Form(DEFAULT_THRESHOLD_FACTOR),
+                              min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
+                              smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
+                              # Session parameters
+                              session_mvc_value: Optional[float] = Form(None),
+                              session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
+                              session_expected_contractions: Optional[int] = Form(None),
+                              session_expected_contractions_ch1: Optional[int] = Form(None),
+                              session_expected_contractions_ch2: Optional[int] = Form(None),
+                              # Export options
+                              include_raw_signals: bool = Form(True),
+                              include_debug_info: bool = Form(True)):
+    """
+    Export comprehensive C3D analysis data as JSON.
+    
+    This endpoint processes a C3D file and returns a comprehensive JSON structure
+    containing all extracted data, analysis results, and debug information.
+    Useful for debugging, data archival, and external analysis workflows.
+    """
+    if not file.filename.lower().endswith('.c3d'):
+        raise HTTPException(status_code=400, detail="File must be a C3D file")
+
+    tmp_path = ""
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".c3d") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+
+        # Process the file
+        processor = GHOSTLYC3DProcessor(tmp_path)
+        
+        # Create processing options and session parameters
+        processing_opts = ProcessingOptions(
+            threshold_factor=threshold_factor,
+            min_duration_ms=min_duration_ms,
+            smoothing_window=smoothing_window
+        )
+        
+        session_game_params = GameSessionParameters(
+            session_mvc_value=session_mvc_value,
+            session_mvc_threshold_percentage=session_mvc_threshold_percentage,
+            session_expected_contractions=session_expected_contractions,
+            session_expected_contractions_ch1=session_expected_contractions_ch1,
+            session_expected_contractions_ch2=session_expected_contractions_ch2
+        )
+
+        # Process the file completely
+        result = processor.process_file(processing_opts, session_game_params)
+        
+        # Create comprehensive export
+        exporter = EMGDataExporter(processor)
+        comprehensive_export = exporter.create_comprehensive_export(
+            session_params=session_game_params,
+            processing_opts=processing_opts,
+            include_raw_signals=include_raw_signals,
+            include_debug_info=include_debug_info
+        )
+        
+        # Add request metadata
+        comprehensive_export["request_metadata"] = {
+            "user_id": user_id,
+            "patient_id": patient_id,
+            "session_id": session_id,
+            "filename": file.filename,
+            "export_timestamp": datetime.now().isoformat()
+        }
+        
+        return JSONResponse(content=comprehensive_export)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
     finally:
         if file:
             await file.close()
