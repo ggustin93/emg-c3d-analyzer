@@ -1,16 +1,7 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-// Removed unused Recharts imports, EMGChart import is now only for its types if needed elsewhere, actual component used in GameSessionTabs
-import type {
-  EMGAnalysisResult,
-  ChannelAnalyticsData,
-  GameSessionParameters
-} from './types/emg'; // EmgSignalData, StatsData might be handled by hooks
-import FileUpload from "./components/FileUpload";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import type { EMGAnalysisResult } from './types/emg';
 import GameSessionTabs from "./components/sessions/game-session-tabs";
-import QuickSelect from "./components/QuickSelect"; // Import QuickSelect
-import Spinner from "./components/ui/Spinner"; // Using the new CSS spinner
-import ScoringConfigPanel from "./components/SessionConfigPanel"; // Import the new component
-// GameSession, EMGDataPoint, EMGMetrics, GameParameters, BFRParameters are used by hooks or GameSessionTabs
+import Spinner from "./components/ui/Spinner";
 
 // Import hooks
 import { useDataDownsampling } from "./hooks/useDataDownsampling";
@@ -19,14 +10,14 @@ import { usePlotDataProcessor } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
 import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
-import { CombinedChartDataPoint } from "./components/EMGChart"; // This type might move later
+import { CombinedChartDataPoint } from "./components/EMGChart";
 import SessionLoader from "./components/SessionLoader";
 import AuthGuard from "./components/auth/AuthGuard";
-import UserProfile from "./components/auth/UserProfile";
-import { Button } from "./components/ui/button";
+import Header from "./components/layout/Header";
 import { useSessionStore } from './store/sessionStore';
 import { useAuth } from "./hooks/useAuth";
 import SupabaseStorageService from "./services/supabaseStorage";
+import { GitHubLogoIcon } from '@radix-ui/react-icons';
 
 
 function App() {
@@ -91,14 +82,12 @@ function App() {
         }
       }));
     }
-  }, []);
+  }, [sessionParams.channel_muscle_mapping, sessionParams.muscle_color_mapping, setSessionParams]);
 
   const {
     plotChannel1Data,
     plotChannel2Data,
     currentStats,
-    dataProcessingLoading,
-    dataProcessingError,
     resetPlotDataAndStats,
   } = usePlotDataProcessor(
     analysisResult, 
@@ -109,12 +98,6 @@ function App() {
   );
 
   const {
-    currentGameSession,
-    currentEMGTimeSeriesDataForTabs,
-    leftQuadChannelForTabs,
-    rightQuadChannelForTabs,
-    tabsDataLoading,
-    tabsDataError,
     determineChannelsForTabs,
     resetGameSessionData,
   } = useGameSessionData(
@@ -135,7 +118,7 @@ function App() {
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
-  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams]);
+  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult) => {
     // BUNDLED DATA PATTERN:
@@ -186,22 +169,13 @@ function App() {
       // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, setActiveTab, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups]);
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
     setAppError(errorMsg);
   }, [resetState]);
 
-  // Function to handle recalculating scores with updated parameters
-  // This is now handled client-side by updating sessionParams
-  // The 'recalculate' button is now a 'refresh' of the analysis with new params
-  const handleRecalculateScores = useCallback(async () => {
-    // This is now a client-side only operation, we just need to trigger re-renders
-    // The hooks should be designed to react to changes in sessionParams
-    console.log("Re-evaluating with new session parameters.", sessionParams);
-    // The actual recalculation will happen within the hooks that depend on sessionParams
-  }, [sessionParams]);
 
   const handleQuickSelect = useCallback(async (filename: string) => {
     setIsLoading(true);
@@ -272,46 +246,6 @@ function App() {
     }
   }, [handleSuccess, handleError, resetState, sessionParams]);
 
-  const handleFileUpload = async (file: File) => {
-    setIsLoading(true);
-    setAppError(null);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Add all session parameters to the form data
-      if (sessionParams) {
-        Object.keys(sessionParams).forEach(key => {
-          const value = sessionParams[key];
-          if (value !== null && value !== undefined) {
-            if (key === 'channel_muscle_mapping' || key === 'muscle_color_mapping' || 
-                key === 'session_mvc_values' || key === 'session_mvc_threshold_percentages') {
-              formData.append(key, JSON.stringify(value || {}));
-            } else {
-              formData.append(key, String(value));
-            }
-          }
-        });
-      }
-
-      const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(errorData.detail || 'File processing failed.');
-      }
-
-      const resultData = await uploadResponse.json();
-      handleSuccess(resultData);
-    } catch (error: any) {
-      handleError(error.message || 'An unknown error occurred during upload.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {
@@ -360,50 +294,18 @@ function App() {
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
-  const appIsLoading = isLoading || dataProcessingLoading || tabsDataLoading;
-  const combinedError = [appError, dataProcessingError, tabsDataError].filter(Boolean).join("; ");
-
-  // Calculate actual MVC threshold for the plot if params are set
-  const mvcThresholdForPlot = useMemo(() => {
-    // We no longer use global MVC threshold - channel-specific thresholds are handled in EMGChart
-    // This is kept as null for backward compatibility with components that might expect this prop
-    return null;
-  }, [analysisResult]);
 
   return (
     <>
       <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
-        {/* Header - always shown */}
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              {/* Left side - Logo and title */}
-              <div className="flex items-center space-x-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <h1 className="text-3xl font-light text-slate-800 tracking-tight">EMG C3D Analyzer</h1>
-              </div>
+        {/* Header - always shown, adapts to authentication state */}
+        <Header 
+          analysisResult={analysisResult} 
+          onReset={resetState}
+          isAuthenticated={isAuthenticated}
+        />
 
-              {/* Right side - User profile (only when authenticated) */}
-              {isAuthenticated && <UserProfile compact />}
-            </div>
-
-            {/* File info section - only when analysis result exists */}
-            {analysisResult && (
-              <div className="flex items-center justify-center mt-4 space-x-4">
-                <p className="text-sm text-slate-500">
-                  File: <span className="font-medium text-slate-700">{analysisResult.source_filename}</span>
-                </p>
-                <Button variant="outline" size="sm" onClick={resetState} className="ml-4">
-                  Load Another File
-                </Button>
-              </div>
-            )}
-          </div>
-        </header>
-
-        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
           <AuthGuard>
             {!analysisResult ? (
               <SessionLoader
@@ -456,22 +358,48 @@ function App() {
           )}
         </main>
         
-        {/* Footer - always shown */}
-        <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center justify-center text-center">
-              <p className="text-sm text-slate-500">
-                EMG C3D Analyzer | Academic Research Tool
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Developed for rehabilitation research and therapy assessment
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                © {new Date().getFullYear()} | Academic Research Tool
-              </p>
+        {/* Footer - only shown when authenticated */}
+        {isAuthenticated && (
+          <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col items-center justify-center text-center space-y-4">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/vub_etro_logo.png" 
+                    alt="VUB ETRO Logo" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-slate-700 font-medium">
+                    ETRO Electronics & Informatics
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Vrije Universiteit Brussel (VUB)
+                  </p>
+                </div>
+                
+                <div className="text-xs text-slate-400 space-y-1">
+                  <p>Developed for rehabilitation research and therapy assessment</p>
+                  <p>© {new Date().getFullYear()} VUB. All rights reserved.</p>
+                </div>
+                
+                <div className="flex items-center gap-4 pt-2">
+                  <a 
+                    href="https://github.com/ggustin93/emg-c3d-analyzer" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <GitHubLogoIcon className="w-4 h-4" />
+                    <span>GitHub</span>
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
+        )}
       </div>
     </>
   );
