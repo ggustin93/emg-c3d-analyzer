@@ -367,67 +367,706 @@ AND tc.table_name IN ('therapist_patient_assignments', 'c3d_sessions');
 - Index creation failures → Check for naming conflicts with existing indexes
 
 #### 1.2 Backend API Enhancement
-**Priority**: HIGH | **Estimated**: 4 days
+**Priority**: HIGH | **Estimated**: 4 days | **Assignee**: Backend Developer
 
-**File**: `backend/middleware/role_based_access.py`
+#### Step 1.2.1: Create Role-Based Middleware
+**Time**: 6 hours
+
+1. **Create middleware directory and base files**:
+```bash
+mkdir -p backend/middleware
+touch backend/middleware/__init__.py
+touch backend/middleware/role_based_access.py
+touch backend/middleware/auth_utils.py
+```
+
+2. **Create authentication utilities** `backend/middleware/auth_utils.py`:
 ```python
+"""
+Authentication utilities for role-based access control
+"""
+import jwt
+from typing import Optional, Dict, Any
+from fastapi import HTTPException, Request
+from supabase import create_client, Client
+import os
+
+# Initialize Supabase client
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_ANON_KEY")
+supabase: Client = create_client(supabase_url, supabase_key)
+
+async def extract_user_from_token(request: Request) -> Optional[Dict[str, Any]]:
+    """Extract user information from JWT token in request headers"""
+    try:
+        # Get Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None
+        
+        # Extract token
+        token = auth_header.split(" ")[1]
+        
+        # Decode token (Supabase handles JWT verification)
+        decoded_token = jwt.decode(token, options={"verify_signature": False})
+        
+        return {
+            'user_id': decoded_token.get('sub'),
+            'email': decoded_token.get('email'),
+            'role': decoded_token.get('role', 'researcher'),  # Default to researcher
+            'aud': decoded_token.get('aud'),
+            'exp': decoded_token.get('exp')
+        }
+    
+    except Exception as e:
+        print(f"Token extraction error: {e}")
+        return None
+
+async def get_user_profile(user_id: str) -> Optional[Dict[str, Any]]:
+    """Get user profile from Supabase"""
+    try:
+        response = supabase.table('researcher_profiles').select('*').eq('id', user_id).execute()
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        return None
+    except Exception as e:
+        print(f"Profile fetch error: {e}")
+        return None
+
+async def get_therapist_patients(therapist_id: str) -> list[str]:
+    """Get list of patient IDs assigned to therapist"""
+    try:
+        response = supabase.table('therapist_patient_assignments')\
+            .select('patient_id')\
+            .eq('therapist_id', therapist_id)\
+            .eq('is_active', True)\
+            .execute()
+        
+        return [assignment['patient_id'] for assignment in response.data]
+    except Exception as e:
+        print(f"Therapist patients fetch error: {e}")
+        return []
+
+def anonymize_patient_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove or anonymize patient identifying information for researchers"""
+    if isinstance(data, dict):
+        anonymized = data.copy()
+        # Remove identifying fields
+        fields_to_remove = ['patient_code', 'date_of_birth', 'demographics', 'medical_history']
+        for field in fields_to_remove:
+            anonymized.pop(field, None)
+        
+        # Replace with anonymized IDs
+        if 'id' in anonymized:
+            anonymized['anonymous_id'] = f"ANON_{hash(anonymized['id']) % 10000:04d}"
+            anonymized.pop('id', None)
+        
+        return anonymized
+    return data
+```
+
+3. **Create role-based access middleware** `backend/middleware/role_based_access.py`:
+```python
+"""
+Role-based access control middleware for EMG C3D Analyzer
+"""
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+from .auth_utils import extract_user_from_token, get_user_profile, get_therapist_patients
+import time
+
 class RoleBasedAccessMiddleware:
     """Middleware to enforce role-based data access"""
     
-    async def __call__(self, request: Request, call_next):
-        # Extract user role from JWT token
-        user_role = await self.extract_user_role(request)
-        user_id = await self.extract_user_id(request)
+    def __init__(self, app):
+        self.app = app
+    
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
         
-        # Apply data filtering based on role
+        # Create request object
+        request = Request(scope, receive)
+        
+        # Skip middleware for non-API routes
+        if not request.url.path.startswith("/api/"):
+            await self.app(scope, receive, send)
+            return
+        
+        # Skip middleware for public endpoints
+        public_endpoints = ["/api/health", "/api/docs", "/api/openapi.json"]
+        if request.url.path in public_endpoints:
+            await self.app(scope, receive, send)
+            return
+        
+        # Extract user information
+        user_info = await extract_user_from_token(request)
+        
+        if not user_info:
+            response = JSONResponse(
+                status_code=401,
+                content={"detail": "Authentication required"}
+            )
+            await response(scope, receive, send)
+            return
+        
+        # Get user profile
+        profile = await get_user_profile(user_info['user_id'])
+        if not profile:
+            response = JSONResponse(
+                status_code=403,
+                content={"detail": "User profile not found"}
+            )
+            await response(scope, receive, send)
+            return
+        
+        # Set user context in request state
+        user_role = profile.get('role', 'researcher')
+        request.state.user_id = user_info['user_id']
+        request.state.user_email = user_info['email']
+        request.state.user_role = user_role
+        request.state.user_profile = profile
+        
+        # Apply role-based data filtering
         if user_role == 'therapist':
+            patient_ids = await get_therapist_patients(user_info['user_id'])
             request.state.data_filter = {
-                'patient_scope': await self.get_therapist_patients(user_id),
-                'role': 'therapist'
+                'patient_scope': patient_ids,
+                'role': 'therapist',
+                'can_create_patients': True,
+                'can_assign_patients': False,  # Only admins assign patients
+                'anonymize_data': False
             }
         elif user_role == 'researcher':
             request.state.data_filter = {
                 'global_access': True,
-                'anonymize': True,
-                'role': 'researcher'
+                'role': 'researcher',
+                'can_create_patients': False,
+                'can_assign_patients': False,
+                'anonymize_data': True  # Researchers get anonymized data
             }
         elif user_role == 'admin':
             request.state.data_filter = {
                 'admin_access': True,
-                'role': 'admin'
+                'role': 'admin',
+                'can_create_patients': True,
+                'can_assign_patients': True,
+                'anonymize_data': False
             }
+        else:
+            response = JSONResponse(
+                status_code=403,
+                content={"detail": f"Unknown role: {user_role}"}
+            )
+            await response(scope, receive, send)
+            return
         
-        return await call_next(request)
+        # Continue to the next middleware/route
+        await self.app(scope, receive, send)
 ```
 
-**New API Endpoints**:
+#### Step 1.2.2: Create Patient Management Endpoints
+**Time**: 8 hours
+
+4. **Create patient management module** `backend/services/patient_service.py`:
 ```python
-# Patient Management
-@app.get="/api/patients"
-@app.post="/api/patients" 
-@app.put="/api/patients/{patient_id}"
-@app.delete="/api/patients/{patient_id}"
+"""
+Patient management service for therapist workflows
+"""
+from typing import List, Optional, Dict, Any
+from datetime import date
+from ..middleware.auth_utils import supabase, anonymize_patient_data
+from ..models import Patient, PatientCreate, PatientUpdate
+from fastapi import HTTPException
 
-# Patient Assignments
-@app.get="/api/therapist-assignments"
-@app.post="/api/therapist-assignments"
-@app.delete="/api/therapist-assignments/{assignment_id}"
+class PatientService:
+    
+    @staticmethod
+    async def get_patients(user_role: str, patient_scope: List[str] = None, anonymize: bool = False) -> List[Dict[str, Any]]:
+        """Get patients based on user role and scope"""
+        try:
+            query = supabase.table('patients').select('*')
+            
+            # Apply role-based filtering
+            if user_role == 'therapist' and patient_scope:
+                if not patient_scope:  # No assigned patients
+                    return []
+                query = query.in_('id', patient_scope)
+            elif user_role == 'researcher':
+                # Researchers see all patients but anonymized
+                pass  # No additional filtering needed
+            
+            # Execute query
+            response = query.eq('is_active', True).order('created_at', desc=True).execute()
+            
+            patients = response.data
+            
+            # Anonymize data for researchers
+            if anonymize:
+                patients = [anonymize_patient_data(patient) for patient in patients]
+            
+            return patients
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching patients: {str(e)}")
+    
+    @staticmethod
+    async def get_patient_by_id(patient_id: str, user_role: str, patient_scope: List[str] = None, anonymize: bool = False) -> Optional[Dict[str, Any]]:
+        """Get specific patient by ID with role-based access control"""
+        try:
+            # Check access permissions
+            if user_role == 'therapist':
+                if not patient_scope or patient_id not in patient_scope:
+                    raise HTTPException(status_code=403, detail="Access denied to this patient")
+            
+            response = supabase.table('patients').select('*').eq('id', patient_id).eq('is_active', True).execute()
+            
+            if not response.data:
+                return None
+            
+            patient = response.data[0]
+            
+            if anonymize:
+                patient = anonymize_patient_data(patient)
+            
+            return patient
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching patient: {str(e)}")
+    
+    @staticmethod
+    async def create_patient(patient_data: PatientCreate, therapist_id: str) -> Dict[str, Any]:
+        """Create new patient (therapists only)"""
+        try:
+            # Create patient record
+            insert_data = {
+                'patient_code': patient_data.patient_code,
+                'date_of_birth': patient_data.date_of_birth.isoformat() if patient_data.date_of_birth else None,
+                'gender': patient_data.gender,
+                'condition_type': patient_data.condition_type,
+                'therapy_start_date': patient_data.therapy_start_date.isoformat() if patient_data.therapy_start_date else None,
+                'therapy_end_date': patient_data.therapy_end_date.isoformat() if patient_data.therapy_end_date else None,
+                'demographics': patient_data.demographics or {},
+                'medical_history': patient_data.medical_history or {},
+                'is_active': True
+            }
+            
+            response = supabase.table('patients').insert(insert_data).execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=400, detail="Failed to create patient")
+            
+            patient = response.data[0]
+            
+            # Auto-assign patient to creating therapist
+            assignment_data = {
+                'therapist_id': therapist_id,
+                'patient_id': patient['id'],
+                'assignment_reason': 'Created by therapist',
+                'is_active': True
+            }
+            
+            supabase.table('therapist_patient_assignments').insert(assignment_data).execute()
+            
+            return patient
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error creating patient: {str(e)}")
+    
+    @staticmethod
+    async def update_patient(patient_id: str, patient_data: PatientUpdate, user_role: str, patient_scope: List[str] = None) -> Dict[str, Any]:
+        """Update patient information"""
+        try:
+            # Check access permissions
+            if user_role == 'therapist':
+                if not patient_scope or patient_id not in patient_scope:
+                    raise HTTPException(status_code=403, detail="Access denied to this patient")
+            
+            # Build update data (only include non-None values)
+            update_data = {}
+            if patient_data.patient_code is not None:
+                update_data['patient_code'] = patient_data.patient_code
+            if patient_data.date_of_birth is not None:
+                update_data['date_of_birth'] = patient_data.date_of_birth.isoformat()
+            if patient_data.gender is not None:
+                update_data['gender'] = patient_data.gender
+            if patient_data.condition_type is not None:
+                update_data['condition_type'] = patient_data.condition_type
+            if patient_data.therapy_start_date is not None:
+                update_data['therapy_start_date'] = patient_data.therapy_start_date.isoformat()
+            if patient_data.therapy_end_date is not None:
+                update_data['therapy_end_date'] = patient_data.therapy_end_date.isoformat()
+            if patient_data.demographics is not None:
+                update_data['demographics'] = patient_data.demographics
+            if patient_data.medical_history is not None:
+                update_data['medical_history'] = patient_data.medical_history
+            
+            if not update_data:
+                raise HTTPException(status_code=400, detail="No valid update data provided")
+            
+            # Add updated_at timestamp
+            update_data['updated_at'] = 'NOW()'
+            
+            response = supabase.table('patients').update(update_data).eq('id', patient_id).execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=404, detail="Patient not found")
+            
+            return response.data[0]
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error updating patient: {str(e)}")
+    
+    @staticmethod
+    async def deactivate_patient(patient_id: str, user_role: str, patient_scope: List[str] = None) -> bool:
+        """Deactivate patient (soft delete)"""
+        try:
+            # Check access permissions (only admins can deactivate)
+            if user_role != 'admin':
+                raise HTTPException(status_code=403, detail="Only administrators can deactivate patients")
+            
+            response = supabase.table('patients').update({
+                'is_active': False,
+                'updated_at': 'NOW()'
+            }).eq('id', patient_id).execute()
+            
+            return len(response.data) > 0
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error deactivating patient: {str(e)}")
+```
 
-# Enhanced C3D Sessions
-@app.get="/api/c3d-sessions" # Role-filtered
-@app.post="/api/c3d-sessions" # With patient linking
-@app.get="/api/c3d-sessions/{session_id}/analysis"
+5. **Add patient data models** to `backend/models.py`:
+```python
+# Add these models to the existing models.py file
 
-# Dashboard Data
-@app.get="/api/dashboard-data" # Role-specific content
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
+from datetime import date
+
+class PatientBase(BaseModel):
+    patient_code: str = Field(..., min_length=1, max_length=50, description="Unique patient identifier")
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = Field(None, regex="^(male|female|other|unknown)$")
+    condition_type: Optional[str] = None
+    therapy_start_date: Optional[date] = None
+    therapy_end_date: Optional[date] = None
+    demographics: Optional[Dict[str, Any]] = None
+    medical_history: Optional[Dict[str, Any]] = None
+
+class PatientCreate(PatientBase):
+    pass
+
+class PatientUpdate(BaseModel):
+    patient_code: Optional[str] = Field(None, min_length=1, max_length=50)
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = Field(None, regex="^(male|female|other|unknown)$")
+    condition_type: Optional[str] = None
+    therapy_start_date: Optional[date] = None
+    therapy_end_date: Optional[date] = None
+    demographics: Optional[Dict[str, Any]] = None
+    medical_history: Optional[Dict[str, Any]] = None
+
+class Patient(PatientBase):
+    id: str
+    is_active: bool
+    created_at: str
+    updated_at: str
+
+class TherapistAssignment(BaseModel):
+    id: str
+    therapist_id: str
+    patient_id: str
+    assigned_date: date
+    assignment_reason: Optional[str] = None
+    is_active: bool
+    notes: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+class TherapistAssignmentCreate(BaseModel):
+    patient_id: str = Field(..., description="Patient ID to assign")
+    assignment_reason: Optional[str] = None
+    notes: Optional[str] = None
+```
+
+6. **Add patient endpoints** to `backend/api.py`:
+```python
+# Add these imports to the top of api.py
+from .services.patient_service import PatientService
+from .models import Patient, PatientCreate, PatientUpdate, TherapistAssignment
+
+# Add these endpoints to the FastAPI app
+
+@app.get("/api/patients", response_model=List[Patient])
+async def get_patients(request: Request):
+    """Get patients based on user role and permissions"""
+    data_filter = request.state.data_filter
+    
+    patients = await PatientService.get_patients(
+        user_role=data_filter['role'],
+        patient_scope=data_filter.get('patient_scope'),
+        anonymize=data_filter.get('anonymize_data', False)
+    )
+    
+    return patients
+
+@app.get("/api/patients/{patient_id}", response_model=Patient)
+async def get_patient(patient_id: str, request: Request):
+    """Get specific patient by ID"""
+    data_filter = request.state.data_filter
+    
+    patient = await PatientService.get_patient_by_id(
+        patient_id=patient_id,
+        user_role=data_filter['role'],
+        patient_scope=data_filter.get('patient_scope'),
+        anonymize=data_filter.get('anonymize_data', False)
+    )
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return patient
+
+@app.post("/api/patients", response_model=Patient)
+async def create_patient(patient_data: PatientCreate, request: Request):
+    """Create new patient (therapists and admins only)"""
+    data_filter = request.state.data_filter
+    
+    if not data_filter.get('can_create_patients'):
+        raise HTTPException(status_code=403, detail="Permission denied: Cannot create patients")
+    
+    patient = await PatientService.create_patient(
+        patient_data=patient_data,
+        therapist_id=request.state.user_id
+    )
+    
+    return patient
+
+@app.put("/api/patients/{patient_id}", response_model=Patient)
+async def update_patient(patient_id: str, patient_data: PatientUpdate, request: Request):
+    """Update patient information"""
+    data_filter = request.state.data_filter
+    
+    patient = await PatientService.update_patient(
+        patient_id=patient_id,
+        patient_data=patient_data,
+        user_role=data_filter['role'],
+        patient_scope=data_filter.get('patient_scope')
+    )
+    
+    return patient
+
+@app.delete("/api/patients/{patient_id}")
+async def deactivate_patient(patient_id: str, request: Request):
+    """Deactivate patient (admin only)"""
+    data_filter = request.state.data_filter
+    
+    success = await PatientService.deactivate_patient(
+        patient_id=patient_id,
+        user_role=data_filter['role'],
+        patient_scope=data_filter.get('patient_scope')
+    )
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return {"message": "Patient deactivated successfully"}
+```
+
+#### Step 1.2.3: Create Session Management Endpoints  
+**Time**: 6 hours
+
+7. **Create session management service** `backend/services/session_service.py`:
+```python
+"""
+C3D Session management service with patient linking
+"""
+from typing import List, Optional, Dict, Any
+from datetime import date, datetime
+from ..middleware.auth_utils import supabase, anonymize_patient_data
+from ..models import C3DSession, C3DSessionCreate, C3DSessionUpdate
+from fastapi import HTTPException, UploadFile
+import json
+import uuid
+
+class SessionService:
+    
+    @staticmethod
+    async def get_sessions(user_role: str, patient_scope: List[str] = None, patient_id: str = None, anonymize: bool = False) -> List[Dict[str, Any]]:
+        """Get C3D sessions based on user role and scope"""
+        try:
+            query = supabase.table('c3d_sessions').select('''
+                id, filename, original_filename, patient_id, therapist_id,
+                session_date, session_type, file_size, metadata,
+                clinical_notes, processing_status, created_at, updated_at,
+                patients!inner(patient_code, condition_type, is_active)
+            ''')
+            
+            # Apply role-based filtering
+            if user_role == 'therapist':
+                if not patient_scope:
+                    return []
+                query = query.in_('patient_id', patient_scope)
+            elif user_role == 'researcher':
+                # Researchers only see research sessions
+                query = query.eq('session_type', 'research')
+            
+            # Filter by specific patient if requested
+            if patient_id:
+                query = query.eq('patient_id', patient_id)
+            
+            # Execute query
+            response = query.order('created_at', desc=True).execute()
+            
+            sessions = response.data
+            
+            # Anonymize data for researchers
+            if anonymize:
+                for session in sessions:
+                    if 'patients' in session:
+                        session['patients'] = anonymize_patient_data(session['patients'])
+                    # Remove therapist identification
+                    session.pop('therapist_id', None)
+            
+            return sessions
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching sessions: {str(e)}")
+    
+    @staticmethod
+    async def get_session_by_id(session_id: str, user_role: str, patient_scope: List[str] = None, anonymize: bool = False) -> Optional[Dict[str, Any]]:
+        """Get specific session by ID with role-based access control"""
+        try:
+            response = supabase.table('c3d_sessions').select('''
+                id, filename, original_filename, patient_id, therapist_id,
+                session_date, session_type, file_path, file_size,
+                analysis_results, metadata, clinical_notes,
+                processing_status, created_at, updated_at,
+                patients(patient_code, condition_type, demographics)
+            ''').eq('id', session_id).execute()
+            
+            if not response.data:
+                return None
+            
+            session = response.data[0]
+            
+            # Check access permissions
+            if user_role == 'therapist':
+                if not patient_scope or session['patient_id'] not in patient_scope:
+                    raise HTTPException(status_code=403, detail="Access denied to this session")
+            elif user_role == 'researcher':
+                if session['session_type'] != 'research':
+                    raise HTTPException(status_code=403, detail="Access denied to clinical sessions")
+            
+            if anonymize:
+                if 'patients' in session:
+                    session['patients'] = anonymize_patient_data(session['patients'])
+                session.pop('therapist_id', None)
+            
+            return session
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching session: {str(e)}")
+    
+    @staticmethod
+    async def create_session(session_data: C3DSessionCreate, file_info: Dict[str, Any], therapist_id: str) -> Dict[str, Any]:
+        """Create new C3D session with patient linking"""
+        try:
+            # Generate unique ID for session
+            session_id = str(uuid.uuid4())
+            
+            # Create session record
+            insert_data = {
+                'id': session_id,
+                'filename': file_info['filename'],
+                'original_filename': file_info['original_filename'],
+                'patient_id': session_data.patient_id,
+                'therapist_id': therapist_id,
+                'session_date': session_data.session_date.isoformat() if session_data.session_date else date.today().isoformat(),
+                'session_type': session_data.session_type or 'therapy',
+                'file_path': file_info.get('file_path'),
+                'file_size': file_info.get('file_size'),
+                'analysis_results': session_data.analysis_results or {},
+                'metadata': session_data.metadata or {},
+                'clinical_notes': session_data.clinical_notes,
+                'processing_status': 'pending'
+            }
+            
+            response = supabase.table('c3d_sessions').insert(insert_data).execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=400, detail="Failed to create session")
+            
+            return response.data[0]
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error creating session: {str(e)}")
+    
+    @staticmethod
+    async def update_session_analysis(session_id: str, analysis_results: Dict[str, Any], metadata: Dict[str, Any] = None) -> bool:
+        """Update session with analysis results"""
+        try:
+            update_data = {
+                'analysis_results': analysis_results,
+                'processing_status': 'completed',
+                'updated_at': 'NOW()'
+            }
+            
+            if metadata:
+                update_data['metadata'] = metadata
+            
+            response = supabase.table('c3d_sessions').update(update_data).eq('id', session_id).execute()
+            
+            return len(response.data) > 0
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error updating session analysis: {str(e)}")
+    
+    @staticmethod
+    async def add_clinical_notes(session_id: str, notes: str, user_role: str, patient_scope: List[str] = None) -> bool:
+        """Add clinical notes to session (therapists only)"""
+        try:
+            if user_role != 'therapist' and user_role != 'admin':
+                raise HTTPException(status_code=403, detail="Only therapists can add clinical notes")
+            
+            # Check session access for therapists
+            if user_role == 'therapist':
+                session = await SessionService.get_session_by_id(session_id, user_role, patient_scope)
+                if not session:
+                    raise HTTPException(status_code=404, detail="Session not found or access denied")
+            
+            response = supabase.table('c3d_sessions').update({
+                'clinical_notes': notes,
+                'updated_at': 'NOW()'
+            }).eq('id', session_id).execute()
+            
+            return len(response.data) > 0
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error adding clinical notes: {str(e)}")
 ```
 
 **Acceptance Criteria**:
 - [ ] Role-based middleware implemented and tested
-- [ ] All new endpoints created with proper validation
+- [ ] Patient management endpoints created with proper validation
+- [ ] Session management with patient linking functional
 - [ ] Data filtering works correctly for each role
-- [ ] API documentation updated
-- [ ] Integration tests passing
+- [ ] API documentation updated with new endpoints
+- [ ] Unit tests written for all service methods
+- [ ] Integration tests passing with different user roles
+- [ ] Error handling implemented for all edge cases
 
 ### Frontend Authentication Enhancement
 
