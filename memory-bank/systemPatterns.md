@@ -25,6 +25,11 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
     - All visualization is done client-side using Recharts.
     - Enhanced `EMGChart` component with RMS envelope display, optional raw EMG, and contraction period visualization.
     - `usePlotDataProcessor` hook (refactored from `useEmgDataFetching`) for downsampling and processing plot data.
+- **Authentication & Navigation**:
+    - Single-page application (SPA) pattern with conditional rendering
+    - `AuthGuard` component handles authentication state management
+    - No routing library required - optimal for medical device linear workflows
+    - State-driven navigation: `AuthGuard` → `SessionLoader` → `GameSessionTabs`
 
 ### Directory Structure
 ```
@@ -43,6 +48,40 @@ emg-c3d-analyzer/
 ├── pyproject.toml
 └── start_dev.sh
 ```
+
+## Authentication & Navigation Architecture
+
+### Single-Page Application Pattern
+The application uses a clean SPA pattern optimized for medical device workflows:
+
+```typescript
+// App.tsx - Root navigation control
+<AuthGuard>
+  {!analysisResult ? <SessionLoader /> : <GameSessionTabs />}
+</AuthGuard>
+
+// AuthGuard.tsx - Authentication state management
+if (!isAuthenticated) return <LoginPage />;
+return <>{children}</>;
+```
+
+### URL Strategy
+- **Single URL Entry Point**: `/` handles all application states
+- **State-Driven Navigation**: Authentication and data states control view rendering
+- **Medical Device UX**: Linear workflow without route confusion for clinical users
+- **No Routing Library**: React Router unnecessary - conditional rendering optimal
+
+### Navigation Flow
+1. **Unauthenticated**: `/` → `LoginPage` (full-page login interface)
+2. **Authenticated + No Data**: `/` → `SessionLoader` (file selection interface)
+3. **Authenticated + Data Loaded**: `/` → `GameSessionTabs` (analysis interface)
+
+### Benefits of Current Pattern
+- **Clinical Workflow Alignment**: Matches linear medical device interaction patterns
+- **Simplified User Experience**: No URL navigation confusion for medical professionals
+- **State Persistence**: Zustand manages session state without routing complexity
+- **Mobile Optimization**: Single URL works seamlessly across all devices
+- **Error Reduction**: No broken routes or navigation edge cases
 
 ## Core Processing Logic
 

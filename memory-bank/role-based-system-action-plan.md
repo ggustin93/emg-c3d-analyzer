@@ -8,6 +8,823 @@ This action plan outlines the systematic implementation of role-based access con
 
 **Target**: Production-ready role-based system with secure data isolation and clinical workflows.
 
+## Pre-Implementation: Critical Documentation (Week 0)
+
+### 0.1 API Documentation Creation
+**Priority**: CRITICAL | **Estimated**: 1 day | **Assignee**: Technical Writer + Backend Developer
+
+#### Step 0.1.1: Create Comprehensive API Documentation
+**Time**: 8 hours
+
+1. **Create API documentation file** `docs/api.md`:
+
+```markdown
+# GHOSTLY+ EMG C3D Analyzer API Documentation
+
+## Authentication & Authorization
+
+### Authentication Flow
+- **Method**: JWT Bearer Token via Supabase Authentication
+- **Header**: `Authorization: Bearer <jwt_token>`
+- **Token Expiry**: 1 hour (auto-refresh)
+- **Role Field**: `role` claim in JWT payload
+
+### User Roles & Permissions
+
+| Role | Permissions | Data Access |
+|------|-------------|-------------|
+| `researcher` | Read, Analyze, Export | Global (anonymized) |
+| `therapist` | Read, Analyze, Export, Patient Management | Assigned patients only |
+| `admin` | Full access | All data |
+
+## Current API Endpoints (Research Version)
+
+### 1. Root Endpoint
+```http
+GET /
+```
+**Description**: API information and health check
+**Authentication**: None required
+**Response**:
+```json
+{
+  "name": "GHOSTLY+ EMG Analysis API",
+  "version": "1.0.0",
+  "description": "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
+  "endpoints": {
+    "upload": "POST /upload - Upload and process a C3D file",
+    "export": "POST /export - Export comprehensive analysis data as JSON"
+  }
+}
+```
+
+### 2. C3D File Upload & Analysis
+```http
+POST /upload
+```
+**Description**: Upload C3D file and get complete EMG analysis
+**Authentication**: Required (All roles)
+**Content-Type**: `multipart/form-data`
+
+**Request Parameters**:
+```typescript
+interface UploadRequest {
+  // File upload
+  file: File; // C3D file (required)
+  
+  // Session identification
+  user_id?: string;
+  patient_id?: string; // Therapist role only
+  session_id?: string;
+  
+  // Processing parameters
+  threshold_factor?: number; // Default: 2.5
+  min_duration_ms?: number; // Default: 1000
+  smoothing_window?: number; // Default: 50
+  
+  // Game session parameters
+  session_mvc_value?: number;
+  session_mvc_threshold_percentage?: number; // Default: 75
+  session_expected_contractions?: number;
+  session_expected_contractions_ch1?: number;
+  session_expected_contractions_ch2?: number;
+}
+```
+
+**Response Model**:
+```typescript
+interface EMGAnalysisResult {
+  file_id: string;
+  timestamp: string;
+  source_filename: string;
+  metadata: GameMetadata;
+  analytics: Record<string, ChannelAnalytics>;
+  available_channels: string[];
+  emg_signals: Record<string, EMGChannelSignalData>;
+  user_id?: string;
+  patient_id?: string;
+  session_id?: string;
+}
+
+interface GameMetadata {
+  duration?: number;
+  score?: number;
+  level?: number;
+  difficulty?: string;
+  session_parameters_used?: GameSessionParameters;
+}
+
+interface ChannelAnalytics {
+  contraction_count: number;
+  avg_duration_ms: number;
+  min_duration_ms: number;
+  max_duration_ms: number;
+  total_time_under_tension_ms: number;
+  avg_amplitude: number;
+  max_amplitude: number;
+  rms: number;
+  mav: number;
+  mpf?: number;
+  mdf?: number;
+  fatigue_index_fi_nsm5?: number;
+  contractions: Contraction[];
+}
+
+interface EMGChannelSignalData {
+  sampling_rate: number;
+  time_axis: number[];
+  data: number[]; // Primary C3D signal
+  rms_envelope?: number[];
+  activated_data?: number[];
+}
+```
+
+### 3. Data Export
+```http
+POST /export
+```
+**Description**: Export comprehensive analysis data
+**Authentication**: Required (All roles)
+**Content-Type**: `application/json`
+
+**Request**:
+```json
+{
+  "analysis_result": "EMGAnalysisResult object",
+  "export_format": "json"
+}
+```
+
+**Response**: Binary file download
+
+## Planned API Endpoints (Role-Based Version)
+
+### Patient Management (Therapist/Admin Only)
+
+#### Get Patients
+```http
+GET /api/patients
+```
+**Roles**: `therapist`, `admin`  
+**Description**: Get patients based on user role and permissions
+
+**Response**:
+```json
+[
+  {
+    "id": "uuid",
+    "patient_code": "PT001",
+    "condition_type": "Knee Rehabilitation",
+    "therapy_start_date": "2025-01-01",
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+]
+```
+
+#### Get Specific Patient
+```http
+GET /api/patients/{patient_id}
+```
+**Roles**: `therapist` (assigned only), `admin`
+
+#### Create Patient
+```http
+POST /api/patients
+```
+**Roles**: `therapist`, `admin`
+**Body**:
+```json
+{
+  "patient_code": "PT001",
+  "date_of_birth": "1990-01-01",
+  "gender": "male",
+  "condition_type": "Knee Rehabilitation",
+  "therapy_start_date": "2025-01-01"
+}
+```
+
+#### Update Patient
+```http
+PUT /api/patients/{patient_id}
+```
+**Roles**: `therapist` (assigned only), `admin`
+
+#### Deactivate Patient
+```http
+DELETE /api/patients/{patient_id}
+```
+**Roles**: `admin` only
+
+### C3D Session Management
+
+#### Get Sessions
+```http
+GET /api/c3d-sessions
+```
+**Roles**: All (filtered by role)
+- `researcher`: Only research sessions (anonymized)
+- `therapist`: Only assigned patient sessions
+- `admin`: All sessions
+
+**Query Parameters**:
+- `patient_id`: Filter by patient (therapist/admin)
+- `session_type`: Filter by type (therapy, assessment, research)
+- `limit`: Number of results (default: 50)
+- `offset`: Pagination offset (default: 0)
+
+#### Get Specific Session
+```http
+GET /api/c3d-sessions/{session_id}
+```
+**Access**: Role-based filtering applied
+
+#### Create Session
+```http
+POST /api/c3d-sessions
+```
+**Roles**: `therapist`, `admin`
+**Description**: Create C3D session with patient linking
+
+#### Add Clinical Notes
+```http
+PATCH /api/c3d-sessions/{session_id}/notes
+```
+**Roles**: `therapist`, `admin`
+**Body**:
+```json
+{
+  "clinical_notes": "Patient showed improvement in mobility..."
+}
+```
+
+### Dashboard Data
+
+#### Get Dashboard Data
+```http
+GET /api/dashboard-data
+```
+**Description**: Role-specific dashboard content
+**Roles**: All (different responses per role)
+
+**Researcher Response**:
+```json
+{
+  "total_sessions": 150,
+  "analysis_types": ["research"],
+  "recent_analyses": [...],
+  "statistics": {
+    "total_participants": 45,
+    "avg_session_duration": 180
+  }
+}
+```
+
+**Therapist Response**:
+```json
+{
+  "assigned_patients": 12,
+  "recent_sessions": [...],
+  "pending_analyses": 3,
+  "patient_progress": [...]
+}
+```
+
+## Error Handling
+
+### Standard Error Response
+```json
+{
+  "detail": "Error message",
+  "error_code": "VALIDATION_ERROR",
+  "timestamp": "2025-01-01T00:00:00Z"
+}
+```
+
+### Common Error Codes
+- `401`: Authentication required
+- `403`: Insufficient permissions
+- `404`: Resource not found
+- `400`: Validation error
+- `429`: Rate limit exceeded
+- `500`: Internal server error
+
+### Role-Based Access Errors
+```json
+{
+  "detail": "Access denied to this patient",
+  "error_code": "FORBIDDEN_PATIENT_ACCESS",
+  "allowed_roles": ["admin"],
+  "user_role": "therapist"
+}
+```
+
+## Rate Limiting
+- **Researcher**: 100 requests/hour
+- **Therapist**: 500 requests/hour  
+- **Admin**: Unlimited
+
+## Security Considerations
+- All endpoints require HTTPS in production
+- JWT tokens expire after 1 hour
+- Row Level Security enforced at database level
+- Patient data anonymized for researchers
+- Audit logging for all data access
+- IP-based rate limiting
+- CORS configured for frontend domains only
+
+## Development & Testing
+- **Base URL (Dev)**: `http://localhost:8080`
+- **Base URL (Prod)**: `https://your-api-domain.com`
+- **OpenAPI Docs**: `/docs`
+- **Health Check**: `/health`
+```
+
+### 0.2 Database Schema Documentation
+**Priority**: CRITICAL | **Estimated**: 1 day | **Assignee**: Database Administrator + Backend Developer
+
+#### Step 0.2.1: Create Database Schema Documentation using Supabase MCP
+**Time**: 8 hours
+
+2. **Create database schema documentation** `docs/db_schema.md`:
+
+```markdown
+# GHOSTLY+ EMG C3D Analyzer Database Schema
+
+## Overview
+This document describes the complete database schema for the role-based EMG C3D Analyzer system built on Supabase PostgreSQL.
+
+## Authentication Tables (Supabase Built-in)
+
+### auth.users
+**Purpose**: Core user authentication (managed by Supabase)
+```sql
+CREATE TABLE auth.users (
+  id UUID PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  encrypted_password VARCHAR(255),
+  email_confirmed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### researcher_profiles (Extended User Profiles)
+**Purpose**: Extended user profile information with role-based permissions
+```sql
+CREATE TABLE researcher_profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email VARCHAR(255) NOT NULL,
+  full_name VARCHAR(255),
+  institution VARCHAR(255),
+  department VARCHAR(100),
+  specialization VARCHAR(100),
+  role VARCHAR(50) DEFAULT 'researcher' CHECK (role IN ('researcher', 'therapist', 'admin', 'clinical_specialist')),
+  access_level VARCHAR(20) DEFAULT 'basic' CHECK (access_level IN ('basic', 'advanced', 'full')),
+  patient_management_enabled BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Indexes
+CREATE INDEX idx_researcher_profiles_role ON researcher_profiles(role);
+CREATE INDEX idx_researcher_profiles_active ON researcher_profiles(is_active) WHERE is_active = true;
+```
+
+## Patient Management Tables
+
+### patients
+**Purpose**: Patient information for clinical workflows
+```sql
+CREATE TABLE patients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_code VARCHAR(50) UNIQUE NOT NULL,
+  date_of_birth DATE,
+  gender VARCHAR(10) CHECK (gender IN ('male', 'female', 'other', 'unknown')),
+  condition_type TEXT,
+  therapy_start_date DATE,
+  therapy_end_date DATE,
+  demographics JSONB DEFAULT '{}',
+  medical_history JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Constraints
+  CONSTRAINT valid_therapy_dates CHECK (therapy_end_date IS NULL OR therapy_end_date >= therapy_start_date),
+  CONSTRAINT valid_birth_date CHECK (date_of_birth IS NULL OR date_of_birth <= CURRENT_DATE)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_patients_active ON patients(is_active) WHERE is_active = true;
+CREATE INDEX idx_patients_code ON patients(patient_code);
+CREATE INDEX idx_patients_condition ON patients(condition_type);
+CREATE INDEX idx_patients_therapy_dates ON patients(therapy_start_date, therapy_end_date);
+```
+
+### therapist_patient_assignments
+**Purpose**: Many-to-many relationship between therapists and patients
+```sql
+CREATE TABLE therapist_patient_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  therapist_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  assigned_date DATE DEFAULT CURRENT_DATE,
+  assignment_reason TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Prevent duplicate assignments
+  UNIQUE(therapist_id, patient_id)
+);
+
+-- Indexes for efficient queries
+CREATE INDEX idx_therapist_assignments_active ON therapist_patient_assignments(therapist_id, is_active) WHERE is_active = true;
+CREATE INDEX idx_therapist_assignments_patient ON therapist_patient_assignments(patient_id, is_active) WHERE is_active = true;
+CREATE INDEX idx_therapist_assignments_date ON therapist_patient_assignments(assigned_date);
+```
+
+## C3D Session Management
+
+### c3d_sessions
+**Purpose**: C3D file sessions with patient context and analysis results
+```sql
+CREATE TABLE c3d_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  filename VARCHAR(255) NOT NULL,
+  original_filename VARCHAR(255) NOT NULL,
+  patient_id UUID REFERENCES patients(id) ON DELETE SET NULL, -- NULL for research data
+  therapist_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- NULL for research data
+  session_date DATE DEFAULT CURRENT_DATE,
+  session_type VARCHAR(50) DEFAULT 'therapy' CHECK (session_type IN ('therapy', 'assessment', 'research', 'baseline')),
+  file_path TEXT, -- Supabase storage path
+  file_size BIGINT, -- File size in bytes
+  analysis_results JSONB DEFAULT '{}', -- Cached EMG analysis
+  metadata JSONB DEFAULT '{}', -- Game metadata, session parameters
+  clinical_notes TEXT,
+  processing_status VARCHAR(20) DEFAULT 'pending' CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Business rules
+  CONSTRAINT patient_therapist_required CHECK (
+    (patient_id IS NULL AND session_type = 'research') OR
+    (patient_id IS NOT NULL AND therapist_id IS NOT NULL)
+  )
+);
+
+-- Performance indexes
+CREATE INDEX idx_c3d_sessions_patient ON c3d_sessions(patient_id) WHERE patient_id IS NOT NULL;
+CREATE INDEX idx_c3d_sessions_therapist ON c3d_sessions(therapist_id) WHERE therapist_id IS NOT NULL;
+CREATE INDEX idx_c3d_sessions_date ON c3d_sessions(session_date);
+CREATE INDEX idx_c3d_sessions_type ON c3d_sessions(session_type);
+CREATE INDEX idx_c3d_sessions_status ON c3d_sessions(processing_status);
+```
+
+## Row Level Security (RLS) Policies
+
+### Helper Functions
+```sql
+-- Get user role from JWT token
+CREATE OR REPLACE FUNCTION auth.get_user_role()
+RETURNS TEXT AS $$
+BEGIN
+  RETURN COALESCE(
+    current_setting('request.jwt.claims', true)::JSON ->> 'role',
+    'researcher' -- Default role
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Check if user is therapist assigned to patient
+CREATE OR REPLACE FUNCTION auth.is_assigned_therapist(patient_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM therapist_patient_assignments tpa
+    WHERE tpa.patient_id = patient_uuid 
+    AND tpa.therapist_id = auth.uid()
+    AND tpa.is_active = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+### Patient Table Policies
+```sql
+-- Enable RLS
+ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+
+-- Researchers can see all patients (data anonymized in application layer)
+CREATE POLICY "researchers_see_all_patients" ON patients
+  FOR SELECT USING (auth.get_user_role() = 'researcher');
+
+-- Therapists can only see assigned patients
+CREATE POLICY "therapists_see_assigned_patients" ON patients
+  FOR SELECT USING (
+    auth.get_user_role() = 'therapist' AND
+    auth.is_assigned_therapist(patients.id)
+  );
+
+-- Therapists can modify assigned patients
+CREATE POLICY "therapists_modify_assigned_patients" ON patients
+  FOR ALL USING (
+    auth.get_user_role() = 'therapist' AND
+    auth.is_assigned_therapist(patients.id)
+  );
+
+-- Admins have full access
+CREATE POLICY "admins_full_patient_access" ON patients
+  FOR ALL USING (auth.get_user_role() = 'admin');
+```
+
+### Assignment Table Policies
+```sql
+ALTER TABLE therapist_patient_assignments ENABLE ROW LEVEL SECURITY;
+
+-- Therapists see their own assignments
+CREATE POLICY "therapists_see_own_assignments" ON therapist_patient_assignments
+  FOR SELECT USING (
+    auth.get_user_role() = 'therapist' AND
+    therapist_id = auth.uid()
+  );
+
+-- Admins manage all assignments
+CREATE POLICY "admins_manage_assignments" ON therapist_patient_assignments
+  FOR ALL USING (auth.get_user_role() = 'admin');
+```
+
+### C3D Sessions Policies
+```sql
+ALTER TABLE c3d_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Researchers see research sessions only
+CREATE POLICY "researchers_see_research_sessions" ON c3d_sessions
+  FOR SELECT USING (
+    auth.get_user_role() = 'researcher' AND
+    session_type = 'research'
+  );
+
+-- Therapists see sessions for assigned patients
+CREATE POLICY "therapists_see_patient_sessions" ON c3d_sessions
+  FOR SELECT USING (
+    auth.get_user_role() = 'therapist' AND
+    therapist_id = auth.uid()
+  );
+
+-- Therapists manage sessions for their patients
+CREATE POLICY "therapists_manage_patient_sessions" ON c3d_sessions
+  FOR ALL USING (
+    auth.get_user_role() = 'therapist' AND
+    therapist_id = auth.uid() AND
+    patient_id IN (
+      SELECT tpa.patient_id FROM therapist_patient_assignments tpa
+      WHERE tpa.therapist_id = auth.uid() AND tpa.is_active = true
+    )
+  );
+
+-- Admins access all sessions
+CREATE POLICY "admins_full_session_access" ON c3d_sessions
+  FOR ALL USING (auth.get_user_role() = 'admin');
+```
+
+## Data Relationships
+
+### Entity Relationship Diagram
+```
+auth.users (1) ←→ (1) researcher_profiles
+     ↓
+     ↓ (1:M)
+     ↓
+therapist_patient_assignments (M:M) ←→ patients
+     ↓                                    ↓
+     ↓ (1:M)                              ↓ (1:M)
+     ↓                                    ↓
+c3d_sessions ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+```
+
+### Key Relationships
+1. **User → Profile**: One-to-one relationship via foreign key
+2. **Therapist → Patient**: Many-to-many via assignment table
+3. **Patient → Sessions**: One-to-many relationship
+4. **Therapist → Sessions**: One-to-many relationship
+5. **Session → Analysis**: Embedded JSONB data
+
+## Performance Optimizations
+
+### Query Optimization
+```sql
+-- Common therapist query: Get assigned patients with recent sessions
+EXPLAIN ANALYZE
+SELECT p.*, 
+       COUNT(cs.id) as session_count,
+       MAX(cs.session_date) as last_session
+FROM patients p
+JOIN therapist_patient_assignments tpa ON p.id = tpa.patient_id
+LEFT JOIN c3d_sessions cs ON p.id = cs.patient_id
+WHERE tpa.therapist_id = $1 
+  AND tpa.is_active = true 
+  AND p.is_active = true
+GROUP BY p.id
+ORDER BY last_session DESC;
+```
+
+### Index Usage Analysis
+```sql
+-- Check index usage
+SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public'
+ORDER BY idx_scan DESC;
+```
+
+## Data Retention & Archival
+
+### Retention Policies
+```sql
+-- Archive old sessions (> 2 years)
+CREATE TABLE c3d_sessions_archive (LIKE c3d_sessions INCLUDING ALL);
+
+-- Function to archive old sessions
+CREATE OR REPLACE FUNCTION archive_old_sessions()
+RETURNS INTEGER AS $$
+DECLARE
+  archived_count INTEGER;
+BEGIN
+  INSERT INTO c3d_sessions_archive
+  SELECT * FROM c3d_sessions
+  WHERE created_at < NOW() - INTERVAL '2 years';
+  
+  GET DIAGNOSTICS archived_count = ROW_COUNT;
+  
+  DELETE FROM c3d_sessions
+  WHERE created_at < NOW() - INTERVAL '2 years';
+  
+  RETURN archived_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule monthly archival
+SELECT cron.schedule('archive-sessions', '0 0 1 * *', 'SELECT archive_old_sessions();');
+```
+
+## Backup & Recovery
+
+### Backup Strategy
+- **Full Backup**: Daily at 2 AM UTC
+- **Point-in-Time Recovery**: 30-day retention
+- **Cross-Region Replication**: Enabled for disaster recovery
+
+### Recovery Procedures
+```sql
+-- Restore from backup
+pg_restore --host=db.supabase.co --port=5432 --username=postgres --dbname=postgres --clean --create backup_file.dump
+
+-- Point-in-time recovery
+SELECT pg_create_restore_point('before_migration');
+```
+
+## Compliance & Audit
+
+### Audit Logging
+```sql
+-- Audit table for data access
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  action VARCHAR(50) NOT NULL,
+  table_name VARCHAR(50) NOT NULL,
+  record_id UUID,
+  old_values JSONB,
+  new_values JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Audit trigger function
+CREATE OR REPLACE FUNCTION audit_trigger_function()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO audit_log (
+    user_id, action, table_name, record_id, 
+    old_values, new_values, ip_address
+  ) VALUES (
+    auth.uid(),
+    TG_OP,
+    TG_TABLE_NAME,
+    COALESCE(NEW.id, OLD.id),
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN to_jsonb(OLD) ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN to_jsonb(NEW) ELSE NULL END,
+    inet_client_addr()
+  );
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Apply audit triggers
+CREATE TRIGGER patients_audit_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON patients
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER c3d_sessions_audit_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON c3d_sessions
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+```
+
+### GDPR Compliance
+```sql
+-- Right to erasure (patient data anonymization)
+CREATE OR REPLACE FUNCTION anonymize_patient_data(patient_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Anonymize patient record
+  UPDATE patients SET
+    patient_code = 'ANON_' || EXTRACT(EPOCH FROM NOW())::TEXT,
+    date_of_birth = NULL,
+    demographics = '{}',
+    medical_history = '{}',
+    updated_at = NOW()
+  WHERE id = patient_uuid;
+  
+  -- Anonymize session data
+  UPDATE c3d_sessions SET
+    clinical_notes = '[ANONYMIZED]',
+    metadata = jsonb_set(metadata, '{patient_data}', '"[ANONYMIZED]"'),
+    updated_at = NOW()
+  WHERE patient_id = patient_uuid;
+  
+  RETURN FOUND;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+## Migration History
+
+### Migration Tracking
+```sql
+-- Migration log table
+CREATE TABLE schema_migrations (
+  version VARCHAR(255) PRIMARY KEY,
+  description TEXT,
+  applied_at TIMESTAMPTZ DEFAULT NOW(),
+  applied_by VARCHAR(255) DEFAULT current_user,
+  checksum VARCHAR(255)
+);
+
+-- Record migrations
+INSERT INTO schema_migrations (version, description, checksum) VALUES
+  ('001', 'Create role-based tables', 'abc123'),
+  ('002', 'Add RLS policies', 'def456'),
+  ('003', 'Add audit logging', 'ghi789');
+```
+
+## Development & Testing
+
+### Test Data Generation
+```sql
+-- Create test patients
+INSERT INTO patients (patient_code, condition_type) VALUES
+  ('TEST001', 'Unit Test Patient'),
+  ('TEST002', 'Integration Test Patient');
+
+-- Create test therapist assignment
+INSERT INTO therapist_patient_assignments (therapist_id, patient_id, assignment_reason)
+SELECT 
+  (SELECT id FROM auth.users WHERE email = 'therapist@test.com'),
+  id,
+  'Test assignment'
+FROM patients WHERE patient_code LIKE 'TEST%';
+```
+
+### Performance Testing Queries
+```sql
+-- Load test: Concurrent patient queries
+SELECT COUNT(*) FROM patients p
+JOIN therapist_patient_assignments tpa ON p.id = tpa.patient_id
+WHERE tpa.therapist_id = $1 AND tpa.is_active = true;
+
+-- Stress test: Large session queries
+SELECT * FROM c3d_sessions cs
+JOIN patients p ON cs.patient_id = p.id
+WHERE cs.therapist_id = $1
+ORDER BY cs.created_at DESC
+LIMIT 100;
+```
+```
+
+**Acceptance Criteria**:
+- [ ] Complete API documentation with all current and planned endpoints
+- [ ] Database schema documentation with RLS policies
+- [ ] Performance optimization strategies documented
+- [ ] Compliance and audit requirements covered
+- [ ] Migration and rollback procedures documented
+- [ ] Both documents reviewed and approved by technical team
+
 ## Phase 1: Foundation & Authentication (Weeks 1-2)
 
 ### Backend Infrastructure Setup

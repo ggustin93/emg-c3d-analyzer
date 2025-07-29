@@ -19,13 +19,34 @@ You have two modes of operation:
 ### Memory Bank System
 As Claude, my memory resets completely between sessions. I rely ENTIRELY on the Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task.
 
-**Memory Bank Structure**:
+## Memory Bank & Documentation Structure
+
+### Memory Bank Files (Project Context)
 - `projectbrief.md` - Foundation document (project scope and requirements)
 - `productContext.md` - Why this project exists and how it should work
 - `activeContext.md` - Current work focus and recent changes
 - `systemPatterns.md` - System architecture and design patterns
 - `techContext.md` - Technologies used and development setup
 - `progress.md` - What works, what's left to build, current status
+
+### Critical Documentation Files (Technical Reference)
+**API Documentation (`docs/api.md`)**
+- Concise FastAPI endpoint reference (Swagger-style)
+- Essential request/response models from actual backend code
+- Basic authentication info
+- Core error codes
+- NO HALLUCINATION - only document actual FastAPI endpoints
+
+**Database Schema Documentation (`docs/db_schema.md`)**
+- Current Supabase database state via MCP inspection only
+- Mermaid ER diagram of actual tables and relationships
+- Brief table descriptions from real schema
+- Small "Future improvements may include..." section
+- NO HALLUCINATION - only document current live database state
+- AS CONCISE AS POSSIBLE
+
+**Creation Priority**: HIGH - Required before Phase 1 implementation begins
+**Tools**: Use Supabase MCP for real-time schema inspection and documentation generation
 
 **Memory Bank Updates** occur when:
 1. Discovering new project patterns
@@ -74,9 +95,26 @@ Working through todo.md tasks to refactor for:
 - Enhanced EMG analysis integration
 - Improved frontend chart capabilities
 
-## Latest Update: Supabase Authentication System Fixes ✅ (July 29, 2025)
-**Status**: PRODUCTION READY - Complete authentication flow with proper login/logout functionality
+## Latest Update: Authentication Loading Loop Fix ✅ (July 29, 2025)
+**Status**: PRODUCTION READY - Fixed infinite "Waiting for authentication to initialize..." loop
 **Final Achievement**: 
+- ✅ Removed problematic global authentication flag causing infinite loading loops
+- ✅ Implemented standard React authentication pattern following React documentation guidelines
+- ✅ Fixed C3DFileBrowser infinite loading state preventing file access
+- ✅ Simplified state management removing artificial protection mechanisms
+- ✅ Proper React hook instance management per component
+- ✅ Clean state transitions without blocking legitimate updates
+- ✅ Maintained Supabase authentication persistence and event handling
+
+**Technical Fix**: Removed `globalAuthInitialized` flag and `isStableRef` protection that was preventing proper React hook re-initialization. The C3DFileBrowser was stuck waiting for `authState.loading` to become false because the auth hook couldn't properly update its state due to over-protective state management.
+
+**Root Cause Analysis**: 
+- **Problem**: Global flag `globalAuthInitialized` prevented multiple hook instances from initializing properly
+- **Impact**: Auth state couldn't transition from loading=true to loading=false, blocking file browser
+- **Solution**: Standard React authentication pattern using proper `useState` and `useEffect` lifecycle
+
+**Previous Update: Supabase Authentication System ✅ (July 29, 2025)**
+**Status**: COMPLETED - Complete authentication flow with proper login/logout functionality
 - ✅ Fixed infinite re-render loops in authentication hooks and components
 - ✅ Resolved login blocking issue preventing user authentication
 - ✅ Implemented proper Supabase logout flow following official best practices
@@ -85,13 +123,6 @@ Working through todo.md tasks to refactor for:
 - ✅ Clean separation of concerns between Supabase auth and React UI state
 - ✅ Eliminated excessive debug logging causing performance issues
 - ✅ Enhanced error handling and state management reliability
-
-**Technical Architecture**: Standard Supabase React authentication pattern with persistent `onAuthStateChange` listener. Logout flow: `supabase.auth.signOut()` → `SIGNED_OUT` event → auth state update → AuthGuard → LoginPage redirect. Login state management uses forced state updates to bypass stability protection during authentication flow.
-
-**Critical Authentication Flow**: 
-1. **Login**: Reset stable state → force loading state → call Supabase → handle response → mark stable
-2. **Logout**: Call `supabase.auth.signOut()` → Supabase triggers `SIGNED_OUT` → listener updates state → automatic redirect
-3. **State Persistence**: Auth listener remains active throughout app lifecycle for reliable event handling
 
 ## Previous Update: Dynamic Thresholds & Game Metadata Resolution ✅ (July 25, 2025)
 **Status**: PRODUCTION READY - Complete dynamic threshold system and robust game metadata integration
@@ -178,3 +209,4 @@ Fatigue Indicators:
 - **ISO 14155**: Clinical investigation of medical devices
 - **IEC 62304**: Medical device software lifecycle processes
 - **GDPR/HIPAA**: Patient data protection and privacy compliance
+
