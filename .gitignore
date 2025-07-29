@@ -120,7 +120,6 @@ logs/
 
 # Data files - these can be large and are generated
 backend/data/
-data/
 
 # Test artifacts
 backend/tests/data/cache/
