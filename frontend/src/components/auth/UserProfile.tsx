@@ -48,12 +48,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
     setIsLoggingOut(true);
     setShowLogoutDialog(false); // Close dialog immediately
     
-    // Call logout (which now redirects immediately)
+    // Call logout - Supabase will trigger SIGNED_OUT event which redirects to login
     try {
       await logout();
+      // The onAuthStateChange listener will handle the redirect automatically
     } catch (error) {
       console.error('UserProfile: Logout error:', error);
-      // Even if logout fails, we should still be redirected since logout clears local state
     } finally {
       setIsLoggingOut(false);
     }
