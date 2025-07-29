@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { GameSession, EMGMetrics as FrontendEMGMetrics } from '@/types/session';
 import { EMGAnalysisResult, ChannelAnalyticsData, StatsData, EMGChannelSignalData, GameSessionParameters } from '../../types/emg';
-import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon, GearIcon } from '@radix-ui/react-icons';
+import { StarIcon, CodeIcon, LightningBoltIcon, ClockIcon, BarChartIcon, ActivityLogIcon, GearIcon, FileTextIcon, Share1Icon, HeartIcon } from '@radix-ui/react-icons';
+import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
 import MetricCard from './metric-card';
 import EMGChart, { CombinedChartDataPoint } from '../EMGChart';
@@ -27,6 +28,7 @@ import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 import BFRMonitoringTab from './BFRMonitoringTab';
+import ExportTab from './ExportTab';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -66,6 +68,7 @@ interface GameSessionTabsProps {
   setPlotMode: (mode: 'raw' | 'activated') => void;
   onRecalculateScores?: () => void;
   appIsLoading: boolean;
+  uploadedFileName?: string | null;
 }
 
 export default function GameSessionTabs({
@@ -92,6 +95,7 @@ export default function GameSessionTabs({
   setPlotMode,
   onRecalculateScores,
   appIsLoading,
+  uploadedFileName,
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
   const liveAnalytics = useLiveAnalytics(analysisResult);
@@ -323,12 +327,23 @@ export default function GameSessionTabs({
 
   return (
     <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange}>
-      <div className="border-b mb-4">
+      <div className="border-b mb-4 relative">
         <TabsList className="w-full flex justify-between overflow-x-auto">
-          <TabsTrigger value="plots" className="flex-1 flex-shrink-0">EMG Analysis</TabsTrigger>
-          <TabsTrigger value="game" className="flex-1 flex-shrink-0">Performance Analysis</TabsTrigger>
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <ActivityLogIcon className="w-4 h-4" />
+              <span>EMG Analysis</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <BarChartIcon className="w-4 h-4" />
+              <span>Performance Analysis</span>
+            </div>
+          </TabsTrigger>
           <TabsTrigger value="bfr" className="flex-1 flex-shrink-0">
             <div className="flex items-center gap-2">
+              <HeartIcon className="w-4 h-4" />
               <span>BFR Monitoring</span>
               {bfrCompliant === true && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -342,7 +357,18 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0">Settings</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <GearIcon className="w-4 h-4" />
+              <span>Settings</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="export" className="flex-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Share1Icon className="w-4 h-4" />
+              <span>Export</span>
+            </div>
+          </TabsTrigger>
         </TabsList>
       </div>
 
@@ -442,6 +468,13 @@ export default function GameSessionTabs({
           setShowContractionAreas={setShowContractionAreas}
           showContractionDots={showContractionDots && showContractionHighlights}
           setShowContractionDots={setShowContractionDots}
+        />
+      </TabsContent>
+
+      <TabsContent value="export" className="p-4 bg-white rounded-lg shadow-sm">
+        <ExportTab 
+          analysisResult={analysisResult}
+          uploadedFileName={uploadedFileName}
         />
       </TabsContent>
     </Tabs>

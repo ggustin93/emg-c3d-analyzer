@@ -1,14 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isMarkedAsLoggedIn } from '../utils/authUtils';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-
-// Create Supabase client if environment variables are available
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
 
 export interface C3DFileInfo {
   id: string;
@@ -30,14 +21,14 @@ export class SupabaseStorageService {
    * Check if Supabase is properly configured
    */
   static isConfigured(): boolean {
-    return supabase !== null;
+    return isSupabaseConfigured();
   }
 
   /**
    * List all C3D files in the storage bucket
    */
   static async listC3DFiles(): Promise<C3DFileInfo[]> {
-    if (!supabase) {
+    if (!isSupabaseConfigured()) {
       console.warn('Supabase not configured, returning empty list');
       return [];
     }
@@ -52,13 +43,38 @@ export class SupabaseStorageService {
       
       console.log('User is authenticated, proceeding with file listing...');
       
-      const { data: files, error } = await supabase.storage
+      // First check if the bucket exists to provide better error messages
+      console.log('Checking if bucket exists...');
+      try {
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          throw new Error(`Failed to check buckets: ${bucketError.message}`);
+        }
+        
+        const bucketExists = buckets.some(bucket => bucket.name === this.BUCKET_NAME);
+        if (!bucketExists) {
+          throw new Error(`Bucket '${this.BUCKET_NAME}' does not exist. Please create it in your Supabase dashboard.`);
+        }
+        console.log('✅ Bucket exists, proceeding with file listing...');
+      } catch (bucketCheckError) {
+        console.error('Bucket check failed:', bucketCheckError);
+        throw bucketCheckError;
+      }
+      
+      // Add timeout to storage operation to prevent hanging
+      const storageOperation = supabase.storage
         .from(this.BUCKET_NAME)
         .list('', {
           limit: 100,
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' }
         });
+        
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Storage operation timeout after 20 seconds')), 20000);
+      });
+      
+      const { data: files, error } = await Promise.race([storageOperation, timeoutPromise]);
 
       if (error) {
         console.error('Error listing files from Supabase:', error);

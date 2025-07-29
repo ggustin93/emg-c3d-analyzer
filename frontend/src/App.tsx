@@ -26,6 +26,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   
   // Authentication state
   const { isAuthenticated } = useAuth();
@@ -118,9 +119,10 @@ function App() {
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
+    setUploadedFileName(null); // Reset filename
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats]);
 
-  const handleSuccess = useCallback((data: EMGAnalysisResult) => {
+  const handleSuccess = useCallback((data: EMGAnalysisResult, filename?: string) => {
     // BUNDLED DATA PATTERN:
     // The backend now returns all necessary data in a single response, implementing a stateless
     // architecture. This includes complete EMG signals, analytics, and metadata in one payload,
@@ -133,6 +135,11 @@ function App() {
     updateChannelsAfterUpload(data);
     determineChannelsForTabs(data);
     setActiveTab("plots"); // Keep default tab as "plots" which is now the combined EMG Analysis tab
+    
+    // Store the filename if provided (from direct upload)
+    if (filename) {
+      setUploadedFileName(filename);
+    }
     
     // Update sessionParams from the response if available
     if (data && data.metadata && data.metadata.session_parameters_used) {
@@ -181,6 +188,7 @@ function App() {
     setIsLoading(true);
     setAppError(null);
     resetState();
+    setUploadedFileName(filename); // Store the filename
 
     try {
       // ONLY use Supabase storage - no local samples fallback
@@ -254,7 +262,9 @@ function App() {
     const name1 = plotChannel1Name;
     const name2 = plotChannel2Name;
 
-    console.log('Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
+    if (process.env.NODE_ENV === 'development' && analysisResult) {
+      console.log('Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
+    }
 
     if (!series1 && !series2) return [];
 
@@ -340,6 +350,7 @@ function App() {
                 plotMode={plotMode}
                 setPlotMode={setPlotMode}
                 appIsLoading={isLoading}
+                uploadedFileName={uploadedFileName}
               />
             )}
           </AuthGuard>

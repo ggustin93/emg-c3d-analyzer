@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabaseStorage';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Setup utility for Supabase storage bucket
@@ -17,7 +17,7 @@ export class SupabaseSetup {
 
     try {
       // Check if bucket already exists
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      const { data: buckets, error: listError } = await supabase!.storage.listBuckets();
       
       if (listError) {
         console.error('Error listing buckets:', listError);
@@ -31,7 +31,7 @@ export class SupabaseSetup {
       }
 
       // Create the bucket
-      const { data, error } = await supabase.storage.createBucket(this.BUCKET_NAME, {
+      const { data, error } = await supabase!.storage.createBucket(this.BUCKET_NAME, {
         public: true,
         allowedMimeTypes: ['application/octet-stream'],
         fileSizeLimit: 10485760 // 10MB
@@ -91,7 +91,7 @@ export class SupabaseSetup {
           const patientId = this.extractPatientIdFromFilename(fileName);
           
           // Upload to Supabase storage
-          const { data, error } = await supabase.storage
+          const { data, error } = await supabase!.storage
             .from(this.BUCKET_NAME)
             .upload(fileName, fileBlob, {
               contentType: 'application/octet-stream',

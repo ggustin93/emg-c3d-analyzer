@@ -6,7 +6,7 @@ import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 interface FileUploadProps {
-  onUploadSuccess: (data: EMGAnalysisResult) => void;
+  onUploadSuccess: (data: EMGAnalysisResult, filename?: string) => void;
   onUploadError: (error: string) => void;
   setIsLoading: (isLoading: boolean) => void;
   currentSessionParams: GameSessionParameters;
@@ -65,7 +65,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           'Content-Type': 'multipart/form-data',
         },
       });
-      onUploadSuccess(response.data);
+      onUploadSuccess(response.data, selectedFile.name);
     } catch (error: any) {
       console.error('Error uploading file:', error);
       if (axios.isAxiosError(error) && error.response) {

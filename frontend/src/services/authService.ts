@@ -66,30 +66,48 @@ export class AuthService {
   }
 
   /**
-   * Sign out current researcher with timeout protection
+   * Sign out current researcher with timeout protection and fallback
    */
   static async logout(): Promise<AuthResponse<void>> {
     const configCheck = this.checkConfiguration()
     if (configCheck) return configCheck as AuthResponse<void>
 
     try {
+      console.log('🔄 Starting Supabase signOut...')
+      
+      // Use shorter timeout for better UX
       const { error } = await withTimeout(
         supabase.auth.signOut(),
-        5000,
+        3000,
         'Logout request timeout'
       )
       
       if (error) {
         console.warn('Logout error from Supabase:', error)
+        // Don't treat timeout or network errors as failures
+        // The auth state listener will handle cleanup
+        if (error.message.includes('timeout') || error.message.includes('network')) {
+          console.log('✅ Treating timeout/network error as successful logout')
+          return { data: null, error: null, success: true }
+        }
         return { data: null, error: error.message, success: false }
       }
 
+      console.log('✅ Supabase signOut completed successfully')
       return { data: null, error: null, success: true }
     } catch (err) {
-      console.error('Logout failed:', err)
+      const errorMessage = formatAuthError(err)
+      console.error('❌ Logout failed:', errorMessage)
+      
+      // For timeout errors, treat as success since the user wants to logout
+      if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+        console.log('✅ Treating timeout/network error as successful logout')
+        return { data: null, error: null, success: true }
+      }
+      
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: errorMessage, 
         success: false 
       }
     }

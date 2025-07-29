@@ -81,7 +81,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   useEffect(() => {
     // Wait for authentication to be fully initialized before attempting to load files
     if (authState.loading) {
-      console.log('Waiting for authentication to initialize...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Waiting for authentication to initialize...');
+      }
       return;
     }
 
@@ -113,9 +115,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           return;
         }
 
-        console.log('Loading files from c3d-examples bucket...');
-        console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
-        console.log('Auth state:', { user: authState.user?.email, loading: authState.loading });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Loading files from c3d-examples bucket...');
+          console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+          console.log('Auth state:', { user: authState.user?.email, loading: authState.loading });
+        }
 
         // Add timeout promise to race against the actual request - more generous timeout
         const loadPromise = SupabaseStorageService.listC3DFiles();
@@ -196,7 +200,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   // Manual retry function
   const retryLoadFiles = useCallback(() => {
-    const loadFiles = async (retryCount = 0) => {
+    const loadFiles = async () => {
       setIsLoadingFiles(true);
       setError(null);
       

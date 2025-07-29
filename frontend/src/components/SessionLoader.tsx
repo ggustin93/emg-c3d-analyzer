@@ -6,7 +6,7 @@ import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
 import { LightningBoltIcon } from '@radix-ui/react-icons';
 
 interface SessionLoaderProps {
-  onUploadSuccess: (data: EMGAnalysisResult) => void;
+  onUploadSuccess: (data: EMGAnalysisResult, filename?: string) => void;
   onUploadError: (error: string) => void;
   setIsLoading: (isLoading: boolean) => void;
   onQuickSelect: (filename: string) => void;
