@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LoginPage from './LoginPage';
@@ -16,19 +16,6 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const { isAuthenticated, isLoading, authState } = useAuth();
-  const [forceRender, setForceRender] = useState(0);
-  
-  // Force re-render when auth state changes
-  useEffect(() => {
-    console.log('🛡️ AuthGuard useEffect triggered - auth state changed')
-    setForceRender(prev => prev + 1);
-  }, [isAuthenticated, isLoading, authState.user]);
-  
-  console.log('🛡️ AuthGuard render #' + forceRender + ':', { 
-    isAuthenticated, 
-    isLoading, 
-    user: authState.user ? 'EXISTS' : 'NULL' 
-  })
 
   // Loading state
   if (isLoading) {

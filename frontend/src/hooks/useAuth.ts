@@ -33,7 +33,6 @@ export const useAuth = () => {
   // Protected setAuthState that respects stable state
   const setAuthState = useCallback((newState: AuthState | ((prev: AuthState) => AuthState), force?: boolean) => {
     if (isStableRef.current && !force) {
-      console.log('Auth state is stable, ignoring state change attempt')
       return
     }
     setAuthStateRaw(newState)
@@ -44,9 +43,7 @@ export const useAuth = () => {
     // Reset stable ref to allow changes
     isStableRef.current = false
     // Use setAuthStateRaw directly to bypass any protection
-    console.log('🔥 FORCE LOGOUT: Directly setting auth state')
     setAuthStateRaw(newState)
-    console.log('🔥 FORCE LOGOUT: Auth state should be:', typeof newState === 'function' ? 'computed' : newState)
   }, [])
 
   // Initialize authentication state
@@ -131,14 +128,11 @@ export const useAuth = () => {
 
     initializeAuth().finally(() => clearTimeout(timeoutId))
 
-    // Only set up auth state listener if we don't have cached auth
-    if (isSupabaseConfigured() && !isMarkedAsLoggedIn()) {
+    // Always set up auth state listener for both login and logout events
+    if (isSupabaseConfigured()) {
       try {
-        console.log('Setting up auth state listener for fresh authentication...')
         const { data: { subscription } } = AuthService.onAuthStateChange(async (event, session) => {
           if (!isInitializedRef.current) return
-          
-          console.log('Auth state change detected:', event)
           
           if (event === 'SIGNED_IN' && session?.user) {
             try {
@@ -147,20 +141,17 @@ export const useAuth = () => {
               setAuthState(newAuthState)
               saveAuthState(newAuthState)
               markAsLoggedIn() // Mark as logged in
-              
-              // Unsubscribe after successful login to prevent further state changes
-              console.log('Login successful, unsubscribing from auth changes')
-              subscription.unsubscribe()
-              subscriptionRef.current = null
+              isStableRef.current = true // Mark as stable after successful login
             } catch (profileError) {
               console.error('Failed to fetch profile after sign in:', profileError)
               setAuthState(createErrorState('Failed to load user profile'))
             }
           } else if (event === 'SIGNED_OUT') {
+            // This is the standard Supabase logout pattern
             storage.clear()
-            clearLoggedInStatus() // Clear logged-in status
-            isStableRef.current = false // Reset stable state
-            forceAuthState(createLoggedOutState()) // Force state change to logged out
+            clearLoggedInStatus()
+            isStableRef.current = false
+            forceAuthState(createLoggedOutState())
           }
         })
         
@@ -168,8 +159,6 @@ export const useAuth = () => {
       } catch (err) {
         console.warn('Failed to set up auth state listener:', err)
       }
-    } else if (isMarkedAsLoggedIn()) {
-      console.log('Skipping auth listener setup - using cached authentication')
     }
 
     // Cleanup
@@ -195,7 +184,9 @@ export const useAuth = () => {
       }
     }
     
-    setAuthState(prev => ({ ...prev, loading: true, error: null }))
+    // Reset stable state to allow login process
+    isStableRef.current = false
+    setAuthState(prev => ({ ...prev, loading: true, error: null }), true) // Force the loading state
     
     try {
       const response = await AuthService.login(credentials)
@@ -208,51 +199,35 @@ export const useAuth = () => {
         if (userResponse.success && userResponse.data) {
           const profileResponse = await AuthService.getResearcherProfile(userResponse.data.id)
           const newAuthState = createAuthenticatedState(userResponse.data, response.data, profileResponse.data)
-          setAuthState(newAuthState)
+          setAuthState(newAuthState, true) // Force the authenticated state
           saveAuthState(newAuthState)
           markAsLoggedIn() // Mark as logged in for persistent state
           isStableRef.current = true // Mark as stable
         }
       } else {
-        setAuthState(prev => ({ ...prev, loading: false, error: response.error }))
+        setAuthState(prev => ({ ...prev, loading: false, error: response.error }), true) // Force error state
       }
       
       return response
     } catch (err) {
       const error = formatAuthError(err)
-      setAuthState(prev => ({ ...prev, loading: false, error }))
+      setAuthState(prev => ({ ...prev, loading: false, error }), true) // Force error state
       return { data: null, error, success: false }
     }
   }, [])
 
-  // Logout method
+  // Logout method - follows standard Supabase pattern
   const logout = useCallback(async (): Promise<AuthResponse<void>> => {
-    console.log('🚪 LOGOUT STARTED')
-    
-    // Step 1: Immediately clear all local state
-    console.log('🚪 LOGOUT: Clearing storage')
-    storage.clear()
-    clearLoggedInStatus()
-    
-    // Step 2: Force immediate state change to trigger re-render
-    console.log('🚪 LOGOUT: Creating logged out state')
-    const loggedOutState = createLoggedOutState()
-    console.log('🚪 LOGOUT: Logged out state:', loggedOutState)
-    console.log('🚪 LOGOUT: Calling forceAuthState')
-    forceAuthState(loggedOutState)
-    
-    // Step 3: Background server cleanup (non-blocking)
-    setTimeout(async () => {
-      try {
-        await AuthService.logout()
-      } catch (err) {
-        console.warn('Server logout failed (local state already cleared):', err)
-      }
-    }, 0)
-    
-    console.log('🚪 LOGOUT COMPLETED - should redirect now')
-    return { data: null, error: null, success: true }
-  }, [forceAuthState])
+    try {
+      // Call Supabase signOut - this triggers SIGNED_OUT event
+      // which is handled by onAuthStateChange listener
+      const response = await AuthService.logout()
+      return response
+    } catch (err) {
+      const error = formatAuthError(err)
+      return { data: null, error, success: false }
+    }
+  }, [])
 
   // Register method
   const register = useCallback(async (data: ResearcherRegistration): Promise<AuthResponse<User>> => {
@@ -314,13 +289,6 @@ export const useAuth = () => {
 
   const isAuthenticated = !!authState.user
   const isLoading = authState.loading
-  
-  // Debug current state
-  console.log('🔍 CURRENT AUTH STATE:', { 
-    user: authState.user ? 'EXISTS' : 'NULL', 
-    isAuthenticated, 
-    isLoading 
-  })
 
   return {
     authState,
