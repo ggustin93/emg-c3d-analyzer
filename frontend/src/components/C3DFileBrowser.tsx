@@ -30,7 +30,6 @@ import {
   ChevronUpIcon,
   ClockIcon,
   UploadIcon,
-  ActivityLogIcon,
   PlayIcon
 } from '@radix-ui/react-icons';
 import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage';

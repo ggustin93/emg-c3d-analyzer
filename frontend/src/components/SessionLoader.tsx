@@ -1,10 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import FileUpload from './FileUpload';
 import C3DFileBrowser from './C3DFileBrowser';
-import UserProfile from './auth/UserProfile';
 import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
-import { useAuth } from '@/hooks/useAuth';
 import { LightningBoltIcon } from '@radix-ui/react-icons';
 
 interface SessionLoaderProps {
@@ -24,8 +22,6 @@ const SessionLoader: React.FC<SessionLoaderProps> = ({
   isLoading,
   sessionParams
 }) => {
-  const { authState } = useAuth();
-
   return (
     <div className="space-y-8 w-full max-w-6xl mx-auto">
       {/* File Browser Section - Primary Focus */}
