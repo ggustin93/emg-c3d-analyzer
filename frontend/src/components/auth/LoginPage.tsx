@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
-import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, LightningBoltIcon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon } from '@radix-ui/react-icons';
 
 interface LoginPageProps {
   onLoginSuccess?: () => void;
@@ -87,38 +88,41 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-12">
-        <div className="w-full max-w-md space-y-8">
-          
-          {/* Welcome Card */}
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <PersonIcon className="w-8 h-8 text-blue-600" />
-              </div>
-              <CardTitle className="text-2xl font-bold text-slate-900">
-                Researcher Access
-              </CardTitle>
-              <CardDescription className="text-base text-slate-600 mt-2">
-                Sign in to access the research analysis platform
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-6">
-              {/* Feature Highlights */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <LightningBoltIcon className="w-4 h-4 text-blue-600" />
-                  <h3 className="font-semibold text-blue-900 text-sm">Platform Features</h3>
+    <TooltipProvider>
+      <div className="min-h-screen flex flex-col px-4">
+        <div className="flex-grow flex items-center justify-center pt-8 pb-4">
+          <div className="w-full max-w-md sm:max-w-lg">
+            
+            {/* Welcome Card */}
+            <Card className="shadow-2xl border-0">
+              <CardHeader className="text-center pb-3 pt-5 px-4 sm:px-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CardTitle className="text-2xl font-bold text-slate-900">
+                    Sign In
+                  </CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-4 h-4 text-blue-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <div className="space-y-2">
+                        <p className="font-semibold">Platform Features:</p>
+                        <ul className="text-sm space-y-1">
+                          <li>• C3D file processing and EMG analysis</li>
+                          <li>• Research-grade performance metrics</li>
+                          <li>• Real-time visualization and reporting</li>
+                          <li>• Session data management and export</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• C3D file processing and EMG analysis</li>
-                  <li>• Research-grade performance metrics</li>
-                  <li>• Real-time visualization and reporting</li>
-                  <li>• Session data management and export</li>
-                </ul>
-              </div>
+                <CardDescription className="text-sm text-slate-600">
+                  Access the Ghostly+ EMG C3D Analysis Platform
+                </CardDescription>
+              </CardHeader>
 
+            <CardContent className="space-y-4 px-4 sm:px-8 pb-5 sm:pb-6">
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
@@ -144,7 +148,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         value={credentials.email}
                         onChange={handleInputChange('email')}
                         disabled={isLoading}
-                        className="pl-10 h-12 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="email"
                         required
                       />
@@ -152,9 +156,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-slate-700">
-                      Password
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                        Password
+                      </Label>
+                      <a href="#" className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
                     <div className="relative">
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
@@ -164,7 +173,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         value={credentials.password}
                         onChange={handleInputChange('password')}
                         disabled={isLoading}
-                        className="pl-10 h-12 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="current-password"
                         required
                       />
@@ -189,7 +198,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <Button 
                   type="submit" 
                   disabled={isLoading || !credentials.email || !credentials.password}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base transition-colors"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
@@ -199,23 +208,55 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   ) : (
                     <>
                       <PersonIcon className="w-4 h-4 mr-2" />
-                      Sign In to EMG Analyzer
+                      Sign In to Ghostly+
                     </>
                   )}
                 </Button>
-
               </form>
 
-              {/* Help Text */}
-              <div className="text-center pt-4 border-t">
-                <p className="text-xs text-slate-500">
-                  Need researcher access? Contact your institution administrator.
-                </p>
+              {/* Footer Links */}
+              <div className="space-y-3 pt-3 border-t">
+                <div className="flex items-center justify-between text-sm">
+                  <p className="text-slate-600">
+                    New researcher? 
+                    <a href="#" className="ml-1 text-blue-600 hover:text-blue-700 hover:underline">
+                      Contact administrator
+                    </a>
+                  </p>
+                  <a 
+                    href="https://github.com/ggustin93/emg-c3d-analyzer" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors"
+                  >
+                    <GitHubLogoIcon className="w-4 h-4" />
+                    <span>GitHub</span>
+                  </a>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
-    </div>
+        </div>
+        
+        {/* Footer with VUB ETRO */}
+        <footer className="mt-auto pt-8 pb-6">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="flex items-center gap-2">
+              <img 
+                src="/vub_etro_logo.png" 
+                alt="VUB ETRO Logo" 
+                className="h-12 object-contain"
+              />
+            </div>
+            <div className="text-xs text-slate-500 space-y-1">
+              <p>ETRO Electronics & Informatics • Vrije Universiteit Brussel</p>
+              <p>© {new Date().getFullYear()} VUB. All rights reserved.</p>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </TooltipProvider>
   );
 };
 
