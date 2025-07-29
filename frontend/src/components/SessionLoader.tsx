@@ -27,39 +27,38 @@ const SessionLoader: React.FC<SessionLoaderProps> = ({
   const { authState } = useAuth();
 
   return (
-    <div className="space-y-6 w-full max-w-6xl mx-auto">
-      {/* Upload Section - Compact */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="text-center">
-            <CardTitle className="text-lg font-semibold">Load Session Data</CardTitle>
-            <CardDescription className="text-sm">
-              Upload a new C3D file to begin analysis
-            </CardDescription>
-          </div>
-        </CardHeader>
-          
-        <CardContent className="pt-0">
-          <FileUpload
-            onUploadSuccess={onUploadSuccess}
-            onUploadError={onUploadError}
-            setIsLoading={setIsLoading}
-            currentSessionParams={sessionParams}
-          />
-        </CardContent>
-      </Card>
-
+    <div className="space-y-8 w-full max-w-6xl mx-auto">
       {/* File Browser Section - Primary Focus */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-sm font-medium">
-          <span className="bg-slate-50 px-6 text-slate-700">C3D File Library</span>
-        </div>
-      </div>
-
       <C3DFileBrowser onFileSelect={onQuickSelect} isLoading={isLoading} />
+
+      {/* Upload Section - Secondary/Subtle */}
+      <div className="border-t border-slate-200 pt-8">
+        <Card className="border-slate-200 bg-white">
+          <CardContent className="px-6 py-5">
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                  <LightningBoltIcon className="w-5 h-5 text-slate-600" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-slate-800">Direct Analysis</h3>
+                  <p className="text-sm text-slate-600">
+                    Upload a C3D file for immediate analysis (not saved to library)
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0 w-80">
+                <FileUpload
+                  onUploadSuccess={onUploadSuccess}
+                  onUploadError={onUploadError}
+                  setIsLoading={setIsLoading}
+                  currentSessionParams={sessionParams}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
