@@ -25,82 +25,71 @@ You have two modes of operation:
 ### Memory Bank System
 As Claude, my memory resets completely between sessions. I rely ENTIRELY on the Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task.
 
-## Memory Bank Location
-📁 `/memory-bank/` - Essential project context and documentation
+## **MINIMALIST DOCUMENTATION ARCHITECTURE**
 
-### Core Files (Always Read First)
-1. `projectbrief.md` - Foundation document, core requirements
-2. `productContext.md` - Why this project exists, user goals  
-3. `activeContext.md` - Current work focus, recent changes, next steps
-4. `systemPatterns.md` - Architecture, technical decisions, design patterns
-5. `techContext.md` - Technologies, setup, constraints, dependencies
-6. `progress.md` - Status, completed work, known issues, evolution
+The project follows a **2-Layer Documentation Strategy** (Git provides archival):
 
-### Organized Context
-- `features/` - Detailed implementation documentation for major features
-- `technical/` - Technical specifications and system flows
-- `archive/` - Historical documentation and completed summaries
-- `README.md` - Memory Bank organization guide
+### **📁 `/memory-bank/` - Claude Session Context**
+**🧠 ALWAYS READ THESE 5 CORE FILES FIRST:**
+1. `projectbrief.md` - What this project is (foundation)
+2. `activeContext.md` - Current status & recent work
+3. `progress.md` - What's completed
+4. `systemPatterns.md` - How the system works (architecture)
+5. `techContext.md` - Tech stack & development setup
 
-### Quick Reference
-- Task completion records in `.claude/tasks/`
-- See `memory-bank/README.md` for detailed organization
+**📋 Reference Documents:**
+- `productContext.md` - Why this project exists
+- `metricsDefinitions.md` - EMG analysis definitions
 
-**Critical**: Before starting ANY task, I MUST read the core Memory Bank files to understand the project context, current state, and established patterns. This ensures continuity and prevents duplicate work or conflicting approaches.
+**📁 Organized Context:**
+- `future-work/` - Planned features
+- `research/` - Active investigations  
+- `archived/` - Historical context & completed features
 
-## Memory Bank & Documentation Structure
+### **📁 `/docs/` - Working Technical Documentation**
+**For Developers RIGHT NOW:**
+- `README.md` - Quick start guide
+- `api.md` - FastAPI endpoint reference
+- `db_schema.md` - Database schema
+- `setup/` - Development environment setup
 
-### Legacy Memory Bank Files (Project Context)
-- `projectbrief.md` - Foundation document (project scope and requirements)
-- `productContext.md` - Why this project exists and how it should work
-- `activeContext.md` - Current work focus and recent changes
-- `systemPatterns.md` - System architecture and design patterns
-- `techContext.md` - Technologies used and development setup
-- `progress.md` - What works, what's left to build, current status
+### **Git-Based Archival**
+**Historical context preserved through:**
+- Git commit history and branches
+- `/memory-bank/archived/` for important context
 
-### Critical Documentation Files (Technical Reference)
-**API Documentation (`docs/api.md`)**
-- Concise FastAPI endpoint reference (Swagger-style)
-- Essential request/response models from actual backend code
-- Basic authentication info
-- Core error codes
-- NO HALLUCINATION - only document actual FastAPI endpoints
+**Critical**: The memory bank is your ONLY link to previous work. Read the 5 core files before starting ANY task to ensure continuity and prevent duplicate work.
 
-**Database Schema Documentation (`docs/db_schema.md`)**
-- Current Supabase database state via MCP inspection only
-- Mermaid ER diagram of actual tables and relationships
-- Brief table descriptions from real schema
-- Small "Future improvements may include..." section
-- NO HALLUCINATION - only document current live database state
-- AS CONCISE AS POSSIBLE
+## **Documentation Standards**
 
-**Creation Priority**: HIGH - Required before Phase 1 implementation begins
-**Tools**: Use Supabase MCP for real-time schema inspection and documentation generation
+### **Working Documentation (`/docs/`)**
+- **API Documentation**: Concise FastAPI endpoint reference (Swagger-style)
+- **Database Schema**: Current Supabase state via MCP inspection only
+- **Setup Guides**: Development environment and tool configuration
+- **NO HALLUCINATION**: Only document actual, verified implementations
 
-**Memory Bank Updates** occur when:
+### **Memory Bank Updates**
+Update memory bank when:
 1. Discovering new project patterns
-2. After implementing significant changes
-3. When user requests with **update memory bank** (MUST review ALL files)
+2. After implementing significant changes  
+3. When user requests **"update memory bank"** (MUST review ALL files)
 4. When context needs clarification
 
-### Project Intelligence (.cursor/rules)
-The .cursor/rules file is my learning journal for this project. It captures important patterns, preferences, and project intelligence that help me work more effectively. As I work with you and the project, I'll discover and document key insights that aren't obvious from the code alone.
-
-**What to Capture**:
+### **Project Intelligence**
+The `.cursor/rules` file captures important patterns and insights:
 - Critical implementation paths
-- User preferences and workflow
-- Project-specific patterns
-- Known challenges
-- Evolution of project decisions
-- Tool usage patterns
+- User preferences and workflow patterns
+- Project-specific technical decisions
+- Known challenges and solutions
+- Evolution of architectural decisions
 
-**Remember**: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.
+**Remember**: After every memory reset, the Memory Bank is your ONLY link to previous work. It must be maintained with precision and clarity.
 
 ## Plan & Review
 
 ### Before Starting Work
 
-- Always plan mode first, write plan to `.claude/tasks/TASK_NAME.md`
+- Always plan mode first, write plan to `memory-bank/tasks/TASK_NAME.md`
 - Plan should include: implementation strategy, broken-down tasks, dependencies
 - Research external knowledge/packages if needed (use Context7 MCP or other tools)
 - Available MCPs: Supabase, Context7, Sequential, Playwright, Perplexity
@@ -122,7 +111,7 @@ The .cursor/rules file is my learning journal for this project. It captures impo
 
 ### After Implementation
 
-- Perform MVP critical (no need for comprehensive) testing of the implementation. Document them in .claude/TESTS/TEST_NAME.md
+- Perform MVP critical (no need for comprehensive) testing of the implementation. Document them in memory-bank/tests/TEST_NAME.md
 - **Backend Testing**: Test API endpoints, C3D file processing, EMG analysis calculations
 - **Frontend Testing**: Test UI components, data visualization, user interactions
 - **Integration Testing**: Test full workflow from file upload to analysis results
@@ -147,7 +136,7 @@ The .cursor/rules file is my learning journal for this project. It captures impo
 - **Playwright** - Browser automation & E2E testing
 - **Perplexity** - AI-powered web search
 
-📖 **Setup Guide**: See project documentation for complete MCP configuration instructions.
+📖 **Setup Guide**: See [`docs/setup/mcp-setup.md`](./docs/setup/mcp-setup.md) for complete MCP configuration instructions.
 
 ## Development Commands
 

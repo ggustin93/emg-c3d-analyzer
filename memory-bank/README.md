@@ -12,9 +12,11 @@
 - [`metricsDefinitions.md`](./metricsDefinitions.md) - EMG analysis definitions
 
 ## 📁 Organized Context
-- [`future-work/`](./future-work/) - Planned features
-- [`research/`](./research/) - Active investigations
-- [`archived/`](./archived/) - Completed features & historical docs
+- [`tasks/`](./tasks/) - Claude Code task plans and implementation tracking
+- [`tests/`](./tests/) - Test documentation and results
+- [`future-work/`](./future-work/) - Planned features and enhancement ideas
+- [`research/`](./research/) - Active investigations and research questions
+- [`archived/`](./archived/) - Completed features, historical docs & resolved issues
 
 ## 🎯 Purpose
 This memory bank ensures continuity across Claude Code sessions. Each file contains essential context to resume work effectively after memory resets.
