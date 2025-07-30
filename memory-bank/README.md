@@ -1,57 +1,20 @@
-# Memory Bank Organization
+# Memory Bank - Project Context for Claude Sessions
 
-This directory contains the project's memory bank - critical documentation for maintaining context across development sessions.
+## 🧠 **ALWAYS READ THESE FIRST** (Claude Memory Reset Recovery)
+1. [`projectbrief.md`](./projectbrief.md) - What this project is
+2. [`activeContext.md`](./activeContext.md) - Current status & recent work
+3. [`progress.md`](./progress.md) - What's completed
+4. [`systemPatterns.md`](./systemPatterns.md) - How the system works
+5. [`techContext.md`](./techContext.md) - Tech stack & setup
 
-## Active Documentation (Root Level)
+## 📋 Reference Documents
+- [`productContext.md`](./productContext.md) - Why this project exists
+- [`metricsDefinitions.md`](./metricsDefinitions.md) - EMG analysis definitions
 
-### Core Context Files
-- `activeContext.md` - Current implementation status and recent changes
-- `progress.md` - Comprehensive feature completion tracking
-- `projectbrief.md` - Foundation document (project scope and requirements)
-- `productContext.md` - Why this project exists and how it should work
-- `systemPatterns.md` - System architecture and design patterns  
-- `techContext.md` - Technologies used and development setup
+## 📁 Organized Context
+- [`future-work/`](./future-work/) - Planned features
+- [`research/`](./research/) - Active investigations
+- [`archived/`](./archived/) - Completed features & historical docs
 
-## Organized Archives
-
-### `archived/`
-Historical implementation records and completed feature documentation
-
-#### `contraction-visualization/`
-- Technical documentation for contraction visualization system
-- Implementation completion records
-- Feature-specific technical details
-
-#### `legacy-docs/`
-- Superseded implementation plans
-- Historical project status snapshots
-- Completed milestone documentation
-
-### `future-work/`
-Planned features and pending implementation tasks
-- `todo-temporal-analysis-implementation-plan.md` - Windowed temporal analysis system
-
-### `research/`
-Active research questions and investigations
-- `todo-activated-channels-research.md` - GHOSTLY "Activated" channel processing research
-
-## Usage Guidelines
-
-**For New Sessions**: Always read the core context files first:
-1. `activeContext.md` - Current status
-2. `progress.md` - What's been completed
-3. `projectbrief.md` - Project foundation
-
-**For Specific Features**: Check relevant archived documentation for implementation details and technical context.
-
-**For Future Development**: Review future-work directory for planned enhancements and pending tasks.
-
-## Maintenance
-
-The memory bank is actively maintained to ensure:
-- Current context remains accurate
-- Historical records are preserved
-- Documentation stays organized and accessible
-- Future development is supported with proper context
-
-Last Updated: July 18, 2025
+## 🎯 Purpose
+This memory bank ensures continuity across Claude Code sessions. Each file contains essential context to resume work effectively after memory resets.

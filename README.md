@@ -116,11 +116,19 @@ emg-c3d-analyzer/
 │       ├── store/      # Zustand state management
 │       ├── types/      # TypeScript type definitions
 │       └── utils/      # Utility functions
-├── memory-bank/        # Agent-maintained project documentation
+├── docs/               # Technical documentation
+├── memory-bank/        # Claude session context
+├── archived/           # Completed work archive
 ├── assets/             # Project assets (images, etc.)
 ├── start_dev.sh        # Development environment setup script
 └── README.md
 ```
+
+## 📚 Documentation
+- **[Quick Start Guide](./docs/)** - Setup and development
+- **[API Reference](./docs/api.md)** - Backend endpoints
+- **[Database Schema](./docs/db_schema.md)** - Data structure
+- **[Claude Instructions](./CLAUDE.md)** - AI development context
 
 ## Development Roadmap
 
