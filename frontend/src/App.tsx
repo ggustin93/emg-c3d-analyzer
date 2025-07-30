@@ -15,12 +15,12 @@ import SessionLoader from "./components/SessionLoader";
 import AuthGuard from "./components/auth/AuthGuard";
 import Header from "./components/layout/Header";
 import { useSessionStore } from './store/sessionStore';
-import { useAuth } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import SupabaseStorageService from "./services/supabaseStorage";
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 
 
-function App() {
+function AppContent() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -414,6 +414,14 @@ function App() {
       </div>
     </>
   );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
 }
 
 export default App;

@@ -11,7 +11,7 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   PersonIcon, 
   HomeIcon, 
