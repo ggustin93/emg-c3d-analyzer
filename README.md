@@ -21,11 +21,27 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 
 ## Technology Stack
 
-*   **Backend:** Python 3.10+, FastAPI, Poetry, Uvicorn
-*   **Frontend:** React 19, TypeScript, Tailwind CSS, shadcn/ui, Zustand
-*   **Visualization:** Recharts for interactive EMG signal plotting
-*   **Scientific Libraries:** `ezc3d`, `pandas`, `numpy`, `scipy` for EMG analysis
-*   **Development:** Automated setup scripts, comprehensive testing, ESLint/TypeScript
+### Backend
+- **Runtime:** Python 3.10+, FastAPI, Uvicorn
+- **Authentication:** Supabase Auth with role-based access control
+- **Database:** Supabase (PostgreSQL) with real-time subscriptions
+- **Scientific:** `ezc3d`, `pandas`, `numpy`, `scipy` for EMG analysis
+- **Package Management:** Poetry
+
+### Frontend
+- **Framework:** React 19 with TypeScript
+- **Build System:** CRACO (planned: Vite migration)
+- **UI Components:** Tailwind CSS, shadcn/ui, Radix UI
+- **State Management:** Zustand for session parameters
+- **Visualization:** Recharts for interactive EMG signal plotting
+- **Authentication:** Supabase client integration
+
+### Development & Deployment
+- **Development:** Automated setup scripts, hot reload
+- **Testing:** Jest (frontend), pytest (backend)
+- **Code Quality:** ESLint, TypeScript strict mode
+- **Deployment:** Stateless architecture optimized for cloud platforms
+- **AI Development:** Claude Code with MCP server integration
 
 ---
 
@@ -117,18 +133,22 @@ emg-c3d-analyzer/
 │       ├── types/      # TypeScript type definitions
 │       └── utils/      # Utility functions
 ├── docs/               # Technical documentation
-├── memory-bank/        # Claude session context
-├── archived/           # Completed work archive
+├── memory-bank/        # Claude session context, tasks & archive
 ├── assets/             # Project assets (images, etc.)
 ├── start_dev.sh        # Development environment setup script
 └── README.md
 ```
 
 ## 📚 Documentation
-- **[Quick Start Guide](./docs/)** - Setup and development
-- **[API Reference](./docs/api.md)** - Backend endpoints
-- **[Database Schema](./docs/db_schema.md)** - Data structure
-- **[Claude Instructions](./CLAUDE.md)** - AI development context
+
+### For Developers
+- **[Quick Start Guide](./docs/)** - Development setup and workflow
+- **[API Reference](./docs/api.md)** - FastAPI endpoints and models
+- **[Database Schema](./docs/db_schema.md)** - Supabase database structure
+- **[MCP Setup](./docs/setup/mcp-setup.md)** - Claude Code MCP configuration
+
+### For AI Development
+- **[Claude Instructions](./CLAUDE.md)** - AI development context and memory bank guide
 
 ## Development Roadmap
 
@@ -138,18 +158,18 @@ emg-c3d-analyzer/
 - **Documentation**: Comprehensive API documentation and EMG analysis methodology
 
 ### ✅ Recently Completed
-- **Contraction Visualization System** (July 2025): Complete implementation with ReferenceArea background highlighting and ReferenceDot peak markers
-- **Interactive Chart Controls**: Toggle controls for Good/Poor contractions and Areas/Dots visibility
-- **Dynamic Legend System**: Real-time contraction quality statistics and MVC threshold display
-- **Enhanced XAxis Configuration**: Proper decimal time coordinate positioning for scatter plot elements
+- **Authentication System** (July 2025): Complete Supabase authentication with role-based access control
+- **Contraction Visualization System**: Real-time visual feedback with background highlighting and peak markers
+- **Interactive Chart Controls**: Toggle controls for contraction quality and visualization elements
+- **Performance Analysis**: Clinical scoring system with configurable BFR monitoring
+- **Documentation Architecture**: Streamlined 2-layer documentation strategy
 
 ### 🔜 Planned Features
+- **CRACO to Vite Migration**: Faster development builds and modern tooling
 - **Multi-session Analysis**: Compare EMG data across multiple GHOSTLY game sessions
 - **Export Capabilities**: Data export in standard research formats (CSV, MATLAB, etc.)
 - **Advanced Filtering**: Configurable EMG signal preprocessing options
 - **Performance Optimization**: Enhanced processing speed for large C3D files
-- **Contraction Analytics Export**: Export contraction data for clinical reports
-- **Enhanced User Experience**: Hover tooltips and animation transitions
 
 ## License
 
