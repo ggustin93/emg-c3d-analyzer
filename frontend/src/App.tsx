@@ -32,7 +32,7 @@ function AppContent() {
   const { isAuthenticated } = useAuth();
   
   // State for session parameters from Zustand store
-  const { sessionParams, setSessionParams, resetSessionParams } = useSessionStore();
+  const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
   
   // Save sessionParams to localStorage whenever they change
   useEffect(() => {
@@ -109,18 +109,21 @@ function AppContent() {
     plotChannel2Name
   );
 
+  // Reset all state when user wants to load a new file
   const resetState = useCallback(() => {
+    console.log('🔄 resetState called - clearing upload date');
     setAnalysisResult(null);
     setAppError(null);
-    resetChannelSelections();
+    setUploadedFileName(null);
     resetPlotDataAndStats();
+    resetChannelSelections();
     resetGameSessionData();
     setSelectedChannelForStats(null);
     setActiveTab("plots"); // Set to the combined EMG Analysis tab
+    setUploadDate(null); // Clear the upload date before resetting session params
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
-    setUploadedFileName(null); // Reset filename
-  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats]);
+  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult, filename?: string) => {
     // BUNDLED DATA PATTERN:
@@ -130,7 +133,30 @@ function AppContent() {
     // The emg_signals field contains all signal data (raw, activated, RMS envelopes) needed
     // for client-side plotting and analysis.
     
+    // Store the current upload date before resetting state
+    const currentUploadDate = uploadDate;
+    
+    console.log('🔄 handleSuccess - Before reset:', {
+      currentUploadDate,
+      uploadDateType: typeof currentUploadDate,
+      uploadDateFromStore: uploadDate
+    });
+    
     resetState();
+    
+    console.log('🔄 handleSuccess - After reset, before restore:', {
+      currentUploadDate,
+      willRestore: !!currentUploadDate
+    });
+    
+    // Restore the upload date if it was set (preserve it through the reset)
+    if (currentUploadDate) {
+      setUploadDate(currentUploadDate);
+      console.log('✅ handleSuccess - Upload date restored:', currentUploadDate);
+    } else {
+      console.log('❌ handleSuccess - No upload date to restore');
+    }
+    
     setAnalysisResult(data);
     updateChannelsAfterUpload(data);
     determineChannelsForTabs(data);
@@ -176,7 +202,7 @@ function AppContent() {
       // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams]);
+  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams, uploadDate, setUploadDate]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
@@ -184,13 +210,33 @@ function AppContent() {
   }, [resetState]);
 
 
-  const handleQuickSelect = useCallback(async (filename: string) => {
-    setIsLoading(true);
-    setAppError(null);
-    resetState();
-    setUploadedFileName(filename); // Store the filename
-
+  // Handle quick select from the file browser
+  const handleQuickSelect = useCallback(async (filename: string, uploadDateFromBrowser?: string) => {
     try {
+      setIsLoading(true);
+      setAppError(null);
+      
+      // Use upload date passed directly from browser (best practice: avoid state race conditions)
+      console.log('🔍 handleQuickSelect - Upload date from browser:', uploadDateFromBrowser);
+      
+      // Set upload date BEFORE reset to avoid losing it
+      if (uploadDateFromBrowser) {
+        setUploadDate(uploadDateFromBrowser);
+        console.log('✅ handleQuickSelect - Set upload date BEFORE reset:', uploadDateFromBrowser);
+      }
+      
+      // Reset state but preserve upload date
+      setAnalysisResult(null);
+      setAppError(null);
+      setUploadedFileName(filename); // Store the filename immediately
+      resetPlotDataAndStats();
+      resetChannelSelections();
+      resetGameSessionData();
+      setSelectedChannelForStats(null);
+      setActiveTab("plots"); // Set to the combined EMG Analysis tab
+      resetSessionParams();
+      setIsLoading(false); // Ensure loading state is reset
+      
       // ONLY use Supabase storage - no local samples fallback
       if (!SupabaseStorageService.isConfigured()) {
         throw new Error('Supabase not configured. Cannot access c3d-examples bucket.');
@@ -202,6 +248,24 @@ function AppContent() {
       const fileExists = await SupabaseStorageService.fileExists(filename);
       if (!fileExists) {
         throw new Error(`File '${filename}' not found in c3d-examples bucket.`);
+      }
+
+      // Get file metadata to extract upload date
+      const fileMetadata = await SupabaseStorageService.getFileMetadata(filename);
+      console.log('🔍 handleQuickSelect - File metadata:', {
+        filename,
+        fileMetadata: fileMetadata ? {
+          ...fileMetadata,
+          created_at_type: typeof fileMetadata.created_at
+        } : null,
+        willSetUploadDate: !!(fileMetadata && fileMetadata.created_at)
+      });
+      
+      if (fileMetadata && fileMetadata.created_at) {
+        setUploadDate(fileMetadata.created_at);
+        console.log('✅ handleQuickSelect - Upload date set to:', fileMetadata.created_at);
+      } else {
+        console.log('❌ handleQuickSelect - No upload date in metadata');
       }
 
       // Download file from Supabase storage
@@ -252,7 +316,7 @@ function AppContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [handleSuccess, handleError, resetState, sessionParams]);
+  }, [handleSuccess, handleError, sessionParams, setUploadDate, resetPlotDataAndStats, resetChannelSelections, resetGameSessionData, setSelectedChannelForStats, resetSessionParams]);
 
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
@@ -313,6 +377,7 @@ function AppContent() {
           analysisResult={analysisResult} 
           onReset={resetState}
           isAuthenticated={isAuthenticated}
+          uploadDate={uploadDate}
         />
 
         <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
