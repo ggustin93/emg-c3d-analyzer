@@ -81,27 +81,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className="pt-4">
-      {/* Choose File Button - Similar to Upload Files Button */}
-      <div className="relative">
-        <input
-          type="file"
-          accept=".c3d"
-          onChange={handleFileChange}
-          disabled={isUploading}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isUploading}
-          className="w-full flex items-center gap-2 h-9"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-          </svg>
-          {selectedFile ? selectedFile.name : 'Choose File'}
-        </Button>
-      </div>
+      {/* Choose File Button - Only visible when no file is selected or during upload */}
+      {(!selectedFile || isUploading) && (
+        <div className="relative">
+          <input
+            type="file"
+            accept=".c3d"
+            onChange={handleFileChange}
+            disabled={isUploading}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isUploading}
+            className="w-full flex items-center gap-2 h-9"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+            {selectedFile ? selectedFile.name : 'Choose File'}
+          </Button>
+        </div>
+      )}
         
       {selectedFile && !isUploading && (
         <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-md border border-slate-200">
@@ -112,12 +114,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
       
-      <Button
-        onClick={handleUpload}
-        disabled={!selectedFile || isUploading}
-        className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-      >
-        {isUploading ? (
+      {/* Analyze File Button - Only visible when a file is selected and not uploading */}
+      {selectedFile && !isUploading && (
+        <Button
+          onClick={handleUpload}
+          className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Analyze File
+          </span>
+        </Button>
+      )}
+      
+      {/* Loading indicator - Only visible during upload */}
+      {isUploading && (
+        <Button
+          disabled
+          className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+        >
           <span className="flex items-center gap-2">
             <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -125,15 +142,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
             </svg>
             Analyzing...
           </span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Analyze File
-          </span>
-        )}
-      </Button>
+        </Button>
+      )}
     </div>
   );
 };

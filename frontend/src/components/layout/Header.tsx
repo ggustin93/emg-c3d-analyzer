@@ -16,7 +16,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticated = true }) => {
   return (
     <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         <div className={`flex items-center ${isAuthenticated ? 'justify-between' : 'justify-center'}`}>
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticate
               className="h-32 w-32 object-contain"
             />
             <div>
-              <h1 className="text-3xl font-light text-slate-800 tracking-tight">
+              <h1 className="text-2xl font-light text-slate-800 tracking-tight">
              <i> + Research</i>
               </h1>
              

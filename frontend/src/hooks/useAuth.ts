@@ -249,7 +249,7 @@ function useAuthInitialization(dispatch: React.Dispatch<AuthAction>, handleError
 
     return () => {
       clearAuthTimeout();
-      isInitializedRef.current = false;
+      // Don't reset isInitializedRef here - it should persist for component lifetime
     };
   }, [dispatch, handleError, startTimeout, clearAuthTimeout]);
 }
