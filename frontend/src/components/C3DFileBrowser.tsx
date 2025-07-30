@@ -30,21 +30,24 @@ import {
   ChevronUpIcon,
   ClockIcon,
   UploadIcon,
-  PlayIcon
+  PlayIcon,
+  DownloadIcon
 } from '@radix-ui/react-icons';
 import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage';
 import SupabaseSetup from '@/utils/supabaseSetup';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Using C3DFileInfo from the service
-type C3DFile = C3DFileInfo;
+type C3DFile = C3DFileInfo & {
+  therapist_id?: string;
+};
 
 interface C3DFileBrowserProps {
   onFileSelect: (filename: string) => void;
   isLoading?: boolean;
 }
 
-type SortField = 'name' | 'size' | 'created_at' | 'patient_id';
+type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id';
 type SortDirection = 'asc' | 'desc';
 
 const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
@@ -59,6 +62,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [patientIdFilter, setPatientIdFilter] = useState('');
+  const [therapistIdFilter, setTherapistIdFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
   
@@ -82,7 +86,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     // Wait for authentication to be fully initialized before attempting to load files
     if (authState.loading) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Waiting for authentication to initialize...');
+        console.log('C3D Browser: Waiting for auth to initialize...');
       }
       return;
     }
@@ -91,12 +95,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       setIsLoadingFiles(true);
       setError(null);
       
-      // Create timeout to prevent infinite loading
+      // Shorter timeout with better error handling
       const timeoutId = setTimeout(() => {
-        console.error('File loading timeout - forcing completion');
+        console.error('C3D Browser: File loading timeout');
         setIsLoadingFiles(false);
-        setError('Loading timeout. Please refresh the page or check your connection.');
-      }, 20000); // 20 second timeout - more generous for auth restoration
+        setError('Connection timeout. Please check your internet connection and try refreshing the page.');
+      }, 10000); // Reduced to 10 seconds
       
       try {
         if (!SupabaseStorageService.isConfigured()) {
@@ -294,12 +298,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPatientId = !patientIdFilter || 
         file.patient_id?.toLowerCase().includes(patientIdFilter.toLowerCase());
+      const matchesTherapistId = !therapistIdFilter || 
+        file.therapist_id?.toLowerCase().includes(therapistIdFilter.toLowerCase());
       const matchesDate = !dateFilter || 
         file.created_at.startsWith(dateFilter);
       const matchesSize = sizeFilter === 'all' || 
         getSizeCategory(file.size) === sizeFilter;
 
-      return matchesSearch && matchesPatientId && matchesDate && matchesSize;
+      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDate && matchesSize;
     });
 
     // Sort files
@@ -311,6 +317,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       if (sortField === 'patient_id') {
         aValue = a.patient_id || 'Unknown';
         bValue = b.patient_id || 'Unknown';
+      }
+      if (sortField === 'therapist_id') {
+        aValue = a.therapist_id || 'Unknown';
+        bValue = b.therapist_id || 'Unknown';
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -333,7 +343,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return filtered;
-  }, [files, searchTerm, patientIdFilter, dateFilter, sizeFilter, sortField, sortDirection]);
+  }, [files, searchTerm, patientIdFilter, therapistIdFilter, dateFilter, sizeFilter, sortField, sortDirection]);
 
   // Pagination calculations
   const totalFiles = filteredAndSortedFiles.length;
@@ -345,7 +355,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, patientIdFilter, dateFilter, sizeFilter]);
+  }, [searchTerm, patientIdFilter, therapistIdFilter, dateFilter, sizeFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -359,6 +369,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const clearFilters = () => {
     setSearchTerm('');
     setPatientIdFilter('');
+    setTherapistIdFilter('');
     setDateFilter('');
     setSizeFilter('all');
   };
@@ -484,6 +495,23 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     onFileSelect(fileName);
   };
 
+  const handleFileDownload = async (fileName: string) => {
+    try {
+      const blob = await SupabaseStorageService.downloadFile(fileName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Reset loading state when general loading finishes
   useEffect(() => {
     if (!isLoading) {
@@ -494,6 +522,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Get unique patient IDs for filter dropdown
   const uniquePatientIds = useMemo(() => {
     const ids = new Set(files.map(f => f.patient_id || 'Unknown'));
+    return Array.from(ids).sort();
+  }, [files]);
+
+  // Get unique therapist IDs for filter dropdown
+  const uniqueTherapistIds = useMemo(() => {
+    const ids = new Set(files.map(f => f.therapist_id || 'Unknown'));
     return Array.from(ids).sort();
   }, [files]);
 
@@ -654,7 +688,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-slate-50 p-4 rounded-lg space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Search by name */}
               <div className="space-y-2">
                 <Label htmlFor="search" className="text-sm font-medium">Search by name</Label>
@@ -680,6 +714,22 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                   <SelectContent>
                     <SelectItem value="all">All patients</SelectItem>
                     {uniquePatientIds.map(id => (
+                      <SelectItem key={id} value={id}>{id}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter by Therapist ID */}
+              <div className="space-y-2">
+                <Label htmlFor="therapist-id" className="text-sm font-medium">Therapist ID</Label>
+                <Select value={therapistIdFilter || "all"} onValueChange={(value) => setTherapistIdFilter(value === "all" ? "" : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All therapists" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All therapists</SelectItem>
+                    {uniqueTherapistIds.map(id => (
                       <SelectItem key={id} value={id}>{id}</SelectItem>
                     ))}
                   </SelectContent>
@@ -724,7 +774,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 text-sm font-medium text-slate-600 border-b pb-2">
-          <div className="col-span-4">
+          <div className="col-span-3">
             <button 
               onClick={() => handleSort('name')}
               className="flex items-center hover:text-slate-800 transition-colors"
@@ -746,6 +796,16 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           </div>
           <div className="col-span-2">
             <button 
+              onClick={() => handleSort('therapist_id')}
+              className="flex items-center hover:text-slate-800 transition-colors"
+            >
+              <PersonIcon className="w-4 h-4 mr-2" />
+              Therapist ID
+              {getSortIcon('therapist_id')}
+            </button>
+          </div>
+          <div className="col-span-1">
+            <button 
               onClick={() => handleSort('size')}
               className="flex items-center hover:text-slate-800 transition-colors"
             >
@@ -765,7 +825,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
             </button>
           </div>
           <div className="col-span-2">
-            Action
+            Actions
           </div>
         </div>
 
@@ -789,7 +849,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       : 'border-slate-100 hover:bg-slate-50 hover:border-slate-200 hover:shadow-sm'
                   }`}
                 >
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <div className="flex items-center">
                       {loadingFileId === file.id ? (
                         <div className="relative mr-3 flex-shrink-0">
@@ -836,7 +896,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                     </Badge>
                   </div>
                   <div className="col-span-2">
-                    <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs bg-slate-100 text-slate-700 border-slate-200"
+                    >
+                      {file.therapist_id || 'Unknown'}
+                    </Badge>
+                  </div>
+                  <div className="col-span-1">
+                    <div className="flex items-center gap-1">
                       <span className="text-sm text-slate-600">
                         {formatFileSize(file.size)}
                       </span>
@@ -854,13 +922,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       {formatDate(file.created_at)}
                     </div>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex gap-1">
                     <Button
                       size="sm"
                       variant={loadingFileId === file.id ? "default" : "default"}
                       onClick={() => handleFileAnalyze(file.id, file.name)}
                       disabled={isLoading || loadingFileId !== null}
-                      className={`w-full h-9 px-4 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                      className={`flex-1 h-9 px-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1 ${
                         loadingFileId === file.id 
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
                           : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
@@ -870,7 +938,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       {loadingFileId === file.id ? (
                         <>
                           <svg 
-                            className="animate-spin w-4 h-4 text-white" 
+                            className="animate-spin w-3 h-3 text-white" 
                             xmlns="http://www.w3.org/2000/svg" 
                             fill="none" 
                             viewBox="0 0 24 24"
@@ -889,14 +957,25 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             />
                           </svg>
-                          <span className="text-white">Analyzing...</span>
+                          <span className="text-white text-xs">Analyzing...</span>
                         </>
                       ) : (
                         <>
-                          <PlayIcon className="w-4 h-4" />
-                          <span>Analyze File</span>
+                          <PlayIcon className="w-3 h-3" />
+                          <span className="text-xs">Analyze</span>
                         </>
                       )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFileDownload(file.name)}
+                      disabled={isLoading || loadingFileId !== null}
+                      className="h-9 px-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1 hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label={`Download ${file.name}`}
+                    >
+                      <DownloadIcon className="w-3 h-3" />
+                      <span className="text-xs">Download</span>
                     </Button>
                   </div>
                 </div>

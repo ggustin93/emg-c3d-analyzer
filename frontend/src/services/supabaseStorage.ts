@@ -8,6 +8,7 @@ export interface C3DFileInfo {
   created_at: string;
   updated_at: string;
   patient_id?: string;
+  therapist_id?: string;
   metadata?: {
     [key: string]: any;
   };
@@ -102,6 +103,9 @@ export class SupabaseStorageService {
           // Extract patient ID from folder structure or filename
           const patientId = this.extractPatientId(file.name);
           
+          // Extract therapist ID from metadata if available
+          const therapistId = file.metadata?.therapist_id || this.extractTherapistId(file.name);
+          
           return {
             id: file.id || file.name,
             name: file.name,
@@ -109,6 +113,7 @@ export class SupabaseStorageService {
             created_at: file.created_at || new Date().toISOString(),
             updated_at: file.updated_at || file.created_at || new Date().toISOString(),
             patient_id: patientId,
+            therapist_id: therapistId,
             metadata: file.metadata,
             public_url: this.getPublicUrl(file.name)
           };
@@ -146,6 +151,26 @@ export class SupabaseStorageService {
     }
 
     return 'Unknown';
+  }
+
+  /**
+   * Extract therapist ID from file path or filename
+   * This can be customized based on your naming convention
+   */
+  private static extractTherapistId(filename: string): string | undefined {
+    // If therapist ID is embedded in filename like "Ghostly_P001_T005_..."
+    const therapistMatch = filename.match(/[_-]T(\d{3})[_-]/i);
+    if (therapistMatch) {
+      return `T${therapistMatch[1]}`;
+    }
+
+    // If therapist ID is in a specific format like "therapist-005"
+    const therapistMatch2 = filename.match(/therapist[_-](\d+)/i);
+    if (therapistMatch2) {
+      return `T${therapistMatch2[1].padStart(3, '0')}`;
+    }
+
+    return undefined;
   }
 
   /**
@@ -253,6 +278,7 @@ export class SupabaseStorageService {
         created_at: file.created_at || new Date().toISOString(),
         updated_at: file.updated_at || file.created_at || new Date().toISOString(),
         patient_id: this.extractPatientId(file.name),
+        therapist_id: file.metadata?.therapist_id || this.extractTherapistId(file.name),
         metadata: file.metadata,
         public_url: this.getPublicUrl(file.name)
       };
