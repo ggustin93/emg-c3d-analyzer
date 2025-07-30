@@ -49,7 +49,7 @@ type C3DFile = C3DFileInfo & {
 };
 
 interface C3DFileBrowserProps {
-  onFileSelect: (filename: string) => void;
+  onFileSelect: (filename: string, uploadDate?: string) => void;
   isLoading?: boolean;
 }
 
@@ -61,9 +61,22 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   isLoading = false
 }) => {
   const { authState } = useAuth();
+  // Zustand store no longer needed here - upload date passed via function parameter
   const [files, setFiles] = useState<C3DFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 🔍 DEBUG: Log files when they change
+  console.log('🗂️ C3DFileBrowser - Files loaded:', {
+    filesCount: files.length,
+    sampleFiles: files.slice(0, 2).map(f => ({
+      id: f.id,
+      name: f.name,
+      created_at: f.created_at,
+      created_at_type: typeof f.created_at,
+      hasCreatedAt: !!f.created_at
+    }))
+  });
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -524,7 +537,29 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   const handleFileAnalyze = (fileId: string, fileName: string) => {
     setLoadingFileId(fileId);
-    onFileSelect(fileName);
+    
+    // Find the file to get its upload date
+    const selectedFile = files.find(file => file.id === fileId);
+    console.log('🔍 C3DFileBrowser - handleFileAnalyze:', {
+      fileId,
+      fileName,
+      selectedFile: selectedFile ? {
+        id: selectedFile.id,
+        name: selectedFile.name,
+        created_at: selectedFile.created_at,
+        created_at_type: typeof selectedFile.created_at
+      } : null,
+      willSetUploadDate: !!selectedFile?.created_at
+    });
+    
+    if (selectedFile) {
+      console.log('✅ C3DFileBrowser - Upload date found:', selectedFile.created_at);
+      // Pass upload date directly to avoid race condition
+      onFileSelect(fileName, selectedFile.created_at);
+    } else {
+      console.log('❌ C3DFileBrowser - No file found for ID:', fileId);
+      onFileSelect(fileName);
+    }
   };
 
   const handleFileDownload = async (fileName: string) => {
@@ -766,10 +801,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 </div>
               </div>
 
-              {/* Filter by Patient ID */}
+              {/* Filter by Patient */}
               <div className="space-y-2">
                 <Label htmlFor="patient-id" className="text-sm font-medium flex items-center">
-                  Patient ID
+                  Patient
                   {patientIdFilter && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
                 </Label>
                 <Select value={patientIdFilter || "all"} onValueChange={(value) => setPatientIdFilter(value === "all" ? "" : value)}>
@@ -785,10 +820,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 </Select>
               </div>
 
-              {/* Filter by Therapist ID */}
+              {/* Filter by Therapist */}
               <div className="space-y-2">
                 <Label htmlFor="therapist-id" className="text-sm font-medium flex items-center">
-                  Therapist ID
+                  Therapist
                   {therapistIdFilter && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
                 </Label>
                 <Select value={therapistIdFilter || "all"} onValueChange={(value) => setTherapistIdFilter(value === "all" ? "" : value)}>
@@ -843,10 +878,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 </Select>
               </div>
 
-              {/* Row 2 - Filter by date range (spans 2 columns) */}
+              {/* Row 2 - Filter by upload date range (spans 2 columns) */}
               <div className="space-y-2 lg:col-span-2">
                 <Label className="text-sm font-medium flex items-center">
-                  Date Range
+                  Upload Date Range
                   {(dateFromFilter || dateToFilter) && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
                 </Label>
                 <div className="flex items-center gap-2">
@@ -911,7 +946,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
               <PersonIcon className="w-4 h-4 mr-1" />
-              Patient ID
+              Patient
               {getSortIcon('patient_id')}
             </button>
           </div>
@@ -921,7 +956,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
               <PersonIcon className="w-4 h-4 mr-1" />
-              Therapist ID
+              Therapist
               {getSortIcon('therapist_id')}
             </button>
           </div>
@@ -941,7 +976,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
               <CalendarIcon className="w-4 h-4 mr-1" />
-              Date
+              Upload Date
               {getSortIcon('created_at')}
             </button>
           </div>
@@ -1021,8 +1056,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-slate-600">
-                        <span>Patient: {file.patient_id || 'Unknown'}</span>
-                        <span>Therapist: {file.therapist_id || 'Unknown'}</span>
+                        <span>Patient: <span className="font-medium text-slate-700">{file.patient_id || 'Unknown'}</span></span>
+                        <span>Therapist: <span className="font-medium text-slate-700">{file.therapist_id || 'Unknown'}</span></span>
                         <div className="flex items-center">
                           <span>{formatFileSize(file.size)}</span>
                           {shortSession && (
@@ -1036,7 +1071,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                             </Tooltip>
                           )}
                         </div>
-                        <span>{formatDate(file.created_at)}</span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="cursor-help">Upload: {formatDate(file.created_at)}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>File upload date: {formatFullDate(file.created_at)}</p>
+                            <p className="text-xs text-slate-500 mt-1">Session date will show after analysis</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                       <div className="flex gap-2">
                         <Tooltip>
@@ -1153,12 +1196,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       </div>
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <span className="text-xs text-slate-600 truncate block">
-                          {file.patient_id || 'Unknown'}
+                          <span className="font-medium text-slate-700">{file.patient_id || 'Unknown'}</span>
                         </span>
                       </div>
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <span className="text-xs text-slate-600 truncate block">
-                          {file.therapist_id || 'Unknown'}
+                          <span className="font-medium text-slate-700">{file.therapist_id || 'Unknown'}</span>
                         </span>
                       </div>
                       <div className="px-3 py-2 flex-1 min-w-0">
@@ -1186,7 +1229,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{formatFullDate(file.created_at)}</p>
+                            <p>Upload date: {formatFullDate(file.created_at)}</p>
+                            <p className="text-xs text-slate-500 mt-1">Session date will show after analysis</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>

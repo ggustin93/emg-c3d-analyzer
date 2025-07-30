@@ -9,7 +9,7 @@ interface SessionLoaderProps {
   onUploadSuccess: (data: EMGAnalysisResult, filename?: string) => void;
   onUploadError: (error: string) => void;
   setIsLoading: (isLoading: boolean) => void;
-  onQuickSelect: (filename: string) => void;
+  onQuickSelect: (filename: string, uploadDate?: string) => void;
   isLoading: boolean;
   sessionParams: GameSessionParameters;
 }

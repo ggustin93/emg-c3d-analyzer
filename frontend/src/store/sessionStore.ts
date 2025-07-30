@@ -6,6 +6,8 @@ interface SessionState {
   sessionParams: GameSessionParameters;
   setSessionParams: (params: Partial<GameSessionParameters> | ((params: GameSessionParameters) => Partial<GameSessionParameters>)) => void;
   resetSessionParams: () => void;
+  uploadDate: string | null;
+  setUploadDate: (date: string | null) => void;
 }
 
 const defaultSessionParams: GameSessionParameters = {
@@ -61,6 +63,15 @@ export const useSessionStore = create<SessionState>()(
           },
         })),
       resetSessionParams: () => set({ sessionParams: defaultSessionParams }),
+      uploadDate: null,
+      setUploadDate: (date) => {
+        console.log('🏪 SessionStore - setUploadDate called:', {
+          newDate: date,
+          dateType: typeof date,
+          timestamp: Date.now()
+        });
+        set({ uploadDate: date });
+      },
     }),
     {
       name: 'emg-session-storage', // name of the item in the storage (must be unique)
