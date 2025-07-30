@@ -350,7 +350,7 @@ export class SupabaseStorageService {
   /**
    * Get file metadata
    */
-  static async getFileMetadata(filename: string): Promise<any> {
+  static async getFileMetadata(filename: string): Promise<C3DFileInfo | null> {
     if (!supabase) {
       throw new Error('Supabase not configured');
     }
@@ -367,7 +367,20 @@ export class SupabaseStorageService {
     }
 
     const file = data?.find(f => f.name === filename);
-    return file?.metadata || {};
+    if (!file) {
+      return null;
+    }
+    
+    return {
+      id: file.id || file.name,
+      name: file.name,
+      size: file.metadata?.size || 0,
+      created_at: file.created_at || new Date().toISOString(),
+      updated_at: file.updated_at || file.created_at || new Date().toISOString(),
+      patient_id: this.extractPatientId(file.name),
+      therapist_id: file.metadata?.therapist_id || this.extractTherapistId(file.name),
+      metadata: file.metadata
+    };
   }
 }
 
