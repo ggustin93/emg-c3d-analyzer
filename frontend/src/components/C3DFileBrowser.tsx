@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import Spinner from '@/components/ui/Spinner';
 import {
@@ -28,11 +27,18 @@ import {
   ArchiveIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ClockIcon,
   UploadIcon,
   PlayIcon,
-  DownloadIcon
+  DownloadIcon,
+  ExclamationTriangleIcon,
+  TrashIcon
 } from '@radix-ui/react-icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage';
 import SupabaseSetup from '@/utils/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,7 +69,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [patientIdFilter, setPatientIdFilter] = useState('');
   const [therapistIdFilter, setTherapistIdFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
   
   // Sort states
@@ -80,6 +87,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [filesPerPage] = useState(10);
+  
+  // Column resize states
+  const [filenameColumnWidth, setFilenameColumnWidth] = useState(() => {
+    const saved = localStorage.getItem('c3d-filename-column-width');
+    return saved ? parseInt(saved) : 300; // Default 300px
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startWidth, setStartWidth] = useState(0);
 
   // Load files ONLY from Supabase c3d-examples bucket
   useEffect(() => {
@@ -271,11 +287,23 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return new Date(dateString).toLocaleDateString('en-GB', {
       year: '2-digit',
       month: '2-digit',
-      day: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  const formatFullDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
+  };
+
+  const isShortSession = (bytes: number): boolean => {
+    return bytes < 750000; // Less than 750KB indicates potentially short session
   };
 
   const getSizeCategory = (bytes: number): 'small' | 'medium' | 'large' => {
@@ -284,13 +312,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return 'large';
   };
 
-  const getSizeBadgeColor = (category: 'small' | 'medium' | 'large'): string => {
-    switch (category) {
-      case 'small': return 'bg-green-100 text-green-800 border-green-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'large': return 'bg-red-100 text-red-800 border-red-200';
-    }
-  };
 
   // Filtered and sorted files
   const filteredAndSortedFiles = useMemo(() => {
@@ -300,12 +321,22 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         file.patient_id?.toLowerCase().includes(patientIdFilter.toLowerCase());
       const matchesTherapistId = !therapistIdFilter || 
         file.therapist_id?.toLowerCase().includes(therapistIdFilter.toLowerCase());
-      const matchesDate = !dateFilter || 
-        file.created_at.startsWith(dateFilter);
+      
+      // Date range filtering
+      let matchesDateRange = true;
+      if (dateFromFilter || dateToFilter) {
+        const fileDate = new Date(file.created_at.split('T')[0]); // Get date part only
+        const fromDate = dateFromFilter ? new Date(dateFromFilter) : null;
+        const toDate = dateToFilter ? new Date(dateToFilter) : null;
+        
+        if (fromDate && fileDate < fromDate) matchesDateRange = false;
+        if (toDate && fileDate > toDate) matchesDateRange = false;
+      }
+      
       const matchesSize = sizeFilter === 'all' || 
         getSizeCategory(file.size) === sizeFilter;
 
-      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDate && matchesSize;
+      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesSize;
     });
 
     // Sort files
@@ -343,7 +374,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return filtered;
-  }, [files, searchTerm, patientIdFilter, therapistIdFilter, dateFilter, sizeFilter, sortField, sortDirection]);
+  }, [files, searchTerm, patientIdFilter, therapistIdFilter, dateFromFilter, dateToFilter, sizeFilter, sortField, sortDirection]);
 
   // Pagination calculations
   const totalFiles = filteredAndSortedFiles.length;
@@ -355,7 +386,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, patientIdFilter, therapistIdFilter, dateFilter, sizeFilter]);
+  }, [searchTerm, patientIdFilter, therapistIdFilter, dateFromFilter, dateToFilter, sizeFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -370,7 +401,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     setSearchTerm('');
     setPatientIdFilter('');
     setTherapistIdFilter('');
-    setDateFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
     setSizeFilter('all');
   };
 
@@ -511,6 +543,45 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
+  // Column resize handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    setStartX(e.clientX);
+    setStartWidth(filenameColumnWidth);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const diff = e.clientX - startX;
+    const newWidth = Math.max(200, Math.min(600, startWidth + diff)); // Min 200px, Max 600px
+    setFilenameColumnWidth(newWidth);
+  }, [isResizing, startX, startWidth]);
+
+  const handleMouseUp = useCallback(() => {
+    if (isResizing) {
+      setIsResizing(false);
+      localStorage.setItem('c3d-filename-column-width', filenameColumnWidth.toString());
+    }
+  }, [isResizing, filenameColumnWidth]);
+
+  // Add global mouse events for resizing
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   // Reset loading state when general loading finishes
   useEffect(() => {
@@ -655,19 +726,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                   </Button>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={refreshFiles}
-                  disabled={isLoadingFiles}
-                  className="flex items-center gap-2"
-                >
-                  <svg className={`w-4 h-4 ${isLoadingFiles ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </Button>
-                
               </>
             )}
             <Button
@@ -688,10 +746,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-slate-50 p-4 rounded-lg space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Two-row grid layout for desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Search by name */}
               <div className="space-y-2">
-                <Label htmlFor="search" className="text-sm font-medium">Search by name</Label>
+                <Label htmlFor="search" className="text-sm font-medium flex items-center">
+                  Search by name
+                  {searchTerm && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                </Label>
                 <div className="relative">
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
@@ -699,16 +761,19 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                     placeholder="File name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 ${searchTerm ? 'ring-2 ring-blue-200 border-blue-300' : ''}`}
                   />
                 </div>
               </div>
 
               {/* Filter by Patient ID */}
               <div className="space-y-2">
-                <Label htmlFor="patient-id" className="text-sm font-medium">Patient ID</Label>
+                <Label htmlFor="patient-id" className="text-sm font-medium flex items-center">
+                  Patient ID
+                  {patientIdFilter && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                </Label>
                 <Select value={patientIdFilter || "all"} onValueChange={(value) => setPatientIdFilter(value === "all" ? "" : value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={patientIdFilter ? 'ring-2 ring-blue-200 border-blue-300' : ''}>
                     <SelectValue placeholder="All patients" />
                   </SelectTrigger>
                   <SelectContent>
@@ -722,9 +787,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
               {/* Filter by Therapist ID */}
               <div className="space-y-2">
-                <Label htmlFor="therapist-id" className="text-sm font-medium">Therapist ID</Label>
+                <Label htmlFor="therapist-id" className="text-sm font-medium flex items-center">
+                  Therapist ID
+                  {therapistIdFilter && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                </Label>
                 <Select value={therapistIdFilter || "all"} onValueChange={(value) => setTherapistIdFilter(value === "all" ? "" : value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={therapistIdFilter ? 'ring-2 ring-blue-200 border-blue-300' : ''}>
                     <SelectValue placeholder="All therapists" />
                   </SelectTrigger>
                   <SelectContent>
@@ -736,45 +804,91 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 </Select>
               </div>
 
-              {/* Filter by date */}
+              {/* Row 1 - Active filters summary */}
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                />
+                <Label className="text-sm font-medium text-slate-600">
+                  Active filters
+                </Label>
+                <div className="text-xs text-slate-600 bg-blue-50 px-2 py-2 rounded border text-center">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full inline-block mr-1"></span>
+                  {(() => {
+                    const activeFilters = [
+                      searchTerm && 'Search',
+                      patientIdFilter && 'Patient',
+                      therapistIdFilter && 'Therapist', 
+                      (dateFromFilter || dateToFilter) && 'Date',
+                      sizeFilter !== 'all' && 'Size'
+                    ].filter(Boolean);
+                    return `${activeFilters.length} active`;
+                  })()}
+                </div>
               </div>
 
-              {/* Filter by size */}
+              {/* Row 2 - Filter by size */}
               <div className="space-y-2">
-                <Label htmlFor="size" className="text-sm font-medium">File size</Label>
+                <Label htmlFor="size" className="text-sm font-medium flex items-center">
+                  File size
+                  {sizeFilter !== 'all' && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                </Label>
                 <Select value={sizeFilter} onValueChange={(value: any) => setSizeFilter(value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={sizeFilter !== 'all' ? 'ring-2 ring-blue-200 border-blue-300' : ''}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All sizes</SelectItem>
                     <SelectItem value="small">Small (&lt; 2MB)</SelectItem>
-                    <SelectItem value="medium">Medium (2-3MB)</SelectItem>
-                    <SelectItem value="large">Large (&gt; 3MB)</SelectItem>
+                    <SelectItem value="medium">Medium (2-10MB)</SelectItem>
+                    <SelectItem value="large">Large (&gt; 10MB)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear Filters
-              </Button>
+              {/* Row 2 - Filter by date range (spans 2 columns) */}
+              <div className="space-y-2 lg:col-span-2">
+                <Label className="text-sm font-medium flex items-center">
+                  Date Range
+                  {(dateFromFilter || dateToFilter) && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                    className={`text-sm flex-1 ${dateFromFilter ? 'ring-2 ring-blue-200 border-blue-300' : ''}`}
+                    placeholder="From"
+                  />
+                  <span className="text-sm text-slate-500 px-1">to</span>
+                  <Input
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
+                    className={`text-sm flex-1 ${dateToFilter ? 'ring-2 ring-blue-200 border-blue-300' : ''}`}
+                    placeholder="To"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2 - Clear filters button */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium invisible">Actions</Label>
+                <Button 
+                  onClick={clearFilters}
+                  disabled={!searchTerm && !patientIdFilter && !therapistIdFilter && !dateFromFilter && !dateToFilter && sizeFilter === 'all'}
+                  variant="destructive"
+                  size="sm"
+                  className="w-full disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
+                >
+                  <TrashIcon className="w-4 h-4 mr-2" />
+                  Clear all filters
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 text-sm font-medium text-slate-600 border-b pb-2">
-          <div className="col-span-3">
+        <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-2">
+          <div className="relative" style={{ width: `${filenameColumnWidth}px` }}>
             <button 
               onClick={() => handleSort('name')}
               className="flex items-center hover:text-slate-800 transition-colors"
@@ -783,48 +897,55 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               File Name
               {getSortIcon('name')}
             </button>
+            {/* Resize handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-300 transition-colors group flex items-center justify-center"
+              onMouseDown={handleMouseDown}
+            >
+              <div className="w-0.5 h-6 bg-gray-300 group-hover:bg-blue-500 transition-colors rounded-sm opacity-60 group-hover:opacity-100" />
+            </div>
           </div>
-          <div className="col-span-2">
+          <div className="flex-1 min-w-0">
             <button 
               onClick={() => handleSort('patient_id')}
-              className="flex items-center hover:text-slate-800 transition-colors"
+              className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
-              <PersonIcon className="w-4 h-4 mr-2" />
+              <PersonIcon className="w-4 h-4 mr-1" />
               Patient ID
               {getSortIcon('patient_id')}
             </button>
           </div>
-          <div className="col-span-2">
+          <div className="flex-1 min-w-0">
             <button 
               onClick={() => handleSort('therapist_id')}
-              className="flex items-center hover:text-slate-800 transition-colors"
+              className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
-              <PersonIcon className="w-4 h-4 mr-2" />
+              <PersonIcon className="w-4 h-4 mr-1" />
               Therapist ID
               {getSortIcon('therapist_id')}
             </button>
           </div>
-          <div className="col-span-1">
+          <div className="flex-1 min-w-0">
             <button 
               onClick={() => handleSort('size')}
-              className="flex items-center hover:text-slate-800 transition-colors"
+              className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
-              <ArchiveIcon className="w-4 h-4 mr-2" />
+              <ArchiveIcon className="w-4 h-4 mr-1" />
               Size
               {getSortIcon('size')}
             </button>
           </div>
-          <div className="col-span-2">
+          <div className="flex-1 min-w-0">
             <button 
               onClick={() => handleSort('created_at')}
-              className="flex items-center hover:text-slate-800 transition-colors"
+              className="flex items-center hover:text-slate-800 transition-colors text-xs"
             >
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Upload Date
+              <CalendarIcon className="w-4 h-4 mr-1" />
+              Date
               {getSortIcon('created_at')}
             </button>
           </div>
-          <div className="col-span-2">
+          <div className="w-20 text-xs">
             Actions
           </div>
         </div>
@@ -839,146 +960,300 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
             </div>
           ) : (
             paginatedFiles.map((file) => {
-              const sizeCategory = getSizeCategory(file.size);
+              const shortSession = isShortSession(file.size);
               return (
-                <div 
-                  key={file.id}
-                  className={`grid grid-cols-12 gap-4 items-center py-3 px-4 rounded-lg transition-all duration-200 border ${
-                    loadingFileId === file.id 
-                      ? 'bg-green-50 border-green-200 shadow-sm' 
-                      : 'border-slate-100 hover:bg-slate-50 hover:border-slate-200 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="col-span-3">
-                    <div className="flex items-center">
-                      {loadingFileId === file.id ? (
-                        <div className="relative mr-3 flex-shrink-0">
-                          <FileIcon className="w-4 h-4 text-blue-500" />
-                          <div className="absolute -top-1 -right-1">
-                            <svg 
-                              className="animate-spin w-2 h-2 text-green-600" 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              fill="none" 
-                              viewBox="0 0 24 24"
-                            >
-                              <circle 
-                                className="opacity-25" 
-                                cx="12" 
-                                cy="12" 
-                                r="10" 
-                                stroke="currentColor" 
-                                strokeWidth="4"
-                              />
-                              <path 
-                                className="opacity-75" 
-                                fill="currentColor" 
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                          </div>
+                <TooltipProvider key={file.id}>
+                  <div 
+                    className={`flex flex-col md:flex-row gap-2 md:gap-4 items-start md:items-center py-3 px-4 rounded-lg transition-all duration-200 border ${
+                      loadingFileId === file.id 
+                        ? 'bg-green-50 border-green-200 shadow-sm' 
+                        : 'border-slate-100 hover:bg-slate-50 hover:border-slate-200 hover:shadow-sm'
+                    }`}
+                  >
+                    {/* Mobile Layout */}
+                    <div className="md:hidden space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          {loadingFileId === file.id ? (
+                            <div className="relative mr-3 flex-shrink-0">
+                              <FileIcon className="w-4 h-4 text-blue-500" />
+                              <div className="absolute -top-1 -right-1">
+                                <svg 
+                                  className="animate-spin w-2 h-2 text-green-600" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  fill="none" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle 
+                                    className="opacity-25" 
+                                    cx="12" 
+                                    cy="12" 
+                                    r="10" 
+                                    stroke="currentColor" 
+                                    strokeWidth="4"
+                                  />
+                                  <path 
+                                    className="opacity-75" 
+                                    fill="currentColor" 
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                          ) : (
+                            <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
+                          )}
+                          <span className={`text-sm font-semibold truncate ${
+                            loadingFileId === file.id ? 'text-green-700' : 'text-slate-900'
+                          }`}>
+                            {file.name}
+                          </span>
+                          {shortSession && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Short session: File size suggests therapy session may be incomplete</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
-                      ) : (
-                        <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
-                      )}
-                      <span className={`text-sm font-semibold truncate ${
-                        loadingFileId === file.id ? 'text-green-700' : 'text-slate-900'
-                      }`}>
-                        {file.name}
-                      </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-slate-600">
+                        <span>Patient: {file.patient_id || 'Unknown'}</span>
+                        <span>Therapist: {file.therapist_id || 'Unknown'}</span>
+                        <div className="flex items-center">
+                          <span>{formatFileSize(file.size)}</span>
+                          {shortSession && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Short session: File size suggests therapy session may be incomplete</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                        <span>{formatDate(file.created_at)}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant={loadingFileId === file.id ? "default" : "default"}
+                              onClick={() => handleFileAnalyze(file.id, file.name)}
+                              disabled={isLoading || loadingFileId !== null}
+                              className={`w-10 h-8 p-0 transition-all duration-200 flex items-center justify-center ${
+                                loadingFileId === file.id 
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
+                                  : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
+                              } disabled:opacity-60 disabled:cursor-not-allowed`}
+                            >
+                              {loadingFileId === file.id ? (
+                                <svg 
+                                  className="animate-spin w-3 h-3 text-white" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  fill="none" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle 
+                                    className="opacity-25" 
+                                    cx="12" 
+                                    cy="12" 
+                                    r="10" 
+                                    stroke="currentColor" 
+                                    strokeWidth="4"
+                                  />
+                                  <path 
+                                    className="opacity-75" 
+                                    fill="currentColor" 
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                              ) : (
+                                <PlayIcon className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{loadingFileId === file.id ? `Analyzing ${file.name}` : `Analyze ${file.name}`}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleFileDownload(file.name)}
+                              disabled={isLoading || loadingFileId !== null}
+                              className="w-10 h-8 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              <DownloadIcon className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download {file.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-span-2">
-                    <Badge 
-                      variant="secondary" 
-                      className="text-xs bg-slate-100 text-slate-700 border-slate-200"
-                    >
-                      {file.patient_id || 'Unknown'}
-                    </Badge>
-                  </div>
-                  <div className="col-span-2">
-                    <Badge 
-                      variant="secondary" 
-                      className="text-xs bg-slate-100 text-slate-700 border-slate-200"
-                    >
-                      {file.therapist_id || 'Unknown'}
-                    </Badge>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-slate-600">
-                        {formatFileSize(file.size)}
-                      </span>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${getSizeBadgeColor(sizeCategory)}`}
+
+                    {/* Desktop Layout */}
+                    <div className="hidden md:flex w-full items-center">
+                      <div 
+                        className="px-3 py-2 flex-shrink-0"
+                        style={{ width: `${filenameColumnWidth}px` }}
                       >
-                        {sizeCategory}
-                      </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center cursor-help">
+                              {loadingFileId === file.id ? (
+                                <div className="relative mr-3 flex-shrink-0">
+                                  <FileIcon className="w-4 h-4 text-blue-500" />
+                                  <div className="absolute -top-1 -right-1">
+                                    <svg 
+                                      className="animate-spin w-2 h-2 text-green-600" 
+                                      xmlns="http://www.w3.org/2000/svg" 
+                                      fill="none" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle 
+                                        className="opacity-25" 
+                                        cx="12" 
+                                        cy="12" 
+                                        r="10" 
+                                        stroke="currentColor" 
+                                        strokeWidth="4"
+                                      />
+                                      <path 
+                                        className="opacity-75" 
+                                        fill="currentColor" 
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                              ) : (
+                                <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
+                              )}
+                              <span className={`text-sm font-semibold truncate ${
+                                loadingFileId === file.id ? 'text-green-700' : 'text-slate-900'
+                              }`}>
+                                {file.name}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{file.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <span className="text-xs text-slate-600 truncate block">
+                          {file.patient_id || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <span className="text-xs text-slate-600 truncate block">
+                          {file.therapist_id || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <div className="flex items-center">
+                          <span className="text-xs text-slate-600">
+                            {formatFileSize(file.size)}
+                          </span>
+                          {shortSession && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Short session: File size suggests therapy session may be incomplete</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </div>
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="text-xs text-slate-600 cursor-help">
+                              {formatDate(file.created_at)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatFullDate(file.created_at)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="px-3 py-2 w-20 flex gap-1 justify-center">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant={loadingFileId === file.id ? "default" : "default"}
+                              onClick={() => handleFileAnalyze(file.id, file.name)}
+                              disabled={isLoading || loadingFileId !== null}
+                              className={`w-8 h-8 p-0 transition-all duration-200 flex items-center justify-center ${
+                                loadingFileId === file.id 
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
+                                  : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
+                              } disabled:opacity-60 disabled:cursor-not-allowed`}
+                            >
+                              {loadingFileId === file.id ? (
+                                <svg 
+                                  className="animate-spin w-3 h-3 text-white" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  fill="none" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle 
+                                    className="opacity-25" 
+                                    cx="12" 
+                                    cy="12" 
+                                    r="10" 
+                                    stroke="currentColor" 
+                                    strokeWidth="4"
+                                  />
+                                  <path 
+                                    className="opacity-75" 
+                                    fill="currentColor" 
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                              ) : (
+                                <PlayIcon className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{loadingFileId === file.id ? `Analyzing ${file.name}` : `Analyze ${file.name}`}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleFileDownload(file.name)}
+                              disabled={isLoading || loadingFileId !== null}
+                              className="w-8 h-8 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              <DownloadIcon className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download {file.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
                   </div>
-                  <div className="col-span-2">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <ClockIcon className="w-4 h-4 mr-1" />
-                      {formatDate(file.created_at)}
-                    </div>
-                  </div>
-                  <div className="col-span-2 flex gap-1">
-                    <Button
-                      size="sm"
-                      variant={loadingFileId === file.id ? "default" : "default"}
-                      onClick={() => handleFileAnalyze(file.id, file.name)}
-                      disabled={isLoading || loadingFileId !== null}
-                      className={`flex-1 h-9 px-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1 ${
-                        loadingFileId === file.id 
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
-                          : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
-                      } disabled:opacity-60 disabled:cursor-not-allowed`}
-                      aria-label={loadingFileId === file.id ? `Analyzing ${file.name}` : `Analyze ${file.name}`}
-                    >
-                      {loadingFileId === file.id ? (
-                        <>
-                          <svg 
-                            className="animate-spin w-3 h-3 text-white" 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            fill="none" 
-                            viewBox="0 0 24 24"
-                          >
-                            <circle 
-                              className="opacity-25" 
-                              cx="12" 
-                              cy="12" 
-                              r="10" 
-                              stroke="currentColor" 
-                              strokeWidth="4"
-                            />
-                            <path 
-                              className="opacity-75" 
-                              fill="currentColor" 
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          <span className="text-white text-xs">Analyzing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <PlayIcon className="w-3 h-3" />
-                          <span className="text-xs">Analyze</span>
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleFileDownload(file.name)}
-                      disabled={isLoading || loadingFileId !== null}
-                      className="h-9 px-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1 hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
-                      aria-label={`Download ${file.name}`}
-                    >
-                      <DownloadIcon className="w-3 h-3" />
-                      <span className="text-xs">Download</span>
-                    </Button>
-                  </div>
-                </div>
+                </TooltipProvider>
               );
             })
           )}
