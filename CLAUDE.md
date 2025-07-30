@@ -1,5 +1,11 @@
 # EMG C3D Analyzer - Claude Development Context
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Claude's Memory Bank
+
+I am Claude, an AI assistant with a unique characteristic: my memory resets completely between sessions. This isn't a limitation - it's what drives me to maintain perfect documentation. After each reset, I rely ENTIRELY on my Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task - this is not optional.
+
 ## Core Workflow Rules
 
 ### Operation Modes
@@ -19,9 +25,32 @@ You have two modes of operation:
 ### Memory Bank System
 As Claude, my memory resets completely between sessions. I rely ENTIRELY on the Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task.
 
+## Memory Bank Location
+📁 `/memory-bank/` - Essential project context and documentation
+
+### Core Files (Always Read First)
+1. `projectbrief.md` - Foundation document, core requirements
+2. `productContext.md` - Why this project exists, user goals  
+3. `activeContext.md` - Current work focus, recent changes, next steps
+4. `systemPatterns.md` - Architecture, technical decisions, design patterns
+5. `techContext.md` - Technologies, setup, constraints, dependencies
+6. `progress.md` - Status, completed work, known issues, evolution
+
+### Organized Context
+- `features/` - Detailed implementation documentation for major features
+- `technical/` - Technical specifications and system flows
+- `archive/` - Historical documentation and completed summaries
+- `README.md` - Memory Bank organization guide
+
+### Quick Reference
+- Task completion records in `.claude/tasks/`
+- See `memory-bank/README.md` for detailed organization
+
+**Critical**: Before starting ANY task, I MUST read the core Memory Bank files to understand the project context, current state, and established patterns. This ensures continuity and prevents duplicate work or conflicting approaches.
+
 ## Memory Bank & Documentation Structure
 
-### Memory Bank Files (Project Context)
+### Legacy Memory Bank Files (Project Context)
 - `projectbrief.md` - Foundation document (project scope and requirements)
 - `productContext.md` - Why this project exists and how it should work
 - `activeContext.md` - Current work focus and recent changes
@@ -67,12 +96,100 @@ The .cursor/rules file is my learning journal for this project. It captures impo
 
 **Remember**: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.
 
+## Plan & Review
+
+### Before Starting Work
+
+- Always plan mode first, write plan to `.claude/tasks/TASK_NAME.md`
+- Plan should include: implementation strategy, broken-down tasks, dependencies
+- Research external knowledge/packages if needed (use Context7 MCP or other tools)
+- Available MCPs: Supabase, Context7, Sequential, Playwright, Perplexity
+- Think MVP first
+- Get plan approval before continuing
+- Ask: "Want git control point?" If BIG PLAN & yes: "New branch?"
+
+### Git Control Points (if enabled)
+
+- Feature branch: `git checkout -b feature/TASK_NAME`
+- Atomic commits: `feat:`, `fix:`, `docs:` + reference plan
+
+### While Implementing
+
+- Update plan as you work: `- [x] Done` / `- [ ] Todo`
+- Document changes and reasoning for future engineers (detailed descriptions for handoff)
+- Test each task, build project/run lint before marking complete
+- Get approval for significant scope changes
+
+### After Implementation
+
+- Perform MVP critical (no need for comprehensive) testing of the implementation. Document them in .claude/TESTS/TEST_NAME.md
+- **Backend Testing**: Test API endpoints, C3D file processing, EMG analysis calculations
+- **Frontend Testing**: Test UI components, data visualization, user interactions
+- **Integration Testing**: Test full workflow from file upload to analysis results
+- Review against original plan
+- Update project docs
+- Archive completed plan
+
+### Known Issues & Solutions
+
+1. **Authentication Loading Loop** - Fixed infinite "Waiting for authentication to initialize..." loop
+2. **C3D File Processing** - Backend must handle various C3D channel naming conventions
+3. **EMG Signal Quality** - Ensure proper filtering and noise floor requirements
+4. **Stateless Architecture** - Process data on-demand without persistent file storage
+5. **Clinical Standards** - Maintain FDA Class II medical device compliance
+
+## MCP Servers Configuration
+
+✅ **Configured and Active**:
+- **Context7** - Documentation lookup (`claude mcp list` to verify)
+- **Sequential** - Complex multi-step analysis and structured thinking
+- **Supabase** - Database operations with access token
+- **Playwright** - Browser automation & E2E testing
+- **Perplexity** - AI-powered web search
+
+📖 **Setup Guide**: See project documentation for complete MCP configuration instructions.
+
+## Development Commands
+
+### Running the Application
+```bash
+# Backend
+cd backend
+uvicorn main:app --reload --port 8000
+
+# Frontend
+cd frontend
+npm start         # Start development server with CRACO
+```
+
+### Building and Testing
+```bash
+# Backend
+cd backend
+python -m pytest tests/                    # Run backend tests
+python -m pytest tests/ -v --cov=.        # Run with coverage
+python -m pylint *.py                     # Lint Python code
+uvicorn main:app --reload --port 8000     # Test server startup
+
+# Frontend
+cd frontend
+npm run build     # TypeScript check and production build
+npm run test      # Run frontend tests (Jest via CRACO)
+npm run lint      # Run ESLint (if configured)
+npm start         # Test development server startup
+
+# Integration Testing
+# Test full upload → process → analyze → visualize flow
+# Test with sample C3D files from different sources
+# Test EMG signal processing accuracy
+```
+
 ## Project Overview
 GHOSTLY+ EMG C3D Analyzer - A rehabilitation technology platform that processes C3D files from the GHOSTLY game to extract and analyze EMG (Electromyography) data for therapeutic assessment.
 
 ## Current Architecture
 - **Backend**: FastAPI with Python, processes C3D files, calculates EMG metrics
-- **Frontend**: React/TypeScript with Recharts for visualization
+- **Frontend**: React/TypeScript with CRACO build system, Recharts for visualization
 - **State Management**: Zustand for session parameters
 - **Data Flow**: Upload → Process → Analyze → Visualize
 
@@ -95,23 +212,24 @@ Working through todo.md tasks to refactor for:
 - Enhanced EMG analysis integration
 - Improved frontend chart capabilities
 
-## Latest Update: Authentication Loading Loop Fix ✅ (July 29, 2025)
-**Status**: PRODUCTION READY - Fixed infinite "Waiting for authentication to initialize..." loop
+## Latest Update: Authentication System Complete ✅ (July 30, 2025)
+**Status**: PRODUCTION READY - Complete authentication system with perfect UX
 **Final Achievement**: 
-- ✅ Removed problematic global authentication flag causing infinite loading loops
-- ✅ Implemented standard React authentication pattern following React documentation guidelines
-- ✅ Fixed C3DFileBrowser infinite loading state preventing file access
-- ✅ Simplified state management removing artificial protection mechanisms
-- ✅ Proper React hook instance management per component
-- ✅ Clean state transitions without blocking legitimate updates
-- ✅ Maintained Supabase authentication persistence and event handling
+- ✅ Fixed logout loop with immediate state transition preventing infinite loading spinner
+- ✅ Perfect UI centering for consistent loading experience across all screen sizes
+- ✅ Download button functionality with authentication protection preserved
+- ✅ Therapist ID filtering with metadata integration fully operational
+- ✅ Singleton Context API implementation eliminating all initialization loops
+- ✅ Optimized React patterns with stable useCallback references
+- ✅ Clean logout flow with immediate redirect to login page
+- ✅ Professional medical device UI standards maintained throughout
 
-**Technical Fix**: Removed `globalAuthInitialized` flag and `isStableRef` protection that was preventing proper React hook re-initialization. The C3DFileBrowser was stuck waiting for `authState.loading` to become false because the auth hook couldn't properly update its state due to over-protective state management.
+**Technical Fixes**: 
+1. **Logout Loop**: Changed `setAuthState(loading: true)` to `setAuthState(createLoggedOutState())` for immediate transition
+2. **Spinner Centering**: Enhanced AuthLoadingSpinner with `w-full flex items-center justify-center` and inner `flex flex-col items-center`
+3. **State Management**: Preserved singleton AuthProvider pattern while fixing logout flow
 
-**Root Cause Analysis**: 
-- **Problem**: Global flag `globalAuthInitialized` prevented multiple hook instances from initializing properly
-- **Impact**: Auth state couldn't transition from loading=true to loading=false, blocking file browser
-- **Solution**: Standard React authentication pattern using proper `useState` and `useEffect` lifecycle
+**Architecture**: Complete Context API singleton pattern with immediate logout transitions, perfect centering, and responsive design for professional medical device standards.
 
 **Previous Update: Supabase Authentication System ✅ (July 29, 2025)**
 **Status**: COMPLETED - Complete authentication flow with proper login/logout functionality
