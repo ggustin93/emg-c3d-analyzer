@@ -326,22 +326,22 @@ export default function GameSessionTabs({
   if (!analysisResult) return null;
 
   return (
-    <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange}>
+    <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-primary rounded-lg shadow-sm bg-white overflow-hidden">
       <div className="border-b mb-4 relative">
-        <TabsList className="w-full flex justify-between overflow-x-auto">
-          <TabsTrigger value="plots" className="flex-1 flex-shrink-0">
+        <TabsList className="w-full flex justify-between  border border-primary">
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <ActivityLogIcon className="w-4 h-4" />
               <span>EMG Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="game" className="flex-1 flex-shrink-0">
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <BarChartIcon className="w-4 h-4" />
               <span>Performance Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0">
+          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <HeartIcon className="w-4 h-4" />
               <span>BFR Monitoring</span>
@@ -357,13 +357,13 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0">
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <GearIcon className="w-4 h-4" />
               <span>Settings</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex-1 flex-shrink-0">
+          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <Share1Icon className="w-4 h-4" />
               <span>Export</span>
