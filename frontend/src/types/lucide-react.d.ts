@@ -18,5 +18,10 @@ declare module 'lucide-react' {
   export const Zap: FC<IconProps>;
   export const ChevronsLeftRight: FC<IconProps>;
   
+  // Icons for FileMetadataBar component
+  export const File: FC<IconProps>;
+  export const User: FC<IconProps>;
+  export const Calendar: FC<IconProps>;
+  
   // Add other icons as needed
 } 

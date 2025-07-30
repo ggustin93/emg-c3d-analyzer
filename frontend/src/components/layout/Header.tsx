@@ -1,19 +1,20 @@
 import React from 'react';
-import { Button } from '../ui/button';
 import UserProfile from '../auth/UserProfile';
+import FileMetadataBar from './FileMetadataBar';
 import { EMGAnalysisResult } from '../../types/emg';
 
 interface HeaderProps {
   analysisResult?: EMGAnalysisResult | null;
   onReset?: () => void;
   isAuthenticated?: boolean;
+  uploadDate?: string | null; // Upload date from file browser
 }
 
 /**
  * Main application header that adapts to authentication state
  * Features Ghostly+ branding with conditional controls
  */
-const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticated = true }) => {
+const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticated = true, uploadDate }) => {
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-6xl mx-auto">
@@ -23,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticate
             <img 
               src="/ghostly_logo.png" 
               alt="Ghostly+ Logo" 
-              className="h-32 w-32 object-contain"
+              className="h-36 w-36 object-contain"
             />
             <div>
               <h1 className="text-2xl font-light text-slate-800 tracking-tight">
@@ -37,20 +38,13 @@ const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticate
           {isAuthenticated && <UserProfile compact />}
         </div>
 
-        {/* File info section - only when authenticated and analysis result exists */}
+        {/* File metadata bar - only when authenticated and analysis result exists */}
         {isAuthenticated && analysisResult && (
-          <div className="flex items-center justify-center mt-4 space-x-4">
-            <p className="text-sm text-slate-500">
-              File: <span className="font-medium text-slate-700">
-                {analysisResult.source_filename}
-              </span>
-            </p>
-            {onReset && (
-              <Button variant="outline" size="sm" onClick={onReset} className="ml-4">
-                Load Another File
-              </Button>
-            )}
-          </div>
+          <FileMetadataBar 
+            analysisResult={analysisResult} 
+            onReset={onReset}
+            uploadDate={uploadDate}
+          />
         )}
       </div>
     </header>
