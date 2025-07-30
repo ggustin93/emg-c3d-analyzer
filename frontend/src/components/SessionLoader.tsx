@@ -30,7 +30,7 @@ const SessionLoader: React.FC<SessionLoaderProps> = ({
       {/* Upload Section - Secondary/Subtle */}
       <div className="border-t border-slate-200 pt-8">
         <Card className="border-slate-200 bg-white">
-          <CardContent className="px-6 py-5">
+          <CardContent className="px-6 pb-5 pt-5">
             <div className="flex items-center justify-between gap-8">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
