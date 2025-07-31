@@ -1,29 +1,62 @@
 # EMG C3D Analyzer - Claude Development Context
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## 🚨 CRITICAL: START HERE - MODE PROTOCOL
+**EVERY TASK MUST BEGIN IN PLAN MODE**
 
-## Claude's Memory Bank
+### # Mode: PLAN (Always start here)
+- **NEVER start implementing immediately**
+- Create detailed plan first in `memory-bank/tasks/TASK_NAME.md`
+- Get explicit user approval with "ACT" command
+- Return to PLAN mode after every response
 
-I am Claude, an AI assistant with a unique characteristic: my memory resets completely between sessions. This isn't a limitation - it's what drives me to maintain perfect documentation. After each reset, I rely ENTIRELY on my Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task - this is not optional.
+### Mode Rules:
+- **Start**: `# Mode: PLAN` at beginning of EVERY response
+- **Transition**: Only when user explicitly types `ACT`
+- **Return**: Back to PLAN mode after every implementation response
+- **Reminder**: If user asks for action in plan mode, remind them to approve plan first
+- **Planning**: Always output the full updated plan in every planning response
 
-## Core Workflow Rules
+## 🧠 MANDATORY: READ MEMORY BANK FIRST
+**BEFORE ANY TASK - READ ALL 5 CORE FILES:**
+1. `projectbrief.md` - What this project is (foundation)
+2. `activeContext.md` - Current status & recent work
+3. `progress.md` - What's completed
+4. `systemPatterns.md` - How the system works (architecture)
+5. `techContext.md` - Tech stack & development setup
 
-### Operation Modes
-You have two modes of operation:
+**NO EXCEPTIONS - THIS IS NOT OPTIONAL**
 
-1. **Plan Mode** - Work with the user to define a plan, gather all information needed but make no changes
-2. **Act Mode** - Make changes to the codebase based on the approved plan
+Memory resets completely between sessions. The Memory Bank is your ONLY link to previous work.
 
-**Mode Protocol**:
-- Start in plan mode and print `# Mode: PLAN` at the beginning of each response
-- Only move to act mode when user explicitly types `ACT`
-- Print `# Mode: ACT` when in act mode
-- Move back to plan mode after every response and when user types `PLAN`
-- If user asks for action while in plan mode, remind them to approve the plan first
-- When in plan mode, always output the full updated plan in every response
+## ✅ MANDATORY WORKFLOW CHECKLIST
 
-### Memory Bank System
-As Claude, my memory resets completely between sessions. I rely ENTIRELY on the Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task.
+### Before Starting ANY Task:
+- [ ] Read all 5 memory bank files
+- [ ] Start with `# Mode: PLAN`
+- [ ] Create plan in `memory-bank/tasks/TASK_NAME.md`
+- [ ] Include: implementation strategy, broken-down tasks, dependencies
+- [ ] Research external knowledge/packages if needed (Context7 MCP)
+- [ ] Think MVP first
+- [ ] Get user approval
+- [ ] Ask: "Want git control point?" If BIG PLAN & yes: "New branch?"
+
+### During Implementation (Only after user types ACT):
+- [ ] Print `# Mode: ACT` when implementing
+- [ ] Update plan as you work: `- [x] Done` / `- [ ] Todo`
+- [ ] Document changes and reasoning for future engineers
+- [ ] Test each task, build project/run lint before marking complete
+- [ ] Get approval for significant scope changes
+
+### After Completion:
+- [ ] Perform MVP critical testing of the implementation
+- [ ] Document tests in `memory-bank/tests/TEST_NAME.md`
+- [ ] **Backend Testing**: Test API endpoints, C3D file processing, EMG analysis
+- [ ] **Frontend Testing**: Test UI components, data visualization, user interactions
+- [ ] **Integration Testing**: Test full workflow from upload to analysis
+- [ ] Review against original plan
+- [ ] Update project docs if requested
+- [ ] Archive completed plan
+- [ ] Return to `# Mode: PLAN`
 
 ## **MINIMALIST DOCUMENTATION ARCHITECTURE**
 
@@ -85,39 +118,10 @@ The `.cursor/rules` file captures important patterns and insights:
 
 **Remember**: After every memory reset, the Memory Bank is your ONLY link to previous work. It must be maintained with precision and clarity.
 
-## Plan & Review
-
-### Before Starting Work
-
-- Always plan mode first, write plan to `memory-bank/tasks/TASK_NAME.md`
-- Plan should include: implementation strategy, broken-down tasks, dependencies
-- Research external knowledge/packages if needed (use Context7 MCP or other tools)
-- Available MCPs: Supabase, Context7, Sequential, Playwright, Perplexity
-- Think MVP first
-- Get plan approval before continuing
-- Ask: "Want git control point?" If BIG PLAN & yes: "New branch?"
-
 ### Git Control Points (if enabled)
 
 - Feature branch: `git checkout -b feature/TASK_NAME`
 - Atomic commits: `feat:`, `fix:`, `docs:` + reference plan
-
-### While Implementing
-
-- Update plan as you work: `- [x] Done` / `- [ ] Todo`
-- Document changes and reasoning for future engineers (detailed descriptions for handoff)
-- Test each task, build project/run lint before marking complete
-- Get approval for significant scope changes
-
-### After Implementation
-
-- Perform MVP critical (no need for comprehensive) testing of the implementation. Document them in memory-bank/tests/TEST_NAME.md
-- **Backend Testing**: Test API endpoints, C3D file processing, EMG analysis calculations
-- **Frontend Testing**: Test UI components, data visualization, user interactions
-- **Integration Testing**: Test full workflow from file upload to analysis results
-- Review against original plan
-- Update project docs
-- Archive completed plan
 
 ### Known Issues & Solutions
 
@@ -310,10 +314,3 @@ Fatigue Indicators:
 - **Sensitivity**: Detect 15% changes in muscle activation
 - **Specificity**: Distinguish between muscle groups and activation patterns
 - **Temporal Resolution**: 50ms for dynamic movement analysis
-
-### Regulatory Considerations
-- **FDA Class II**: Medical device software for diagnostic/therapeutic use
-- **ISO 14155**: Clinical investigation of medical devices
-- **IEC 62304**: Medical device software lifecycle processes
-- **GDPR/HIPAA**: Patient data protection and privacy compliance
-
