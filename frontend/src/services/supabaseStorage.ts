@@ -62,9 +62,10 @@ export class SupabaseStorageService {
         throw bucketCheckError;
       }
       
-      // Add timeout to storage operation to prevent hanging
-      // First, get files from root directory and subdirectories
-      console.log('📂 Listing files from root directory...');
+      // Generic recursive directory discovery approach
+      console.log('📂 Starting recursive directory discovery...');
+      
+      // Step 1: Get root directory contents to discover subdirectories
       const rootOperation = supabase.storage
         .from(this.BUCKET_NAME)
         .list('', {
@@ -72,104 +73,14 @@ export class SupabaseStorageService {
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' }
         });
-      
-      // Also list files from known patient subdirectories
-      console.log('📂 Listing files from P005 subdirectory...');
-      const p005Operation = supabase.storage
-        .from(this.BUCKET_NAME)
-        .list('P005', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
         
-      console.log('📂 Listing files from P008 subdirectory...');
-      const p008Operation = supabase.storage
-        .from(this.BUCKET_NAME)
-        .list('P008', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
-        
-      console.log('📂 Listing files from P012 subdirectory...');
-      const p012Operation = supabase.storage
-        .from(this.BUCKET_NAME)
-        .list('P012', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
-        
-      // Execute all operations in parallel
-      const storageOperation = Promise.all([
-        rootOperation,
-        p005Operation,
-        p008Operation,
-        p012Operation
-      ]);
+      const storageOperation = this.discoverAndListFiles(rootOperation);
         
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Storage operation timeout after 20 seconds')), 20000);
       });
       
-      const results = await Promise.race([storageOperation, timeoutPromise]);
-
-      // Combine all results from different directories
-      let allFiles: any[] = [];
-      let hasError = false;
-      let errorMessage = '';
-
-      // Process root directory results
-      const [rootResult, p005Result, p008Result, p012Result] = results;
-      
-      if (rootResult.error) {
-        console.error('Error listing root files:', rootResult.error);
-        hasError = true;
-        errorMessage = rootResult.error.message;
-      } else if (rootResult.data) {
-        console.log(`📂 Found ${rootResult.data.length} files in root directory`);
-        allFiles.push(...rootResult.data);
-      }
-
-      // Process P005 directory results
-      if (p005Result.error) {
-        console.warn('Error listing P005 files (may not exist):', p005Result.error);
-      } else if (p005Result.data) {
-        console.log(`📂 Found ${p005Result.data.length} files in P005 directory`);
-        // Add folder prefix to file names
-        const p005Files = p005Result.data.map(file => ({
-          ...file,
-          name: `P005/${file.name}`
-        }));
-        allFiles.push(...p005Files);
-      }
-
-      // Process P008 directory results
-      if (p008Result.error) {
-        console.warn('Error listing P008 files (may not exist):', p008Result.error);
-      } else if (p008Result.data) {
-        console.log(`📂 Found ${p008Result.data.length} files in P008 directory`);
-        // Add folder prefix to file names
-        const p008Files = p008Result.data.map(file => ({
-          ...file,
-          name: `P008/${file.name}`
-        }));
-        allFiles.push(...p008Files);
-      }
-
-      // Process P012 directory results
-      if (p012Result.error) {
-        console.warn('Error listing P012 files (may not exist):', p012Result.error);
-      } else if (p012Result.data) {
-        console.log(`📂 Found ${p012Result.data.length} files in P012 directory`);
-        // Add folder prefix to file names
-        const p012Files = p012Result.data.map(file => ({
-          ...file,
-          name: `P012/${file.name}`
-        }));
-        allFiles.push(...p012Files);
-      }
+      const { allFiles, hasError, errorMessage } = await Promise.race([storageOperation, timeoutPromise]);
 
       // If root directory failed and we have no files, throw error
       if (hasError && allFiles.length === 0) {
@@ -190,12 +101,12 @@ export class SupabaseStorageService {
       console.log(`📂 Found ${allFiles.length} total files across all directories`);
       
       // Filter out placeholder files
-      const files = allFiles.filter(file => !file.name.includes('.emptyFolderPlaceholder'));
+      const files = allFiles.filter((file: any) => !file.name.includes('.emptyFolderPlaceholder'));
 
       // Filter only .c3d files and transform the data
       const c3dFiles: C3DFileInfo[] = files
-        .filter(file => file.name.toLowerCase().endsWith('.c3d'))
-        .map(file => {
+        .filter((file: any) => file.name.toLowerCase().endsWith('.c3d'))
+        .map((file: any) => {
           // Extract patient ID from folder structure or filename
           const patientId = this.extractPatientId(file.name);
           
@@ -221,6 +132,91 @@ export class SupabaseStorageService {
       console.error('Error in listC3DFiles:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generic method to discover and list files from all directories
+   * Automatically discovers Patient ID folders and lists files recursively
+   */
+  private static async discoverAndListFiles(rootOperation: Promise<any>): Promise<{
+    allFiles: any[];
+    hasError: boolean;
+    errorMessage: string;
+  }> {
+    let allFiles: any[] = [];
+    let hasError = false;
+    let errorMessage = '';
+
+    try {
+      // Step 1: Get root directory files and discover subdirectories
+      console.log('📂 Listing files from root directory...');
+      const rootResult = await rootOperation;
+      
+      if (rootResult.error) {
+        console.error('Error listing root files:', rootResult.error);
+        hasError = true;
+        errorMessage = rootResult.error.message;
+      } else if (rootResult.data) {
+        console.log(`📂 Found ${rootResult.data.length} items in root directory`);
+        
+        // Separate files from directories (directories don't have metadata.size)
+        const rootFiles = rootResult.data.filter((item: any) => 
+          item.name.toLowerCase().endsWith('.c3d') || item.metadata?.size
+        );
+        const directories = rootResult.data.filter((item: any) => 
+          !item.metadata?.size && !item.name.includes('.') && item.name.match(/^P\d{3}$/)
+        );
+        
+        allFiles.push(...rootFiles);
+        console.log(`📂 Found ${rootFiles.length} files in root, ${directories.length} Patient ID directories`);
+        
+        // Step 2: Discover and list files from Patient ID subdirectories
+        if (directories.length > 0) {
+          const subdirectoryOperations = directories.map((dir: any) => 
+            this.listDirectoryFiles(dir.name)
+          );
+          
+          console.log(`📂 Listing files from ${directories.length} discovered subdirectories...`);
+          const subdirectoryResults = await Promise.allSettled(subdirectoryOperations);
+          
+          // Process subdirectory results
+          subdirectoryResults.forEach((result, index) => {
+            const dirName = directories[index].name;
+            
+            if (result.status === 'fulfilled' && result.value.data) {
+              console.log(`📂 Found ${result.value.data.length} files in ${dirName} directory`);
+              // Add folder prefix to file names
+              const prefixedFiles = result.value.data.map((file: any) => ({
+                ...file,
+                name: `${dirName}/${file.name}`
+              }));
+              allFiles.push(...prefixedFiles);
+            } else if (result.status === 'rejected') {
+              console.warn(`Error listing ${dirName} files:`, result.reason);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error in discoverAndListFiles:', error);
+      hasError = true;
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    return { allFiles, hasError, errorMessage };
+  }
+
+  /**
+   * List files from a specific directory
+   */
+  private static async listDirectoryFiles(directoryName: string) {
+    return supabase.storage
+      .from(this.BUCKET_NAME)
+      .list(directoryName, {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
   }
 
   /**

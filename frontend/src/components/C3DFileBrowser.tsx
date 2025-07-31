@@ -47,6 +47,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage';
 import SupabaseSetup from '@/utils/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
@@ -193,6 +194,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
            file.resolved_therapist_id || 
            file.therapist_id || 
            'Unknown';
+  }, []);
+
+  const getPatientIdBadgeVariant = useCallback((patientId: string) => {
+    if (patientId === 'Unknown') return 'outline';
+    
+    // Color coding based on Patient ID
+    const colors = ['default', 'secondary', 'warning'] as const;
+    const hash = patientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
   }, []);
 
   const extractDateFromFilename = (filename: string): string | null => {
@@ -1343,7 +1353,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
                         {visibleColumns.patient_id && (
-                          <span>Patient: <span className="font-medium text-slate-700">{resolvePatientId(file)}</span></span>
+                          <div className="flex items-center gap-2">
+                            <span>Patient:</span>
+                            <Badge variant={getPatientIdBadgeVariant(resolvePatientId(file))}>
+                              {resolvePatientId(file)}
+                            </Badge>
+                          </div>
                         )}
                         {visibleColumns.therapist_id && (
                           <span>Therapist: <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span></span>
@@ -1499,9 +1514,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       </div>
                       {visibleColumns.patient_id && (
                         <div className="px-3 py-2 flex-1 min-w-0">
-                          <span className="text-sm text-slate-600 truncate block">
-                            <span className="font-medium text-slate-700">{resolvePatientId(file)}</span>
-                          </span>
+                          <div className="flex items-center">
+                            <Badge variant={getPatientIdBadgeVariant(resolvePatientId(file))}>
+                              {resolvePatientId(file)}
+                            </Badge>
+                          </div>
                         </div>
                       )}
                       {visibleColumns.therapist_id && (
