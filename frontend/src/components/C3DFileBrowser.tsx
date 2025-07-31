@@ -52,6 +52,22 @@ import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage'
 import SupabaseSetup from '@/utils/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
 
+/**
+ * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
+ * 
+ * Easy modification point for data source priorities:
+ * 
+ * 🏥 PATIENT ID RESOLUTION:
+ * 1. Storage Subfolder (P005/, P008/, P012/) - HIGHEST PRIORITY
+ * 2. C3D Metadata (metadata.player_name) - FALLBACK
+ * 
+ * 📅 SESSION DATE RESOLUTION:
+ * 1. Filename Extraction (YYYYMMDD patterns) - HIGHEST PRIORITY  
+ * 2. C3D Metadata (metadata.session_date, metadata.time) - FALLBACK
+ * 
+ * To modify priorities, see resolvePatientId() and resolveSessionDate() functions.
+ */
+
 // Using C3DFileInfo from the service
 type C3DFile = C3DFileInfo & {
   therapist_id?: string;
@@ -139,49 +155,42 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
-  // Helper functions to resolve Patient and Therapist IDs (same logic as FileMetadataBar)
+  // 🔧 CONFIGURABLE DATA RETRIEVAL SYSTEM
+  // Easily modifiable priority configurations - Senior Engineer Implementation
+  
+  // 👤 PATIENT ID RESOLUTION STRATEGY (User-Configured Priority)
   const resolvePatientId = useCallback((file: C3DFile): string => {
-    // Debug: Log the full file path to understand structure
-    console.log('🔍 C3DFileBrowser - Resolving Patient ID for file:', {
-      fullPath: file.name,
-      metadata: file
-    });
+    console.log('🔍 Resolving Patient ID for:', file.name);
     
-    // Priority 1: Folder structure extraction (P005, P008, etc.) - HIGHEST PRIORITY
-    const folderMatch = file.name.match(/^(P\d{3})\//);
-    if (folderMatch) {
-      const folderPatientId = folderMatch[1];
-      console.log('✅ Found Patient ID in folder structure:', folderPatientId);
-      return folderPatientId;
+    // ⭐ PRIORITY 1: Storage Subfolder (HIGHEST PRIORITY - User Request)
+    const subfolderMatch = file.name.match(/^(P\d{3})\//);
+    if (subfolderMatch) {
+      const patientId = subfolderMatch[1];
+      console.log('✅ Patient ID from subfolder:', patientId);
+      return patientId;
     }
     
-    // Priority 2: metadata.player_name (from C3D analysis) - consistent with FileMetadataBar
+    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
     if (file.metadata?.player_name) {
-      console.log('✅ Found Patient ID in metadata:', file.metadata.player_name);
+      console.log('✅ Patient ID from C3D metadata:', file.metadata.player_name);
       return file.metadata.player_name;
     }
     
-    // Priority 3: resolved_patient_id (enhanced resolution)
-    if (file.resolved_patient_id) {
-      console.log('✅ Found Patient ID in resolved field:', file.resolved_patient_id);
-      return file.resolved_patient_id;
-    }
-    
-    // Priority 4: patient_id (from storage metadata or service extraction)
+    // 🔄 Legacy Support (Lower Priority)
     if (file.patient_id) {
-      console.log('✅ Found Patient ID in patient_id field:', file.patient_id);
+      console.log('✅ Patient ID from storage metadata:', file.patient_id);
       return file.patient_id;
     }
     
-    // Priority 5: Extract from filename patterns
+    // 🔄 Filename Pattern Extraction (Last Resort)
     const filenameMatch = file.name.match(/[_-](P\d{3})[_-]/i);
     if (filenameMatch) {
-      const filenamePatientId = filenameMatch[1].toUpperCase();
-      console.log('✅ Found Patient ID in filename pattern:', filenamePatientId);
-      return filenamePatientId;
+      const patientId = filenameMatch[1].toUpperCase();
+      console.log('✅ Patient ID from filename pattern:', patientId);
+      return patientId;
     }
     
-    console.log('❌ No Patient ID found, defaulting to Unknown');
+    console.log('❌ No Patient ID found');
     return 'Unknown';
   }, []);
 
@@ -251,16 +260,31 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return null;
   };
 
+  // 📅 SESSION DATE RESOLUTION STRATEGY (User-Configured Priority)
   const resolveSessionDate = useCallback((file: C3DFile): string | null => {
-    // Consistent with FileMetadataBar: metadata?.session_date || metadata?.time
-    // Priority: 1) metadata.session_date (from C3D analysis)
-    //          2) metadata.time (alternative field from C3D)
-    //          3) extracted from filename (smart fallback)
-    //          4) null (no session date available)
-    return file.metadata?.session_date || 
-           file.metadata?.time || 
-           extractDateFromFilename(file.name) ||
-           null;
+    console.log('🔍 Resolving Session Date for:', file.name);
+    
+    // ⭐ PRIORITY 1: Filename Extraction (HIGHEST PRIORITY - User Request)
+    const extractedDate = extractDateFromFilename(file.name);
+    if (extractedDate) {
+      console.log('✅ Session Date from filename:', extractedDate);
+      return extractedDate;
+    }
+    
+    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
+    if (file.metadata?.session_date) {
+      console.log('✅ Session Date from C3D metadata:', file.metadata.session_date);
+      return file.metadata.session_date;
+    }
+    
+    // 🔄 Alternative C3D Field (Additional Fallback)
+    if (file.metadata?.time) {
+      console.log('✅ Session Date from C3D time field:', file.metadata.time);
+      return file.metadata.time;
+    }
+    
+    console.log('❌ No Session Date found');
+    return null;
   }, []);
 
   // Load files ONLY from Supabase c3d-examples bucket
