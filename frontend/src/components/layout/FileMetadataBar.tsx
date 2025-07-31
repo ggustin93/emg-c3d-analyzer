@@ -33,10 +33,10 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
+      return new Date(dateString).toLocaleDateString('en-GB', {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit'
       });
     } catch {
       return dateString;
@@ -79,10 +79,10 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
         return 'N/A';
       }
       
-      const formatted = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit'
+      const formatted = date.toLocaleDateString('en-GB', {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit'
       });
       
       console.log('✅ Upload date formatted successfully:', formatted);
