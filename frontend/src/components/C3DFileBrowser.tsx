@@ -155,10 +155,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       return folderPatientId;
     }
     
-    // Priority 2: game_metadata.player_name (from C3D analysis)
-    if (file.game_metadata?.player_name) {
-      console.log('✅ Found Patient ID in game metadata:', file.game_metadata.player_name);
-      return file.game_metadata.player_name;
+    // Priority 2: metadata.player_name (from C3D analysis) - consistent with FileMetadataBar
+    if (file.metadata?.player_name) {
+      console.log('✅ Found Patient ID in metadata:', file.metadata.player_name);
+      return file.metadata.player_name;
     }
     
     // Priority 3: resolved_patient_id (enhanced resolution)
@@ -186,12 +186,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   }, []);
 
   const resolveTherapistId = useCallback((file: C3DFile): string => {
-    // Priority: 1) game_metadata.therapist_id (from C3D analysis)
-    //          2) resolved_therapist_id (enhanced resolution)
-    //          3) therapist_id (from storage metadata)
-    //          4) 'Unknown'  
-    return file.game_metadata?.therapist_id || 
-           file.resolved_therapist_id || 
+    // Consistent with FileMetadataBar: metadata?.therapist_id
+    // Priority: 1) metadata.therapist_id (from C3D analysis)
+    //          2) therapist_id (from storage metadata)
+    //          3) 'Unknown'  
+    return file.metadata?.therapist_id || 
            file.therapist_id || 
            'Unknown';
   }, []);
@@ -253,12 +252,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   };
 
   const resolveSessionDate = useCallback((file: C3DFile): string | null => {
-    // Priority: 1) game_metadata.session_date (from C3D analysis - most accurate)
-    //          2) game_metadata.time (alternative field from C3D)
+    // Consistent with FileMetadataBar: metadata?.session_date || metadata?.time
+    // Priority: 1) metadata.session_date (from C3D analysis)
+    //          2) metadata.time (alternative field from C3D)
     //          3) extracted from filename (smart fallback)
     //          4) null (no session date available)
-    return file.game_metadata?.session_date || 
-           file.game_metadata?.time || 
+    return file.metadata?.session_date || 
+           file.metadata?.time || 
            extractDateFromFilename(file.name) ||
            null;
   }, []);
@@ -1367,7 +1367,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           </div>
                         )}
                         {visibleColumns.therapist_id && (
-                          <span>Therapist: <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span></span>
+                          <div className="flex items-center gap-2">
+                            <span>Therapist:</span>
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                              {resolveTherapistId(file)}
+                            </Badge>
+                          </div>
                         )}
                         {visibleColumns.size && (
                           <div className="flex items-center">
@@ -1385,35 +1390,45 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           </div>
                         )}
                         {visibleColumns.session_date && resolveSessionDate(file) && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <span className="cursor-help">Session: {formatDate(resolveSessionDate(file)!)}</span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <div className="flex items-center gap-2">
+                            <span>Session:</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
+                                  {formatDate(resolveSessionDate(file)!)}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         )}
                         {visibleColumns.upload_date && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <span className="cursor-help">Upload: {formatDate(file.created_at)}</span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>File upload date: {formatFullDate(file.created_at)}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <div className="flex items-center gap-2">
+                            <span>Upload:</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-slate-600 border-slate-300 text-xs cursor-help">
+                                  {formatDate(file.created_at)}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>File upload date: {formatFullDate(file.created_at)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         )}
                       </div>
                       <div className="flex gap-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="sm"
+                              size="default"
                               variant={loadingFileId === file.id ? "default" : "default"}
                               onClick={() => handleFileAnalyze(file.id, file.name)}
                               disabled={isLoading || loadingFileId !== null}
-                              className={`w-10 h-8 p-0 transition-all duration-200 flex items-center justify-center ${
+                              className={`w-12 h-9 p-0 transition-all duration-200 flex items-center justify-center ${
                                 loadingFileId === file.id 
                                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
                                   : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
@@ -1421,7 +1436,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                             >
                               {loadingFileId === file.id ? (
                                 <svg 
-                                  className="animate-spin w-3 h-3 text-white" 
+                                  className="animate-spin w-4 h-4 text-white" 
                                   xmlns="http://www.w3.org/2000/svg" 
                                   fill="none" 
                                   viewBox="0 0 24 24"
@@ -1441,7 +1456,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                                   />
                                 </svg>
                               ) : (
-                                <PlayIcon className="w-3 h-3" />
+                                <PlayIcon className="w-4 h-4" />
                               )}
                             </Button>
                           </TooltipTrigger>
@@ -1452,13 +1467,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="sm"
+                              size="default"
                               variant="outline"
                               onClick={() => handleFileDownload(file.name)}
                               disabled={isLoading || loadingFileId !== null}
-                              className="w-10 h-8 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="w-12 h-9 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              <DownloadIcon className="w-3 h-3" />
+                              <DownloadIcon className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1529,9 +1544,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       )}
                       {visibleColumns.therapist_id && (
                         <div className="px-3 py-2 flex-1 min-w-0">
-                          <span className="text-sm text-slate-600 truncate block">
-                            <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span>
-                          </span>
+                          <div className="flex items-center">
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                              {resolveTherapistId(file)}
+                            </Badge>
+                          </div>
                         </div>
                       )}
                       {visibleColumns.size && (
@@ -1557,27 +1574,29 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <div className="px-3 py-2 flex-1 min-w-0">
                           {resolveSessionDate(file) ? (
                             <Tooltip>
-                              <TooltipTrigger>
-                                <span className="text-sm text-slate-600 cursor-help">
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
                                   {formatDate(resolveSessionDate(file)!)}
-                                </span>
+                                </Badge>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
                               </TooltipContent>
                             </Tooltip>
                           ) : (
-                            <span className="text-sm text-slate-400">N/A</span>
+                            <Badge variant="outline" className="text-slate-400 border-slate-300 text-xs">
+                              N/A
+                            </Badge>
                           )}
                         </div>
                       )}
                       {visibleColumns.upload_date && (
                         <div className="px-3 py-2 flex-1 min-w-0">
                           <Tooltip>
-                            <TooltipTrigger>
-                              <span className="text-sm text-slate-600 cursor-help">
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="text-slate-600 border-slate-300 text-xs cursor-help">
                                 {formatDate(file.created_at)}
-                              </span>
+                              </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Upload date: {formatFullDate(file.created_at)}</p>
@@ -1589,11 +1608,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="sm"
+                              size="default"
                               variant={loadingFileId === file.id ? "default" : "default"}
                               onClick={() => handleFileAnalyze(file.id, file.name)}
                               disabled={isLoading || loadingFileId !== null}
-                              className={`w-8 h-8 p-0 transition-all duration-200 flex items-center justify-center ${
+                              className={`w-10 h-9 p-0 transition-all duration-200 flex items-center justify-center ${
                                 loadingFileId === file.id 
                                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm' 
                                   : 'bg-primary hover:bg-primary/90 text-white border-primary hover:shadow-md'
@@ -1601,7 +1620,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                             >
                               {loadingFileId === file.id ? (
                                 <svg 
-                                  className="animate-spin w-3 h-3 text-white" 
+                                  className="animate-spin w-4 h-4 text-white" 
                                   xmlns="http://www.w3.org/2000/svg" 
                                   fill="none" 
                                   viewBox="0 0 24 24"
@@ -1621,7 +1640,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                                   />
                                 </svg>
                               ) : (
-                                <PlayIcon className="w-3 h-3" />
+                                <PlayIcon className="w-4 h-4" />
                               )}
                             </Button>
                           </TooltipTrigger>
@@ -1632,13 +1651,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="sm"
+                              size="default"
                               variant="outline"
                               onClick={() => handleFileDownload(file.name)}
                               disabled={isLoading || loadingFileId !== null}
-                              className="w-8 h-8 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="w-10 h-9 p-0 transition-all duration-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              <DownloadIcon className="w-3 h-3" />
+                              <DownloadIcon className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
