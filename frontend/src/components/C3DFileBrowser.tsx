@@ -140,14 +140,48 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   // Helper functions to resolve Patient and Therapist IDs (same logic as FileMetadataBar)
   const resolvePatientId = useCallback((file: C3DFile): string => {
-    // Priority: 1) game_metadata.player_name (from C3D analysis)
-    //          2) resolved_patient_id (from folder structure - future)  
-    //          3) patient_id (from storage metadata)
-    //          4) 'Unknown'
-    return file.game_metadata?.player_name || 
-           file.resolved_patient_id || 
-           file.patient_id || 
-           'Unknown';
+    // Debug: Log the full file path to understand structure
+    console.log('🔍 C3DFileBrowser - Resolving Patient ID for file:', {
+      fullPath: file.name,
+      metadata: file
+    });
+    
+    // Priority 1: Folder structure extraction (P005, P008, etc.) - HIGHEST PRIORITY
+    const folderMatch = file.name.match(/^(P\d{3})\//);
+    if (folderMatch) {
+      const folderPatientId = folderMatch[1];
+      console.log('✅ Found Patient ID in folder structure:', folderPatientId);
+      return folderPatientId;
+    }
+    
+    // Priority 2: game_metadata.player_name (from C3D analysis)
+    if (file.game_metadata?.player_name) {
+      console.log('✅ Found Patient ID in game metadata:', file.game_metadata.player_name);
+      return file.game_metadata.player_name;
+    }
+    
+    // Priority 3: resolved_patient_id (enhanced resolution)
+    if (file.resolved_patient_id) {
+      console.log('✅ Found Patient ID in resolved field:', file.resolved_patient_id);
+      return file.resolved_patient_id;
+    }
+    
+    // Priority 4: patient_id (from storage metadata or service extraction)
+    if (file.patient_id) {
+      console.log('✅ Found Patient ID in patient_id field:', file.patient_id);
+      return file.patient_id;
+    }
+    
+    // Priority 5: Extract from filename patterns
+    const filenameMatch = file.name.match(/[_-](P\d{3})[_-]/i);
+    if (filenameMatch) {
+      const filenamePatientId = filenameMatch[1].toUpperCase();
+      console.log('✅ Found Patient ID in filename pattern:', filenamePatientId);
+      return filenamePatientId;
+    }
+    
+    console.log('❌ No Patient ID found, defaulting to Unknown');
+    return 'Unknown';
   }, []);
 
   const resolveTherapistId = useCallback((file: C3DFile): string => {
@@ -1145,7 +1179,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 <TooltipContent className="max-w-xs">
                   <p className="font-medium">Intelligent Patient ID Resolution</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Priority: 1) Player name from C3D analysis → 2) Folder structure → 3) Storage metadata
+                    Priority: 1) Folder structure (P005, P008, etc.) → 2) C3D analysis → 3) Storage metadata
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -1307,7 +1341,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
+                      <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
                         {visibleColumns.patient_id && (
                           <span>Patient: <span className="font-medium text-slate-700">{resolvePatientId(file)}</span></span>
                         )}
@@ -1465,14 +1499,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       </div>
                       {visibleColumns.patient_id && (
                         <div className="px-3 py-2 flex-1 min-w-0">
-                          <span className="text-xs text-slate-600 truncate block">
+                          <span className="text-sm text-slate-600 truncate block">
                             <span className="font-medium text-slate-700">{resolvePatientId(file)}</span>
                           </span>
                         </div>
                       )}
                       {visibleColumns.therapist_id && (
                         <div className="px-3 py-2 flex-1 min-w-0">
-                          <span className="text-xs text-slate-600 truncate block">
+                          <span className="text-sm text-slate-600 truncate block">
                             <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span>
                           </span>
                         </div>
@@ -1480,7 +1514,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       {visibleColumns.size && (
                         <div className="px-3 py-2 flex-1 min-w-0">
                           <div className="flex items-center">
-                            <span className="text-xs text-slate-600">
+                            <span className="text-sm text-slate-600">
                               {formatFileSize(file.size)}
                             </span>
                             {shortSession && (
@@ -1501,7 +1535,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           {resolveSessionDate(file) ? (
                             <Tooltip>
                               <TooltipTrigger>
-                                <span className="text-xs text-slate-600 cursor-help">
+                                <span className="text-sm text-slate-600 cursor-help">
                                   {formatDate(resolveSessionDate(file)!)}
                                 </span>
                               </TooltipTrigger>
@@ -1510,7 +1544,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                               </TooltipContent>
                             </Tooltip>
                           ) : (
-                            <span className="text-xs text-slate-400">N/A</span>
+                            <span className="text-sm text-slate-400">N/A</span>
                           )}
                         </div>
                       )}
@@ -1518,7 +1552,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <div className="px-3 py-2 flex-1 min-w-0">
                           <Tooltip>
                             <TooltipTrigger>
-                              <span className="text-xs text-slate-600 cursor-help">
+                              <span className="text-sm text-slate-600 cursor-help">
                                 {formatDate(file.created_at)}
                               </span>
                             </TooltipTrigger>

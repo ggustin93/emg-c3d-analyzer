@@ -63,38 +63,134 @@ export class SupabaseStorageService {
       }
       
       // Add timeout to storage operation to prevent hanging
-      const storageOperation = supabase.storage
+      // First, get files from root directory and subdirectories
+      console.log('📂 Listing files from root directory...');
+      const rootOperation = supabase.storage
         .from(this.BUCKET_NAME)
         .list('', {
           limit: 100,
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' }
         });
+      
+      // Also list files from known patient subdirectories
+      console.log('📂 Listing files from P005 subdirectory...');
+      const p005Operation = supabase.storage
+        .from(this.BUCKET_NAME)
+        .list('P005', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+        
+      console.log('📂 Listing files from P008 subdirectory...');
+      const p008Operation = supabase.storage
+        .from(this.BUCKET_NAME)
+        .list('P008', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+        
+      console.log('📂 Listing files from P012 subdirectory...');
+      const p012Operation = supabase.storage
+        .from(this.BUCKET_NAME)
+        .list('P012', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+        
+      // Execute all operations in parallel
+      const storageOperation = Promise.all([
+        rootOperation,
+        p005Operation,
+        p008Operation,
+        p012Operation
+      ]);
         
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Storage operation timeout after 20 seconds')), 20000);
       });
       
-      const { data: files, error } = await Promise.race([storageOperation, timeoutPromise]);
+      const results = await Promise.race([storageOperation, timeoutPromise]);
 
-      if (error) {
-        console.error('Error listing files from Supabase:', error);
-        
+      // Combine all results from different directories
+      let allFiles: any[] = [];
+      let hasError = false;
+      let errorMessage = '';
+
+      // Process root directory results
+      const [rootResult, p005Result, p008Result, p012Result] = results;
+      
+      if (rootResult.error) {
+        console.error('Error listing root files:', rootResult.error);
+        hasError = true;
+        errorMessage = rootResult.error.message;
+      } else if (rootResult.data) {
+        console.log(`📂 Found ${rootResult.data.length} files in root directory`);
+        allFiles.push(...rootResult.data);
+      }
+
+      // Process P005 directory results
+      if (p005Result.error) {
+        console.warn('Error listing P005 files (may not exist):', p005Result.error);
+      } else if (p005Result.data) {
+        console.log(`📂 Found ${p005Result.data.length} files in P005 directory`);
+        // Add folder prefix to file names
+        const p005Files = p005Result.data.map(file => ({
+          ...file,
+          name: `P005/${file.name}`
+        }));
+        allFiles.push(...p005Files);
+      }
+
+      // Process P008 directory results
+      if (p008Result.error) {
+        console.warn('Error listing P008 files (may not exist):', p008Result.error);
+      } else if (p008Result.data) {
+        console.log(`📂 Found ${p008Result.data.length} files in P008 directory`);
+        // Add folder prefix to file names
+        const p008Files = p008Result.data.map(file => ({
+          ...file,
+          name: `P008/${file.name}`
+        }));
+        allFiles.push(...p008Files);
+      }
+
+      // Process P012 directory results
+      if (p012Result.error) {
+        console.warn('Error listing P012 files (may not exist):', p012Result.error);
+      } else if (p012Result.data) {
+        console.log(`📂 Found ${p012Result.data.length} files in P012 directory`);
+        // Add folder prefix to file names
+        const p012Files = p012Result.data.map(file => ({
+          ...file,
+          name: `P012/${file.name}`
+        }));
+        allFiles.push(...p012Files);
+      }
+
+      // If root directory failed and we have no files, throw error
+      if (hasError && allFiles.length === 0) {
         // If bucket doesn't exist, try creating it or provide better error message
-        if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
           console.warn(`Bucket '${this.BUCKET_NAME}' not found. Please create the bucket in Supabase dashboard.`);
           throw new Error(`Storage bucket '${this.BUCKET_NAME}' not found. Please create it in your Supabase dashboard.`);
         }
         
-        throw new Error(`Failed to list files: ${error.message}`);
+        throw new Error(`Failed to list files: ${errorMessage}`);
       }
 
-      if (!files) {
+      if (allFiles.length === 0) {
         console.log('No files returned from Supabase storage');
         return [];
       }
 
-      console.log(`Found ${files.length} files in bucket`);
+      console.log(`📂 Found ${allFiles.length} total files across all directories`);
+      
+      // Filter out placeholder files
+      const files = allFiles.filter(file => !file.name.includes('.emptyFolderPlaceholder'));
 
       // Filter only .c3d files and transform the data
       const c3dFiles: C3DFileInfo[] = files
@@ -132,24 +228,33 @@ export class SupabaseStorageService {
    * This can be customized based on your folder structure
    */
   private static extractPatientId(filename: string): string {
-    // If files are organized in folders like "P001/filename.c3d"
-    const folderMatch = filename.match(/^([^\/]+)\//);
+    console.log(`🔍 SupabaseStorageService - Extracting Patient ID from: ${filename}`);
+    
+    // Priority 1: If files are organized in folders like "P005/filename.c3d", "P008/filename.c3d"
+    const folderMatch = filename.match(/^(P\d{3})\//);
     if (folderMatch) {
-      return folderMatch[1];
+      const patientId = folderMatch[1];
+      console.log(`✅ Found Patient ID in folder structure: ${patientId}`);
+      return patientId;
     }
 
-    // If patient ID is embedded in filename like "Ghostly_P001_..."
-    const filenameMatch = filename.match(/[_-]([P]\d{3})[_-]/i);
+    // Priority 2: If patient ID is embedded in filename like "Ghostly_P001_..."
+    const filenameMatch = filename.match(/[_-](P\d{3})[_-]/i);
     if (filenameMatch) {
-      return filenameMatch[1].toUpperCase();
+      const patientId = filenameMatch[1].toUpperCase();
+      console.log(`✅ Found Patient ID in filename: ${patientId}`);
+      return patientId;
     }
 
-    // If patient ID is at the beginning like "P001_Ghostly_..."
-    const prefixMatch = filename.match(/^([P]\d{3})[_-]/i);
+    // Priority 3: If patient ID is at the beginning like "P001_Ghostly_..."
+    const prefixMatch = filename.match(/^(P\d{3})[_-]/i);
     if (prefixMatch) {
-      return prefixMatch[1].toUpperCase();
+      const patientId = prefixMatch[1].toUpperCase();
+      console.log(`✅ Found Patient ID at filename start: ${patientId}`);
+      return patientId;
     }
 
+    console.log(`❌ No Patient ID found in: ${filename}`);
     return 'Unknown';
   }
 
