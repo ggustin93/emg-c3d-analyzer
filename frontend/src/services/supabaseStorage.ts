@@ -74,7 +74,7 @@ export class SupabaseStorageService {
           sortBy: { column: 'created_at', order: 'desc' }
         });
         
-      const storageOperation = this.discoverAndListFiles(rootOperation);
+      const storageOperation = SupabaseStorageService.discoverAndListFiles(rootOperation);
         
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Storage operation timeout after 20 seconds')), 20000);
@@ -138,7 +138,7 @@ export class SupabaseStorageService {
    * Generic method to discover and list files from all directories
    * Automatically discovers Patient ID folders and lists files recursively
    */
-  private static async discoverAndListFiles(rootOperation: Promise<any>): Promise<{
+  static async discoverAndListFiles(rootOperation: Promise<any>): Promise<{
     allFiles: any[];
     hasError: boolean;
     errorMessage: string;
@@ -173,7 +173,7 @@ export class SupabaseStorageService {
         // Step 2: Discover and list files from Patient ID subdirectories
         if (directories.length > 0) {
           const subdirectoryOperations = directories.map((dir: any) => 
-            this.listDirectoryFiles(dir.name)
+            SupabaseStorageService.listDirectoryFiles(dir.name)
           );
           
           console.log(`📂 Listing files from ${directories.length} discovered subdirectories...`);
@@ -209,7 +209,7 @@ export class SupabaseStorageService {
   /**
    * List files from a specific directory
    */
-  private static async listDirectoryFiles(directoryName: string) {
+  static async listDirectoryFiles(directoryName: string) {
     return supabase.storage
       .from(this.BUCKET_NAME)
       .list(directoryName, {
@@ -328,19 +328,50 @@ export class SupabaseStorageService {
       return false;
     }
 
+    console.log(`🔍 Checking if file exists: ${filename}`);
+
     try {
-      const { data, error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list('', {
-          search: filename
-        });
+      // Handle subfolder paths (e.g., "P005/filename.c3d")
+      if (filename.includes('/')) {
+        const parts = filename.split('/');
+        const directory = parts.slice(0, -1).join('/'); // Get directory path
+        const fileBasename = parts[parts.length - 1]; // Get just the filename
+        
+        console.log(`📂 Searching in directory: "${directory}" for file: "${fileBasename}"`);
+        
+        const { data, error } = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list(directory, {
+            search: fileBasename
+          });
 
-      if (error) {
-        console.error('Error checking file existence:', error);
-        return false;
+        if (error) {
+          console.error('Error checking file existence in subdirectory:', error);
+          return false;
+        }
+
+        const exists = data?.some(file => file.name === fileBasename) || false;
+        console.log(`${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in subdirectory`);
+        return exists;
+      } else {
+        // Handle root directory files
+        console.log(`📂 Searching in root directory for file: "${filename}"`);
+        
+        const { data, error } = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list('', {
+            search: filename
+          });
+
+        if (error) {
+          console.error('Error checking file existence in root:', error);
+          return false;
+        }
+
+        const exists = data?.some(file => file.name === filename) || false;
+        console.log(`${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in root directory`);
+        return exists;
       }
-
-      return data?.some(file => file.name === filename) || false;
     } catch (error) {
       console.error('Error in fileExists:', error);
       return false;
@@ -355,33 +386,67 @@ export class SupabaseStorageService {
       return null;
     }
 
-    try {
-      const { data: files, error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list('', {
-          search: filename
-        });
+    console.log(`🔍 Getting file info for: ${filename}`);
 
-      if (error || !files) {
+    try {
+      let data, error;
+
+      // Handle subfolder paths (e.g., "P005/filename.c3d")
+      if (filename.includes('/')) {
+        const parts = filename.split('/');
+        const directory = parts.slice(0, -1).join('/'); // Get directory path
+        const fileBasename = parts[parts.length - 1]; // Get just the filename
+        
+        console.log(`📂 Getting info from directory: "${directory}" for file: "${fileBasename}"`);
+        
+        const result = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list(directory, {
+            search: fileBasename
+          });
+        
+        data = result.data;
+        error = result.error;
+      } else {
+        // Handle root directory files
+        console.log(`📂 Getting info from root directory for file: "${filename}"`);
+        
+        const result = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list('', {
+            search: filename
+          });
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error || !data) {
         console.error('Error getting file info:', error);
         return null;
       }
 
-      const file = files.find(f => f.name === filename);
+      // For subfolder files, we need to find by basename, not full path
+      const searchName = filename.includes('/') ? filename.split('/').pop() : filename;
+      const file = data.find(f => f.name === searchName);
+      
       if (!file) {
+        console.log(`❌ File info not found: ${filename}`);
         return null;
       }
 
+      console.log(`✅ File info found: ${filename}`);
+
       return {
-        id: file.id || file.name,
-        name: file.name,
+        id: file.id || filename, // Use full filename as ID to maintain consistency
+        name: filename, // Return full path as name to maintain consistency
         size: file.metadata?.size || 0,
         created_at: file.created_at || new Date().toISOString(),
         updated_at: file.updated_at || file.created_at || new Date().toISOString(),
-        patient_id: this.extractPatientId(file.name),
-        therapist_id: file.metadata?.therapist_id || this.extractTherapistId(file.name),
+        patient_id: this.extractPatientId(filename), // Extract from full path
+        therapist_id: file.metadata?.therapist_id || this.extractTherapistId(filename),
         metadata: file.metadata,
-        public_url: this.getPublicUrl(file.name)
+        public_url: this.getPublicUrl(filename) // Use full path for public URL
       };
     } catch (error) {
       console.error('Error in getFileInfo:', error);
@@ -456,32 +521,71 @@ export class SupabaseStorageService {
       throw new Error('Supabase not configured');
     }
 
-    const { data, error } = await supabase.storage
-      .from(this.BUCKET_NAME)
-      .list('', {
-        search: filename
-      });
+    console.log(`🔍 Getting metadata for file: ${filename}`);
 
-    if (error) {
-      console.error('Error getting file metadata:', error);
-      throw new Error(`Failed to get file metadata: ${error.message}`);
-    }
+    try {
+      let data, error;
 
-    const file = data?.find(f => f.name === filename);
-    if (!file) {
-      return null;
+      // Handle subfolder paths (e.g., "P005/filename.c3d")
+      if (filename.includes('/')) {
+        const parts = filename.split('/');
+        const directory = parts.slice(0, -1).join('/'); // Get directory path
+        const fileBasename = parts[parts.length - 1]; // Get just the filename
+        
+        console.log(`📂 Getting metadata from directory: "${directory}" for file: "${fileBasename}"`);
+        
+        const result = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list(directory, {
+            search: fileBasename
+          });
+        
+        data = result.data;
+        error = result.error;
+      } else {
+        // Handle root directory files
+        console.log(`📂 Getting metadata from root directory for file: "${filename}"`);
+        
+        const result = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .list('', {
+            search: filename
+          });
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.error('Error getting file metadata:', error);
+        throw new Error(`Failed to get file metadata: ${error.message}`);
+      }
+
+      // For subfolder files, we need to find by basename, not full path
+      const searchName = filename.includes('/') ? filename.split('/').pop() : filename;
+      const file = data?.find(f => f.name === searchName);
+      
+      if (!file) {
+        console.log(`❌ File metadata not found: ${filename}`);
+        return null;
+      }
+      
+      console.log(`✅ File metadata found: ${filename}`);
+      
+      return {
+        id: file.id || filename, // Use full filename as ID to maintain consistency
+        name: filename, // Return full path as name to maintain consistency
+        size: file.metadata?.size || 0,
+        created_at: file.created_at || new Date().toISOString(),
+        updated_at: file.updated_at || file.created_at || new Date().toISOString(),
+        patient_id: this.extractPatientId(filename), // Extract from full path
+        therapist_id: file.metadata?.therapist_id || this.extractTherapistId(filename),
+        metadata: file.metadata
+      };
+    } catch (error) {
+      console.error('Error in getFileMetadata:', error);
+      throw error;
     }
-    
-    return {
-      id: file.id || file.name,
-      name: file.name,
-      size: file.metadata?.size || 0,
-      created_at: file.created_at || new Date().toISOString(),
-      updated_at: file.updated_at || file.created_at || new Date().toISOString(),
-      patient_id: this.extractPatientId(file.name),
-      therapist_id: file.metadata?.therapist_id || this.extractTherapistId(file.name),
-      metadata: file.metadata
-    };
   }
 }
 
