@@ -30,12 +30,13 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
     - `AuthGuard` component handles authentication state management
     - No routing library required - optimal for medical device linear workflows
     - State-driven navigation: `AuthGuard` → `SessionLoader` → `GameSessionTabs`
-- **Patient ID Resolution System**:
-    - **Primary Source**: `metadata.player_name` from C3D analysis (highest reliability)
-    - **Secondary Source**: Parent folder name in Supabase Storage bucket structure
-    - **Fallback Source**: `patient_id` from storage metadata
-    - **Implementation**: Hierarchical resolution with confidence scoring
-    - **Documentation**: See `/docs/patient-id-resolution.md` for complete specification
+- **Configurable Data Retrieval System**:
+    - **Patient ID Resolution**: Storage subfolder (P005/, P008/) → C3D metadata fallback
+    - **Session Date Resolution**: Filename extraction (YYYYMMDD) → C3D metadata fallback
+    - **Architecture**: Self-documenting configuration headers, modular resolver functions
+    - **Implementation**: SOLID principles with consistent priority-based configuration
+    - **Components**: C3DFileBrowser and FileMetadataBar use identical resolution logic
+    - **Maintainability**: Senior engineering patterns for easy priority modification
 
 ### Directory Structure
 ```
