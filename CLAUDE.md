@@ -83,6 +83,7 @@ The project follows a **2-Layer Documentation Strategy** (Git provides archival)
 **For Developers RIGHT NOW:**
 - `README.md` - Quick start guide
 - `api.md` - FastAPI endpoint reference
+- `supabase_client.md` - Supabase client methods and authentication patterns
 - `db_schema.md` - Database schema
 - `setup/` - Development environment setup
 
@@ -205,112 +206,29 @@ Working through todo.md tasks to refactor for:
 - Enhanced EMG analysis integration
 - Improved frontend chart capabilities
 
-## Latest Update: Authentication System Complete ✅ (July 30, 2025)
-**Status**: PRODUCTION READY - Complete authentication system with perfect UX
-**Final Achievement**: 
-- ✅ Fixed logout loop with immediate state transition preventing infinite loading spinner
-- ✅ Perfect UI centering for consistent loading experience across all screen sizes
-- ✅ Download button functionality with authentication protection preserved
-- ✅ Therapist ID filtering with metadata integration fully operational
-- ✅ Singleton Context API implementation eliminating all initialization loops
-- ✅ Optimized React patterns with stable useCallback references
-- ✅ Clean logout flow with immediate redirect to login page
-- ✅ Professional medical device UI standards maintained throughout
+## Latest Update: Configurable Data Retrieval System ✅ (July 31, 2025)
+**Status**: PRODUCTION READY - Consistent data resolution across components
+- Unified Patient ID/Session Date resolution with priority-based configuration
+- SOLID engineering patterns with self-documenting configuration headers
+- Storage subfolder (highest) → C3D metadata (fallback) priority system
+- Robust TypeScript support with comprehensive logging and error handling
 
-**Technical Fixes**: 
-1. **Logout Loop**: Changed `setAuthState(loading: true)` to `setAuthState(createLoggedOutState())` for immediate transition
-2. **Spinner Centering**: Enhanced AuthLoadingSpinner with `w-full flex items-center justify-center` and inner `flex flex-col items-center`
-3. **State Management**: Preserved singleton AuthProvider pattern while fixing logout flow
+## Recent Updates:
 
-**Architecture**: Complete Context API singleton pattern with immediate logout transitions, perfect centering, and responsive design for professional medical device standards.
+### Authentication System ✅ (July 30, 2025)  
+**Status**: PRODUCTION READY - Complete authentication with perfect UX
+- Fixed logout loops with immediate state transitions
+- Singleton Context API eliminating initialization loops
+- Professional medical device UI standards maintained
 
-**Previous Update: Supabase Authentication System ✅ (July 29, 2025)**
-**Status**: COMPLETED - Complete authentication flow with proper login/logout functionality
-- ✅ Fixed infinite re-render loops in authentication hooks and components
-- ✅ Resolved login blocking issue preventing user authentication
-- ✅ Implemented proper Supabase logout flow following official best practices
-- ✅ Automatic redirect to login page on logout without page refresh
-- ✅ Persistent auth state listener handling both SIGNED_IN and SIGNED_OUT events
-- ✅ Clean separation of concerns between Supabase auth and React UI state
-- ✅ Eliminated excessive debug logging causing performance issues
-- ✅ Enhanced error handling and state management reliability
+### Dynamic Thresholds & Game Metadata ✅ (July 25, 2025)
+**Status**: PRODUCTION READY - Complete dynamic threshold system  
+- Game metadata integration via component props chain
+- LaTeX tooltip integration for performance equations
+- Color-coded performance weight sliders with visual consistency
 
-## Previous Update: Dynamic Thresholds & Game Metadata Resolution ✅ (July 25, 2025)
-**Status**: PRODUCTION READY - Complete dynamic threshold system and robust game metadata integration
-**Final Achievement**: 
-- ✅ Dynamic threshold displays: Duration Rate (muscle-specific avg) and Intensity Rate (MVC avg)
-- ✅ Game metadata data flow via component props: analysisResult → SettingsPanel → ScoringWeightsSettings
-- ✅ Robust TypeScript handling for threshold calculations with proper type filtering
-- ✅ Game Score Normalization always visible regardless of debug mode
-- ✅ Color-coded performance weight sliders with component-specific colors (green/purple/orange/cyan)
-- ✅ Professional medical device UI standards maintained throughout settings
-- ✅ Complete LaTeX tooltip integration for performance equation terms
-- ✅ Unified settings architecture with consistent icons and color schemes
-
-**Technical Architecture**: Dynamic threshold calculation using `getAverageDurationThreshold()` and `getAverageMvcThreshold()` functions with muscle-specific parameters. Game metadata flows through React component props chain (game-session-tabs → SettingsPanel → ScoringWeightsSettings) using `analysisResult?.metadata` pattern, matching successful GHOSTLYGameCard implementation.
-
-**Critical Data Flow Patterns**: 
-1. **Dynamic Thresholds**: `sessionParams.session_duration_thresholds_per_muscle` → averaged → displayed as "≥{avg}s"
-2. **Game Metadata**: `analysisResult.metadata.{score,level}` → props chain → Settings display (no Zustand dependency)
-3. **Performance Scoring**: Component-specific slider colors match equation variables for visual consistency
-
-## Previous Update: Enhanced Performance System with BFR Configuration ✅ (July 18, 2025)
-**Status**: PRODUCTION READY - Complete performance scoring with configurable BFR monitoring
-**Technical Architecture**: React/TypeScript with Zustand state management, interactive equation components, configurable therapeutic parameters, and consistent UI patterns. System enables clinical customization while maintaining safety standards and professional medical device compliance.
-
-## Previous Update: BFR Monitoring System Complete ✅ (July 17, 2025)
-**Status**: PRODUCTION READY - Complete BFR monitoring with clinical safety compliance
-**Technical Architecture**: Clean React/TypeScript components with Zustand state management, real-time compliance calculation, and professional medical device UI standards. System provides at-a-glance safety monitoring through tab indicators and detailed monitoring through dedicated BFR tab.
-
-## Previous Update: Contraction Visualization System Complete ✅ (July 17, 2025)
-**Status**: PRODUCTION READY - Full contraction visualization with interactive controls
-**Technical Architecture**: ComposedChart with XAxis type="number" for decimal time coordinates, memoized contraction processing, and efficient rendering with proper component layering. Toggle controls provide independent visibility control over visualization elements.
-
-## Testing Strategy
-- Preserve existing functionality during refactoring
-- Validate with sample C3D files
-- Ensure clinical metrics remain accurate
-- Test cross-browser compatibility
-
-## Deployment Target
-- Render free tier compatibility
-- Minimal resource usage
-- Fast startup and processing
-
-## Clinical EMG Standards & Reference Ranges
-
-### Signal Quality Requirements
-- **Sampling Rate**: ≥1000 Hz (preferably 2000 Hz) for surface EMG
-- **Bandwidth**: 20-500 Hz for surface EMG, 20-2000 Hz for intramuscular
-- **Amplitude Range**: 50-2000 µV for surface EMG (muscle-dependent)
-- **Noise Floor**: <5 µV RMS for clinical-grade measurements
-
-### Clinical Reference Ranges
-```
-Time Domain Metrics:
-- RMS: 50-500 µV (healthy muscle activation)
-- MAV: 30-300 µV (typically 60-80% of RMS value)
-- Peak Amplitude: 100-2000 µV (muscle-dependent)
-
-Frequency Domain Metrics:
-- MPF (Mean Power Frequency): 80-150 Hz (healthy muscle)
-- MDF (Median Frequency): 60-120 Hz (shifts lower with fatigue)
-- Spectral Bandwidth: 20-250 Hz (95% power content)
-
-Fatigue Indicators:
-- Fatigue Index: -0.1 to -0.5 Hz/s (MPF/MDF slope)
-- Amplitude Increase: 10-30% during sustained contraction
-- Spectral Compression: 15-25% frequency shift
-```
-
-### Biomedical Signal Processing Standards
-- **Filtering**: 4th-order Butterworth bandpass (20-500 Hz)
-- **Windowing**: Hamming window for spectral analysis
-- **Overlap**: 50% for time-frequency analysis
-- **Epoch Length**: 250ms for stationary analysis, 1-2s for fatigue assessment
-
-### Clinical Validation Requirements
-- **Reproducibility**: <10% coefficient of variation for repeated measures
-- **Sensitivity**: Detect 15% changes in muscle activation
-- **Specificity**: Distinguish between muscle groups and activation patterns
-- **Temporal Resolution**: 50ms for dynamic movement analysis
+### Performance & BFR Systems ✅ (July 17-18, 2025)
+**Status**: PRODUCTION READY - Complete clinical monitoring systems
+- BFR monitoring with clinical safety compliance and real-time validation
+- Interactive performance scoring with configurable therapeutic parameters
+- Contraction visualization with memoized processing and toggle controls
