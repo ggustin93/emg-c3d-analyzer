@@ -125,6 +125,26 @@ function AppContent() {
     setIsLoading(false); // Ensure loading state is reset
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
+  // Reset state but preserve upload date (for file browser selections)
+  const resetStatePreservingUploadDate = useCallback((preservedUploadDate?: string | null) => {
+    console.log('🔄 resetStatePreservingUploadDate called - preserving upload date:', preservedUploadDate);
+    setAnalysisResult(null);
+    setAppError(null);
+    setUploadedFileName(null);
+    resetPlotDataAndStats();
+    resetChannelSelections();
+    resetGameSessionData();
+    setSelectedChannelForStats(null);
+    setActiveTab("plots"); // Set to the combined EMG Analysis tab
+    resetSessionParams();
+    setIsLoading(false); // Ensure loading state is reset
+    // Restore upload date if provided
+    if (preservedUploadDate) {
+      setUploadDate(preservedUploadDate);
+      console.log('✅ resetStatePreservingUploadDate - Upload date preserved:', preservedUploadDate);
+    }
+  }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
+
   const handleSuccess = useCallback((data: EMGAnalysisResult, filename?: string) => {
     // BUNDLED DATA PATTERN:
     // The backend now returns all necessary data in a single response, implementing a stateless
@@ -142,20 +162,8 @@ function AppContent() {
       uploadDateFromStore: uploadDate
     });
     
-    resetState();
-    
-    console.log('🔄 handleSuccess - After reset, before restore:', {
-      currentUploadDate,
-      willRestore: !!currentUploadDate
-    });
-    
-    // Restore the upload date if it was set (preserve it through the reset)
-    if (currentUploadDate) {
-      setUploadDate(currentUploadDate);
-      console.log('✅ handleSuccess - Upload date restored:', currentUploadDate);
-    } else {
-      console.log('❌ handleSuccess - No upload date to restore');
-    }
+    // Use the specialized reset function that preserves upload date
+    resetStatePreservingUploadDate(currentUploadDate);
     
     setAnalysisResult(data);
     updateChannelsAfterUpload(data);
@@ -202,7 +210,7 @@ function AppContent() {
       // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
-  }, [resetState, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams, uploadDate, setUploadDate]);
+  }, [resetStatePreservingUploadDate, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams, uploadDate]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
@@ -219,23 +227,11 @@ function AppContent() {
       // Use upload date passed directly from browser (best practice: avoid state race conditions)
       console.log('🔍 handleQuickSelect - Upload date from browser:', uploadDateFromBrowser);
       
-      // Set upload date BEFORE reset to avoid losing it
+      // Pre-set the upload date before processing (will be preserved by handleSuccess)
       if (uploadDateFromBrowser) {
         setUploadDate(uploadDateFromBrowser);
-        console.log('✅ handleQuickSelect - Set upload date BEFORE reset:', uploadDateFromBrowser);
+        console.log('✅ handleQuickSelect - Upload date set before processing:', uploadDateFromBrowser);
       }
-      
-      // Reset state but preserve upload date
-      setAnalysisResult(null);
-      setAppError(null);
-      setUploadedFileName(filename); // Store the filename immediately
-      resetPlotDataAndStats();
-      resetChannelSelections();
-      resetGameSessionData();
-      setSelectedChannelForStats(null);
-      setActiveTab("plots"); // Set to the combined EMG Analysis tab
-      resetSessionParams();
-      setIsLoading(false); // Ensure loading state is reset
       
       // ONLY use Supabase storage - no local samples fallback
       if (!SupabaseStorageService.isConfigured()) {
@@ -308,6 +304,8 @@ function AppContent() {
 
       const resultData = await uploadResponse.json();
       console.log(`File processing completed successfully: ${filename}`);
+      
+      // handleSuccess will preserve the upload date that was set earlier
       handleSuccess(resultData);
 
     } catch (error: any) {
@@ -316,7 +314,7 @@ function AppContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [handleSuccess, handleError, sessionParams, setUploadDate, resetPlotDataAndStats, resetChannelSelections, resetGameSessionData, setSelectedChannelForStats, resetSessionParams]);
+  }, [handleSuccess, handleError, sessionParams, setUploadDate]);
 
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
