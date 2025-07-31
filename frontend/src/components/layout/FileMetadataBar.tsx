@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { File, User, Calendar, Clock, Activity } from 'lucide-react';
 import { EMGAnalysisResult } from '../../types/emg';
+
+/**
+ * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
+ * 
+ * Consistent with C3DFileBrowser - Same priority system:
+ * 
+ * 🏥 PATIENT ID RESOLUTION:
+ * 1. Storage Subfolder (P005/, P008/, P012/) - HIGHEST PRIORITY
+ * 2. C3D Metadata (metadata.player_name) - FALLBACK
+ * 
+ * 📅 SESSION DATE RESOLUTION:
+ * 1. Filename Extraction (YYYYMMDD patterns) - HIGHEST PRIORITY  
+ * 2. C3D Metadata (metadata.session_date, metadata.time) - FALLBACK
+ * 
+ * To modify priorities, see resolvePatientId() and resolveSessionDate() functions.
+ */
 
 interface FileMetadataBarProps {
   analysisResult: EMGAnalysisResult;
@@ -16,6 +32,93 @@ interface FileMetadataBarProps {
  */
 const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onReset, uploadDate }) => {
   const { source_filename, metadata, patient_id } = analysisResult;
+  
+  // 🔧 CONFIGURABLE DATA RETRIEVAL SYSTEM
+  // Consistent with C3DFileBrowser implementation
+  
+  // 👥 PATIENT ID RESOLUTION STRATEGY (User-Configured Priority)
+  const resolvePatientId = useCallback((filename: string, metadata: any, fallbackPatientId?: string | null): string => {
+    console.log('🔍 FileMetadataBar - Resolving Patient ID for:', filename);
+    
+    // ⭐ PRIORITY 1: Storage Subfolder (HIGHEST PRIORITY - User Request)
+    const subfolderMatch = filename.match(/^(P\d{3})\//); 
+    if (subfolderMatch) {
+      const patientId = subfolderMatch[1];
+      console.log('✅ Patient ID from subfolder:', patientId);
+      return patientId;
+    }
+    
+    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
+    if (metadata?.player_name) {
+      console.log('✅ Patient ID from C3D metadata:', metadata.player_name);
+      return metadata.player_name;
+    }
+    
+    // 🔄 Legacy Support (Lower Priority)
+    if (fallbackPatientId) {
+      console.log('✅ Patient ID from fallback:', fallbackPatientId);
+      return fallbackPatientId;
+    }
+    
+    console.log('❌ No Patient ID found');
+    return 'Unknown';
+  }, []);
+  
+  // 📅 SESSION DATE RESOLUTION STRATEGY (User-Configured Priority)
+  const resolveSessionDate = useCallback((filename: string, metadata: any): string | null => {
+    console.log('🔍 FileMetadataBar - Resolving Session Date for:', filename);
+    
+    // Helper function for filename extraction (consistent with C3DFileBrowser)
+    const extractDateFromFilename = (filename: string): string | null => {
+      // Pattern 1 & 2: YYYYMMDD format
+      const yyyymmdd = filename.match(/(\d{4})(\d{2})(\d{2})/);
+      if (yyyymmdd) {
+        const [, year, month, day] = yyyymmdd;
+        const yearNum = parseInt(year);
+        if (yearNum >= 2020 && yearNum <= 2030) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+      
+      // Pattern 3: YYYY-MM-DD format
+      const isoDate = filename.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (isoDate) {
+        const [, year, month, day] = isoDate;
+        const yearNum = parseInt(year);
+        if (yearNum >= 2020 && yearNum <= 2030) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+      
+      return null;
+    };
+    
+    // ⭐ PRIORITY 1: Filename Extraction (HIGHEST PRIORITY - User Request)
+    const extractedDate = extractDateFromFilename(filename);
+    if (extractedDate) {
+      console.log('✅ Session Date from filename:', extractedDate);
+      return extractedDate;
+    }
+    
+    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
+    if (metadata?.session_date) {
+      console.log('✅ Session Date from C3D metadata:', metadata.session_date);
+      return metadata.session_date;
+    }
+    
+    // 🔄 Alternative C3D Field (Additional Fallback)
+    if (metadata?.time) {
+      console.log('✅ Session Date from C3D time field:', metadata.time);
+      return metadata.time;
+    }
+    
+    console.log('❌ No Session Date found');
+    return null;
+  }, []);
+  
+  // Apply consistent data resolution
+  const resolvedPatientId = resolvePatientId(source_filename, metadata, patient_id);
+  const resolvedSessionDate = resolveSessionDate(source_filename, metadata);
 
   // 🔍 DEBUG: Upload Date Troubleshooting
   console.group('🔍 FileMetadataBar Debug - Upload Date');
@@ -107,16 +210,13 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
               </span>
             </div>
 
-            {/* Patient ID Resolution - See /docs/patient-id-resolution.md
-                Priority: 1) metadata.player_name (from C3D analysis) 
-                         2) Future: folder structure in Supabase bucket
-                         3) patient_id (from storage metadata) */}
-            {(metadata?.player_name || patient_id) && (
+            {/* Patient ID Resolution - Consistent with C3DFileBrowser priorities */}
+            {resolvedPatientId !== 'Unknown' && (
               <div className="flex items-center space-x-2">
                 <Activity className="h-4 w-4 text-slate-400" />
                 <span className="text-slate-600 text-xs">Patient:</span>
                 <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                  {metadata?.player_name || patient_id}
+                  {resolvedPatientId}
                 </Badge>
               </div>
             )}
@@ -132,12 +232,12 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
               </div>
             )}
 
-            {/* Session Date */}
+            {/* Session Date - Consistent with C3DFileBrowser priorities */}
             <div className="flex items-center space-x-2">
               <Calendar className="h-4 w-4 text-slate-400" />
               <span className="text-slate-600 text-xs">Session:</span>
               <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs">
-                {formatDate(metadata?.session_date || metadata?.time)}
+                {formatDate(resolvedSessionDate)}
               </Badge>
             </div>
 
