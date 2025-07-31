@@ -59,7 +59,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   analysisResult = null
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [isPerformanceOpen, setIsPerformanceOpen] = useState(true);
+  const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isGameNormalizationOpen, setIsGameNormalizationOpen] = useState(false);
   const [currentPreset, setCurrentPreset] = useState<string>('custom');
   

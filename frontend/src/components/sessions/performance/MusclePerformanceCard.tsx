@@ -61,7 +61,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   mvcValue,
   mvcThreshold
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isCountDetailsOpen, setIsCountDetailsOpen] = useState(false);
   const [isQualityDetailsOpen, setIsQualityDetailsOpen] = useState(false);
   const [isDurationDetailsOpen, setIsDurationDetailsOpen] = useState(false);

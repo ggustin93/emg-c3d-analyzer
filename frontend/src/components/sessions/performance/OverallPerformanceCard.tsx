@@ -53,7 +53,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   leftMuscleScore,
   rightMuscleScore
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { sessionParams } = useSessionStore();
   
   // Get weights from session store or use defaults

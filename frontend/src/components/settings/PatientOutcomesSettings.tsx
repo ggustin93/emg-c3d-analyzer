@@ -15,7 +15,7 @@ interface PatientOutcomesSettingsProps {
 
 const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disabled, isDebugMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(true); // Always expanded in debug mode
+  const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(false); // Collapsed by default
 
   return (
     <UnifiedSettingsCard

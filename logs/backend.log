@@ -1,90 +1,20 @@
+Initializing MVC value for CH1 to max amplitude: 2.7202700948691927e-05
+Initializing MVC threshold percentage for CH1 to default: 75.0%
+Initializing MVC value for CH2 to max amplitude: 6.036956619936973e-05
+Initializing MVC threshold percentage for CH2 to default: 75.0%
+INFO:     127.0.0.1:55150 - "POST /upload HTTP/1.1" 200 OK
 Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
 Initializing MVC threshold percentage for CH1 to default: 75.0%
 Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
 Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59256 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
+INFO:     127.0.0.1:55163 - "POST /upload HTTP/1.1" 200 OK
+Initializing MVC value for CH1 to max amplitude: 0.001324263634160161
 Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
+Initializing MVC value for CH2 to max amplitude: 0.0002808272547554225
 Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59279 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
+INFO:     127.0.0.1:55437 - "POST /upload HTTP/1.1" 200 OK
+Initializing MVC value for CH1 to max amplitude: 0.001324263634160161
 Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
+Initializing MVC value for CH2 to max amplitude: 0.0002808272547554225
 Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59349 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59507 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59510 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59719 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:59719 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:63226 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:63427 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:63584 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:64085 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:64306 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:64973 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:49579 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:50116 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:51378 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00023271478130482137
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00029008882120251656
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:65303 - "POST /upload HTTP/1.1" 200 OK
-Initializing MVC value for CH1 to max amplitude: 0.00020214953110553324
-Initializing MVC threshold percentage for CH1 to default: 75.0%
-Initializing MVC value for CH2 to max amplitude: 0.00022633271873928607
-Initializing MVC threshold percentage for CH2 to default: 75.0%
-INFO:     127.0.0.1:49226 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55576 - "POST /upload HTTP/1.1" 200 OK

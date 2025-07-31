@@ -17,7 +17,7 @@ interface BFRParametersSettingsProps {
 
 const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled, isDebugMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(true); // Always expanded in debug mode
+  const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(false); // Collapsed by default
 
   // Get BFR parameters from session store - should always be defined due to store defaults
   const bfrParams = sessionParams.bfr_parameters;
