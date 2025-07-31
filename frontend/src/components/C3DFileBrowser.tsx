@@ -196,13 +196,19 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
            'Unknown';
   }, []);
 
-  const getPatientIdBadgeVariant = useCallback((patientId: string) => {
-    if (patientId === 'Unknown') return 'outline';
+  const getPatientIdBadgeProps = useCallback((patientId: string) => {
+    if (patientId === 'Unknown') {
+      return {
+        variant: 'outline' as const,
+        className: 'text-slate-600 border-slate-300 text-xs'
+      };
+    }
     
-    // Color coding based on Patient ID
-    const colors = ['default', 'secondary', 'warning'] as const;
-    const hash = patientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+    // Use consistent blue styling like FileMetadataBar
+    return {
+      variant: 'secondary' as const,
+      className: 'bg-blue-50 text-blue-700 border-blue-200 text-xs'
+    };
   }, []);
 
   const extractDateFromFilename = (filename: string): string | null => {
@@ -1355,7 +1361,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         {visibleColumns.patient_id && (
                           <div className="flex items-center gap-2">
                             <span>Patient:</span>
-                            <Badge variant={getPatientIdBadgeVariant(resolvePatientId(file))}>
+                            <Badge {...getPatientIdBadgeProps(resolvePatientId(file))}>
                               {resolvePatientId(file)}
                             </Badge>
                           </div>
@@ -1515,7 +1521,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       {visibleColumns.patient_id && (
                         <div className="px-3 py-2 flex-1 min-w-0">
                           <div className="flex items-center">
-                            <Badge variant={getPatientIdBadgeVariant(resolvePatientId(file))}>
+                            <Badge {...getPatientIdBadgeProps(resolvePatientId(file))}>
                               {resolvePatientId(file)}
                             </Badge>
                           </div>
