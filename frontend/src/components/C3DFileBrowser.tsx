@@ -31,7 +31,9 @@ import {
   PlayIcon,
   DownloadIcon,
   ExclamationTriangleIcon,
-  TrashIcon
+  TrashIcon,
+  EyeOpenIcon,
+  GearIcon
 } from '@radix-ui/react-icons';
 import {
   Tooltip,
@@ -39,6 +41,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import SupabaseStorageService, { C3DFileInfo } from '@/services/supabaseStorage';
 import SupabaseSetup from '@/utils/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +54,14 @@ import { useAuth } from '@/contexts/AuthContext';
 // Using C3DFileInfo from the service
 type C3DFile = C3DFileInfo & {
   therapist_id?: string;
+  // Enhanced fields for resolved patient/therapist info
+  resolved_patient_id?: string;
+  resolved_therapist_id?: string;
+  game_metadata?: {
+    player_name?: string;
+    therapist_id?: string;
+    [key: string]: any;
+  };
 };
 
 interface C3DFileBrowserProps {
@@ -53,7 +69,7 @@ interface C3DFileBrowserProps {
   isLoading?: boolean;
 }
 
-type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id';
+type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
 
 const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
@@ -97,6 +113,18 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   
+  // Column visibility states
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const saved = localStorage.getItem('c3d-visible-columns');
+    return saved ? JSON.parse(saved) : {
+      patient_id: true,
+      therapist_id: true,
+      size: true,
+      session_date: true,
+      upload_date: true
+    };
+  });
+  
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [filesPerPage] = useState(10);
@@ -109,6 +137,81 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
+
+  // Helper functions to resolve Patient and Therapist IDs (same logic as FileMetadataBar)
+  const resolvePatientId = useCallback((file: C3DFile): string => {
+    // Priority: 1) game_metadata.player_name (from C3D analysis)
+    //          2) resolved_patient_id (from folder structure - future)  
+    //          3) patient_id (from storage metadata)
+    //          4) 'Unknown'
+    return file.game_metadata?.player_name || 
+           file.resolved_patient_id || 
+           file.patient_id || 
+           'Unknown';
+  }, []);
+
+  const resolveTherapistId = useCallback((file: C3DFile): string => {
+    // Priority: 1) game_metadata.therapist_id (from C3D analysis)
+    //          2) resolved_therapist_id (enhanced resolution)
+    //          3) therapist_id (from storage metadata)
+    //          4) 'Unknown'  
+    return file.game_metadata?.therapist_id || 
+           file.resolved_therapist_id || 
+           file.therapist_id || 
+           'Unknown';
+  }, []);
+
+  const extractDateFromFilename = (filename: string): string | null => {
+    // Common C3D filename patterns with dates:
+    // 1. Ghostly_Emg_20200415_12-31-20-0009.c3d (YYYYMMDD)
+    // 2. Ghostly_Emg_20230321_17-50-17-0881.c3d (YYYYMMDD)
+    // 3. EMG_2024-03-15_session.c3d (YYYY-MM-DD)
+    // 4. session_15-03-2024.c3d (DD-MM-YYYY)
+    
+    // Pattern 1 & 2: YYYYMMDD format
+    const yyyymmdd = filename.match(/(\d{4})(\d{2})(\d{2})/);
+    if (yyyymmdd) {
+      const [, year, month, day] = yyyymmdd;
+      // Validate date range (reasonable years)
+      const yearNum = parseInt(year);
+      if (yearNum >= 2020 && yearNum <= 2030) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    
+    // Pattern 3: YYYY-MM-DD format
+    const isoDate = filename.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoDate) {
+      const [, year, month, day] = isoDate;
+      const yearNum = parseInt(year);
+      if (yearNum >= 2020 && yearNum <= 2030) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    
+    // Pattern 4: DD-MM-YYYY format
+    const ddmmyyyy = filename.match(/(\d{2})-(\d{2})-(\d{4})/);
+    if (ddmmyyyy) {
+      const [, day, month, year] = ddmmyyyy;
+      const yearNum = parseInt(year);
+      if (yearNum >= 2020 && yearNum <= 2030) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    
+    return null;
+  };
+
+  const resolveSessionDate = useCallback((file: C3DFile): string | null => {
+    // Priority: 1) game_metadata.session_date (from C3D analysis - most accurate)
+    //          2) game_metadata.time (alternative field from C3D)
+    //          3) extracted from filename (smart fallback)
+    //          4) null (no session date available)
+    return file.game_metadata?.session_date || 
+           file.game_metadata?.time || 
+           extractDateFromFilename(file.name) ||
+           null;
+  }, []);
 
   // Load files ONLY from Supabase c3d-examples bucket
   useEffect(() => {
@@ -293,7 +396,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    const size = bytes / Math.pow(k, i);
+    
+    // Smart formatting: no decimals for small values, 1 decimal for larger
+    if (i === 0) return `${size} ${sizes[i]}`; // Bytes - no decimals
+    if (size >= 100) return `${Math.round(size)} ${sizes[i]}`; // 100+ KB/MB - no decimals
+    if (size >= 10) return `${size.toFixed(1)} ${sizes[i]}`; // 10-99.9 - 1 decimal
+    return `${size.toFixed(1)} ${sizes[i]}`; // < 10 - 1 decimal
   };
 
   const formatDate = (dateString: string): string => {
@@ -330,10 +439,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = files.filter(file => {
       const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const resolvedPatient = resolvePatientId(file);
+      const resolvedTherapist = resolveTherapistId(file);
       const matchesPatientId = !patientIdFilter || 
-        file.patient_id?.toLowerCase().includes(patientIdFilter.toLowerCase());
+        resolvedPatient.toLowerCase().includes(patientIdFilter.toLowerCase());
       const matchesTherapistId = !therapistIdFilter || 
-        file.therapist_id?.toLowerCase().includes(therapistIdFilter.toLowerCase());
+        resolvedTherapist.toLowerCase().includes(therapistIdFilter.toLowerCase());
       
       // Date range filtering
       let matchesDateRange = true;
@@ -354,17 +465,27 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
     // Sort files
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      let aValue: any;
+      let bValue: any;
 
-      // Handle special cases
+      // Handle special cases - use resolved values for sorting
       if (sortField === 'patient_id') {
-        aValue = a.patient_id || 'Unknown';
-        bValue = b.patient_id || 'Unknown';
-      }
-      if (sortField === 'therapist_id') {
-        aValue = a.therapist_id || 'Unknown';
-        bValue = b.therapist_id || 'Unknown';
+        aValue = resolvePatientId(a);
+        bValue = resolvePatientId(b);
+      } else if (sortField === 'therapist_id') {
+        aValue = resolveTherapistId(a);
+        bValue = resolveTherapistId(b);
+      } else if (sortField === 'session_date') {
+        aValue = resolveSessionDate(a);
+        bValue = resolveSessionDate(b);
+        // Handle null values - put them at the end
+        if (!aValue && !bValue) return 0;
+        if (!aValue) return sortDirection === 'asc' ? 1 : -1;
+        if (!bValue) return sortDirection === 'asc' ? -1 : 1;
+      } else {
+        // For other fields, use direct property access
+        aValue = a[sortField as keyof C3DFile];
+        bValue = b[sortField as keyof C3DFile];
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -378,7 +499,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       }
 
       // For dates
-      if (sortField === 'created_at') {
+      if (sortField === 'created_at' || sortField === 'session_date') {
         const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
         return sortDirection === 'asc' ? comparison : -comparison;
       }
@@ -387,7 +508,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return filtered;
-  }, [files, searchTerm, patientIdFilter, therapistIdFilter, dateFromFilter, dateToFilter, sizeFilter, sortField, sortDirection]);
+  }, [files, searchTerm, patientIdFilter, therapistIdFilter, dateFromFilter, dateToFilter, sizeFilter, sortField, sortDirection, resolvePatientId, resolveTherapistId, resolveSessionDate]);
 
   // Pagination calculations
   const totalFiles = filteredAndSortedFiles.length;
@@ -417,6 +538,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     setDateFromFilter('');
     setDateToFilter('');
     setSizeFilter('all');
+  };
+
+  const toggleColumnVisibility = (column: string) => {
+    const newVisibility = {
+      ...visibleColumns,
+      [column]: !visibleColumns[column]
+    };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('c3d-visible-columns', JSON.stringify(newVisibility));
   };
 
   const refreshFiles = async () => {
@@ -625,17 +755,17 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     }
   }, [isLoading]);
 
-  // Get unique patient IDs for filter dropdown
+  // Get unique patient IDs for filter dropdown (using resolved values)
   const uniquePatientIds = useMemo(() => {
-    const ids = new Set(files.map(f => f.patient_id || 'Unknown'));
+    const ids = new Set(files.map(f => resolvePatientId(f)));
     return Array.from(ids).sort();
-  }, [files]);
+  }, [files, resolvePatientId]);
 
-  // Get unique therapist IDs for filter dropdown
+  // Get unique therapist IDs for filter dropdown (using resolved values)
   const uniqueTherapistIds = useMemo(() => {
-    const ids = new Set(files.map(f => f.therapist_id || 'Unknown'));
+    const ids = new Set(files.map(f => resolveTherapistId(f)));
     return Array.from(ids).sort();
-  }, [files]);
+  }, [files, resolveTherapistId]);
 
   if (isLoadingFiles) {
     return (
@@ -717,8 +847,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <TooltipProvider>
+      <Card className="w-full">
+        <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-semibold">C3D File Library</CardTitle>
@@ -763,6 +894,54 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 
               </>
             )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <GearIcon className="w-4 h-4" />
+                  Columns
+                  <ChevronDownIcon className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="end">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Toggle Columns</h4>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'patient_id', label: 'Patient ID', icon: PersonIcon },
+                      { key: 'therapist_id', label: 'Therapist ID', icon: PersonIcon },
+                      { key: 'size', label: 'File Size', icon: ArchiveIcon },
+                      { key: 'session_date', label: 'Session Date', icon: CalendarIcon },
+                      { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon }
+                    ].map(({ key, label, icon: Icon }) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={key}
+                          checked={visibleColumns[key]}
+                          onCheckedChange={() => toggleColumnVisibility(key)}
+                        />
+                        <label
+                          htmlFor={key}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                        >
+                          <Icon className="w-3 h-3" />
+                          {label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-2 border-t text-xs text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <EyeOpenIcon className="w-3 h-3" />
+                      {Object.values(visibleColumns).filter(Boolean).length} of 5 columns visible
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               size="sm"
@@ -924,14 +1103,24 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         {/* Table Header */}
         <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-2">
           <div className="relative" style={{ width: `${filenameColumnWidth}px` }}>
-            <button 
-              onClick={() => handleSort('name')}
-              className="flex items-center hover:text-slate-800 transition-colors"
-            >
-              <FileIcon className="w-4 h-4 mr-2" />
-              File Name
-              {getSortIcon('name')}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => handleSort('name')}
+                  className="flex items-center hover:text-slate-800 transition-colors"
+                >
+                  <FileIcon className="w-4 h-4 mr-2" />
+                  File Name
+                  {getSortIcon('name')}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-medium">C3D File Names</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Often contain date patterns (YYYYMMDD) used for session date extraction. Column is resizable.
+                </p>
+              </TooltipContent>
+            </Tooltip>
             {/* Resize handle */}
             <div
               className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-300 transition-colors group flex items-center justify-center"
@@ -940,46 +1129,110 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               <div className="w-0.5 h-6 bg-gray-300 group-hover:bg-blue-500 transition-colors rounded-sm opacity-60 group-hover:opacity-100" />
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <button 
-              onClick={() => handleSort('patient_id')}
-              className="flex items-center hover:text-slate-800 transition-colors text-xs"
-            >
-              <PersonIcon className="w-4 h-4 mr-1" />
-              Patient
-              {getSortIcon('patient_id')}
-            </button>
-          </div>
-          <div className="flex-1 min-w-0">
-            <button 
-              onClick={() => handleSort('therapist_id')}
-              className="flex items-center hover:text-slate-800 transition-colors text-xs"
-            >
-              <PersonIcon className="w-4 h-4 mr-1" />
-              Therapist
-              {getSortIcon('therapist_id')}
-            </button>
-          </div>
-          <div className="flex-1 min-w-0">
-            <button 
-              onClick={() => handleSort('size')}
-              className="flex items-center hover:text-slate-800 transition-colors text-xs"
-            >
-              <ArchiveIcon className="w-4 h-4 mr-1" />
-              Size
-              {getSortIcon('size')}
-            </button>
-          </div>
-          <div className="flex-1 min-w-0">
-            <button 
-              onClick={() => handleSort('created_at')}
-              className="flex items-center hover:text-slate-800 transition-colors text-xs"
-            >
-              <CalendarIcon className="w-4 h-4 mr-1" />
-              Upload Date
-              {getSortIcon('created_at')}
-            </button>
-          </div>
+          {visibleColumns.patient_id && (
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => handleSort('patient_id')}
+                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <PersonIcon className="w-4 h-4 mr-1" />
+                    Patient
+                    {getSortIcon('patient_id')}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium">Intelligent Patient ID Resolution</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Priority: 1) Player name from C3D analysis → 2) Folder structure → 3) Storage metadata
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+          {visibleColumns.therapist_id && (
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => handleSort('therapist_id')}
+                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <PersonIcon className="w-4 h-4 mr-1" />
+                    Therapist
+                    {getSortIcon('therapist_id')}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium">Therapist ID Resolution</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Resolved from C3D metadata when available, otherwise from storage metadata
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+          {visibleColumns.size && (
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => handleSort('size')}
+                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <ArchiveIcon className="w-4 h-4 mr-1" />
+                    Size
+                    {getSortIcon('size')}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>File size - smaller files may indicate incomplete sessions</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+          {visibleColumns.session_date && (
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => handleSort('session_date')}
+                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <CalendarIcon className="w-4 h-4 mr-1" />
+                    Session Date
+                    {getSortIcon('session_date')}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium">Actual Therapy Session Date</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Extracted from C3D metadata or filename patterns. Shows "N/A" until analyzed.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+          {visibleColumns.upload_date && (
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => handleSort('created_at')}
+                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
+                  >
+                    <CalendarIcon className="w-4 h-4 mr-1" />
+                    Upload Date
+                    {getSortIcon('created_at')}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>When the file was uploaded to the research platform</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
           <div className="w-20 text-xs">
             Actions
           </div>
@@ -997,8 +1250,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
             paginatedFiles.map((file) => {
               const shortSession = isShortSession(file.size);
               return (
-                <TooltipProvider key={file.id}>
-                  <div 
+                <div key={file.id} 
                     className={`flex flex-col md:flex-row gap-2 md:gap-4 items-start md:items-center py-3 px-4 rounded-lg transition-all duration-200 border ${
                       loadingFileId === file.id 
                         ? 'bg-green-50 border-green-200 shadow-sm' 
@@ -1055,31 +1307,48 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-600">
-                        <span>Patient: <span className="font-medium text-slate-700">{file.patient_id || 'Unknown'}</span></span>
-                        <span>Therapist: <span className="font-medium text-slate-700">{file.therapist_id || 'Unknown'}</span></span>
-                        <div className="flex items-center">
-                          <span>{formatFileSize(file.size)}</span>
-                          {shortSession && (
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Short session: File size suggests therapy session may be incomplete</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="cursor-help">Upload: {formatDate(file.created_at)}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>File upload date: {formatFullDate(file.created_at)}</p>
-                            <p className="text-xs text-slate-500 mt-1">Session date will show after analysis</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <div className="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
+                        {visibleColumns.patient_id && (
+                          <span>Patient: <span className="font-medium text-slate-700">{resolvePatientId(file)}</span></span>
+                        )}
+                        {visibleColumns.therapist_id && (
+                          <span>Therapist: <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span></span>
+                        )}
+                        {visibleColumns.size && (
+                          <div className="flex items-center">
+                            <span>{formatFileSize(file.size)}</span>
+                            {shortSession && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Short session: File size suggests therapy session may be incomplete</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        )}
+                        {visibleColumns.session_date && resolveSessionDate(file) && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <span className="cursor-help">Session: {formatDate(resolveSessionDate(file)!)}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {visibleColumns.upload_date && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <span className="cursor-help">Upload: {formatDate(file.created_at)}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>File upload date: {formatFullDate(file.created_at)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Tooltip>
@@ -1194,46 +1463,71 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <div className="px-3 py-2 flex-1 min-w-0">
-                        <span className="text-xs text-slate-600 truncate block">
-                          <span className="font-medium text-slate-700">{file.patient_id || 'Unknown'}</span>
-                        </span>
-                      </div>
-                      <div className="px-3 py-2 flex-1 min-w-0">
-                        <span className="text-xs text-slate-600 truncate block">
-                          <span className="font-medium text-slate-700">{file.therapist_id || 'Unknown'}</span>
-                        </span>
-                      </div>
-                      <div className="px-3 py-2 flex-1 min-w-0">
-                        <div className="flex items-center">
-                          <span className="text-xs text-slate-600">
-                            {formatFileSize(file.size)}
+                      {visibleColumns.patient_id && (
+                        <div className="px-3 py-2 flex-1 min-w-0">
+                          <span className="text-xs text-slate-600 truncate block">
+                            <span className="font-medium text-slate-700">{resolvePatientId(file)}</span>
                           </span>
-                          {shortSession && (
+                        </div>
+                      )}
+                      {visibleColumns.therapist_id && (
+                        <div className="px-3 py-2 flex-1 min-w-0">
+                          <span className="text-xs text-slate-600 truncate block">
+                            <span className="font-medium text-slate-700">{resolveTherapistId(file)}</span>
+                          </span>
+                        </div>
+                      )}
+                      {visibleColumns.size && (
+                        <div className="px-3 py-2 flex-1 min-w-0">
+                          <div className="flex items-center">
+                            <span className="text-xs text-slate-600">
+                              {formatFileSize(file.size)}
+                            </span>
+                            {shortSession && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Short session: File size suggests therapy session may be incomplete</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {visibleColumns.session_date && (
+                        <div className="px-3 py-2 flex-1 min-w-0">
+                          {resolveSessionDate(file) ? (
                             <Tooltip>
                               <TooltipTrigger>
-                                <ExclamationTriangleIcon className="w-4 h-4 ml-2 text-amber-500" />
+                                <span className="text-xs text-slate-600 cursor-help">
+                                  {formatDate(resolveSessionDate(file)!)}
+                                </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Short session: File size suggests therapy session may be incomplete</p>
+                                <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
                               </TooltipContent>
                             </Tooltip>
+                          ) : (
+                            <span className="text-xs text-slate-400">N/A</span>
                           )}
                         </div>
-                      </div>
-                      <div className="px-3 py-2 flex-1 min-w-0">
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="text-xs text-slate-600 cursor-help">
-                              {formatDate(file.created_at)}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Upload date: {formatFullDate(file.created_at)}</p>
-                            <p className="text-xs text-slate-500 mt-1">Session date will show after analysis</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                      )}
+                      {visibleColumns.upload_date && (
+                        <div className="px-3 py-2 flex-1 min-w-0">
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <span className="text-xs text-slate-600 cursor-help">
+                                {formatDate(file.created_at)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Upload date: {formatFullDate(file.created_at)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
                       <div className="px-3 py-2 w-20 flex gap-1 justify-center">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1297,7 +1591,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       </div>
                     </div>
                   </div>
-                </TooltipProvider>
               );
             })
           )}
@@ -1406,7 +1699,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+      </Card>
+    </TooltipProvider>
   );
 };
 
