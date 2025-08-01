@@ -6,7 +6,6 @@ import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { PersonIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Badge } from '../ui/badge';
-import { Alert, AlertDescription } from '../ui/alert';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;
@@ -39,11 +38,11 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
               <TooltipTrigger asChild>
                 <InfoCircledIcon className="h-4 w-4 text-gray-500 cursor-help" />
               </TooltipTrigger>
-              <TooltipContent>
-                <div className="w-[350px] text-sm space-y-2">
+              <TooltipContent className="max-w-md">
+                <div className="text-sm space-y-2">
                   <p><strong>Borg CR10 Scale (0-10)</strong> for Rating of Perceived Exertion</p>
                   <p>Only <strong>post-session RPE</strong> is used for the Subjective Effort Score (20% weight in overall performance).</p>
-                  <div className="text-xs space-y-1 mt-2 p-2 bg-gray-50 rounded">
+                  <div className="text-xs space-y-1 mt-2">
                     <div><strong>Scoring:</strong></div>
                     <div>• RPE 4-6: 100% (optimal therapeutic stimulus)</div>
                     <div>• RPE 3,7: 80% (acceptable range)</div>
@@ -55,7 +54,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
             </Tooltip>
           </div>
           
-          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+          <div className="p-4">
             {/* Post-Session RPE - Primary scoring input */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -84,21 +83,22 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
           </div>
         </div>
         
-        {/* Mobile App Integration */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <h4 className="text-base font-semibold text-gray-800">Mobile App Integration</h4>
-          </div>
-          
-          <Alert className="border-indigo-200 bg-indigo-50">
-            <InfoCircledIcon className="h-4 w-4 text-indigo-600" />
-            <AlertDescription className="text-sm text-indigo-800">
-              <strong>Production Mode:</strong> Patient Reported Outcomes are automatically imported from the GHOSTLY+ mobile application, including validated questionnaire responses and app usage metrics. Debug mode allows manual adjustment for testing purposes.
-            </AlertDescription>
-          </Alert>
+        {/* Mobile App Integration - now as tooltip */}
+        <div className="flex items-center justify-center mt-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 cursor-help">
+                <InfoCircledIcon className="h-3 w-3 mr-1" />
+                <span className="text-xs">Mobile App Integration</span>
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-md">
+              <div className="text-xs">
+                <p className="font-medium text-indigo-800 mb-2">Mobile App Integration</p>
+                <p><strong>Production Mode:</strong> Patient Reported Outcomes are automatically imported from the GHOSTLY+ mobile application, including validated questionnaire responses and app usage metrics. Debug mode allows manual adjustment for testing purposes.</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </TooltipProvider>
     </UnifiedSettingsCard>
