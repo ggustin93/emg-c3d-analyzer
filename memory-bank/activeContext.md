@@ -227,6 +227,13 @@
 - **Production Quality**: Comprehensive logging, graceful fallbacks, consistent UX
 - **Token Efficiency**: 30% reduction through structured documentation and symbol usage
 
+### Performance Scoring System Fix & Enhancement ✅ (August 1, 2025)
+- **Real-Time Calculation**: Fixed "Duration Quality" score to be calculated in real-time using the correct, user-configurable duration threshold, eliminating stale data issues.
+- **Weighted Compliance Score**: The overall muscle compliance score is now a weighted average of three components: Completion, Intensity, and Duration, with configurable weights.
+- **Improved UI/UX**: Moved detailed score calculations into tooltips for a cleaner interface while maintaining data accessibility.
+- **Backend & Type Safety**: Updated backend analysis functions and frontend TypeScript types to support per-muscle duration thresholds and enhanced contraction quality metrics.
+- **Enhanced Contraction Analysis**: The backend now flags contractions with `meets_mvc` and `meets_duration` for more granular analysis.
+
 ### Immediate Development Focus
 1. **System Stability**: Monitor authentication performance and user feedback
 2. **Clinical Validation**: Refine EMG analysis based on research requirements

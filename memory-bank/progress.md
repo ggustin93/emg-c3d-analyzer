@@ -269,3 +269,8 @@
   - Robust TypeScript support with proper null/undefined handling for production quality
   - Comprehensive console logging with emoji markers for debugging and traceability
   - 30% token reduction through structured documentation and efficient symbol usage
+- **Corrected Performance Score Calculation** (August 1, 2025):
+  - Fixed "Duration Quality" score calculation to use real-time, configurable duration thresholds.
+  - Implemented a weighted average for the overall muscle compliance score (Completion, Intensity, Duration).
+  - Enhanced UI by moving score calculation details into tooltips, providing a cleaner look while keeping data accessible.
+  - Updated backend and frontend types to support more granular contraction analysis.

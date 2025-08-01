@@ -53,9 +53,11 @@ $$S_{comp}^{muscle} = w_{comp} \cdot R_{comp} + w_{int} \cdot R_{int} + w_{dur} 
 
 | Component | Symbol | Weight | Formula | Description |
 |-----------|--------|--------|---------|-------------|
-| Completion Rate | $R_{comp}$ | 1/3 | $\frac{\text{contractions completed}}{12}$ | All prescribed contractions completed |
-| Intensity Rate | $R_{int}$ | 1/3 | $\frac{\text{reps} \ge 75\% \text{MVC}}{\text{reps completed}}$ | Force threshold achievement |
-| Duration Rate | $R_{dur}$ | 1/3 | $\frac{\text{reps} \ge \text{duration threshold}}{\text{reps completed}}$ | Time requirement compliance |
+| Completion Rate | $R_{comp}$ | $w_{comp}$ | $\frac{\text{contractions completed}}{12}$ | All prescribed contractions completed |
+| Intensity Rate | $R_{int}$ | $w_{int}$ | $\frac{\text{reps} \ge 75\% \text{MVC}}{\text{reps completed}}$ | Force threshold achievement |
+| Duration Rate | $R_{dur}$ | $w_{dur}$ | $\frac{\text{reps} \ge \text{duration threshold}}{\text{reps completed}}$ | Time requirement compliance |
+
+*Note: Weights ($w_{comp}, w_{int}, w_{dur}$) are configurable, defaulting to 1/3 each. The duration threshold is adaptive.*
 
 ### 3.2 Muscle Symmetry Score
 
