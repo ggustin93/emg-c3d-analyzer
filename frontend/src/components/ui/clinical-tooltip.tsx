@@ -193,9 +193,10 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
                       {section.items.map((item, itemIdx) => (
                         <div key={itemIdx} className="font-serif italic">
                           {item.label && (
-                            <span className={cn("font-bold text-xl mr-2", item.color || "text-slate-800")}>
-                              {item.label}
-                            </span>
+                            <span 
+                              className={cn("font-bold text-xl mr-2", item.color || "text-slate-800")}
+                              dangerouslySetInnerHTML={{ __html: String(item.label) }}
+                            />
                           )}
                           <span 
                             className="text-slate-700 font-medium" 
