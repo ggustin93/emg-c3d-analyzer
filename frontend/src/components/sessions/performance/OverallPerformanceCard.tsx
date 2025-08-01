@@ -163,10 +163,10 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         title: "Evidence-Based Components:",
                         type: "list",
                         items: [
-                          { percentage: `${Math.round(complianceWeight * 100)}`, label: "Therapeutic Compliance", description: "Exercise execution quality", color: "text-green-600" },
-                          { percentage: `${Math.round(symmetryWeight * 100)}`, label: "Muscle Symmetry", description: "Bilateral balance assessment", color: "text-purple-600" },
-                          { percentage: `${Math.round(effortWeight * 100)}`, label: "Subjective Effort", description: "RPE-based exertion evaluation", color: "text-orange-600" },
-                          { percentage: `${Math.round(gameWeight * 100)}`, label: "Game Performance", description: "Normalized engagement metric", color: "text-cyan-600" }
+                          ...(complianceWeight > 0 ? [{ percentage: `${Math.round(complianceWeight * 100)}`, label: "Therapeutic Compliance", description: "Exercise execution quality", color: "text-green-600" }] : []),
+                          ...(symmetryWeight > 0 ? [{ percentage: `${Math.round(symmetryWeight * 100)}`, label: "Muscle Symmetry", description: "Bilateral balance assessment", color: "text-purple-600" }] : []),
+                          ...(effortWeight > 0 ? [{ percentage: `${Math.round(effortWeight * 100)}`, label: "Subjective Effort", description: "RPE-based exertion evaluation", color: "text-orange-600" }] : []),
+                          ...(gameWeight > 0 ? [{ percentage: `${Math.round(gameWeight * 100)}`, label: "Game Performance", description: "Normalized engagement metric", color: "text-cyan-600" }] : [])
                         ]
                       },
                     
@@ -204,10 +204,10 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                       {
                         type: "table",
                         items: [
-                          { label: "Therapeutic Compliance", percentage: `${Math.round(complianceWeight * 100)}`, color: "text-green-600" },
-                          { label: "Muscle Symmetry", percentage: `${Math.round(symmetryWeight * 100)}`, color: "text-purple-600" },
-                          { label: "Subjective Effort", percentage: `${Math.round(effortWeight * 100)}`, color: "text-orange-600" },
-                          { label: "Game Performance", percentage: `${Math.round(gameWeight * 100)}`, color: "text-cyan-600" }
+                          ...(complianceWeight > 0 ? [{ label: "Therapeutic Compliance", percentage: `${Math.round(complianceWeight * 100)}`, color: "text-green-600" }] : []),
+                          ...(symmetryWeight > 0 ? [{ label: "Muscle Symmetry", percentage: `${Math.round(symmetryWeight * 100)}`, color: "text-purple-600" }] : []),
+                          ...(effortWeight > 0 ? [{ label: "Subjective Effort", percentage: `${Math.round(effortWeight * 100)}`, color: "text-orange-600" }] : []),
+                          ...(gameWeight > 0 ? [{ label: "Game Performance", percentage: `${Math.round(gameWeight * 100)}`, color: "text-cyan-600" }] : [])
                         ]
                       }
                     ]}
@@ -239,47 +239,76 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 <div className="text-sm sm:text-base lg:text-lg flex items-center justify-center flex-wrap gap-1">
                   <span className="text-blue-600 font-bold">P</span>
                   <span className="mx-1 text-gray-400">=</span>
-                  <span className="text-green-600 font-semibold">C</span>
-                  <span className="mx-0.5 text-gray-500">×</span>
-                  <span className="text-gray-700">{complianceWeight.toFixed(2)}</span>
-                  <span className="mx-1 text-gray-400">+</span>
-                  <span className="text-purple-600 font-semibold">S</span>
-                  <span className="mx-0.5 text-gray-500">×</span>
-                  <span className="text-gray-700">{symmetryWeight.toFixed(2)}</span>
-                  <span className="mx-1 text-gray-400">+</span>
-                  <span className="text-orange-600 font-semibold">E</span>
-                  <span className="mx-0.5 text-gray-500">×</span>
-                  <span className="text-gray-700">{effortWeight.toFixed(2)}</span>
-                  <span className="mx-1 text-gray-400">+</span>
-                  <span className="text-cyan-600 font-semibold">G</span>
-                  <span className="mx-0.5 text-gray-500">×</span>
-                  <span className="text-gray-700">{gameWeight.toFixed(2)}</span>
+                  {complianceWeight > 0 && (
+                    <>
+                      <span className="text-green-600 font-semibold">C</span>
+                      <span className="mx-0.5 text-gray-500">×</span>
+                      <span className="text-gray-700">{complianceWeight.toFixed(2)}</span>
+                    </>
+                  )}
+                  {symmetryWeight > 0 && (
+                    <>
+                      {complianceWeight > 0 && <span className="mx-1 text-gray-400">+</span>}
+                      <span className="text-purple-600 font-semibold">S</span>
+                      <span className="mx-0.5 text-gray-500">×</span>
+                      <span className="text-gray-700">{symmetryWeight.toFixed(2)}</span>
+                    </>
+                  )}
+                  {effortWeight > 0 && (
+                    <>
+                      {(complianceWeight > 0 || symmetryWeight > 0) && <span className="mx-1 text-gray-400">+</span>}
+                      <span className="text-orange-600 font-semibold">E</span>
+                      <span className="mx-0.5 text-gray-500">×</span>
+                      <span className="text-gray-700">{effortWeight.toFixed(2)}</span>
+                    </>
+                  )}
+                  {gameWeight > 0 && (
+                    <>
+                      {(complianceWeight > 0 || symmetryWeight > 0 || effortWeight > 0) && <span className="mx-1 text-gray-400">+</span>}
+                      <span className="text-cyan-600 font-semibold">G</span>
+                      <span className="mx-0.5 text-gray-500">×</span>
+                      <span className="text-gray-700">{gameWeight.toFixed(2)}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Component Values Grid - Responsive */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-green-100">
-                <div className="text-green-600 font-bold text-lg sm:text-xl">{therapeuticComplianceScore ? Math.round(therapeuticComplianceScore) : '--'}%</div>
-                <div className="text-xs text-gray-600 mt-0.5">Compliance</div>
-                <div className="text-xs text-green-600 font-semibold">(C)</div>
-              </div>
-              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-purple-100">
-                <div className="text-purple-600 font-bold text-lg sm:text-xl">{symmetryScore ? Math.round(symmetryScore) : '--'}%</div>
-                <div className="text-xs text-gray-600 mt-0.5">Symmetry</div>
-                <div className="text-xs text-purple-600 font-semibold">(S)</div>
-              </div>
-              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-orange-100">
-                <div className="text-orange-600 font-bold text-lg sm:text-xl">{subjectiveFatigueLevel ? Math.round(subjectiveFatigueLevel * 10) : '--'}%</div>
-                <div className="text-xs text-gray-600 mt-0.5">Exertion</div>
-                <div className="text-xs text-orange-600 font-semibold">(E)</div>
-              </div>
-              <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-cyan-100">
-                <div className="text-cyan-600 font-bold text-lg sm:text-xl">{gameScore ? Math.round((gameScore / 100) * 100) : '--'}%</div>
-                <div className="text-xs text-gray-600 mt-0.5">Game</div>
-                <div className="text-xs text-cyan-600 font-semibold">(G)</div>
-              </div>
+            {/* Component Values Grid - Responsive - Only show components with non-zero weights */}
+            <div className={`grid gap-2 ${
+              [complianceWeight, symmetryWeight, effortWeight, gameWeight].filter(w => w > 0).length === 4 ? 'grid-cols-2 sm:grid-cols-4' :
+              [complianceWeight, symmetryWeight, effortWeight, gameWeight].filter(w => w > 0).length === 3 ? 'grid-cols-3' :
+              [complianceWeight, symmetryWeight, effortWeight, gameWeight].filter(w => w > 0).length === 2 ? 'grid-cols-2' :
+              'grid-cols-1'
+            }`}>
+              {complianceWeight > 0 && (
+                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-green-100">
+                  <div className="text-green-600 font-bold text-lg sm:text-xl">{therapeuticComplianceScore ? Math.round(therapeuticComplianceScore) : '--'}%</div>
+                  <div className="text-xs text-gray-600 mt-0.5">Compliance</div>
+                  <div className="text-xs text-green-600 font-semibold">(C)</div>
+                </div>
+              )}
+              {symmetryWeight > 0 && (
+                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-purple-100">
+                  <div className="text-purple-600 font-bold text-lg sm:text-xl">{symmetryScore ? Math.round(symmetryScore) : '--'}%</div>
+                  <div className="text-xs text-gray-600 mt-0.5">Symmetry</div>
+                  <div className="text-xs text-purple-600 font-semibold">(S)</div>
+                </div>
+              )}
+              {effortWeight > 0 && (
+                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-orange-100">
+                  <div className="text-orange-600 font-bold text-lg sm:text-xl">{subjectiveFatigueLevel ? Math.round(subjectiveFatigueLevel * 10) : '--'}%</div>
+                  <div className="text-xs text-gray-600 mt-0.5">Exertion</div>
+                  <div className="text-xs text-orange-600 font-semibold">(E)</div>
+                </div>
+              )}
+              {gameWeight > 0 && (
+                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-cyan-100">
+                  <div className="text-cyan-600 font-bold text-lg sm:text-xl">{gameScore ? Math.round((gameScore / 100) * 100) : '--'}%</div>
+                  <div className="text-xs text-gray-600 mt-0.5">Game</div>
+                  <div className="text-xs text-cyan-600 font-semibold">(G)</div>
+                </div>
+              )}
             </div>
           </div>
             </CardContent>
