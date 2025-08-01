@@ -34,7 +34,9 @@ class Contraction(BaseModel):
     duration_ms: float
     mean_amplitude: float
     max_amplitude: float
-    is_good: Optional[bool] = None # New field
+    is_good: Optional[bool] = None # Meets both MVC and duration criteria
+    meets_mvc: Optional[bool] = None # Meets MVC threshold only
+    meets_duration: Optional[bool] = None # Meets duration threshold only
 
 class ChannelAnalytics(BaseModel):
     """Analytics for a single EMG channel."""
@@ -53,9 +55,12 @@ class ChannelAnalytics(BaseModel):
     contractions: Optional[List[Contraction]] = None
     errors: Optional[Dict[str, str]] = None
     
-    # New fields for game stats
+    # New fields for game stats and enhanced quality assessment
     mvc_threshold_actual_value: Optional[float] = None
-    good_contraction_count: Optional[int] = None
+    duration_threshold_actual_value: Optional[float] = None
+    good_contraction_count: Optional[int] = None  # Meets both MVC and duration criteria
+    mvc_contraction_count: Optional[int] = None   # Meets MVC criteria only
+    duration_contraction_count: Optional[int] = None  # Meets duration criteria only
     
     # Temporal analysis fields
     rms_temporal_stats: Optional[TemporalAnalysisStats] = None
@@ -77,7 +82,10 @@ class GameSessionParameters(BaseModel):
     session_expected_short_right: Optional[int] = Field(None, ge=0, description="Target number of short contractions for right muscle")
     
     # Contraction classification threshold
-    contraction_duration_threshold: Optional[int] = Field(250, ge=0, description="Threshold in milliseconds to classify contractions as short or long")
+    contraction_duration_threshold: Optional[int] = Field(250, ge=0, description="Global threshold in milliseconds to classify contractions as short or long")
+    
+    # Per-muscle duration thresholds (frontend sends in seconds, will be converted to ms)
+    session_duration_thresholds_per_muscle: Optional[Dict[str, Optional[float]]] = Field(None, description="Per-muscle duration thresholds in seconds (converted to ms for analysis)")
     
     # Channel to muscle name mapping
     channel_muscle_mapping: Optional[Dict[str, str]] = Field(None, description="Mapping of channel names to muscle names")

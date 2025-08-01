@@ -49,6 +49,7 @@ def analyze_contractions(
     min_duration_ms: int,
     smoothing_window: int,
     mvc_amplitude_threshold: Optional[float] = None,
+    contraction_duration_threshold_ms: Optional[float] = None,
     merge_threshold_ms: int = 200,
     refractory_period_ms: int = 0
 ) -> Dict:
@@ -85,6 +86,9 @@ def analyze_contractions(
         mvc_amplitude_threshold: Optional. If provided, contractions with max_amplitude
                                  at or above this value are considered 'good'.
                                  This can be channel-specific from session_mvc_values.
+        contraction_duration_threshold_ms: Optional. If provided, contractions with duration
+                                          at or above this value are considered to meet
+                                          duration criteria for therapeutic compliance.
         merge_threshold_ms: The maximum time gap in milliseconds between two detected contractions
                            to consider them as a single physiological contraction. Default is 200ms,
                            which is based on typical motor unit firing rates and muscle response times.
@@ -92,16 +96,19 @@ def analyze_contractions(
                              a new contraction can be detected. Default is 0ms (disabled).
 
     Returns:
-        A dictionary containing contraction statistics, a list of contractions (with 'is_good' flag if mvc_threshold_used),
-        and good_contraction_count.
+        A dictionary containing contraction statistics, a list of contractions (with 'is_good', 'meets_mvc', 
+        'meets_duration' flags), and good_contraction_count (meeting both MVC and duration criteria).
     """
     base_return = {
         'contraction_count': 0, 'avg_duration_ms': 0.0, 'min_duration_ms': 0.0,
         'max_duration_ms': 0.0, 'total_time_under_tension_ms': 0.0,
         'avg_amplitude': 0.0, 'max_amplitude': 0.0,
         'contractions': [],
-        'good_contraction_count': None, # Initialize
-        'mvc_threshold_actual_value': mvc_amplitude_threshold # Store what was used
+        'good_contraction_count': None, # Initialize - meets both MVC and duration
+        'mvc_contraction_count': None, # Initialize - meets MVC only
+        'duration_contraction_count': None, # Initialize - meets duration only
+        'mvc_threshold_actual_value': mvc_amplitude_threshold, # Store what was used
+        'duration_threshold_actual_value': contraction_duration_threshold_ms # Store what was used
     }
 
     if len(signal) < smoothing_window or smoothing_window <= 0:
@@ -197,7 +204,9 @@ def analyze_contractions(
     
     # 7. Create contraction objects with detailed information
     contractions_list = []
-    good_contraction_count = 0
+    good_contraction_count = 0  # Meets both MVC and duration criteria
+    mvc_contraction_count = 0   # Meets MVC criteria only
+    duration_contraction_count = 0  # Meets duration criteria only
 
     for start_idx, end_idx in valid_contractions:
         segment = rectified_signal[start_idx:end_idx+1]  # Inclusive end for segment analysis
@@ -205,25 +214,50 @@ def analyze_contractions(
             continue
 
         max_amp_in_segment = np.max(segment)
+        duration_ms = ((end_idx - start_idx) / sampling_rate) * 1000
         
-        is_good = None
+        # Enhanced quality assessment with separate criteria
+        meets_mvc = False
+        meets_duration = False
+        
         if mvc_amplitude_threshold is not None:
-            is_good = max_amp_in_segment >= mvc_amplitude_threshold
+            meets_mvc = max_amp_in_segment >= mvc_amplitude_threshold
+            if meets_mvc:
+                mvc_contraction_count += 1
+                
+        if contraction_duration_threshold_ms is not None:
+            meets_duration = duration_ms >= contraction_duration_threshold_ms
+            if meets_duration:
+                duration_contraction_count += 1
+        
+        # 'is_good' represents meeting BOTH criteria (therapeutic compliance)
+        is_good = None
+        if mvc_amplitude_threshold is not None and contraction_duration_threshold_ms is not None:
+            is_good = meets_mvc and meets_duration
+            if is_good:
+                good_contraction_count += 1
+        elif mvc_amplitude_threshold is not None:
+            # Backward compatibility: if only MVC threshold provided, use MVC only
+            is_good = meets_mvc
             if is_good:
                 good_contraction_count += 1
         
         contractions_list.append({
             'start_time_ms': (start_idx / sampling_rate) * 1000,
             'end_time_ms': (end_idx / sampling_rate) * 1000,  # end_idx is the last sample *in* the contraction
-            'duration_ms': ((end_idx - start_idx) / sampling_rate) * 1000,
+            'duration_ms': duration_ms,
             'mean_amplitude': np.mean(segment),
             'max_amplitude': max_amp_in_segment,
-            'is_good': is_good
+            'is_good': is_good,
+            'meets_mvc': meets_mvc if mvc_amplitude_threshold is not None else None,
+            'meets_duration': meets_duration if contraction_duration_threshold_ms is not None else None
         })
 
     # 8. Calculate summary statistics
     if not contractions_list:
         base_return['good_contraction_count'] = 0 if mvc_amplitude_threshold is not None else None
+        base_return['mvc_contraction_count'] = 0 if mvc_amplitude_threshold is not None else None
+        base_return['duration_contraction_count'] = 0 if contraction_duration_threshold_ms is not None else None
         return base_return
         
     durations = [c['duration_ms'] for c in contractions_list]
@@ -241,7 +275,10 @@ def analyze_contractions(
         'max_amplitude': np.max(max_amplitudes_of_contractions) if max_amplitudes_of_contractions else 0.0, # Max of max amplitudes
         'contractions': contractions_list,
         'good_contraction_count': good_contraction_count if mvc_amplitude_threshold is not None else None,
-        'mvc_threshold_actual_value': mvc_amplitude_threshold
+        'mvc_contraction_count': mvc_contraction_count if mvc_amplitude_threshold is not None else None,
+        'duration_contraction_count': duration_contraction_count if contraction_duration_threshold_ms is not None else None,
+        'mvc_threshold_actual_value': mvc_amplitude_threshold,
+        'duration_threshold_actual_value': contraction_duration_threshold_ms
     }
 
 

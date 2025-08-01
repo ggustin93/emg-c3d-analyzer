@@ -314,15 +314,45 @@ class GHOSTLYC3DProcessor:
 
             if signal_for_contraction is not None:
                 try:
+                    # Get duration threshold from session params
+                    # Priority: per-muscle threshold (seconds) > global threshold (milliseconds)
+                    duration_threshold_ms = None
+                    
+                    print(f"🔍 Backend Duration Threshold Debug for {base_name}:")
+                    print(f"  - session_duration_thresholds_per_muscle: {getattr(session_params, 'session_duration_thresholds_per_muscle', None)}")
+                    print(f"  - contraction_duration_threshold: {getattr(session_params, 'contraction_duration_threshold', None)}")
+                    
+                    # First check for per-muscle duration threshold (in seconds)
+                    if (hasattr(session_params, 'session_duration_thresholds_per_muscle') and 
+                        session_params.session_duration_thresholds_per_muscle and 
+                        base_name in session_params.session_duration_thresholds_per_muscle):
+                        
+                        muscle_duration_seconds = session_params.session_duration_thresholds_per_muscle.get(base_name)
+                        if muscle_duration_seconds is not None:
+                            duration_threshold_ms = float(muscle_duration_seconds) * 1000.0  # Convert seconds to milliseconds
+                            print(f"  ✅ Using per-muscle threshold: {muscle_duration_seconds}s -> {duration_threshold_ms}ms")
+                    
+                    # Fall back to global duration threshold (already in milliseconds)
+                    elif (hasattr(session_params, 'contraction_duration_threshold') and 
+                          session_params.contraction_duration_threshold is not None):
+                        duration_threshold_ms = float(session_params.contraction_duration_threshold)
+                        print(f"  ✅ Using global threshold: {duration_threshold_ms}ms")
+                    else:
+                        print(f"  ❌ No duration threshold found - will use default")
+                    
                     contraction_stats = analyze_contractions(
                         signal=signal_for_contraction,
                         sampling_rate=sampling_rate,
                         threshold_factor=threshold_factor,
                         min_duration_ms=min_duration_ms,
                         smoothing_window=smoothing_window,
-                        mvc_amplitude_threshold=actual_mvc_threshold
+                        mvc_amplitude_threshold=actual_mvc_threshold,
+                        contraction_duration_threshold_ms=duration_threshold_ms
                     )
                     channel_analytics.update(contraction_stats)
+                    
+                    # Store the actual duration threshold used for this channel
+                    channel_analytics['duration_threshold_actual_value'] = duration_threshold_ms
                     
                     # Initialize MVC value to max amplitude if not provided
                     max_amplitude = contraction_stats.get('max_amplitude', 0.0)
