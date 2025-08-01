@@ -77,7 +77,9 @@ export interface Contraction {
   duration_ms: number;
   mean_amplitude: number;
   max_amplitude: number;
-  is_good?: boolean;
+  is_good?: boolean; // Meets both MVC and duration criteria
+  meets_mvc?: boolean; // Meets MVC threshold only
+  meets_duration?: boolean; // Meets duration threshold only
   is_long?: boolean; // true for long, false for short
 }
 
@@ -126,6 +128,8 @@ export interface GameSessionParameters {
   
   // Thresholds
   contraction_duration_threshold?: number | null;
+  contraction_duration_threshold_ms?: number | null; // Backend compatibility
+  session_duration_thresholds_per_muscle?: Record<string, number | null>; // Per-muscle duration thresholds
   
   // BFR Parameters - separate monitoring for left and right muscles
   bfr_parameters?: {
@@ -239,7 +243,10 @@ export interface ChannelAnalyticsData {
   errors?: { [metric: string]: string };
   
   mvc_threshold_actual_value?: number | null;
-  good_contraction_count?: number | null;
+  good_contraction_count?: number | null; // Meets both MVC and duration criteria
+  mvc_contraction_count?: number | null; // Meets MVC criteria only  
+  duration_contraction_count?: number | null; // Meets duration criteria only
+  duration_threshold_actual_value?: number | null; // Actual duration threshold used
   
   // Additional counts for long and short contractions
   long_contraction_count?: number | null;
