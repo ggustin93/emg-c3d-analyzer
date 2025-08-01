@@ -4,7 +4,6 @@ import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '../MuscleNameDisplay';
@@ -65,7 +64,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
               </Tooltip>
             </div>
             
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Total Target Count</Label>
@@ -95,7 +94,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
 
               {/* Channel-specific breakdown */}
               {muscleChannels2.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-green-300">
+                <div className="mt-4 pt-4 border-t border-gray-300">
                   <div className="grid grid-cols-2 gap-4">
                     {muscleChannels2.map((channel, index) => {
                       const expectedValue = index === 0 
@@ -154,15 +153,16 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 <TooltipTrigger asChild>
                   <InfoCircledIcon className="h-4 w-4 text-gray-500" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-sm">
-                    MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.
-                  </p>
+                <TooltipContent className="max-w-md">
+                  <div className="text-sm space-y-2">
+                    <p>MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.</p>
+                    <p><strong>Note:</strong> MVC values are initialized from baseline game sessions and adapt via Dynamic Difficulty Algorithm (DDA) to maintain optimal therapeutic challenge. {isDebugMode && 'Values can be manually adjusted in debug mode for testing purposes.'}</p>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="grid grid-cols-2 gap-4 p-4">
               {muscleChannels2.map((channel) => {
                 // Get channel-specific MVC value or fallback to global MVC value
                 const mvcValue = sessionParams.session_mvc_values?.[channel] || sessionParams.session_mvc_value || null;
@@ -191,8 +191,9 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                                 }
                               });
                             }}
-                            placeholder="Auto"
+                            placeholder="0.0012"
                             step="0.0001"
+                            min="0"
                             disabled={disabled}
                             className="h-9 text-sm"
                           />
@@ -208,7 +209,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                           type="number"
                           value={thresholdValue}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value) || 75;
+                            const value = parseFloat(e.target.value) || 75;
                             setSessionParams({
                               ...sessionParams,
                               session_mvc_threshold_percentages: {
@@ -217,9 +218,10 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                               }
                             });
                           }}
-                          min="0" max="100"
+                          min="0" max="100" step="0.1"
                           disabled={disabled}
                           className="h-9 text-sm"
+                          placeholder="75.0"
                         />
                       </div>
                     </div>
@@ -227,13 +229,6 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 );
               })}
             </div>
-            
-            <Alert>
-              <InfoCircledIcon className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Note:</strong> MVC values are initialized from baseline game sessions and adapt via Dynamic Difficulty Algorithm (DDA) to maintain optimal therapeutic challenge. {isDebugMode && 'Values can be manually adjusted in debug mode for testing purposes.'}
-              </AlertDescription>
-            </Alert>
           </div>
           
           {/* Duration Thresholds Section */}
@@ -245,18 +240,18 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 <TooltipTrigger asChild>
                   <InfoCircledIcon className="h-4 w-4 text-gray-500" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-sm">
-                    Configure muscle-specific minimum duration thresholds for therapeutic effectiveness. These values determine what constitutes a valid contraction duration for scoring purposes.
-                  </p>
+                <TooltipContent className="max-w-md">
+                  <div className="text-sm space-y-2">
+                    <p>Configure muscle-specific minimum duration thresholds for therapeutic effectiveness. These values determine what constitutes a valid contraction duration for scoring purposes.</p>
+                    <p><strong>Clinical Standards:</strong> Duration thresholds are now muscle-specific to optimize therapeutic outcomes. Default duration ≥2s adapts via Dynamic Difficulty Algorithm (3s→10s max). Different muscle groups may require different optimal durations based on fiber type composition and therapeutic goals. These parameters adapt dynamically based on GHOSTLY+ DDA clinical protocol.</p>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="grid grid-cols-2 gap-4 p-4">
               {muscleChannels2.map((channel) => {
-                const durationValue = sessionParams.session_duration_thresholds_per_muscle?.[channel] ?? 
-                  (sessionParams.contraction_duration_threshold_ms ? (sessionParams.contraction_duration_threshold_ms / 1000) : 2);
+                const durationValue = sessionParams.session_duration_thresholds_per_muscle?.[channel] ?? 2;
                 
                 return (
                   <div key={channel} className="space-y-3">
@@ -264,39 +259,32 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                       <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
                     </h6>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Minimum Duration (seconds)</Label>
+                      <Label className="text-sm font-medium text-gray-700">Minimum Duration</Label>
                       <Input
                         type="number"
-                        value={durationValue}
+                        value={Math.round(durationValue * 1000)} // Display in milliseconds
                         onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 2;
+                          const valueMs = parseInt(e.target.value) || 2000;
+                          const valueSeconds = valueMs / 1000;
                           setSessionParams({
                             ...sessionParams,
                             session_duration_thresholds_per_muscle: {
                               ...(sessionParams.session_duration_thresholds_per_muscle || {}),
-                              [channel]: value
-                            },
-                            // Update the global threshold for backward compatibility
-                            contraction_duration_threshold_ms: value * 1000
+                              [channel]: valueSeconds
+                            }
+                            // Removed global threshold update to maintain muscle independence
                           });
                         }}
-                        min="0.5" max="10" step="0.5"
+                        min="250" max="10000" step="250"
                         disabled={disabled}
                         className="h-9 text-sm"
                       />
-                      <p className="text-xs text-gray-600">Muscle-specific therapeutic duration</p>
+                      <p className="text-xs text-gray-600">{Math.round(durationValue * 1000)}ms ({(durationValue).toFixed(2)}s) • Independent per muscle • 250ms increments</p>
                     </div>
                   </div>
                 );
               })}
             </div>
-            
-            <Alert className="mt-3">
-              <InfoCircledIcon className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Clinical Standards:</strong> Duration thresholds are now muscle-specific to optimize therapeutic outcomes. Default duration ≥2s adapts via Dynamic Difficulty Algorithm (3s→10s max). Different muscle groups may require different optimal durations based on fiber type composition and therapeutic goals. These parameters adapt dynamically based on GHOSTLY+ DDA clinical protocol.
-              </AlertDescription>
-            </Alert>
           </div>
         </div>
       </TooltipProvider>
