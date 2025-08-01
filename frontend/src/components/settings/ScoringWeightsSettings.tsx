@@ -243,12 +243,8 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
           badge={isDebugMode ? <Badge variant="outline" className="bg-blue-100 text-blue-800">Debug Mode</Badge> : undefined}
         >
           <div className="space-y-6">
-            {/* Mathematical Model Display */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2 mb-3">
-                <GearIcon className="h-4 w-4 text-blue-600" />
-                <h4 className="text-sm font-semibold text-blue-900">Mathematical Model</h4>
-              </div>
+            {/* Performance Equation Display */}
+            <div className="p-4">
               <PerformanceEquation weights={weights} compact={false} />
             </div>
 
@@ -339,7 +335,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                   
                   {/* Sub-component weights for Therapeutic Compliance */}
                   {key === 'compliance' && (
-                    <div className="mt-4 p-3 bg-gray-50/30 rounded-lg border border-gray-200">
+                    <div className="mt-4 p-3">
                       <div className="flex items-center gap-2 mb-3">
                         <GearIcon className="h-4 w-4 text-green-600" />
                         <h5 className="text-sm font-semibold text-green-800">Compliance Sub-Components</h5>
@@ -380,7 +376,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                                 min={0}
                                 max={100}
                                 step={1}
-                                className="w-full [&>*:nth-child(1)>*:nth-child(1)]:bg-green-600 [&>*:nth-child(2)]:border-green-600"
+                                className="w-full [&>*:nth-child(1)>*:nth-child(1)]:bg-gray-500 [&>*:nth-child(2)]:border-gray-500"
                                 disabled={disabled}
                               />
                             </div>
@@ -448,62 +444,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
             badge={<Badge variant="outline" className="bg-amber-100 text-amber-800 text-xs">Optional</Badge>}
           >
             <div className="space-y-6">
-              {/* Game Scoring Context from Research Team */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold text-amber-800">Game Scoring Mechanics</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoCircledIcon className="h-4 w-4 text-amber-600 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md p-4">
-                      <div className="space-y-3 text-xs">
-                        <div>
-                          <p className="font-semibold text-amber-900 mb-1">Current Game Scoring Systems:</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div>
-                            <p className="font-medium text-amber-800">🎯 Maze Game:</p>
-                            <p>• Score = Stars collected - Enemy collision penalties</p>
-                            <p>• 20 stars per level (mandatory collection)</p>
-                            <p>• 2 enemies per level, 3-point penalty each</p>
-                            <p>• <em>Indicates gameplay "smoothness/speed"</em></p>
-                          </div>
-                          
-                          <div>
-                            <p className="font-medium text-amber-800">🚀 Original Ghostly & Space Games:</p>
-                            <p>• Different scoring mechanisms</p>
-                            <p>• Originally gamification/fun elements</p>
-                            <p>• <em>No direct correlation with exercise performance</em></p>
-                          </div>
-                        </div>
-                        
-                        <div className="pt-2 border-t border-amber-200">
-                          <p className="font-medium text-amber-800 mb-1">Clinical Recommendation:</p>
-                          <p>Set weight to <strong>0%</strong> unless game score directly correlates with therapeutic objectives. Future versions may redesign scoring to reflect contraction performance.</p>
-                        </div>
-                        
-                        <div className="pt-1 text-xs text-amber-700 italic">
-                          — Research insight from Katarina Kostkova, GHOSTLY+ Team
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                
-                <Alert className="border-amber-200 bg-amber-50">
-                  <ExclamationTriangleIcon className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-sm text-amber-800">
-                    <strong>Clinical Context:</strong> Game scores vary significantly across GHOSTLY games and were originally designed as gamification elements, not exercise performance indicators. In Maze game, scores reflect gameplay smoothness (stars collected minus collision penalties), while other games use different mechanics. <strong>Recommendation:</strong> Set weight to 0% unless clinically relevant for your specific use case.
-                  </AlertDescription>
-                </Alert>
-              </div>
               
               {/* Game Metadata from C3D */}
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-gray-800">Game Metadata (from C3D)</h4>
-                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 gap-4 p-3">
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-gray-600">Level</Label>
                     <div className="px-2 py-1 bg-white border rounded text-sm text-gray-700">
