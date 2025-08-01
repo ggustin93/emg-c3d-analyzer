@@ -129,3 +129,9 @@ backend/tests/data/uploads/
 coverage.xml
 .coverage
 htmlcov/
+# Development files
+.dev_pids
+
+# Logs
+logs/
+*.log
