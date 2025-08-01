@@ -410,42 +410,34 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-slate-600">Minimum % AOP</Label>
-                <div className="space-y-1">
-                  <Slider
-                    value={[sideParams.therapeutic_range_min]}
-                    onValueChange={([value]) => updateBFRParameters(side, 'therapeutic_range_min', value)}
-                    min={20}
-                    max={50}
-                    step={5}
-                    disabled={disabled}
-                    className="h-2"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>20%</span>
-                    <span className="font-medium text-gray-700">{sideParams.therapeutic_range_min}%</span>
-                    <span>50%</span>
-                  </div>
-                </div>
+                <Input
+                  type="number"
+                  value={sideParams.therapeutic_range_min}
+                  onChange={(e) => updateBFRParameters(side, 'therapeutic_range_min', parseFloat(e.target.value) || 20)}
+                  min="20"
+                  max="50"
+                  step="1"
+                  disabled={disabled}
+                  className="h-8 text-xs"
+                  placeholder="40"
+                />
+                <p className="text-xs text-gray-500">Range: 20-50% (1% increments)</p>
               </div>
               
               <div className="space-y-2">
                 <Label className="text-xs text-slate-600">Maximum % AOP</Label>
-                <div className="space-y-1">
-                  <Slider
-                    value={[sideParams.therapeutic_range_max]}
-                    onValueChange={([value]) => updateBFRParameters(side, 'therapeutic_range_max', value)}
-                    min={50}
-                    max={80}
-                    step={5}
-                    disabled={disabled}
-                    className="h-2"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>50%</span>
-                    <span className="font-medium text-gray-700">{sideParams.therapeutic_range_max}%</span>
-                    <span>80%</span>
-                  </div>
-                </div>
+                <Input
+                  type="number"
+                  value={sideParams.therapeutic_range_max}
+                  onChange={(e) => updateBFRParameters(side, 'therapeutic_range_max', parseFloat(e.target.value) || 60)}
+                  min="50"
+                  max="80"
+                  step="1"
+                  disabled={disabled}
+                  className="h-8 text-xs"
+                  placeholder="60"
+                />
+                <p className="text-xs text-gray-500">Range: 50-80% (1% increments)</p>
               </div>
             </div>
           </div>
