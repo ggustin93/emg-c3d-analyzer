@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDownIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import ContractionTypeBreakdown from './ContractionTypeBreakdown';
-import { GameSessionParameters } from '../../../types/emg';
+import { GameSessionParameters, Contraction } from '../../../types/emg';
 import MuscleNameDisplay from '../../MuscleNameDisplay';
 import { ComplianceTooltip, MuscleComplianceScoreTooltip, CompletionRateTooltip, IntensityQualityTooltip, DurationQualityTooltip } from '@/components/ui/clinical-tooltip';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useScoreColors } from '@/hooks/useScoreColors';
+import { useSessionStore } from '@/store/sessionStore';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MusclePerformanceCardProps {
   channel: string;
@@ -35,6 +37,12 @@ interface MusclePerformanceCardProps {
   averageContractionTime?: number; // in milliseconds
   mvcValue?: number; // Current MVC value
   mvcThreshold?: number; // MVC threshold (75% of MVC)
+  contractions?: Contraction[]; // Add raw contractions data for accurate calculation
+  componentScores?: {
+    completion: { score: number | null; weight: number };
+    intensity: { score: number | null; weight: number };
+    duration: { score: number | null; weight: number };
+  };
 }
 
 const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
@@ -59,12 +67,48 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   sessionParams,
   averageContractionTime,
   mvcValue,
-  mvcThreshold
+  mvcThreshold,
+  contractions = [],
+  componentScores
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCountDetailsOpen, setIsCountDetailsOpen] = useState(false);
   const [isQualityDetailsOpen, setIsQualityDetailsOpen] = useState(false);
   const [isDurationDetailsOpen, setIsDurationDetailsOpen] = useState(false);
+  
+  // Get real-time duration threshold from Settings
+  const { sessionParams: liveSessionParams } = useSessionStore();
+  
+  // Get the actual duration threshold for this muscle from Settings
+  const actualDurationThreshold = useMemo(() => {
+    const baseChannelName = channel.split(' ')[0]; // Extract channel name (e.g., "CH1" from "CH1 Activated")
+    
+    // Check for per-muscle duration threshold first
+    if (liveSessionParams?.session_duration_thresholds_per_muscle?.[baseChannelName]) {
+      const muscleThresholdSeconds = liveSessionParams.session_duration_thresholds_per_muscle[baseChannelName];
+      if (muscleThresholdSeconds !== null && muscleThresholdSeconds !== undefined) {
+        const thresholdMs = muscleThresholdSeconds * 1000; // Convert seconds to milliseconds
+        
+        console.log(`🎯 MusclePerformanceCard Duration Threshold for ${channel} (per-muscle):`, {
+          baseChannelName,
+          perMuscleThresholdSeconds: muscleThresholdSeconds,
+          finalThresholdMs: thresholdMs
+        });
+        
+        return thresholdMs;
+      }
+    }
+    
+    // Fallback to global duration threshold
+    const globalThreshold = liveSessionParams?.contraction_duration_threshold ?? 2000;
+    
+    console.log(`🎯 MusclePerformanceCard Duration Threshold for ${channel} (global):`, {
+      baseChannelName,
+      globalThresholdMs: globalThreshold
+    });
+    
+    return globalThreshold;
+  }, [channel, liveSessionParams]);
 
   const scoreData = [
     { name: 'Score', value: totalScore },
@@ -164,10 +208,31 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   const goodContractionPercentage = totalContractions > 0 ? Math.round((goodContractionCount / totalContractions) * 100) : 0;
   const goodContractionColors = useScoreColors(goodContractionPercentage);
 
-  // Calculate duration quality score (contractions meeting duration threshold)
-  const longContractionsCount = longContractions;
-  const durationQualityPercentage = totalContractions > 0 ? Math.round((longContractionsCount / totalContractions) * 100) : 0;
+  // Calculate duration quality score based on actualDurationThreshold
+  // If we have raw contractions data, use it for accurate calculation
+  let durationCompliantCount = 0;
+  
+  if (contractions && contractions.length > 0) {
+    // Use raw contractions data to calculate duration compliance
+    durationCompliantCount = contractions.filter(c => c.duration_ms >= actualDurationThreshold).length;
+  } else {
+    // Fallback to pre-calculated longContractions, but log a warning
+    durationCompliantCount = longContractions;
+    console.log(`⚠️ Warning: Using pre-calculated longContractions (${longContractions}) for ${channel} - may not match actualDurationThreshold (${actualDurationThreshold}ms)`);
+  }
+  
+  const durationQualityPercentage = totalContractions > 0 ? Math.round((durationCompliantCount / totalContractions) * 100) : 0;
   const durationQualityColors = useScoreColors(durationQualityPercentage);
+  
+  console.log(`🎯 MusclePerformanceCard Duration Quality for ${channel}:`, {
+    totalContractions,
+    durationCompliantCount,
+    durationQualityPercentage,
+    actualDurationThreshold,
+    longContractions,
+    shortContractions,
+    hasRawContractions: contractions && contractions.length > 0
+  });
 
   // Get colors for the overall score
   const scoreColors = useScoreColors(totalScore);
@@ -184,25 +249,67 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
             ) : (
               channel
             )} Compliance
-            <ComplianceTooltip side="top" />
+            <ComplianceTooltip 
+              side="top"
+              completionWeight={componentScores?.completion.weight}
+              intensityWeight={componentScores?.intensity.weight}
+              durationWeight={componentScores?.duration.weight}
+              durationThreshold={actualDurationThreshold}
+            />
           </CardTitle>
           <p className={`text-sm font-bold ${scoreColors.text} mb-2`}>{scoreColors.label}</p>
           
-          <MuscleComplianceScoreTooltip 
-            contractionDurationThreshold={contractionDurationThreshold}
-            side="top"
-          >
-            <div>
-              <CircleDisplay 
-                value={totalScore} 
-                label="" 
-                color={scoreColors.hex}
-                size="lg"
-                showPercentage={true}
-              />
-            </div>
-          </MuscleComplianceScoreTooltip>
-                <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <CircleDisplay 
+                    value={totalScore} 
+                    label="" 
+                    color={scoreColors.hex}
+                    size="lg"
+                    showPercentage={true}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent 
+                side="top"
+                sideOffset={5}
+                className="bg-white p-3 shadow-lg border border-slate-200 max-w-xs"
+              >
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Compliance Score Calculation</h4>
+                  {componentScores && (
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span>Completion ({(componentScores.completion.weight * 100).toFixed(0)}%):</span>
+                        <span className="font-medium">{componentScores.completion.score ?? 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Intensity ({(componentScores.intensity.weight * 100).toFixed(0)}%):</span>
+                        <span className="font-medium">{componentScores.intensity.score ?? 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Duration ({(componentScores.duration.weight * 100).toFixed(0)}%):</span>
+                        <span className="font-medium">{componentScores.duration.score ?? 'N/A'}</span>
+                      </div>
+                      <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between items-center font-semibold">
+                        <span>Overall Score:</span>
+                        <span className={scoreColors.text}>{totalScore}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <p>Duration threshold: ≥{(actualDurationThreshold / 1000).toFixed(1)}s ({actualDurationThreshold}ms)</p>
+                    {mvcThreshold && (
+                      <p>Intensity threshold: ≥{mvcThreshold.toExponential(2)} µV</p>
+                    )}
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </CardHeader>
             </div>
           </CollapsibleTrigger>
@@ -261,7 +368,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     longGoodContractions={longGoodContractions}
                     expectedShortContractions={expectedShortContractions}
                     expectedLongContractions={expectedLongContractions}
-                    contractionDurationThreshold={contractionDurationThreshold}
+                    contractionDurationThreshold={actualDurationThreshold}
                     color={scoreHexColor}
                   />
                 </div>
@@ -345,7 +452,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 <div className="flex items-center gap-1">
                   <h4 className="text-sm font-semibold text-gray-700">Duration Quality</h4>
                   <DurationQualityTooltip 
-                    contractionDurationThreshold={contractionDurationThreshold}
+                    contractionDurationThreshold={actualDurationThreshold}
                     side="top" 
                   />
                   <CollapsibleTrigger className="ml-1 rounded-full hover:bg-slate-200 p-0.5 transition-colors">
@@ -369,7 +476,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                     indicatorClassName={`${durationQualityColors.bg} opacity-80`} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
-                    {longContractionsCount} of {totalContractions} met duration threshold
+                    {durationCompliantCount} of {totalContractions} met duration threshold
                   </p>
                 </>
               )}
@@ -377,7 +484,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
               <CollapsibleContent className="pt-2 space-y-4">
                 <div className="flex justify-around items-center">
                   <CircleDisplay 
-                    value={longContractionsCount} 
+                    value={durationCompliantCount} 
                     total={totalContractions}
                     label="Good Duration" 
                     color={durationQualityColors.hex} 
@@ -398,10 +505,14 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 </div>
                 <div className="text-xs text-center text-gray-500 space-y-2">
                   <div>
-                    <p><span className="font-bold">{longContractionsCount}</span> of <span className="font-bold">{totalContractions}</span> contractions lasted ≥{(contractionDurationThreshold / 1000).toFixed(1)}s.</p>
+                    <p>
+                      <span className="font-bold">{durationCompliantCount}</span> of <span className="font-bold">{totalContractions}</span> contractions lasted ≥{(actualDurationThreshold / 1000).toFixed(1)}s.
+                      <span className="text-xs text-gray-400 ml-1">({actualDurationThreshold}ms)</span>
+                    </p>
                     {averageContractionTime && (
                       <p className="mt-1">
                         <span className="font-medium">Average duration:</span> {(averageContractionTime / 1000).toFixed(1)}s across all contractions
+                        <span className="text-xs text-gray-400 ml-1">({Math.round(averageContractionTime)}ms)</span>
                       </p>
                     )}
                   </div>

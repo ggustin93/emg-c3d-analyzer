@@ -247,23 +247,17 @@ export const ComplianceTooltip: React.FC<{
   completionWeight?: number;
   intensityWeight?: number;
   durationWeight?: number;
+  durationThreshold?: number;
 }> = ({ 
   side = 'right', 
   children,
   completionWeight = 1/3,
   intensityWeight = 1/3,
-  durationWeight = 1/3
+  durationWeight = 1/3,
+  durationThreshold = 2000
 }) => {
-  const data = getComplianceTooltipData(completionWeight, intensityWeight, durationWeight);
-  
-  return (
-    <DataDrivenTooltip
-      data={data}
-      side={side}
-    >
-      {children}
-    </DataDrivenTooltip>
-  );
+  const data = getComplianceTooltipData(completionWeight, intensityWeight, durationWeight, durationThreshold);
+  return <DataDrivenTooltip data={data} side={side} children={children} />;
 };
 
 // Preset for muscle compliance score gauge
@@ -282,30 +276,38 @@ export const MuscleComplianceScoreTooltip: React.FC<{
   intensityWeight = 1/3,
   durationWeight = 1/3
 }) => {
-  // Convert to percentages for display
   const completionPct = (completionWeight * 100).toFixed(1);
   const intensityPct = (intensityWeight * 100).toFixed(1);
   const durationPct = (durationWeight * 100).toFixed(1);
   
   return (
     <ClinicalTooltip
-      title="Therapeutic Compliance Score"
+      title="Muscle Compliance Score"
       description="Calculated as weighted average of three quality metrics (weights are adjustable in settings)"
       sections={[
         {
+          title: "Formula:",
+          type: "formula",
+          items: [
+            { 
+              label: "S", 
+              value: ` = ${completionPct}%·R<sub>completion</sub> + ${intensityPct}%·R<sub>intensity</sub> + ${durationPct}%·R<sub>duration</sub>` 
+            }
+          ]
+        },
+        {
+          title: "Components:",
           type: "list",
           items: [
-            { percentage: completionPct, label: "Completion rate", description: "contractions performed" },
-            { percentage: intensityPct, label: "Intensity quality", description: "≥75% MVC" },
-            { percentage: durationPct, label: "Duration quality", description: `≥${(contractionDurationThreshold / 1000).toFixed(1)}s` }
+            { label: "Completion", description: `${completionPct}% weight · Contractions done/expected (12)` },
+            { label: "Intensity", description: `${intensityPct}% weight · Contractions ≥75% MVC` },
+            { label: "Duration", description: `${durationPct}% weight · Contractions ≥${(contractionDurationThreshold / 1000).toFixed(1)}s (${contractionDurationThreshold}ms)` }
           ]
         }
       ]}
       side={side}
-      variant="compact"
-    >
-      {children}
-    </ClinicalTooltip>
+      children={children}
+    />
   );
 };
 

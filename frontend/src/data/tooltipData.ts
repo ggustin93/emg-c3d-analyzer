@@ -22,11 +22,13 @@ export interface TooltipData {
 export const getComplianceTooltipData = (
   completionWeight: number = 1/3,
   intensityWeight: number = 1/3,
-  durationWeight: number = 1/3
+  durationWeight: number = 1/3,
+  durationThreshold: number = 2000
 ): TooltipData => {
   const completionPct = (completionWeight * 100).toFixed(1);
   const intensityPct = (intensityWeight * 100).toFixed(1);
   const durationPct = (durationWeight * 100).toFixed(1);
+  const durationThresholdSec = (durationThreshold / 1000).toFixed(1);
 
   return {
     title: "Muscle Compliance Score",
@@ -48,7 +50,7 @@ export const getComplianceTooltipData = (
         items: [
           { label: "Completion", description: `${completionPct}% weight · Contractions done/expected (12)` },
           { label: "Intensity", description: `${intensityPct}% weight · Contractions ≥75% MVC` },
-          { label: "Duration", description: `${durationPct}% weight · Contractions ≥2.0s` }
+          { label: "Duration", description: `${durationPct}% weight · Contractions ≥${durationThresholdSec}s` }
         ]
       },
       {
@@ -137,7 +139,7 @@ export const getDurationQualityTooltipData = (
       title: "Clinical Parameters:",
       type: "list",
       items: [
-        { description: `Duration threshold: ≥${(contractionDurationThreshold / 1000).toFixed(1)}s (adaptive)` },
+        { description: `Duration threshold: ≥${(contractionDurationThreshold / 1000).toFixed(1)}s (${contractionDurationThreshold}ms)` },
         { description: "Target: ≥90% of contractions meet duration requirement" },
         { description: "Progressive increase: 2-10s over treatment course" }
       ]

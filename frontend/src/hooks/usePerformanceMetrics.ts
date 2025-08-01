@@ -14,11 +14,52 @@ const calculateGoodContractionScore = (goodCount: number, totalCount: number): n
   return Math.round((goodCount / totalCount) * 100);
 };
 
-const calculateTotalScore = (subscore1: number | null, subscore2: number | null, subscore3: number | null): number => {
-  const scores = [subscore1, subscore2, subscore3].filter(s => s !== null) as number[];
+/**
+ * Calculates the weighted average score from three subscores
+ * @param subscore1 Completion score (contractions performed vs expected)
+ * @param subscore2 Intensity score (contractions meeting MVC threshold)
+ * @param subscore3 Duration score (contractions meeting duration threshold)
+ * @param weights Optional weights for each subscore [completion, intensity, duration]
+ * @returns Weighted average score rounded to nearest integer
+ */
+const calculateTotalScore = (
+  subscore1: number | null, 
+  subscore2: number | null, 
+  subscore3: number | null,
+  weights: [number, number, number] = [1/3, 1/3, 1/3]
+): number => {
+  // Filter out null scores and their corresponding weights
+  const scores: number[] = [];
+  const activeWeights: number[] = [];
+  
+  if (subscore1 !== null) {
+    scores.push(subscore1);
+    activeWeights.push(weights[0]);
+  }
+  
+  if (subscore2 !== null) {
+    scores.push(subscore2);
+    activeWeights.push(weights[1]);
+  }
+  
+  if (subscore3 !== null) {
+    scores.push(subscore3);
+    activeWeights.push(weights[2]);
+  }
+  
   if (scores.length === 0) return 0;
-  const sum = scores.reduce((a, b) => a + b, 0);
-  return Math.round(sum / scores.length);
+  
+  // Normalize weights to sum to 1
+  const weightSum = activeWeights.reduce((sum, w) => sum + w, 0);
+  const normalizedWeights = activeWeights.map(w => w / weightSum);
+  
+  // Calculate weighted average
+  let weightedSum = 0;
+  for (let i = 0; i < scores.length; i++) {
+    weightedSum += scores[i] * normalizedWeights[i];
+  }
+  
+  return Math.round(weightedSum);
 };
 
 const calculateOverallScore = (muscleScores: number[]): number => {
@@ -59,6 +100,12 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
     let aggregateGoodContractions = 0;
     let aggregateExpectedContractions = 0;
     let allContractionDurations: number[] = [];
+
+    // Get scoring weights from session parameters
+    const completionWeight = sessionParams?.enhanced_scoring?.weights?.completion ?? 1/3;
+    const intensityWeight = sessionParams?.enhanced_scoring?.weights?.mvcQuality ?? 1/3;
+    const durationWeight = sessionParams?.enhanced_scoring?.weights?.qualityThreshold ?? 1/3;
+    const scoreWeights: [number, number, number] = [completionWeight, intensityWeight, durationWeight];
 
     channelNames.forEach((channelName, index) => {
       const channelData = analysisResult.analytics[channelName];
@@ -127,7 +174,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
       const durationQualityScore = totalContractions > 0 ? Math.round((longContractions / totalContractions) * 100) : 0;
-      const totalScore = calculateTotalScore(contractionScore, goodContractionScore, durationQualityScore);
+      const totalScore = calculateTotalScore(contractionScore, goodContractionScore, durationQualityScore, scoreWeights);
       const scoreColors = getScoreColors(totalScore);
       
       muscleScores.push(totalScore);
@@ -160,6 +207,12 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
         averageContractionTime: muscleAverageContractionTime,
         mvcValue: sessionParams.session_mvc_values?.[channelName] ?? sessionParams.session_mvc_value ?? null,
         mvcThreshold,
+        // Add component scores and weights for detailed display
+        componentScores: {
+          completion: { score: contractionScore, weight: completionWeight },
+          intensity: { score: goodContractionScore, weight: intensityWeight },
+          duration: { score: durationQualityScore, weight: durationWeight }
+        }
       });
     });
 

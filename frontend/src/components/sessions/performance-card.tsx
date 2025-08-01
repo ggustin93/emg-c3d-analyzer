@@ -157,6 +157,8 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
               averageContractionTime={muscleData[0].averageContractionTime}
               mvcValue={muscleData[0].mvcValue}
               mvcThreshold={muscleData[0].mvcThreshold}
+              contractions={analysisResult.analytics[muscleData[0].channelName]?.contractions}
+              componentScores={muscleData[0].componentScores}
             />
           </div>
         )}
@@ -187,6 +189,8 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
               averageContractionTime={muscleData[1].averageContractionTime}
               mvcValue={muscleData[1].mvcValue}
               mvcThreshold={muscleData[1].mvcThreshold}
+              contractions={analysisResult.analytics[muscleData[1].channelName]?.contractions}
+              componentScores={muscleData[1].componentScores}
             />
           </div>
         )}
