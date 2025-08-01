@@ -16,14 +16,32 @@ interface SettingsPanelProps {
   setDataPoints: (points: number) => void;
   plotChannel1Data: EMGChannelSignalData | null;
   plotChannel2Data: EMGChannelSignalData | null;
+  
+  // Legacy contraction props
   showGoodContractions?: boolean;
   setShowGoodContractions?: (show: boolean) => void;
   showPoorContractions?: boolean;
   setShowPoorContractions?: (show: boolean) => void;
+  
+  // Enhanced quality props
+  showExcellentContractions?: boolean;
+  setShowExcellentContractions?: (show: boolean) => void;
+  showAdequateForceContractions?: boolean;
+  setShowAdequateForceContractions?: (show: boolean) => void;
+  showAdequateDurationContractions?: boolean;
+  setShowAdequateDurationContractions?: (show: boolean) => void;
+  showInsufficientContractions?: boolean;
+  setShowInsufficientContractions?: (show: boolean) => void;
+  
+  // Display options
   showContractionAreas?: boolean;
   setShowContractionAreas?: (show: boolean) => void;
   showContractionDots?: boolean;
   setShowContractionDots?: (show: boolean) => void;
+  
+  // Enhanced mode
+  useEnhancedQuality?: boolean;
+  
   analysisResult?: EMGAnalysisResult | null;
 }
 
@@ -34,14 +52,32 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   setDataPoints,
   plotChannel1Data,
   plotChannel2Data,
+  
+  // Legacy props
   showGoodContractions = true,
   setShowGoodContractions,
   showPoorContractions = true,
   setShowPoorContractions,
+  
+  // Enhanced quality props
+  showExcellentContractions = true,
+  setShowExcellentContractions,
+  showAdequateForceContractions = true,
+  setShowAdequateForceContractions,
+  showAdequateDurationContractions = true,
+  setShowAdequateDurationContractions,
+  showInsufficientContractions = true,
+  setShowInsufficientContractions,
+  
+  // Display options
   showContractionAreas = true,
   setShowContractionAreas,
   showContractionDots = true,
   setShowContractionDots,
+  
+  // Enhanced mode
+  useEnhancedQuality = false,
+  
   analysisResult,
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
@@ -100,14 +136,31 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           setDataPoints={setDataPoints}
           plotChannel1Data={plotChannel1Data}
           plotChannel2Data={plotChannel2Data}
+          
+          // Legacy props
           showGoodContractions={showGoodContractions}
           setShowGoodContractions={setShowGoodContractions}
           showPoorContractions={showPoorContractions}
           setShowPoorContractions={setShowPoorContractions}
+          
+          // Enhanced quality props
+          showExcellentContractions={showExcellentContractions}
+          setShowExcellentContractions={setShowExcellentContractions}
+          showAdequateForceContractions={showAdequateForceContractions}
+          setShowAdequateForceContractions={setShowAdequateForceContractions}
+          showAdequateDurationContractions={showAdequateDurationContractions}
+          setShowAdequateDurationContractions={setShowAdequateDurationContractions}
+          showInsufficientContractions={showInsufficientContractions}
+          setShowInsufficientContractions={setShowInsufficientContractions}
+          
+          // Display options
           showContractionAreas={showContractionAreas}
           setShowContractionAreas={setShowContractionAreas}
           showContractionDots={showContractionDots}
           setShowContractionDots={setShowContractionDots}
+          
+          // Enhanced mode
+          useEnhancedQuality={useEnhancedQuality}
         />
         
       </div>

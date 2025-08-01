@@ -157,6 +157,17 @@ export default function GameSessionTabs({
   // Individual contraction controls with defaults (both areas and dots shown by default)
   const [showGoodContractions, setShowGoodContractions] = useState(true);
   const [showPoorContractions, setShowPoorContractions] = useState(true);
+  
+  // Enhanced quality criteria states (default to show all)
+  const [showExcellentContractions, setShowExcellentContractions] = useState(true);
+  const [showAdequateForceContractions, setShowAdequateForceContractions] = useState(true);
+  const [showAdequateDurationContractions, setShowAdequateDurationContractions] = useState(true);
+  const [showInsufficientContractions, setShowInsufficientContractions] = useState(true);
+  
+  // Enhanced quality mode toggle (future feature)
+  const [useEnhancedQuality, setUseEnhancedQuality] = useState(false);
+  
+  // Display style controls
   const [showContractionAreas, setShowContractionAreas] = useState(true);
   const [showContractionDots, setShowContractionDots] = useState(true);
 
@@ -460,14 +471,31 @@ export default function GameSessionTabs({
           plotChannel1Data={mainPlotChannel1Data}
           analysisResult={analysisResult}
           plotChannel2Data={mainPlotChannel2Data}
+          
+          // Legacy contraction props
           showGoodContractions={showGoodContractions && showContractionHighlights}
           setShowGoodContractions={setShowGoodContractions}
           showPoorContractions={showPoorContractions && showContractionHighlights}
           setShowPoorContractions={setShowPoorContractions}
+          
+          // Enhanced quality props
+          showExcellentContractions={showExcellentContractions && showContractionHighlights}
+          setShowExcellentContractions={setShowExcellentContractions}
+          showAdequateForceContractions={showAdequateForceContractions && showContractionHighlights}
+          setShowAdequateForceContractions={setShowAdequateForceContractions}
+          showAdequateDurationContractions={showAdequateDurationContractions && showContractionHighlights}
+          setShowAdequateDurationContractions={setShowAdequateDurationContractions}
+          showInsufficientContractions={showInsufficientContractions && showContractionHighlights}
+          setShowInsufficientContractions={setShowInsufficientContractions}
+          
+          // Display style props  
           showContractionAreas={showContractionAreas && showContractionHighlights}
           setShowContractionAreas={setShowContractionAreas}
           showContractionDots={showContractionDots && showContractionHighlights}
           setShowContractionDots={setShowContractionDots}
+          
+          // Enhanced mode
+          useEnhancedQuality={useEnhancedQuality}
         />
       </TabsContent>
 

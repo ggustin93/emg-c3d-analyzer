@@ -13,14 +13,31 @@ interface DisplaySettingsProps {
   setDataPoints: (points: number) => void;
   plotChannel1Data: EMGChannelSignalData | null;
   plotChannel2Data: EMGChannelSignalData | null;
+  
+  // Legacy contraction props
   showGoodContractions: boolean;
   setShowGoodContractions: ((show: boolean) => void) | undefined;
   showPoorContractions: boolean;
   setShowPoorContractions: ((show: boolean) => void) | undefined;
+  
+  // Enhanced quality props
+  showExcellentContractions?: boolean;
+  setShowExcellentContractions?: ((show: boolean) => void) | undefined;
+  showAdequateForceContractions?: boolean;
+  setShowAdequateForceContractions?: ((show: boolean) => void) | undefined;
+  showAdequateDurationContractions?: boolean;
+  setShowAdequateDurationContractions?: ((show: boolean) => void) | undefined;
+  showInsufficientContractions?: boolean;
+  setShowInsufficientContractions?: ((show: boolean) => void) | undefined;
+  
+  // Display options
   showContractionAreas: boolean;
   setShowContractionAreas: ((show: boolean) => void) | undefined;
   showContractionDots: boolean;
   setShowContractionDots: ((show: boolean) => void) | undefined;
+  
+  // Enhanced mode toggle
+  useEnhancedQuality?: boolean;
 }
 
 const DisplaySettings: React.FC<DisplaySettingsProps> = (props) => {
