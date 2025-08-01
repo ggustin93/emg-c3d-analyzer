@@ -9,14 +9,12 @@
 
 ### Working Documentation
 - [`api.md`](./api.md) - API endpoints and models
-- [`supabase_client.md`](./supabase_client.md) - Supabase integration patterns
 - [`db_schema.md`](./db_schema.md) - Database schema
 - [`auth_system.md`](./auth_system.md) - Complete authentication implementation
-- [`data_flow.md`](./data_flow.md) - EMG analysis pipeline and component data flow
-- [`component_architecture.md`](./component_architecture.md) - Frontend component organization
-- [`deployment.md`](./deployment.md) - Production deployment guide
-- [`troubleshooting.md`](./troubleshooting.md) - Common issues and solutions
-- [`setup/`](./setup/) - Development setup guides
+- [`data_flows.md`](./data_flows.md) - Business Logic Diagrams (To Complete)
+- [`supabase.md`](./supabase.md) - Overview of Supabase client documentation (To Do)
+- [`deployment.md`](./deployment.md) - Production deployment guide (Docker, Coolify - To Do)
+- [`setup.md`](./setup.md) - Development setup guide (To Do)
 
 ### Architecture
 - See [`/memory-bank/systemPatterns.md`](../memory-bank/systemPatterns.md) for system architecture
