@@ -1,0 +1,243 @@
+/**
+ * ExportTab Component - Refactored with Modular Architecture
+ * Senior software architect cleanup: SOLID principles, separation of concerns, maintainable code
+ */
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { 
+  FileTextIcon, 
+  CopyIcon, 
+  CheckIcon,
+  CodeIcon
+} from '@radix-ui/react-icons';
+import { EMGAnalysisResult } from '@/types/emg';
+import { useSessionStore } from '@/store/sessionStore';
+import SupabaseStorageService from '@/services/supabaseStorage';
+
+// Import modular components
+import { ChannelSelector } from './ChannelSelector';
+import { DownsamplingControl } from './DownsamplingControl';
+import { ExportOptionsPanel } from './ExportOptionsPanel';
+import { ExportActions } from './ExportActions';
+import { useExportData } from './hooks';
+import { detectOriginalFilename } from './utils';
+
+interface ExportTabProps {
+  analysisResult: EMGAnalysisResult | null;
+  uploadedFileName?: string | null;
+}
+
+const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName }) => {
+  const { sessionParams } = useSessionStore();
+  
+  // Use custom hook for export data management
+  const {
+    exportOptions,
+    setExportOptions,
+    downsamplingOptions,
+    setDownsamplingOptions,
+    channelSelection,
+    handleChannelSelectionChange,
+    availableChannels,
+    hasSelectedChannels,
+    hasSelectedData,
+    generateExportData
+  } = useExportData(analysisResult, uploadedFileName, sessionParams);
+
+  // Local UI state
+  const [jsonData, setJsonData] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Detect original filename
+  const originalFilename = useMemo(() => 
+    detectOriginalFilename(uploadedFileName, analysisResult),
+    [uploadedFileName, analysisResult]
+  );
+
+  // Generate JSON preview (limited data for display)
+  const generateJsonPreview = useCallback(async () => {
+    setIsGenerating(true);
+    try {
+      const exportData = generateExportData(true); // isPreview = true
+      if (exportData) {
+        setJsonData(JSON.stringify(exportData, null, 2));
+      } else {
+        setJsonData('');
+      }
+    } catch (error) {
+      console.error('Error generating JSON data:', error);
+      setJsonData('');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [generateExportData]);
+
+  // Copy JSON to clipboard
+  const copyToClipboard = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(jsonData);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  }, [jsonData]);
+
+  // Download original C3D file
+  const downloadOriginalFile = useCallback(async () => {
+    if (!analysisResult?.source_filename) return;
+    
+    try {
+      const success = await SupabaseStorageService.downloadFile(
+        analysisResult.source_filename
+      );
+      if (!success) {
+        console.error('Failed to download original file');
+      }
+    } catch (error) {
+      console.error('Error downloading original file:', error);
+    }
+  }, [analysisResult?.source_filename]);
+
+  // Download export data as JSON (complete data)
+  const downloadExportData = useCallback(async () => {
+    const exportData = generateExportData(false); // isPreview = false for complete data
+    if (!exportData) return;
+
+    try {
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${originalFilename.replace('.c3d', '')}_export.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading export data:', error);
+    }
+  }, [generateExportData, originalFilename]);
+
+  // Auto-generate preview when selection changes
+  React.useEffect(() => {
+    if (hasSelectedData) {
+      generateJsonPreview();
+    } else {
+      setJsonData('');
+    }
+  }, [hasSelectedData, generateJsonPreview]);
+
+  return (
+    <TooltipProvider>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+        {/* Left Column - Configuration */}
+        <div className="space-y-6">
+          {/* Export Options */}
+          <ExportOptionsPanel
+            options={exportOptions}
+            onChange={setExportOptions}
+          />
+
+          {/* EMG Channels Section */}
+          <div className="space-y-4">
+            <ChannelSelector
+              availableChannels={availableChannels}
+              channelSelection={channelSelection}
+              onChannelSelectionChange={handleChannelSelectionChange}
+            />
+            
+            {/* Downsampling Control - Only shown when channels are selected */}
+            <DownsamplingControl
+              options={downsamplingOptions}
+              onChange={setDownsamplingOptions}
+              hasSelectedChannels={hasSelectedChannels}
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Preview & Actions */}
+        <div className="space-y-6">
+          {/* Export Actions */}
+          <ExportActions
+            exportData={generateExportData(false)} 
+            originalFilename={originalFilename}
+            hasSelectedData={hasSelectedData}
+            onDownloadOriginal={downloadOriginalFile}
+            onDownloadExport={downloadExportData}
+          />
+
+          {/* JSON Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CodeIcon className="h-4 w-4" />
+                JSON Preview
+              </CardTitle>
+              <CardDescription>
+                🔍 <strong>PREVIEW EXTRACT</strong> - Limited sample data only (5 points per array). 📥 Complete data available in download.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Generate Preview Button */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={generateJsonPreview}
+                  disabled={!hasSelectedData || isGenerating}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  {isGenerating ? 'Generating...' : 'Refresh Preview'}
+                </Button>
+                
+                <Button
+                  onClick={copyToClipboard}
+                  disabled={!jsonData}
+                  variant="outline"
+                  size="sm"
+                  className="px-3"
+                >
+                  {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                </Button>
+              </div>
+
+              {/* JSON Content */}
+              {hasSelectedData ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <ScrollArea className="h-96">
+                    <Textarea
+                      value={jsonData || (isGenerating ? 'Generating preview...' : 'No data to preview')}
+                      readOnly
+                      className="min-h-96 font-mono text-xs border-0 resize-none focus:ring-0"
+                      style={{
+                        tabSize: '2',
+                        MozTabSize: '2'
+                      }}
+                    />
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileTextIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Select export options or EMG channels to see preview</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+};
+
+export default ExportTab;

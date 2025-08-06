@@ -1,0 +1,331 @@
+/**
+ * Export Tab Custom Hooks
+ * Business logic hooks for data management
+ */
+
+import { useState, useCallback, useMemo } from 'react';
+import { EMGAnalysisResult } from '@/types/emg';
+import { 
+  ExportOptions, 
+  DownsamplingOptions, 
+  ChannelSelectionMap,
+  ExportData 
+} from './types';
+import { 
+  DEFAULT_EXPORT_OPTIONS,
+  DEFAULT_DOWNSAMPLING_OPTIONS,
+  EXPORT_VERSION
+} from './constants';
+import {
+  extractAvailableChannels,
+  downsampleArray,
+  detectOriginalFilename,
+  calculateMusclePerformance,
+  getExpectedContractions,
+  isRawChannel,
+  isActivatedChannel
+} from './utils';
+
+export function useExportData(
+  analysisResult: EMGAnalysisResult | null,
+  uploadedFileName: string | null | undefined,
+  sessionParams: any
+) {
+  const [exportOptions, setExportOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS);
+  const [downsamplingOptions, setDownsamplingOptions] = useState<DownsamplingOptions>(DEFAULT_DOWNSAMPLING_OPTIONS);
+  const [channelSelection, setChannelSelection] = useState<ChannelSelectionMap>({});
+
+  // Extract available channels
+  const availableChannels = useMemo(() => 
+    extractAvailableChannels(analysisResult), 
+    [analysisResult]
+  );
+
+  // Initialize channel selection when channels are available
+  const initializeChannelSelection = useCallback(() => {
+    if (availableChannels.length === 0) return;
+    
+    const initialSelection: ChannelSelectionMap = {};
+    availableChannels.forEach(channel => {
+      initialSelection[channel.baseName] = {
+        includeRaw: false,
+        includeProcessed: false
+      };
+    });
+    setChannelSelection(initialSelection);
+  }, [availableChannels]);
+
+  // Initialize channel selection when available channels change
+  useMemo(() => {
+    initializeChannelSelection();
+  }, [initializeChannelSelection]);
+
+  // Channel selection handlers
+  const handleChannelSelectionChange = useCallback((
+    channelName: string, 
+    field: 'includeRaw' | 'includeProcessed', 
+    value: boolean
+  ) => {
+    setChannelSelection(prev => ({
+      ...prev,
+      [channelName]: {
+        ...prev[channelName],
+        [field]: value
+      }
+    }));
+  }, []);
+
+  // Check if any channels are selected
+  const hasSelectedChannels = useMemo(() => {
+    return Object.values(channelSelection).some(
+      selection => selection.includeRaw || selection.includeProcessed
+    );
+  }, [channelSelection]);
+
+  // Check if any export data is selected
+  const hasSelectedData = useMemo(() => {
+    const hasExportOptions = Object.values(exportOptions).some(Boolean);
+    return hasExportOptions || hasSelectedChannels;
+  }, [exportOptions, hasSelectedChannels]);
+
+  // Generate export data for download (complete data)
+  const generateExportData = useCallback((isPreview: boolean = false): ExportData | null => {
+    if (!analysisResult || !hasSelectedData) return null;
+
+    const exportData: ExportData = {
+      metadata: {
+        exportDate: new Date().toISOString(),
+        fileName: detectOriginalFilename(uploadedFileName, analysisResult),
+        exportVersion: EXPORT_VERSION,
+        exportOptions: exportOptions,
+        ...(isPreview && {
+          preview_mode: true,
+          preview_note: "🔍 PREVIEW MODE: This is a limited extract showing only sample data (5 points per array)",
+          download_note: "📥 Complete datasets with ALL data points available in file download"
+        })
+      }
+    };
+
+    // Include analytics if selected
+    if (exportOptions.includeAnalytics && analysisResult.analytics) {
+      exportData.analytics = analysisResult.analytics;
+    }
+
+    // Include session parameters if selected
+    if (exportOptions.includeSessionParams && sessionParams) {
+      exportData.sessionParameters = sessionParams;
+    }
+
+    // Include C3D metadata if selected
+    if (exportOptions.includeC3dMetadata && analysisResult.metadata) {
+      exportData.originalMetadata = analysisResult.metadata;
+      exportData.c3dParameters = analysisResult.c3d_parameters;
+    }
+
+    // Include performance analysis if selected
+    if (exportOptions.includePerformanceAnalysis && analysisResult.analytics) {
+      const performanceData: { [key: string]: any } = {};
+      
+      Object.keys(analysisResult.analytics).forEach((channelName, index) => {
+        const analytics = analysisResult.analytics[channelName];
+        if (!analytics) return;
+
+        const expectedContractions = getExpectedContractions(sessionParams, index);
+        const durationThreshold = sessionParams?.session_duration_threshold || 2000;
+        
+        performanceData[channelName] = {
+          compliance_subscores: calculateMusclePerformance(
+            analytics, 
+            expectedContractions, 
+            durationThreshold
+          ),
+          raw_metrics: {
+            contractions: {
+              total: analytics.contraction_count || 0,
+              good: analytics.good_contraction_count || 0,
+              poor: (analytics.contraction_count || 0) - (analytics.good_contraction_count || 0),
+              expected: expectedContractions
+            },
+            timing: {
+              average_duration_ms: analytics.avg_duration_ms || 0,
+              total_active_time_ms: analytics.total_time_under_tension_ms || 0,
+              min_duration_ms: analytics.min_duration_ms || 0,
+              max_duration_ms: analytics.max_duration_ms || 0
+            },
+            intensity: {
+              average_amplitude: analytics.avg_amplitude || 0,
+              max_amplitude: analytics.max_amplitude || 0,
+              mvc_threshold: sessionParams?.[`session_mvc_${channelName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`] || 100,
+              mvc_percentage_achieved: 0 // Not available in current analytics
+            },
+            // Note: Fatigue analysis is available in main analytics section
+            // fatigue_index_fi_nsm5 = ${analytics.fatigue_index_fi_nsm5 || 'not available'}
+          }
+        };
+      });
+
+      exportData.performanceAnalysis = performanceData;
+    }
+
+    // Include selected EMG signals
+    if (hasSelectedChannels && analysisResult.emg_signals) {
+      const processedSignals: { [key: string]: any } = {};
+
+      Object.keys(channelSelection).forEach(channelBaseName => {
+        const selection = channelSelection[channelBaseName];
+        if (!selection.includeRaw && !selection.includeProcessed) return;
+
+        // Find matching signals in the analysis result
+        Object.keys(analysisResult.emg_signals).forEach(signalName => {
+          const signalData = analysisResult.emg_signals[signalName];
+          if (!signalData) return;
+
+          // Check if this signal belongs to the selected channel
+          const belongsToChannel = signalName.replace(' Raw', '').replace(' activated', '') === channelBaseName;
+          if (!belongsToChannel) return;
+
+          // Include raw signals if selected
+          if (selection.includeRaw && isRawChannel(signalName)) {
+            const processedData: any = { ...signalData };
+            
+            // For JSON preview: ensure ALL arrays have consistent preview length
+            if (isPreview) {
+              const PREVIEW_LIMIT = 5;
+              let originalLength = 0;
+              let hasArrays = false;
+              
+              // First pass: find the original length from the longest array
+              Object.keys(processedData).forEach(key => {
+                if (Array.isArray(processedData[key])) {
+                  hasArrays = true;
+                  originalLength = Math.max(originalLength, processedData[key].length);
+                }
+              });
+              
+              // Second pass: limit ALL arrays to consistent preview length
+              if (hasArrays) {
+                Object.keys(processedData).forEach(key => {
+                  if (Array.isArray(processedData[key])) {
+                    const currentArray = processedData[key];
+                    // Ensure all arrays show the same number of elements (up to PREVIEW_LIMIT)
+                    const previewLength = Math.min(PREVIEW_LIMIT, currentArray.length);
+                    processedData[key] = currentArray.slice(0, previewLength);
+                    
+                    // If array is shorter than preview limit, add info
+                    if (currentArray.length < PREVIEW_LIMIT && currentArray.length < originalLength) {
+                      processedData[`${key}_preview_info`] = `Original array length: ${currentArray.length}`;
+                    }
+                  }
+                });
+                
+                processedData.preview_note = `PREVIEW EXTRACT: Showing up to ${PREVIEW_LIMIT} elements per array (original max length: ${originalLength})`;
+                processedData.total_samples = originalLength;
+                processedData.download_note = "Complete signal data available in full download";
+              }
+            }
+            
+            // Clean up confusing fields for raw channels
+            if (processedData.activated_data === null) {
+              delete processedData.activated_data; // Remove unused field
+            }
+            
+            // Apply downsampling if enabled
+            if (downsamplingOptions.enabled && processedData.data) {
+              processedData.data = downsampleArray(processedData.data, downsamplingOptions.samplingRate);
+              processedData.downsampled = true;
+              processedData.original_sampling_rate = processedData.sampling_rate;
+              processedData.sampling_rate = Math.round(processedData.sampling_rate / downsamplingOptions.samplingRate);
+            }
+            
+            processedSignals[signalName] = processedData;
+          }
+
+          // Include processed/activated signals if selected
+          if (selection.includeProcessed && isActivatedChannel(signalName)) {
+            const processedData: any = { ...signalData };
+            
+            // For JSON preview: ensure ALL arrays have consistent preview length
+            if (isPreview) {
+              const PREVIEW_LIMIT = 5;
+              let originalLength = 0;
+              let hasArrays = false;
+              
+              // First pass: find the original length from the longest array
+              Object.keys(processedData).forEach(key => {
+                if (Array.isArray(processedData[key])) {
+                  hasArrays = true;
+                  originalLength = Math.max(originalLength, processedData[key].length);
+                }
+              });
+              
+              // Second pass: limit ALL arrays to consistent preview length
+              if (hasArrays) {
+                Object.keys(processedData).forEach(key => {
+                  if (Array.isArray(processedData[key])) {
+                    const currentArray = processedData[key];
+                    // Ensure all arrays show the same number of elements (up to PREVIEW_LIMIT)
+                    const previewLength = Math.min(PREVIEW_LIMIT, currentArray.length);
+                    processedData[key] = currentArray.slice(0, previewLength);
+                    
+                    // If array is shorter than preview limit, add info
+                    if (currentArray.length < PREVIEW_LIMIT && currentArray.length < originalLength) {
+                      processedData[`${key}_preview_info`] = `Original array length: ${currentArray.length}`;
+                    }
+                  }
+                });
+                
+                processedData.preview_note = `PREVIEW EXTRACT: Showing up to ${PREVIEW_LIMIT} elements per array (original max length: ${originalLength})`;
+                processedData.total_samples = originalLength;
+                processedData.download_note = "Complete signal data available in full download";
+              }
+            }
+            
+            // Clean up confusing fields for activated channels
+            if (processedData.activated_data === null) {
+              delete processedData.activated_data; // Remove redundant field
+              processedData.signal_info = "Pre-processed activated data from GHOSTLY C3D";
+            }
+            
+            // Apply downsampling if enabled
+            if (downsamplingOptions.enabled && processedData.data) {
+              processedData.data = downsampleArray(processedData.data, downsamplingOptions.samplingRate);
+              processedData.downsampled = true;
+              processedData.original_sampling_rate = processedData.sampling_rate;
+              processedData.sampling_rate = Math.round(processedData.sampling_rate / downsamplingOptions.samplingRate);
+            }
+            
+            processedSignals[signalName] = processedData;
+          }
+        });
+      });
+
+      if (Object.keys(processedSignals).length > 0) {
+        exportData.processedSignals = processedSignals;
+      }
+    }
+
+    return exportData;
+  }, [
+    analysisResult,
+    uploadedFileName,
+    sessionParams,
+    exportOptions,
+    channelSelection,
+    downsamplingOptions,
+    hasSelectedData,
+    hasSelectedChannels
+  ]);
+
+  return {
+    exportOptions,
+    setExportOptions,
+    downsamplingOptions,
+    setDownsamplingOptions,
+    channelSelection,
+    handleChannelSelectionChange,
+    availableChannels,
+    hasSelectedChannels,
+    hasSelectedData,
+    generateExportData
+  };
+}
