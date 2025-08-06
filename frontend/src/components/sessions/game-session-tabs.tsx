@@ -28,7 +28,7 @@ import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 import BFRMonitoringTab from './BFRMonitoringTab';
-import ExportTab from './ExportTab';
+import ExportTab from './ExportTab/ExportTab';
 
 declare module '@/types/session' {
   interface EMGMetrics {

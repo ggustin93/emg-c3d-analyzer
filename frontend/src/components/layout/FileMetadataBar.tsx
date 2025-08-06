@@ -197,8 +197,8 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   };
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 py-3">
+    <div className="bg-slate-50 border border-slate-200 rounded-lg shadow-sm mb-6 mt-[-30px]">
+      <div className="max-w-6xl mx-auto px-4 py-3 ">
         <div className="flex items-center justify-between">
           {/* Clinical metadata section */}
           <div className="flex items-center flex-wrap gap-4 text-sm">
