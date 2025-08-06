@@ -30,16 +30,19 @@ export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
       key: 'includeAnalytics' as keyof ExportOptions,
       label: 'Analytics',
       description: 'EMG metrics and contraction analysis',
+      tooltip: FILE_SIZE_INFO.tooltips.analytics,
     },
     {
       key: 'includeSessionParams' as keyof ExportOptions,
       label: 'Session Parameters',
       description: 'MVC values, thresholds, and configuration',
+      tooltip: FILE_SIZE_INFO.tooltips.sessionParams,
     },
     {
       key: 'includePerformanceAnalysis' as keyof ExportOptions,
       label: 'Performance Analysis',
       description: 'Compliance scores and quality metrics',
+      tooltip: FILE_SIZE_INFO.tooltips.performanceAnalysis,
     },
     {
       key: 'includeC3dMetadata' as keyof ExportOptions,

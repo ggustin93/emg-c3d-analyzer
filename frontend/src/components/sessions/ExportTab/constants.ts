@@ -42,6 +42,9 @@ export const FILE_SIZE_INFO = {
   tooltips: {
     downsampling: "Downsampling preserves signal shape while dramatically reducing file size",
     c3dMetadata: "Original game metadata, player information, and session parameters",
+    analytics: "Clinical EMG analysis metrics including RMS, MAV, MPF, MDF, fatigue indices, and contraction detection results",
+    sessionParams: "Therapeutic configuration including MVC thresholds, duration settings, expected contractions, and BFR parameters",
+    performanceAnalysis: "Compliance scoring, symmetry analysis, therapeutic effectiveness metrics, and quality assessment data",
   },
 } as const;
 
