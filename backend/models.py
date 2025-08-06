@@ -130,6 +130,7 @@ class EMGAnalysisResult(BaseModel):
     analytics: Dict[str, ChannelAnalytics]
     available_channels: List[str]
     emg_signals: Dict[str, EMGChannelSignalData]
+    c3d_parameters: Optional[Dict[str, Any]] = None  # Full C3D file parameters
     user_id: Optional[str] = None
     session_id: Optional[str] = None
     patient_id: Optional[str] = None

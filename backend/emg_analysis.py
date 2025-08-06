@@ -246,8 +246,8 @@ def analyze_contractions(
             'start_time_ms': (start_idx / sampling_rate) * 1000,
             'end_time_ms': (end_idx / sampling_rate) * 1000,  # end_idx is the last sample *in* the contraction
             'duration_ms': duration_ms,
-            'mean_amplitude': np.mean(segment),
-            'max_amplitude': max_amp_in_segment,
+            'mean_amplitude': float(np.mean(segment)),
+            'max_amplitude': float(max_amp_in_segment),
             'is_good': is_good,
             'meets_mvc': meets_mvc if mvc_amplitude_threshold is not None else None,
             'meets_duration': meets_duration if contraction_duration_threshold_ms is not None else None
@@ -267,12 +267,12 @@ def analyze_contractions(
 
     return {
         'contraction_count': len(contractions_list),
-        'avg_duration_ms': np.mean(durations) if durations else 0.0,
-        'min_duration_ms': np.min(durations) if durations else 0.0,
-        'max_duration_ms': np.max(durations) if durations else 0.0,
-        'total_time_under_tension_ms': np.sum(durations) if durations else 0.0,
-        'avg_amplitude': np.mean(mean_amplitudes_of_contractions) if mean_amplitudes_of_contractions else 0.0, # Avg of mean amplitudes
-        'max_amplitude': np.max(max_amplitudes_of_contractions) if max_amplitudes_of_contractions else 0.0, # Max of max amplitudes
+        'avg_duration_ms': float(np.mean(durations)) if durations else 0.0,
+        'min_duration_ms': float(np.min(durations)) if durations else 0.0,
+        'max_duration_ms': float(np.max(durations)) if durations else 0.0,
+        'total_time_under_tension_ms': float(np.sum(durations)) if durations else 0.0,
+        'avg_amplitude': float(np.mean(mean_amplitudes_of_contractions)) if mean_amplitudes_of_contractions else 0.0, # Avg of mean amplitudes
+        'max_amplitude': float(np.max(max_amplitudes_of_contractions)) if max_amplitudes_of_contractions else 0.0, # Max of max amplitudes
         'contractions': contractions_list,
         'good_contraction_count': good_contraction_count if mvc_amplitude_threshold is not None else None,
         'mvc_contraction_count': mvc_contraction_count if mvc_amplitude_threshold is not None else None,

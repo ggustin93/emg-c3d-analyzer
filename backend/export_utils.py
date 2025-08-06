@@ -85,6 +85,21 @@ class EMGDataExporter:
             "c3d_parameters": self._extract_c3d_parameters()
         }
     
+    def _convert_numpy_to_python(self, obj):
+        """Convert numpy arrays and other non-serializable types to Python types."""
+        import numpy as np
+        
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, (np.integer, np.floating)):
+            return obj.item()
+        elif isinstance(obj, dict):
+            return {key: self._convert_numpy_to_python(value) for key, value in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._convert_numpy_to_python(item) for item in obj]
+        else:
+            return obj
+    
     def _extract_c3d_parameters(self) -> Dict[str, Any]:
         """Extract C3D file parameters for debugging."""
         if not self.processor.c3d:
@@ -101,21 +116,21 @@ class EMGDataExporter:
                 if 'ANALOG' in c3d_params:
                     analog_params = c3d_params['ANALOG']
                     params['analog'] = {
-                        'labels': analog_params.get('LABELS', {}).get('value', []),
-                        'rate': analog_params.get('RATE', {}).get('value', []),
-                        'gen_scale': analog_params.get('GEN_SCALE', {}).get('value', []),
-                        'scale': analog_params.get('SCALE', {}).get('value', []),
-                        'offset': analog_params.get('OFFSET', {}).get('value', []),
-                        'units': analog_params.get('UNITS', {}).get('value', [])
+                        'labels': self._convert_numpy_to_python(analog_params.get('LABELS', {}).get('value', [])),
+                        'rate': self._convert_numpy_to_python(analog_params.get('RATE', {}).get('value', [])),
+                        'gen_scale': self._convert_numpy_to_python(analog_params.get('GEN_SCALE', {}).get('value', [])),
+                        'scale': self._convert_numpy_to_python(analog_params.get('SCALE', {}).get('value', [])),
+                        'offset': self._convert_numpy_to_python(analog_params.get('OFFSET', {}).get('value', [])),
+                        'units': self._convert_numpy_to_python(analog_params.get('UNITS', {}).get('value', []))
                     }
                 
                 # Info parameters
                 if 'INFO' in c3d_params:
-                    params['info'] = {k: v.get('value', []) for k, v in c3d_params['INFO'].items()}
+                    params['info'] = {k: self._convert_numpy_to_python(v.get('value', [])) for k, v in c3d_params['INFO'].items()}
                 
                 # Subject parameters
                 if 'SUBJECTS' in c3d_params:
-                    params['subjects'] = {k: v.get('value', []) for k, v in c3d_params['SUBJECTS'].items()}
+                    params['subjects'] = {k: self._convert_numpy_to_python(v.get('value', [])) for k, v in c3d_params['SUBJECTS'].items()}
                     
             return params
             
