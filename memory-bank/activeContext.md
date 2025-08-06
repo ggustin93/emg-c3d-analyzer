@@ -238,4 +238,10 @@
 1. **System Stability**: Monitor authentication performance and user feedback
 2. **Clinical Validation**: Refine EMG analysis based on research requirements
 3. **Performance Optimization**: Continue backend streamlining and frontend responsiveness
-4. **Documentation**: Maintain comprehensive memory bank and technical documentation 
+4. **Documentation**: Maintain comprehensive memory bank and technical documentation
+
+## Latest Fix: Export Signal Consistency ✅ (August 6, 2025)
+- **Fixed Signal Categorization**: Raw channels now correctly export only raw data + RMS, activated channels only export activated data
+- **C3D Source Transparency**: Added explicit labels showing sampling rate comes from C3D file metadata
+- **Clinical Clarity**: Updated tooltips and export logic to prevent confusion between signal types
+- **Export Improvements**: "Raw Signals" toggle now only exports channels with "raw" in name, preventing activated data export 
