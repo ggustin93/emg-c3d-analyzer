@@ -12,5 +12,5 @@ export * from './GameStatsTab';
 export * from './PerformanceTab';
 export * from './BFRMonitoringTab';
 
-// ExportTab already well-organized, re-export from sessions
-export { default as ExportTab } from '../sessions/ExportTab/ExportTab';
+// ExportTab moved to tabs structure
+export { default as ExportTab } from './ExportTab/ExportTab';
