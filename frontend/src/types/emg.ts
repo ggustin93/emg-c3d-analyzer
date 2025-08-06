@@ -273,6 +273,7 @@ export interface EMGAnalysisResult {
   analytics: { [channelName: string]: ChannelAnalyticsData };
   available_channels: string[];
   emg_signals: { [channelName: string]: EMGChannelSignalData };
+  c3d_parameters?: { [key: string]: any } | null;  // Full C3D file parameters
   user_id?: string | null;
   session_id?: string | null;
   patient_id?: string | null;

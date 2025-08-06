@@ -129,6 +129,14 @@ async def upload_file(file: UploadFile = File(...),
             for k, v in result_data['analytics'].items()
         }
 
+        # Extract C3D parameters using the export utility
+        try:
+            exporter = EMGDataExporter(processor)
+            c3d_params = exporter._extract_c3d_parameters()
+        except Exception as e:
+            print(f"Warning: Failed to extract C3D parameters: {str(e)}")
+            c3d_params = {"error": f"Parameter extraction failed: {str(e)}"}
+        
         response_model = EMGAnalysisResult(
             file_id=str(uuid.uuid4()), # Generate a new UUID for this stateless request
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
@@ -137,6 +145,7 @@ async def upload_file(file: UploadFile = File(...),
             analytics=analytics,
             available_channels=result_data['available_channels'],
             emg_signals=processor.emg_data, # Directly assign if structure matches EMGChannelSignalData
+            c3d_parameters=c3d_params,  # Include comprehensive C3D parameters
             user_id=user_id,
             patient_id=patient_id,
             session_id=session_id
