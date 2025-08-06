@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { EMGChannelSignalData, EMGAnalysisResult } from '../types/emg';
-import { useSessionStore } from '../store/sessionStore';
-import DebugModeSwitch from './settings/DebugModeSwitch';
-import DisplaySettings from './settings/DisplaySettings';
-import TherapeuticParametersSettings from './settings/TherapeuticParametersSettings';
-import PatientOutcomesSettings from './settings/PatientOutcomesSettings';
-import BFRParametersSettings from './settings/BFRParametersSettings';
-import ScoringWeightsSettings from './settings/ScoringWeightsSettings';
-import ContractionDetectionSettings from './settings/ContractionDetectionSettings';
+import { EMGChannelSignalData, EMGAnalysisResult } from '@/types/emg';
+import { useSessionStore } from '@/store/sessionStore';
+import DebugModeSwitch from './components/DebugModeSwitch';
+import DisplaySettings from './components/DisplaySettings';
+import TherapeuticParametersSettings from './components/TherapeuticParametersSettings';
+import PatientOutcomesSettings from './components/PatientOutcomesSettings';
+import BFRParametersSettings from './components/BFRParametersSettings';
+import ScoringWeightsSettings from './components/ScoringWeightsSettings';
+import ContractionDetectionSettings from './components/ContractionDetectionSettings';
 
 interface SettingsPanelProps {
   muscleChannels: string[];

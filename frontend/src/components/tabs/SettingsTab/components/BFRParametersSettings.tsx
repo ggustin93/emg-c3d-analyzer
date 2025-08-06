@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useSessionStore } from '../../store/sessionStore';
+import { useSessionStore } from '@/store/sessionStore';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Badge } from "../ui/badge";
-import { Slider } from "../ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HeartIcon, MixerHorizontalIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
-import { Alert, AlertDescription } from "../ui/alert";
-import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "../ui/clinical-tooltip";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from '@/components/ui/clinical-tooltip';
 
 interface BFRParametersSettingsProps {
   disabled: boolean;

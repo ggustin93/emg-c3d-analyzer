@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useSessionStore } from '../../store/sessionStore';
+import { useSessionStore } from '@/store/sessionStore';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PersonIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DebugModeSwitchProps {
   isDebugMode: boolean;

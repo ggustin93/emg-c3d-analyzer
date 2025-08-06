@@ -7,9 +7,9 @@ import MuscleComparisonTable from './MuscleComparisonTable';
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
-import ChannelFilter, { FilterMode } from '@/components/app/ChannelFilter';
+import ChannelFilter, { FilterMode } from '@/components/shared/ChannelFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatMetricValue } from "@/utils/formatters";
+import { formatMetricValue } from '@/lib/formatters';
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
 interface StatsPanelComponentProps extends ExternalStatsPanelProps {

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Label } from "../ui/label";
-import DownsamplingControl from '../app/DownsamplingControl';
-import { EMGChannelSignalData } from '../../types/emg';
+import { Label } from "@/components/ui/label";
+import DownsamplingControl from '@/components/shared/DownsamplingControl';
+import { EMGChannelSignalData } from '@/types/emg';
 
 interface ChartDisplaySettingsProps {
   dataPoints: number;

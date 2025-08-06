@@ -3,7 +3,7 @@ import UnifiedSettingsCard from './UnifiedSettingsCard';
 import ChartDisplaySettings from './ChartDisplaySettings';
 import ChannelConfiguration from './ChannelConfiguration';
 import ContractionVisualizationSettings from './ContractionVisualizationSettings';
-import { EMGChannelSignalData } from '../../types/emg';
+import { EMGChannelSignalData } from '@/types/emg';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 
 interface DisplaySettingsProps {

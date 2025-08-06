@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Button } from "./ui/button";
-import { GameSessionParameters } from '../types/emg';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { Switch } from "./ui/switch";
-import MuscleNameDisplay from "./MuscleNameDisplay";
-import { useSessionStore } from '../store/sessionStore';
-import { Slider } from "./ui/slider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { GameSessionParameters } from '@/types/emg';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import MuscleNameDisplay from "@/components/MuscleNameDisplay";
+import { useSessionStore } from '@/store/sessionStore';
+import { Slider } from "@/components/ui/slider";
 
 interface ScoringConfigPanelProps {
   onRecalculate?: () => void;

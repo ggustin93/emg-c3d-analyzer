@@ -1,7 +1,7 @@
 import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
-import { Button } from '../components/ui/button';
-import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
+import { Button } from '@/components/ui/button';
+import { EMGAnalysisResult, GameSessionParameters } from '@/types/emg';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import Spinner from '@/components/ui/Spinner';
 import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import SupabaseStorageService from '@/services/supabaseStorage';
-import SupabaseSetup from '@/utils/supabaseSetup';
+import SupabaseSetup from '@/lib/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   C3DFile,
@@ -13,10 +13,10 @@ import {
   resolveSessionDate,
   getSizeCategory
 } from '@/services/C3DFileDataResolver';
-import C3DFileUpload from '@/components/c3d-browser/C3DFileUpload';
-import C3DFilterPanel, { FilterState } from '@/components/c3d-browser/C3DFilterPanel';
-import C3DFileList from '@/components/c3d-browser/C3DFileList';
-import C3DPagination from '@/components/c3d-browser/C3DPagination';
+import C3DFileUpload from '@/components/c3d/C3DFileUpload';
+import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
+import C3DFileList from '@/components/c3d/C3DFileList';
+import C3DPagination from '@/components/c3d/C3DPagination';
 
 interface C3DFileBrowserProps {
   onFileSelect: (filename: string, uploadDate?: string) => void;

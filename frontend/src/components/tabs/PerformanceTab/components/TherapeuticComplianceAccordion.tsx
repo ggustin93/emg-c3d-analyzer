@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
-import { getPerformanceColor } from '@/utils/performanceColors';
+import { getPerformanceColor } from '@/lib/performanceColors';
 import BFRBadge from './BFRBadge';
 import { MusclePerformanceData, GameSessionParameters } from '@/types/emg';
 

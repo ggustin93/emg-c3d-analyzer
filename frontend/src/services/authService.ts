@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { withTimeout, formatAuthError } from '../utils/authUtils'
+import { withTimeout, formatAuthError } from '../lib/authUtils'
 import type { 
   LoginCredentials, 
   ResearcherRegistration, 

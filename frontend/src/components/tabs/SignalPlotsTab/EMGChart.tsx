@@ -13,8 +13,8 @@ import {
   ReferenceDot,
   ReferenceArea
 } from 'recharts';
-import { getColorForChannel } from "@/lib/colorMappings";
-import { FilterMode } from '@/components/app/ChannelFilter';
+import { getColorForChannel } from '@/lib/colorMappings';
+import { FilterMode } from '@/components/shared/ChannelFilter';
 import { GameSessionParameters, ChannelAnalyticsData } from "@/types/emg";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';

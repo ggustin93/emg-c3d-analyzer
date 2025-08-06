@@ -12,18 +12,17 @@ import { CombinedChartDataPoint } from '../SignalPlotsTab/EMGChart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
-import { FilterMode } from '@/components/app/ChannelFilter';
+import { FilterMode } from '@/components/shared/ChannelFilter';
 
 import { MetadataDisplay } from '../GameStatsTab';
-import ChannelSelection from '@/components/app/ChannelSelection';
-import DownsamplingControl from '@/components/app/DownsamplingControl';
+import ChannelSelection from '@/components/shared/ChannelSelection';
+import DownsamplingControl from '@/components/shared/DownsamplingControl';
 import { StatsPanel } from '../GameStatsTab';
 import type { EMGMetrics } from '@/types/session';
 import PerformanceCard from './performance-card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import ScoringConfigPanel from '@/components/SessionConfigPanel';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsTab from '@/components/tabs/SettingsTab';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
@@ -337,22 +336,22 @@ export default function GameSessionTabs({
   if (!analysisResult) return null;
 
   return (
-    <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-primary rounded-lg shadow-sm bg-white overflow-hidden">
+    <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-blue-500 rounded-lg shadow-sm bg-white overflow-hidden">
       <div className="border-b mb-4 relative">
-        <TabsList className="w-full flex justify-between  border border-primary">
-          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+        <TabsList className="w-full flex justify-between border border-blue-500">
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
             <div className="flex items-center gap-2">
               <ActivityLogIcon className="w-4 h-4" />
               <span>EMG Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
             <div className="flex items-center gap-2">
               <BarChartIcon className="w-4 h-4" />
               <span>Performance Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
             <div className="flex items-center gap-2">
               <HeartIcon className="w-4 h-4" />
               <span>BFR Monitoring</span>
@@ -368,13 +367,13 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
             <div className="flex items-center gap-2">
               <GearIcon className="w-4 h-4" />
               <span>Settings</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
             <div className="flex items-center gap-2">
               <Share1Icon className="w-4 h-4" />
               <span>Export</span>
@@ -463,7 +462,7 @@ export default function GameSessionTabs({
       </TabsContent>
 
       <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">
-        <SettingsPanel
+        <SettingsTab
           muscleChannels={muscleChannels}
           disabled={appIsLoading}
           dataPoints={dataPoints}

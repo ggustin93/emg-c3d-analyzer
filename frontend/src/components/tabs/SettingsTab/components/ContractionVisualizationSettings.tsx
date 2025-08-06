@@ -1,7 +1,7 @@
 import React from 'react';
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { Button } from "../ui/button";
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 interface ContractionVisualizationSettingsProps {

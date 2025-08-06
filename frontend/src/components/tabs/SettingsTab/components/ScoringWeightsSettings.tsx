@@ -16,7 +16,7 @@ import {
   EXPERIMENTAL_WITH_GAME_WEIGHTS 
 } from '@/hooks/useEnhancedPerformanceMetrics';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
-import PerformanceEquation from '../tabs/PerformanceTab/components/PerformanceEquation';
+import PerformanceEquation from '@/components/tabs/PerformanceTab/components/PerformanceEquation';
 import { cn } from '@/lib/utils';
 
 const SCORING_PRESETS = {

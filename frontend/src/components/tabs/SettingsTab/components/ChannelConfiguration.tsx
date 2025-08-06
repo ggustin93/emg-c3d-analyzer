@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Button } from "../ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
-import { useSessionStore } from '../../store/sessionStore';
-import { getMuscleColor } from '../../lib/colorMappings';
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { useSessionStore } from '@/store/sessionStore';
+import { getMuscleColor } from '@/lib/colorMappings';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
 
 // Common muscle groups for therapists
 const commonMuscleGroups = [

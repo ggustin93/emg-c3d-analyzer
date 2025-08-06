@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import FileUpload from './FileUpload';
-import C3DFileBrowser from './C3DFileBrowser';
+import FileUpload from './c3d/FileUpload';
+import C3DFileBrowser from './c3d/C3DFileBrowser';
 import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
 import { LightningBoltIcon } from '@radix-ui/react-icons';
 

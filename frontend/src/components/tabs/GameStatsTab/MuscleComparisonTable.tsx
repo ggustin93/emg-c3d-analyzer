@@ -1,8 +1,8 @@
 import React from 'react';
 import { ChannelAnalyticsData, GameSessionParameters } from "@/types/emg";
 import MuscleNameDisplay from '@/components/MuscleNameDisplay';
-import { formatMetricValue } from "@/utils/formatters";
-import { getColorForChannel } from "@/lib/colorMappings";
+import { formatMetricValue } from '@/lib/formatters';
+import { getColorForChannel } from '@/lib/colorMappings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { Badge } from '@/components/ui/badge';
