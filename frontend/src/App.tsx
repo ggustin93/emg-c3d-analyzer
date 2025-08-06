@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import type { EMGAnalysisResult } from './types/emg';
-import GameSessionTabs from "./components/sessions/game-session-tabs";
+import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
 
 // Import hooks
@@ -10,7 +10,7 @@ import { usePlotDataProcessor } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
 import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
-import { CombinedChartDataPoint } from "./components/EMGChart";
+import { CombinedChartDataPoint } from "./components/tabs/SignalPlotsTab/EMGChart";
 import SessionLoader from "./components/SessionLoader";
 import AuthGuard from "./components/auth/AuthGuard";
 import Header from "./components/layout/Header";
