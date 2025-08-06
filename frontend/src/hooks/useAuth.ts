@@ -16,7 +16,7 @@ import {
   markAsLoggedIn,
   isMarkedAsLoggedIn,
   clearLoggedInStatus
-} from '../utils/authUtils'
+} from '../lib/authUtils'
 import type { AuthState, LoginCredentials, ResearcherRegistration, AuthResponse } from '../types/auth'
 import { User, Session } from '@supabase/supabase-js'
 

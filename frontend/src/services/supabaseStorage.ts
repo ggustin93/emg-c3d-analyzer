@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { isMarkedAsLoggedIn } from '../utils/authUtils';
+import { isMarkedAsLoggedIn } from '../lib/authUtils';
 
 export interface C3DFileInfo {
   id: string;

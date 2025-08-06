@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { GameSession, EMGMetrics, GameParameters as AppGameParameters } from '@/types/session'; // Assuming path alias or correct relative path
 import type { EMGAnalysisResult, EMGChannelSignalData } from '../types/emg';
-import { CombinedChartDataPoint } from '../components/EMGChart'; // Assuming path or adjust
+import { CombinedChartDataPoint } from '../components/tabs/SignalPlotsTab/EMGChart';
 
 export interface GameSessionDataControls {
   currentGameSession: GameSession | null;
