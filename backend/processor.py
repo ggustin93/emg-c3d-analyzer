@@ -288,23 +288,24 @@ class GHOSTLYC3DProcessor:
             # --- Contraction Analysis ---
             # SIGNAL SELECTION STRATEGY:
             # The system uses a hierarchical approach to select the most appropriate signal for contraction analysis:
-            # 1. Prefer "activated" signals (processed by GHOSTLY game) for contraction detection
-            # 2. Fall back to "Raw" signals if activated signals are not available
+            # 1. Prefer "Raw" signals for scientific rigor and algorithm optimization
+            # 2. Fall back to "activated" signals (processed by GHOSTLY game) if raw signals are not available  
             # 3. Use base channel name as final fallback for different C3D naming conventions
-            # This ensures robust analysis across various C3D file formats and processing pipelines.
+            # This ensures optimal algorithm performance by avoiding double-processing of GHOSTLY's preprocessed signals.
             
             signal_for_contraction = None
             activated_channel_name = f"{base_name} activated"
             
-            if activated_channel_name in self.emg_data:
-                # Use activated signal - preferred for contraction analysis
-                signal_for_contraction = np.array(self.emg_data[activated_channel_name]['data'])
-                sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
-            elif raw_channel_name in self.emg_data:
-                # Fall back to raw signal if activated is not available
+            if raw_channel_name in self.emg_data:
+                # Use raw signal - preferred for contraction analysis (scientific rigor)
                 signal_for_contraction = np.array(self.emg_data[raw_channel_name]['data'])
                 sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
-                channel_errors['contractions_source'] = "Used Raw signal for contractions (Activated not found)"
+                # Note: Using Raw signal for optimal algorithm performance and scientific transparency
+            elif activated_channel_name in self.emg_data:
+                # Fall back to activated signal if raw is not available
+                signal_for_contraction = np.array(self.emg_data[activated_channel_name]['data'])
+                sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
+                channel_errors['contractions_source'] = "Used Activated signal for contractions (Raw not found)"
             else:
                 # Try the base name itself as a fallback for different naming conventions
                 if base_name in self.emg_data:

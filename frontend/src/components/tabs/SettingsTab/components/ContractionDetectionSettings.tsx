@@ -89,7 +89,7 @@ const ContractionDetectionSettings: React.FC = () => {
           <Alert className="border-slate-200 bg-slate-50">
             <InfoCircledIcon className="h-4 w-4 text-slate-600" />
             <AlertDescription className="text-sm text-slate-800">
-              <strong>Information Only:</strong> These signal processing parameters are optimized by the backend during C3D analysis and cannot be modified. They are displayed here for transparency and technical reference.
+              <strong>Information Only:</strong> These signal processing parameters are applied to <strong>RAW EMG signals</strong> (preferred) for scientific rigor and algorithm optimization. Parameters are optimized by the backend and cannot be modified. They are displayed here for transparency and technical reference.
             </AlertDescription>
           </Alert>
             
@@ -104,7 +104,7 @@ const ContractionDetectionSettings: React.FC = () => {
               max={0.5}
               step={0.05}
               format={(v) => `${(v * 100).toFixed(0)}%`}
-              tooltip="Percentage of maximum smoothed signal amplitude to trigger contraction detection. Clinical range: 20-30% of max amplitude. Algorithm: rectifies signal, applies moving average smoothing, then detects activity above this threshold."
+              tooltip="Percentage of maximum smoothed signal amplitude to trigger contraction detection. Applied to RAW EMG signals for scientific accuracy. Clinical range: 20-30% of max amplitude. Algorithm: rectifies signal, applies moving average smoothing, then detects activity above this threshold."
               onChange={(v) => updateParam('threshold_factor', v)}
               disabled={true}
             />
