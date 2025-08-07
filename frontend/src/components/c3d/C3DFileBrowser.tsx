@@ -104,7 +104,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
         if (process.env.NODE_ENV === 'development') {
           console.log('Loading files from c3d-examples bucket...');
-          console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+          console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
           console.log('Auth state:', { user: authState.user?.email, loading: authState.loading });
         }
 

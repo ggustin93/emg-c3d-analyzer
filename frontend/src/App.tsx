@@ -292,7 +292,7 @@ function AppContent() {
       }
 
       console.log(`Sending file to backend for processing: ${filename}`);
-      const uploadResponse = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:8080') + '/upload', {
+      const uploadResponse = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/upload', {
           method: 'POST',
           body: formData,
       });

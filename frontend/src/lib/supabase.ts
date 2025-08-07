@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Check if we have valid Supabase configuration
 const hasValidConfig = supabaseUrl && 
@@ -18,12 +18,12 @@ To enable authentication features, please:
 
 1. Create a Supabase project at https://supabase.com
 2. Update your .env file with:
-   REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-   REACT_APP_SUPABASE_ANON_KEY=your_actual_anon_key
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_actual_anon_key
 
 Current values:
-- REACT_APP_SUPABASE_URL: ${supabaseUrl || 'Not set'}
-- REACT_APP_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '[SET]' : 'Not set'}
+- VITE_SUPABASE_URL: ${supabaseUrl || 'Not set'}
+- VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '[SET]' : 'Not set'}
 
 The app will continue to work without authentication features.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
