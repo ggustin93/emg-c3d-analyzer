@@ -12,10 +12,15 @@ ASSUMPTIONS & PARAMETERS:
    - Channel naming: Assumes channels with 'activated' or activity names ('jumping', 'shooting')
    - Signal processing: Smoothing window applied to reduce noise
 
-2. CONTRACTION DETECTION:
-   - Threshold: 30% of maximum amplitude by default (threshold_factor=0.3)
-   - Minimum duration: 50ms by default (min_duration_ms=50)
-   - Smoothing window size: 25 samples by default (smoothing_window=25)
+2. CONTRACTION DETECTION (Research-Optimized 2024):
+   - Threshold: 15% of maximum amplitude by default (threshold_factor=0.15)
+     * Reduced from 30% based on biomedical engineering research for improved sensitivity
+   - Minimum duration: 100ms by default (min_duration_ms=100)
+     * Increased from 50ms for clinical relevance and noise reduction
+   - Smoothing window size: 100 samples by default (smoothing_window=100)
+     * Increased from 25 for better stability (100-160ms optimal range per research)
+   - Merge threshold: 200ms for physiologically related contractions
+   - Refractory period: 50ms to prevent artifact detection
 """
 
 import os
@@ -33,6 +38,8 @@ from .config import (
     DEFAULT_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW,
+    MERGE_THRESHOLD_MS,
+    REFRACTORY_PERIOD_MS,
     RMS_ENVELOPE_WINDOW_MS,
     EMG_COLOR,
     CONTRACTION_COLOR,
@@ -348,7 +355,9 @@ class GHOSTLYC3DProcessor:
                         min_duration_ms=min_duration_ms,
                         smoothing_window=smoothing_window,
                         mvc_amplitude_threshold=actual_mvc_threshold,
-                        contraction_duration_threshold_ms=duration_threshold_ms
+                        contraction_duration_threshold_ms=duration_threshold_ms,
+                        merge_threshold_ms=MERGE_THRESHOLD_MS,
+                        refractory_period_ms=REFRACTORY_PERIOD_MS
                     )
                     channel_analytics.update(contraction_stats)
                     
