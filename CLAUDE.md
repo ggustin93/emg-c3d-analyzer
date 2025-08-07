@@ -1,234 +1,281 @@
 # EMG C3D Analyzer - Claude Development Context
 
-## 🚨 CRITICAL: START HERE - MODE PROTOCOL
+An organized and streamlined version of the document is presented below, tailored for a senior software architect's perspective.
+
+### **1. Introduction and Core Principles**
+
+#### **1.1. Project Overview**
+
+The GHOSTLY+ EMG C3D Analyzer is a rehabilitation technology platform designed to process C3D files from the GHOSTLY game. Its primary function is to extract and analyze Electromyography (EMG) data for therapeutic assessment.
+
+#### **1.2. Core Development Philosophy**
+
+*   **KISS (Keep It Simple, Stupid):** Simplicity is a primary goal in our design. We will always opt for straightforward solutions over complex ones, as they are easier to comprehend, maintain, and debug.
+*   **YAGNI (You Aren't Gonna Need It):** We will avoid developing functionalities based on speculation. New features will only be implemented when there is a clear and immediate need.
+
+#### **1.3. Design Principles**
+
+*   **Dependency Inversion:** High-level modules should not be dependent on low-level modules; both should rely on abstractions.
+*   **Open/Closed Principle:** Software entities are designed to be open for extension but closed for modification.
+*   **Single Responsibility:** Every function, class, and module is expected to have a singular, clear purpose.
+*   **Fail Fast:** We will check for potential errors at the earliest stage and raise exceptions immediately when any issues are detected.
+
+### **2. Development Workflow and Protocols**
+
+#### **2.1. 🚨 CRITICAL: START HERE - MODE PROTOCOL**
+
 **EVERY TASK MUST BEGIN IN PLAN MODE**
 
-### # Mode: PLAN (Always start here)
-- **NEVER start implementing immediately**
-- Create detailed plan first in `memory-bank/tasks/TASK_NAME.md`
-- Get explicit user approval with "ACT" command
-- Return to PLAN mode after every response
+*   **# Mode: PLAN (Always start here)**
+    *   **NEVER** begin implementation immediately.
+    *   A detailed plan must first be created in `memory-bank/tasks/TASK_NAME.md`.
+    *   Obtain explicit user approval with the "ACT" command before proceeding.
+    *   Return to PLAN mode after every response.
 
-### Mode Rules:
-- **Start**: `# Mode: PLAN` at beginning of EVERY response
-- **Transition**: Only when user explicitly types `ACT`
-- **Return**: Back to PLAN mode after every implementation response
-- **Reminder**: If user asks for action in plan mode, remind them to approve plan first
-- **Planning**: Always output the full updated plan in every planning response
+*   **Mode Rules:**
+    *   **Start:** Begin EVERY response with `# Mode: PLAN`.
+    *   **Transition:** Only transition to the next phase when the user explicitly types `ACT`.
+    *   **Return:** Revert to PLAN mode after each implementation response.
+    *   **Reminder:** If a user requests action in plan mode, remind them to approve the plan first.
+    *   **Planning:** The full updated plan should be outputted in every planning response.
 
-## 🧠 MANDATORY: READ MEMORY BANK FIRST
+#### **2.2. ✅ MANDATORY WORKFLOW CHECKLIST**
+
+**Before Starting ANY Task:**
+
+*   [ ] Read all 5 memory bank files.
+*   [ ] Begin with `# Mode: PLAN`.
+*   [ ] Create a plan in `memory-bank/tasks/TASK_NAME.md`.
+*   [ ] This plan should include the implementation strategy, broken-down tasks, and any dependencies.
+*   [ ] If necessary, research external knowledge/packages (Context7 MCP).
+*   [ ] Always think of the MVP first.
+*   [ ] Get user approval.
+*   [ ] Ask: "Want git control point?" If it is a BIG PLAN and the answer is yes, ask: "New branch?"
+
+**During Implementation (Only after the user types ACT):**
+
+*   [ ] When implementing, print `# Mode: ACT`.
+*   [ ] As you work, update the plan: `- [x] Done` / `- [ ] Todo`.
+*   [ ] Document all changes and the reasoning behind them for future engineers.
+*   [ ] Test each task, and build the project/run lint before marking it as complete.
+*   [ ] Get approval for any significant changes in scope.
+
+**After Completion:**
+
+*   [ ] Perform MVP critical testing of the implementation.
+*   [ ] Document all tests in `memory-bank/tests/TEST_NAME.md`.
+*   [ ] **Backend Testing:** Test API endpoints, C3D file processing, and EMG analysis.
+*   [ ] **Frontend Testing:** Test all UI components, data visualization, and user interactions.
+*   [ ] **Integration Testing:** Test the full workflow from upload to analysis.
+*   [ ] Review against the original plan.
+*   [ ] If requested, update the project docs.
+*   [ ] Archive the completed plan.
+*   [ ] Return to `# Mode: PLAN`.
+
+### **3. System Architecture**
+
+#### **3.1. Current Architecture**
+
+*   **Backend:** FastAPI with Python is used for processing C3D files and calculating EMG metrics.
+*   **Frontend:** The frontend is built with React/TypeScript and the CRACO build system, with Recharts used for visualization.
+*   **State Management:** Zustand is used for managing session parameters.
+*   **Data Flow:** The data flow follows the pattern of Upload → Process → Analyze → Visualize.
+
+#### **3.2. Key Technical Decisions**
+
+1.  **Client-Side Plotting:** All data visualization is handled by React/Recharts on the client side.
+2.  **Bundled Response:** A single API response contains all the necessary data.
+3.  **Flexible Channel Handling:** The system is robust enough to handle different C3D channel naming conventions.
+4.  **Advanced EMG Analysis:** The platform provides comprehensive biomedical metrics complete with clinical documentation.
+
+#### **3.3. Project Architecture**
+
+We will follow a strict vertical slice architecture, with tests living next to the code they are testing:
+```
+src/project/
+    __init__.py
+    main.py
+    tests/
+        test_main.py
+    conftest.py
+
+    # Core modules
+    database/
+        __init__.py
+        connection.py
+        models.py
+        tests/
+            test_connection.py
+            test_models.py
+
+    auth/
+        __init__.py
+        authentication.py
+        authorization.py
+        tests/
+            test_authentication.py
+            test_authorization.py
+
+    # Feature slices
+    features/
+        user_management/
+            __init__.py
+            handlers.py
+            validators.py
+            tests/
+                test_handlers.py
+                test_validators.py
+
+        payment_processing/
+            __init__.py
+            processor.py
+            gateway.py
+            tests/
+                test_processor.py
+                test_gateway.py
+```
+
+### **4. Documentation and Knowledge Management**
+
+#### **4.1. 🧠 MANDATORY: READ MEMORY BANK FIRST**
+
 **BEFORE ANY TASK - READ ALL 5 CORE FILES:**
-1. `projectbrief.md` - What this project is (foundation)
-2. `activeContext.md` - Current status & recent work
-3. `progress.md` - What's completed
-4. `systemPatterns.md` - How the system works (architecture)
-5. `techContext.md` - Tech stack & development setup
+
+1.  `projectbrief.md` - The foundation of the project.
+2.  `activeContext.md` - The current status and recent work.
+3.  `progress.md` - A log of what has been completed.
+4.  `systemPatterns.md` - An explanation of how the system works (architecture).
+5.  `techContext.md` - Details of the tech stack and development setup.
 
 **NO EXCEPTIONS - THIS IS NOT OPTIONAL**
 
-Memory resets completely between sessions. The Memory Bank is your ONLY link to previous work.
+The Memory Bank is your only link to previous work, as memory is reset completely between sessions.
 
-## ✅ MANDATORY WORKFLOW CHECKLIST
+#### **4.2. MINIMALIST DOCUMENTATION ARCHITECTURE**
 
-### Before Starting ANY Task:
-- [ ] Read all 5 memory bank files
-- [ ] Start with `# Mode: PLAN`
-- [ ] Create plan in `memory-bank/tasks/TASK_NAME.md`
-- [ ] Include: implementation strategy, broken-down tasks, dependencies
-- [ ] Research external knowledge/packages if needed (Context7 MCP)
-- [ ] Think MVP first
-- [ ] Get user approval
-- [ ] Ask: "Want git control point?" If BIG PLAN & yes: "New branch?"
+The project adheres to a **2-Layer Documentation Strategy**, with Git providing archival.
 
-### During Implementation (Only after user types ACT):
-- [ ] Print `# Mode: ACT` when implementing
-- [ ] Update plan as you work: `- [x] Done` / `- [ ] Todo`
-- [ ] Document changes and reasoning for future engineers
-- [ ] Test each task, build project/run lint before marking complete
-- [ ] Get approval for significant scope changes
+*   **📁 `/memory-bank/` - Claude Session Context**
+    *   **🧠 ALWAYS READ THESE 5 CORE FILES FIRST:**
+        1.  `projectbrief.md` - The project's foundation.
+        2.  `activeContext.md` - Current status and recent work.
+        3.  `progress.md` - What has been completed.
+        4.  `systemPatterns.md` - The system's architecture.
+        5.  `techContext.md` - The tech stack and development setup.
+    *   **📋 Reference Documents:**
+        *   `productContext.md` - The reason this project exists.
+        *   `metricsDefinitions.md` - Definitions for EMG analysis.
+    *   **📁 Organized Context:**
+        *   `future-work/` - A log of planned features.
+        *   `research/` - A record of active investigations.
+        *   `archived/` - Historical context and completed features.
 
-### After Completion:
-- [ ] Perform MVP critical testing of the implementation
-- [ ] Document tests in `memory-bank/tests/TEST_NAME.md`
-- [ ] **Backend Testing**: Test API endpoints, C3D file processing, EMG analysis
-- [ ] **Frontend Testing**: Test UI components, data visualization, user interactions
-- [ ] **Integration Testing**: Test full workflow from upload to analysis
-- [ ] Review against original plan
-- [ ] Update project docs if requested
-- [ ] Archive completed plan
-- [ ] Return to `# Mode: PLAN`
+*   **📁 `/docs/` - Working Technical Documentation**
+    *   **For Developers RIGHT NOW:**
+        *   `README.md` - A quick start guide.
+        *   `api.md` - A reference for FastAPI endpoints.
+        *   `supabase_client.md` - Details of Supabase client methods and authentication patterns.
+        *   `db_schema.md` - The database schema.
+        *   `setup/` - Information on setting up the development environment.
 
-## **MINIMALIST DOCUMENTATION ARCHITECTURE**
+*   **Git-Based Archival**
+    *   **Historical context is preserved through:**
+        *   Git commit history and branches.
+        *   `/memory-bank/archived/` for important historical context.
 
-The project follows a **2-Layer Documentation Strategy** (Git provides archival):
+**Critical:** The memory bank is the ONLY link to previous work. It is essential to read the 5 core files before starting ANY task to ensure continuity and prevent any duplicate work.
 
-### **📁 `/memory-bank/` - Claude Session Context**
-**🧠 ALWAYS READ THESE 5 CORE FILES FIRST:**
-1. `projectbrief.md` - What this project is (foundation)
-2. `activeContext.md` - Current status & recent work
-3. `progress.md` - What's completed
-4. `systemPatterns.md` - How the system works (architecture)
-5. `techContext.md` - Tech stack & development setup
+#### **4.3. Documentation Standards**
 
-**📋 Reference Documents:**
-- `productContext.md` - Why this project exists
-- `metricsDefinitions.md` - EMG analysis definitions
+*   **Working Documentation (`/docs/`)**
+    *   **API Documentation:** A concise FastAPI endpoint reference (Swagger-style).
+    *   **Database Schema:** The current Supabase state, via MCP inspection only.
+    *   **Setup Guides:** Guides for setting up the development environment and tools.
+    *   **NO HALLUCINATION:** Only document actual, verified implementations.
 
-**📁 Organized Context:**
-- `future-work/` - Planned features
-- `research/` - Active investigations  
-- `archived/` - Historical context & completed features
+*   **Memory Bank Updates**
+    *   The memory bank should be updated when:
+        1.  Discovering new project patterns.
+        2.  After implementing any significant changes.
+        3.  When a user requests to **"update memory bank"** (ALL files MUST be reviewed).
+        4.  When any context needs clarification.
 
-### **📁 `/docs/` - Working Technical Documentation**
-**For Developers RIGHT NOW:**
-- `README.md` - Quick start guide
-- `api.md` - FastAPI endpoint reference
-- `supabase_client.md` - Supabase client methods and authentication patterns
-- `db_schema.md` - Database schema
-- `setup/` - Development environment setup
+**Remember:** After every memory reset, the Memory Bank is the ONLY link to previous work. It must be maintained with precision and clarity.
 
-### **Git-Based Archival**
-**Historical context preserved through:**
-- Git commit history and branches
-- `/memory-bank/archived/` for important context
+#### **4.4. Git Control Points (if enabled)**
 
-**Critical**: The memory bank is your ONLY link to previous work. Read the 5 core files before starting ANY task to ensure continuity and prevent duplicate work.
+*   **Feature branch:** `git checkout -b feature/TASK_NAME`
+*   **Atomic commits:** `feat:`, `fix:`, `docs:` + reference plan
 
-## **Documentation Standards**
+### **5. Technical Implementation Details**
 
-### **Working Documentation (`/docs/`)**
-- **API Documentation**: Concise FastAPI endpoint reference (Swagger-style)
-- **Database Schema**: Current Supabase state via MCP inspection only
-- **Setup Guides**: Development environment and tool configuration
-- **NO HALLUCINATION**: Only document actual, verified implementations
+#### **5.1. Development Commands**
 
-### **Memory Bank Updates**
-Update memory bank when:
-1. Discovering new project patterns
-2. After implementing significant changes  
-3. When user requests **"update memory bank"** (MUST review ALL files)
-4. When context needs clarification
+*   **Running the Application**
+    ```bash
+    # Backend
+    cd backend
+    uvicorn main:app --reload --port 8000
 
-### **Project Intelligence**
-The `.cursor/rules` file captures important patterns and insights:
-- Critical implementation paths
-- User preferences and workflow patterns
-- Project-specific technical decisions
-- Known challenges and solutions
-- Evolution of architectural decisions
+    # Frontend
+    cd frontend
+    npm start         # Start development server with CRACO
+    ```
 
-**Remember**: After every memory reset, the Memory Bank is your ONLY link to previous work. It must be maintained with precision and clarity.
+*   **Building and Testing**
+    ```bash
+    # Backend
+    cd backend
+    python -m pytest tests/                    # Run backend tests
+    python -m pytest tests/ -v --cov=.        # Run with coverage
+    python -m pylint *.py                     # Lint Python code
+    uvicorn main:app --reload --port 8000     # Test server startup
 
-### Git Control Points (if enabled)
+    # Frontend
+    cd frontend
+    npm run build     # TypeScript check and production build
+    npm run test      # Run frontend tests (Jest via CRACO)
+    npm run lint      # Run ESLint (if configured)
+    npm start         # Test development server startup
 
-- Feature branch: `git checkout -b feature/TASK_NAME`
-- Atomic commits: `feat:`, `fix:`, `docs:` + reference plan
+    # Integration Testing
+    # Test full upload → process → analyze → visualize flow
+    # Test with sample C3D files from different sources
+    # Test EMG signal processing accuracy
+    ```
 
-### Known Issues & Solutions
+#### **5.2. MCP Servers Configuration**
 
-1. **Authentication Loading Loop** - Fixed infinite "Waiting for authentication to initialize..." loop
-2. **C3D File Processing** - Backend must handle various C3D channel naming conventions
-3. **EMG Signal Quality** - Ensure proper filtering and noise floor requirements
-4. **Stateless Architecture** - Process data on-demand without persistent file storage
-5. **Clinical Standards** - Maintain FDA Class II medical device compliance
+*   ✅ **Configured and Active:**
+    *   **Context7** - For documentation lookup (`claude mcp list` to verify).
+    *   **Sequential** - For complex multi-step analysis and structured thinking.
+    *   **Supabase** - For database operations with an access token.
+    *   **Playwright** - For browser automation & E2E testing.
+    *   **Perplexity** - For AI-powered web search.
+    *   **Shadcn-ui**
+    *   **Serena**
 
-## MCP Servers Configuration
 
-✅ **Configured and Active**:
-- **Context7** - Documentation lookup (`claude mcp list` to verify)
-- **Sequential** - Complex multi-step analysis and structured thinking
-- **Supabase** - Database operations with access token
-- **Playwright** - Browser automation & E2E testing
-- **Perplexity** - AI-powered web search
+#### **5.3. 🧱 Code Structure & Modularity**
 
-📖 **Setup Guide**: See [`docs/setup/mcp-setup.md`](./docs/setup/mcp-setup.md) for complete MCP configuration instructions.
+*   **File and Function Limits**
+    *   A file should never be longer than 500 lines of code. If it is approaching this limit, it should be refactored by splitting it into modules.
+    *   Functions should be under 50 lines and have a single, clear responsibility.
+    *   Classes should be under 100 lines and represent a single concept or entity.
+    *   Code should be organized into clearly separated modules, grouped by feature or responsibility.
 
-## Development Commands
+### **6. Project Status and Roadmap**
 
-### Running the Application
-```bash
-# Backend
-cd backend
-uvicorn main:app --reload --port 8000
 
-# Frontend
-cd frontend
-npm start         # Start development server with CRACO
-```
+#### **6.2. Latest Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
 
-### Building and Testing
-```bash
-# Backend
-cd backend
-python -m pytest tests/                    # Run backend tests
-python -m pytest tests/ -v --cov=.        # Run with coverage
-python -m pylint *.py                     # Lint Python code
-uvicorn main:app --reload --port 8000     # Test server startup
+*   **Status:** PRODUCTION READY - This system provides consistent data resolution across all components.
+*   It features a unified Patient ID/Session Date resolution with a priority-based configuration.
+*   It is built with SOLID engineering patterns and self-documenting configuration headers.
+*   It includes a Storage subfolder (highest) → C3D metadata (fallback) priority system.
+*   It has robust TypeScript support with comprehensive logging and error handling.
 
-# Frontend
-cd frontend
-npm run build     # TypeScript check and production build
-npm run test      # Run frontend tests (Jest via CRACO)
-npm run lint      # Run ESLint (if configured)
-npm start         # Test development server startup
 
-# Integration Testing
-# Test full upload → process → analyze → visualize flow
-# Test with sample C3D files from different sources
-# Test EMG signal processing accuracy
-```
 
-## Project Overview
-GHOSTLY+ EMG C3D Analyzer - A rehabilitation technology platform that processes C3D files from the GHOSTLY game to extract and analyze EMG (Electromyography) data for therapeutic assessment.
 
-## Current Architecture
-- **Backend**: FastAPI with Python, processes C3D files, calculates EMG metrics
-- **Frontend**: React/TypeScript with CRACO build system, Recharts for visualization
-- **State Management**: Zustand for session parameters
-- **Data Flow**: Upload → Process → Analyze → Visualize
 
-## Development Guidelines
-- **No Breaking UI Changes**: Maintain current user experience
-- **Stateless Backend**: Process data on-demand without persistent file storage
-- **Clarity First**: Prioritize code readability and maintainability
-- **Clinical Relevance**: Focus on medically meaningful EMG analysis
-
-## Key Technical Decisions
-1. **Client-Side Plotting**: All visualization handled by React/Recharts
-2. **Bundled Response**: Single API response contains all necessary data
-3. **Flexible Channel Handling**: Robust to different C3D channel naming
-4. **Advanced EMG Analysis**: Comprehensive biomedical metrics with clinical documentation
-
-## Current Phase: Implementation
-Working through todo.md tasks to refactor for:
-- Backend streamlining (remove server-side plotting)
-- Stateless architecture (bundled signal data)
-- Enhanced EMG analysis integration
-- Improved frontend chart capabilities
-
-## Latest Update: Configurable Data Retrieval System ✅ (July 31, 2025)
-**Status**: PRODUCTION READY - Consistent data resolution across components
-- Unified Patient ID/Session Date resolution with priority-based configuration
-- SOLID engineering patterns with self-documenting configuration headers
-- Storage subfolder (highest) → C3D metadata (fallback) priority system
-- Robust TypeScript support with comprehensive logging and error handling
-
-## Recent Updates:
-
-### Authentication System ✅ (July 30, 2025)  
-**Status**: PRODUCTION READY - Complete authentication with perfect UX
-- Fixed logout loops with immediate state transitions
-- Singleton Context API eliminating initialization loops
-- Professional medical device UI standards maintained
-
-### Dynamic Thresholds & Game Metadata ✅ (July 25, 2025)
-**Status**: PRODUCTION READY - Complete dynamic threshold system  
-- Game metadata integration via component props chain
-- LaTeX tooltip integration for performance equations
-- Color-coded performance weight sliders with visual consistency
-
-### Performance & BFR Systems ✅ (July 17-18, 2025)
-**Status**: PRODUCTION READY - Complete clinical monitoring systems
-- BFR monitoring with clinical safety compliance and real-time validation
-- Interactive performance scoring with configurable therapeutic parameters
-- Contraction visualization with memoized processing and toggle controls
