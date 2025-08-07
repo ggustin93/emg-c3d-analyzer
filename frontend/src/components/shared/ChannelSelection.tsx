@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import MuscleNameDisplay from '../MuscleNameDisplay';
+import MuscleNameDisplay from './MuscleNameDisplay';
 import { GameSessionParameters } from '../../types/emg';
 import { getColorForChannel } from '../../lib/colorMappings';
 

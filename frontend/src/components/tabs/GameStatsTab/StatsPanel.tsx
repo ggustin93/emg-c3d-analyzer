@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { StatsPanelProps as ExternalStatsPanelProps, ChannelAnalyticsData, StatsData, GameSessionParameters } from "@/types/emg";
 import MetricCard from '../shared/metric-card';
-import MuscleNameDisplay from '@/components/MuscleNameDisplay';
+import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import MuscleComparisonTable from './MuscleComparisonTable';
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

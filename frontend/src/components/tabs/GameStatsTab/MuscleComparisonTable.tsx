@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChannelAnalyticsData, GameSessionParameters } from "@/types/emg";
-import MuscleNameDisplay from '@/components/MuscleNameDisplay';
+import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { formatMetricValue } from '@/lib/formatters';
 import { getColorForChannel } from '@/lib/colorMappings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

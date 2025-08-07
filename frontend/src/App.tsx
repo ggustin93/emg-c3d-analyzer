@@ -11,7 +11,7 @@ import { useGameSessionData } from "./hooks/useGameSessionData";
 import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/tabs/SignalPlotsTab/EMGChart";
-import SessionLoader from "./components/SessionLoader";
+import C3DSourceSelector from "./components/c3d/C3DSourceSelector";
 import AuthGuard from "./components/auth/AuthGuard";
 import Header from "./components/layout/Header";
 import { useSessionStore } from './store/sessionStore';
@@ -381,7 +381,7 @@ function AppContent() {
         <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
           <AuthGuard>
             {!analysisResult ? (
-              <SessionLoader
+              <C3DSourceSelector
                 onUploadSuccess={handleSuccess}
                 onUploadError={handleError}
                 setIsLoading={setIsLoading}

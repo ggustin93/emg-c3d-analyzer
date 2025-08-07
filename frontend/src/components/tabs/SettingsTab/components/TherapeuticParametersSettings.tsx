@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
-import MuscleNameDisplay from '@/components/MuscleNameDisplay';
+import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 
 interface TherapeuticParametersSettingsProps {
   muscleChannels: string[];

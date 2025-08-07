@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import FileUpload from './c3d/FileUpload';
-import C3DFileBrowser from './c3d/C3DFileBrowser';
-import { EMGAnalysisResult, GameSessionParameters } from '../types/emg';
+import FileUpload from './FileUpload';
+import C3DFileBrowser from './C3DFileBrowser';
+import { EMGAnalysisResult, GameSessionParameters } from '@/types/emg';
 import { LightningBoltIcon } from '@radix-ui/react-icons';
 
-interface SessionLoaderProps {
+interface C3DSourceSelectorProps {
   onUploadSuccess: (data: EMGAnalysisResult, filename?: string) => void;
   onUploadError: (error: string) => void;
   setIsLoading: (isLoading: boolean) => void;
@@ -14,7 +14,7 @@ interface SessionLoaderProps {
   sessionParams: GameSessionParameters;
 }
 
-const SessionLoader: React.FC<SessionLoaderProps> = ({ 
+const C3DSourceSelector: React.FC<C3DSourceSelectorProps> = ({ 
   onUploadSuccess,
   onUploadError,
   setIsLoading,
@@ -59,4 +59,4 @@ const SessionLoader: React.FC<SessionLoaderProps> = ({
   );
 };
 
-export default SessionLoader; 
+export default C3DSourceSelector;

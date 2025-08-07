@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameSessionParameters } from '../types/emg';
+import { GameSessionParameters } from '@/types/emg';
 
 interface MuscleNameDisplayProps {
   channelName: string;

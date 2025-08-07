@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import MuscleNameDisplay from "@/components/MuscleNameDisplay";
+import MuscleNameDisplay from "@/components/shared/MuscleNameDisplay";
 import { useSessionStore } from '@/store/sessionStore';
 import { Slider } from "@/components/ui/slider";
 

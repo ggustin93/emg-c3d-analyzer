@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDownIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import ContractionTypeBreakdown from './ContractionTypeBreakdown';
 import { GameSessionParameters, Contraction } from '@/types/emg';
-import MuscleNameDisplay from '@/components/MuscleNameDisplay';
+import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { ComplianceTooltip, MuscleComplianceScoreTooltip, CompletionRateTooltip, IntensityQualityTooltip, DurationQualityTooltip } from '@/components/ui/clinical-tooltip';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
