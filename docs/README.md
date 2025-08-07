@@ -10,7 +10,7 @@
 ### Working Documentation
 - [`api.md`](./api.md) - API endpoints and models
 - [`db_schema.md`](./db_schema.md) - Database schema
-- [`auth_system.md`](./auth_system.md) - Complete authentication implementation
+- [`auth_system.md`](./auth_system.md) - Should explains how Supabase Auth works and data flow.
 - [`data_flows.md`](./data_flows.md) - Business Logic Diagrams (To Complete)
 - [`supabase.md`](./supabase.md) - Overview of Supabase client documentation (To Do)
 - [`deployment.md`](./deployment.md) - Production deployment guide (Docker, Coolify - To Do)
