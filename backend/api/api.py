@@ -26,19 +26,19 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from ..application.processor import GHOSTLYC3DProcessor
-from ..domain.models import (
+from ..services.c3d_processor import GHOSTLYC3DProcessor
+from ..models.models import (
     EMGAnalysisResult, EMGChannelSignalData, ProcessingOptions, GameMetadata, ChannelAnalytics,
     GameSessionParameters, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW, DEFAULT_MVC_THRESHOLD_PERCENTAGE
 )
-from ..core.config import (
+from ..config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
     CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS,
     ensure_temp_dir
 )
-from ..infrastructure.exporting import EMGDataExporter
-from ..application.mvc_service import mvc_service, MVCEstimation
+from ..services.mvc_service import mvc_service, MVCEstimation
+from ..services.export_service import EMGDataExporter
 
 # Initialize FastAPI app
 app = FastAPI(

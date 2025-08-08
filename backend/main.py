@@ -48,7 +48,7 @@ if __name__ == "__main__":
         
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
         # Remove reload=True to avoid the warning in production
-        uvicorn.run("backend.interfaces.api:app", host=host, port=port, log_level=log_level)
+        uvicorn.run("backend.api.api:app", host=host, port=port, log_level=log_level)
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())
