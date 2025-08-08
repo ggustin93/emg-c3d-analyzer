@@ -405,7 +405,7 @@ class GHOSTLYC3DProcessor:
                     time_axis = self.emg_data[raw_channel_name]['time_axis']
                     
                     # Import signal processing metadata to include in each processed signal
-                    from ..emg.processing import get_processing_metadata
+                    from ..emg.signal_processing import get_processing_metadata
                     
                     self.emg_data[processed_channel_name] = {
                         'data': processing_result['processed_signal'].tolist(),
