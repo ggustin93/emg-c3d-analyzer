@@ -1,4 +1,3 @@
-# Interface adapters (HTTP, CLI, etc.)
+"""API interfaces."""
 
-__all__ = []
-
+from .api import *
