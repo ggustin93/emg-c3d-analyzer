@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
 
 # Import default parameters from config
-from ..core.config import (
+from ..config import (
     DEFAULT_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW,
