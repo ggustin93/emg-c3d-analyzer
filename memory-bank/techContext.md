@@ -82,7 +82,7 @@ cd ..
 
 # --- Manual Start ---
 # Run backend development server (from project root)
-poetry run python -m backend.main
+python -m uvicorn backend.api.api:app --reload --host 0.0.0.0 --port 8080
 
 # Run frontend development server (from frontend/ directory)
 cd frontend
@@ -160,7 +160,7 @@ ignore = ['W291', 'W292', 'W293']
 
 ### API Server
 - FastAPI application (the `app` instance is in `backend.api`).
-- The server is launched via `backend.main`.
+- The server is launched via `backend.api.api:app` with uvicorn.
 - CORS middleware enabled.
 - Async request handling.
 - Stateless processing model.

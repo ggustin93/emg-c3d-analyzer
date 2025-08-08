@@ -45,7 +45,7 @@ log_header "Checking Server Status"
 
 # Check backend
 BACKEND_RUNNING=false
-BACKEND_PID=$(ps aux | grep "[p]ython -m uvicorn backend.main:app" | awk '{print $2}')
+BACKEND_PID=$(ps aux | grep "[p]ython -m uvicorn backend.api.api:app" | awk '{print $2}')
 if [ ! -z "$BACKEND_PID" ]; then
     log_success "Backend server is running with PID: $BACKEND_PID"
     BACKEND_RUNNING=true
@@ -216,7 +216,7 @@ elif $BACKEND_RUNNING; then
     fi
 elif $FRONTEND_RUNNING; then
     log_warning "Frontend is running but backend is not"
-    echo -e "${BOLD}Recommended action:${RESET} Start the backend server with 'python -m uvicorn backend.main:app --host 0.0.0.0 --port 8080'"
+    echo -e "${BOLD}Recommended action:${RESET} Start the backend server with 'python -m uvicorn backend.api.api:app --host 0.0.0.0 --port 8080'"
 else
     log_error "Neither backend nor frontend servers are running"
     echo -e "${BOLD}Recommended action:${RESET} Start both servers with './start_dev.sh'"
