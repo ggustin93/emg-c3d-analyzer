@@ -19,6 +19,7 @@ import { GameSessionParameters, ChannelAnalyticsData } from "@/types/emg";
 import { SignalDisplayType } from './ThreeChannelSignalSelector';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
 
 const Spinner = () => (
   <div className="flex items-center justify-center space-x-2">
@@ -1100,24 +1101,11 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   channel: area.channel
                 });
                 
-                // Determine color based on quality criteria using the corrected calculation
-                let fillColor = "rgba(239, 68, 68, 0.25)"; // Default: insufficient (red)
-                let strokeColor = "#dc2626";
-                
-                if (area.isGood) {
-                  // Excellent - both criteria met (green)
-                  fillColor = "rgba(34, 197, 94, 0.3)";
-                  strokeColor = "#16a34a";
-                } else if (area.meetsMvc && !area.meetsDuration) {
-                  // Adequate Force - MVC only (yellow)
-                  fillColor = "rgba(251, 191, 36, 0.25)";
-                  strokeColor = "#f59e0b";
-                } else if (area.meetsDuration && !area.meetsMvc) {
-                  // Adequate Duration - duration only (yellow - same as MVC only)
-                  fillColor = "rgba(251, 191, 36, 0.25)";
-                  strokeColor = "#f59e0b";
-                }
-                // else: insufficient (default red colors already set)
+                const { fill: fillColor, stroke: strokeColor } = getContractionAreaColors({
+                  isGood: area.isGood,
+                  meetsMvc: area.meetsMvc,
+                  meetsDuration: area.meetsDuration
+                });
                 
                 return (
                   <ReferenceArea
@@ -1127,7 +1115,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                     x2={area.endTime}
                     fill={fillColor}
                     stroke={strokeColor}
-                    strokeWidth={2}
+                    strokeWidth={2.25}
                     strokeDasharray="3 3"
                     ifOverflow="discard"
                   />
@@ -1147,28 +1135,11 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   meetsDuration: area.meetsDuration
                 });
                 
-                // Determine colors and symbol based on quality criteria using the corrected calculation
-                let fillColor = "#ef4444"; // Default: insufficient (red)
-                let strokeColor = "#dc2626";
-                let symbol = "✗";
-                
-                if (area.isGood) {
-                  // Excellent - both criteria met (green)
-                  fillColor = "#22c55e";
-                  strokeColor = "#16a34a";
-                  symbol = "✓";
-                } else if (area.meetsMvc && !area.meetsDuration) {
-                  // Adequate Force - MVC only (yellow)
-                  fillColor = "#f59e0b";
-                  strokeColor = "#d97706";
-                  symbol = "F"; // Force adequate
-                } else if (area.meetsDuration && !area.meetsMvc) {
-                  // Adequate Duration - duration only (yellow - same as MVC only)
-                  fillColor = "#f59e0b";
-                  strokeColor = "#d97706";
-                  symbol = "D"; // Duration adequate
-                }
-                // else: insufficient (default values already set)
+                const { fill: fillColor, stroke: strokeColor, symbol } = getContractionDotStyle({
+                  isGood: area.isGood,
+                  meetsMvc: area.meetsMvc,
+                  meetsDuration: area.meetsDuration
+                });
                 
                 return (
                   <ReferenceDot
@@ -1179,7 +1150,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                     r={6}
                     fill={fillColor}
                     stroke={strokeColor}
-                    strokeWidth={2}
+                    strokeWidth={2.25}
                     ifOverflow="discard"
                     label={{
                       value: symbol,
