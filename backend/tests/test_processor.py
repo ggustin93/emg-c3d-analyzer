@@ -20,8 +20,8 @@ PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from backend.processor import GHOSTLYC3DProcessor
-from backend.models import ProcessingOptions, GameSessionParameters
+from backend.application.processor import GHOSTLYC3DProcessor
+from backend.domain.models import ProcessingOptions, GameSessionParameters
 
 class TestGHOSTLYC3DProcessor(unittest.TestCase):
     """Test suite for the GHOSTLYC3DProcessor class."""

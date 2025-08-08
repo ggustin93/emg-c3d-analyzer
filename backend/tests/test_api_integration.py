@@ -36,7 +36,7 @@ except ImportError:
 # This import will fail until api.py is refactored, which is expected.
 # The tests are written for the *target* stateless architecture.
 try:
-    from backend.api import app
+    from backend.interfaces.api import app
     API_AVAILABLE = True
 except ImportError:
     API_AVAILABLE = False

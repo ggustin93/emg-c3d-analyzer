@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
 
 # Import default parameters from config
-from .config import (
+from ..core.config import (
     DEFAULT_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW,
@@ -81,8 +81,8 @@ class GameSessionParameters(BaseModel):
     session_expected_long_right: Optional[int] = Field(None, ge=0, description="Target number of long contractions for right muscle")
     session_expected_short_right: Optional[int] = Field(None, ge=0, description="Target number of short contractions for right muscle")
     
-    # Contraction classification threshold
-    contraction_duration_threshold: Optional[int] = Field(250, ge=0, description="Global threshold in milliseconds to classify contractions as short or long")
+    # Contraction classification threshold (clinically standard 2.0s default)
+    contraction_duration_threshold: Optional[int] = Field(2000, ge=0, description="Global threshold in milliseconds to classify contractions as short or long")
     
     # Per-muscle duration thresholds (frontend sends in seconds, will be converted to ms)
     session_duration_thresholds_per_muscle: Optional[Dict[str, Optional[float]]] = Field(None, description="Per-muscle duration thresholds in seconds (converted to ms for analysis)")
@@ -120,6 +120,7 @@ class EMGChannelSignalData(BaseModel):
     data: List[float] # This will hold the primary C3D signal (e.g., "CH1 Raw")
     rms_envelope: Optional[List[float]] = None # For the calculated RMS envelope
     activated_data: Optional[List[float]] = None # If you have a separate "activated" signal processing step
+    processed_data: Optional[List[float]] = None # Our rigorous processing pipeline output
 
 class EMGAnalysisResult(BaseModel):
     """Model for the complete EMG analysis result."""
@@ -142,4 +143,5 @@ class EMGRawData(BaseModel):
     data: List[float]
     time_axis: List[float]
     activated_data: Optional[List[float]] = None
+    processed_data: Optional[List[float]] = None # Our rigorous processing pipeline output
     contractions: Optional[List[Contraction]] = None # Will include is_good flag

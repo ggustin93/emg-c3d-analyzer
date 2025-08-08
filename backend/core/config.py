@@ -13,7 +13,7 @@ DEFAULT_SAMPLING_RATE = 1000  # Hz
 
 # Optimized Contraction Detection Parameters (Research-Based 2024)
 # Based on biomedical engineering literature and clinical validation studies
-DEFAULT_THRESHOLD_FACTOR = 0.15  # 15% of max amplitude (reduced from 30% for better sensitivity)
+DEFAULT_THRESHOLD_FACTOR = 0.20  # 20% of max amplitude (balanced for optimal sensitivity/specificity)
                                 # Research shows adaptive thresholds are more effective than fixed percentages
 DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms (increased from 50ms for clinical relevance)
 DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples (increased from 25 for better stability)
@@ -21,7 +21,7 @@ DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples (increased fr
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
 
 # --- Analysis Parameters ---
-RMS_ENVELOPE_WINDOW_MS = 100  # Window size for RMS envelope calculation in ms
+# RMS envelope window is now centralized in signal_processing.ProcessingParameters
 
 # Advanced Contraction Detection Parameters (Research-Optimized)
 MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them (ms)

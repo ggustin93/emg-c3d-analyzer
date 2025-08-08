@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
+import { useMvcService } from '@/hooks/useMvcService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TherapeuticParametersSettingsProps {
   muscleChannels: string[];
   disabled: boolean;
   isDebugMode: boolean;
+  analytics?: Record<string, any> | null; // Backend analytics data for threshold validation
 }
 
-const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps> = ({ muscleChannels, disabled, isDebugMode }) => {
+const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps> = ({ muscleChannels, disabled, isDebugMode, analytics }) => {
+  const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isClinicalParametersOpen, setIsClinicalParametersOpen] = useState(false);
+  // Role gating: therapist/admin can edit; debug overrides
+  const canTherapistEdit = useMemo(() => {
+    const role = authState?.profile?.role;
+    return role === 'clinical_specialist' || role === 'admin';
+  }, [authState?.profile?.role]);
+  const canEdit = (isDebugMode || canTherapistEdit) && !disabled;
+  
+  // MVC Service Integration
+  const mvcService = useMvcService();
   
   const muscleChannels2 = muscleChannels.filter(ch => !ch.includes(' ')).slice(0, 2);
 
@@ -35,6 +49,26 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     setSessionParams(updatedParams);
   };
 
+  // Handler to apply MVC results from current analytics if available
+  const handleApplyAnalyticsMVC = () => {
+    if (analytics && Object.keys(analytics).length > 0) {
+      console.log('🔄 Applying MVC from current analytics to session parameters');
+      
+      // Create mock EMGAnalysisResult to extract from
+      const mockAnalysisResult = {
+        analytics: analytics,
+        timestamp: new Date().toISOString()
+      } as any;
+      
+      mvcService.extractFromAnalysis(mockAnalysisResult);
+      
+      // If extraction successful, apply to session
+      if (mvcService.estimationResults) {
+        mvcService.applyToSession(mvcService.estimationResults);
+      }
+    }
+  };
+
   return (
     <UnifiedSettingsCard
       title="Therapeutic Parameters"
@@ -43,6 +77,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       onOpenChange={setIsClinicalParametersOpen}
       icon={<ActivityLogIcon className="h-5 w-5 text-green-600" />}
       accentColor="green-600"
+      muted={!canEdit}
       badge={<Badge variant="outline" className="bg-green-100 text-green-800 text-xs">Clinical Parameters</Badge>}
     >
       <TooltipProvider>
@@ -77,7 +112,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                     }}
                     placeholder="e.g., 24"
                     min="0" step="1"
-                    disabled={disabled}
+                    disabled={true}
                     className="h-9 text-sm"
                   />
                   <p className="text-xs text-gray-600">Total contractions for this session</p>
@@ -106,7 +141,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                           <Label className="text-sm font-medium text-gray-700">
                             <MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />
                           </Label>
-                          <Input
+                           <Input
                             type="number"
                             value={expectedValue ?? ''}
                             onChange={(e) => {
@@ -132,7 +167,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                             }}
                             placeholder="e.g., 12"
                             min="0" step="1"
-                            disabled={disabled}
+                             disabled={true}
                             className="h-9 text-sm"
                           />
                         </div>
@@ -169,6 +204,19 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 
                                       sessionParams.session_mvc_threshold_percentage ?? 75;
                 
+                // Get backend-calculated actual threshold for validation
+                const backendThreshold = analytics?.[channel]?.mvc_threshold_actual_value;
+                const estimationMethod = analytics?.[channel]?.mvc_estimation_method;
+                
+                // Calculate frontend threshold for comparison
+                const frontendThreshold = mvcValue !== null && mvcValue !== undefined ? 
+                  mvcValue * (thresholdValue / 100) : null;
+                
+                // Check for consistency
+                const isConsistent = backendThreshold !== null && frontendThreshold !== null ? 
+                  Math.abs(backendThreshold - frontendThreshold) < 0.000001 : // Small tolerance for floating point
+                  backendThreshold === frontendThreshold;
+                
                 return (
                   <div key={channel} className="space-y-3">
                     <h6 className="text-sm font-semibold text-gray-800">
@@ -177,7 +225,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-sm font-medium text-gray-700">MVC Value</Label>
-                        {isDebugMode ? (
+                        {canEdit ? (
                           <Input
                             type="number"
                             value={mvcValue ?? ''}
@@ -194,7 +242,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                             placeholder="0.0012"
                             step="0.0001"
                             min="0"
-                            disabled={disabled}
+                            disabled={!canEdit}
                             className="h-9 text-sm"
                           />
                         ) : (
@@ -219,17 +267,108 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                             });
                           }}
                           min="0" max="100" step="0.1"
-                          disabled={disabled}
+                          disabled={!canEdit}
                           className="h-9 text-sm"
                           placeholder="75.0"
                         />
                       </div>
                     </div>
+                    
+                    {/* Backend Validation Display */}
+                    {(backendThreshold !== null && backendThreshold !== undefined) && (
+                      <div className="mt-3 p-3 bg-slate-50 rounded-lg text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Backend Threshold:</span>
+                          <span className="font-mono text-slate-800">{backendThreshold.toExponential(3)} mV</span>
+                        </div>
+                        {estimationMethod && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-600">Method:</span>
+                            <Badge variant={estimationMethod === 'backend_estimation' ? 'default' : 'outline'} className="text-xs">
+                              {estimationMethod === 'backend_estimation' ? '🤖 Auto-estimated' : 
+                               estimationMethod === 'user_provided' ? '👤 User-provided' : 
+                               estimationMethod === 'global_provided' ? '🌐 Global' : 'Unknown'}
+                            </Badge>
+                          </div>
+                        )}
+                        {!isConsistent && frontendThreshold !== null && (
+                          <div className="text-amber-600 text-xs">
+                            ⚠️ Threshold mismatch: Frontend calculates {frontendThreshold.toExponential(3)} mV
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+
+          {/* MVC Service Integration Demo (Debug Mode Only) */}
+          {isDebugMode && analytics && Object.keys(analytics).length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <GearIcon className="h-4 w-4 text-blue-600" />
+                <h5 className="text-sm font-semibold text-gray-800">MVC Service Integration</h5>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">Debug Mode</Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="h-4 w-4 text-gray-500" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <div className="text-sm space-y-2">
+                      <p>MVC Service Integration allows you to apply backend-calculated MVC values directly to session parameters.</p>
+                      <p><strong>This section is only visible in debug mode.</strong> In production, MVC values would be automatically applied from the backend service.</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Apply Backend MVC Values</p>
+                      <p className="text-xs text-gray-600">Use MVC values calculated by the backend service</p>
+                    </div>
+                    <Button 
+                      onClick={handleApplyAnalyticsMVC}
+                      disabled={disabled || mvcService.isEstimating || !analytics}
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-700 border-blue-300 hover:bg-blue-100"
+                    >
+                      {mvcService.isEstimating ? '⏳ Processing...' : '🤖 Apply MVC Values'}
+                    </Button>
+                  </div>
+                  
+                  {/* Show current MVC service status */}
+                  {mvcService.estimationResults && (
+                    <div className="mt-3 p-3 bg-white rounded-lg text-xs space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="text-xs">✅ MVC Applied</Badge>
+                      </div>
+                      {Object.entries(mvcService.estimationResults).map(([channel, result]) => (
+                        <div key={channel} className="flex items-center justify-between">
+                          <span className="text-gray-600">{channel}:</span>
+                          <div className="text-right">
+                            <div className="font-mono text-gray-800">{mvcService.formatMVCValue(result.mvc_value)}</div>
+                            <div className="text-gray-500">{mvcService.getEstimationMethodName(result.estimation_method)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {mvcService.error && (
+                    <div className="mt-3 p-3 bg-red-50 rounded-lg text-xs">
+                      <div className="text-red-600">❌ Error: {mvcService.error}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Duration Thresholds Section */}
           <div className="space-y-4">
@@ -276,10 +415,10 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                           });
                         }}
                         min="250" max="10000" step="250"
-                        disabled={disabled}
+                        disabled={!canEdit}
                         className="h-9 text-sm"
                       />
-                      <p className="text-xs text-gray-600">{Math.round(durationValue * 1000)}ms ({(durationValue).toFixed(2)}s) • Independent per muscle • 250ms increments</p>
+                      <p className="text-xs text-gray-600">{Math.round(durationValue * 1000)}ms ({(durationValue).toFixed(2)}s) • Independent per muscle • 250ms increments (default 2000ms)</p>
                     </div>
                   </div>
                 );

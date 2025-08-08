@@ -190,7 +190,7 @@ start_backend() {
     local backend_err_log="$LOG_DIR/backend.error.log"
 
     # Start in background, redirecting output
-    poetry run python -m uvicorn backend.api:app --host 0.0.0.0 --port 8080 --reload --reload-dir backend \
+    poetry run python -m uvicorn backend.interfaces.api:app --host 0.0.0.0 --port 8080 --reload --reload-dir backend \
         >"$backend_log" 2>"$backend_err_log" &
     BACKEND_PID=$!
     echo "$BACKEND_PID" > "$PID_FILE" # Overwrite PID file with the first PID

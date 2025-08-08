@@ -163,7 +163,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                     triggerClassName="h-3 w-3"
                   />
                 </div>
-                {isDebugMode ? (
+                {false ? (
                   <Input
                     type="number"
                     value={sideParams.aop_measured}
@@ -214,7 +214,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                     triggerClassName="h-3 w-3"
                   />
                 </div>
-                {isDebugMode ? (
+                {false ? (
                   <Input
                     type="number"
                     value={sideParams.applied_pressure}
@@ -266,7 +266,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                   triggerClassName="h-3 w-3"
                 />
               </div>
-              {isDebugMode ? (
+              {false ? (
                 <Input
                   type="number"
                   value={sideParams.application_time_minutes || ''}
@@ -417,7 +417,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                   min="20"
                   max="50"
                   step="1"
-                  disabled={disabled}
+                  disabled={true}
                   className="h-8 text-xs"
                   placeholder="40"
                 />
@@ -433,7 +433,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                   min="50"
                   max="80"
                   step="1"
-                  disabled={disabled}
+                  disabled={true}
                   className="h-8 text-xs"
                   placeholder="60"
                 />

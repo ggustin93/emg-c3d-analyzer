@@ -126,6 +126,7 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
 - **Flexible Channel Handling**: The processor can work with various C3D channel naming conventions.
 - **Modular Processing**: Each analysis function is independent and stateless for better maintainability.
 - **Temporal Analysis**: New statistical metrics for each parameter provide deeper insights into muscle activity patterns.
+ - **Contraction Quality Flags**: Domain logic defines explicit booleans (`meets_mvc`, `meets_duration`, `is_good`) with a clear truth table; duration default is 2000 ms and is synchronized from frontend and echoed in response metadata.
 
 ### Frontend Development Patterns
 - **Component-Based Architecture**: React components for modular UI development.
@@ -148,6 +149,11 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
   - Optional raw EMG display for detailed analysis when needed.
   - Contraction period visualization directly on charts.
   - MVC threshold reference lines for performance assessment.
+
+### Role-based UX & Theming Tokens
+- Settings follow a role-gated UX: Therapist/Admin can edit Performance Scoring and Therapeutic Parameters; Debug Mode temporarily unlocks controls; others are read-only with locks and badges.
+- Read-only categories: Session Goals (C3D), ePRO (mobile), Contraction Detection (backend-optimized, RAW EMG).
+- Theming uses shadcn tokens bound to CSS variables. Primary brand set to `#0ecfc5` (HSL 177 87% 43%); tabs use primary tokens.
 
 ## Component Relationships
 

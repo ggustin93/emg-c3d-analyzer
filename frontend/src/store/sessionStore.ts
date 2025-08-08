@@ -17,7 +17,7 @@ const defaultSessionParams: GameSessionParameters = {
   session_expected_contractions_ch1: 12,
   session_expected_contractions_ch2: 12,
   subjective_fatigue_level: 5,
-  contraction_duration_threshold: 2000, // Default to 2 seconds
+  contraction_duration_threshold: 2000, // Default to 2000ms to match backend clinical standard
   channel_muscle_mapping: {
     "CH1": "Left Quadriceps",
     "CH2": "Right Quadriceps"

@@ -3,15 +3,9 @@
 > vite --host
 
 
-  VITE v5.4.10  ready in 503 ms
+  VITE v5.4.10  ready in 421 ms
 
   ➜  Local:   http://localhost:3000/
-  ➜  Network: http://10.240.76.247:3000/
-4:10:11 PM [vite] .env changed, restarting server...
-4:10:11 PM [vite] server restarted.
-4:10:15 PM [vite] .env changed, restarting server...
-4:10:15 PM [vite] server restarted.
-4:10:16 PM [vite] .env changed, restarting server...
-4:10:16 PM [vite] server restarted.
-4:10:17 PM [vite] .env changed, restarting server...
-4:10:17 PM [vite] server restarted.
+  ➜  Network: http://192.168.0.4:3000/
+5:07:19 PM [vite] hmr update /src/components/tabs/SignalPlotsTab/EMGChart.tsx, /src/index.css
+5:07:41 PM [vite] hmr update /src/components/tabs/SignalPlotsTab/EMGChart.tsx, /src/index.css

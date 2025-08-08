@@ -12,6 +12,7 @@ interface UnifiedSettingsCardProps {
   badge?: React.ReactNode;
   icon: React.ReactNode;
   accentColor?: string;
+  muted?: boolean;
 }
 
 const UnifiedSettingsCard: React.FC<UnifiedSettingsCardProps> = ({
@@ -23,9 +24,10 @@ const UnifiedSettingsCard: React.FC<UnifiedSettingsCardProps> = ({
   badge,
   icon,
   accentColor = "blue-500",
+  muted = false,
 }) => {
   return (
-    <Card className={`border-l-4 border-l-${accentColor} hover:shadow-sm transition-shadow`}>
+    <Card className={`border-l-4 border-l-${accentColor} hover:shadow-sm transition-shadow ${muted ? 'bg-slate-50' : ''}`}>
       <Collapsible open={isOpen} onOpenChange={onOpenChange}>
         <CardHeader>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-left hover:text-slate-600">
@@ -37,17 +39,19 @@ const UnifiedSettingsCard: React.FC<UnifiedSettingsCardProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-                    {badge}
                   </div>
                   <CardDescription className="text-sm text-gray-600">{description}</CardDescription>
                 </div>
               </div>
             </div>
-            <ChevronDownIcon className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
+            <div className="flex items-center gap-2">
+              {badge}
+              <ChevronDownIcon className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
+            </div>
           </CollapsibleTrigger>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className={`space-y-4 pt-0 ${muted ? 'opacity-90' : ''}`}>
             {children}
           </CardContent>
         </CollapsibleContent>

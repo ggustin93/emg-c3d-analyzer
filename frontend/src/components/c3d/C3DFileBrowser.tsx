@@ -68,7 +68,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   useEffect(() => {
     // Wait for authentication to be fully initialized before attempting to load files
     if (authState.loading) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log('C3D Browser: Waiting for auth to initialize...');
       }
       return;
@@ -102,7 +102,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           return;
         }
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.log('Loading files from c3d-examples bucket...');
           console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
           console.log('Auth state:', { user: authState.user?.email, loading: authState.loading });

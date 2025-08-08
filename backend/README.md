@@ -1,4 +1,4 @@
-# GHOSTLY+ EMG C3D Analyzer - Backend
+# GHOSTLY+ EMG C3D Analyzer - Backend (DDD Layout)
 
 This directory contains the backend server for the GHOSTLY+ EMG C3D Analyzer application. It's a FastAPI-based API responsible for processing C3D files, performing EMG analysis, and serving the results in a stateless architecture optimized for cloud deployment.
 
@@ -6,15 +6,16 @@ This directory contains the backend server for the GHOSTLY+ EMG C3D Analyzer app
 
 The backend follows a **stateless architecture** where all data processing happens in-memory and results are bundled in the API response. This design eliminates the need for persistent file storage and makes the system ideal for deployment on platforms like Render's free tier.
 
-### Primary Components
+### Primary Components (import surfaces)
 
--   `api.py`: Defines all the FastAPI endpoints. The main `/upload` endpoint processes C3D files and returns comprehensive analysis results including all signal data needed for client-side visualization.
--   `processor.py`: The core processing engine. The `GHOSTLYC3DProcessor` class handles loading C3D files, extracting metadata and EMG data, detecting muscle contractions, and calculating analytics using advanced biomedical algorithms.
--   `models.py`: Contains all Pydantic data models used for API request and response validation, ensuring data consistency. Imports configuration constants from `config.py`.
--   `emg_analysis.py`: Advanced EMG analysis module with clinically validated functions for RMS, MAV, frequency domain analysis (MPF, MDF), and Dimitrov's fatigue index calculations.
--   `config.py`: Centralized configuration management for processing parameters, API settings, and system constants.
--   `main.py`: The main entry point for the application, responsible for launching the Uvicorn server.
--   `tests/`: Contains integration tests for the API endpoints.
+-   `domain/analysis.py`: EMG analysis functions and registry (use this instead of `emg_analysis.py`).
+-   `domain/processing.py`: Standardized signal processing API (use this instead of `signal_processing.py`).
+-   `domain/models.py`: Pydantic models import surface (wraps `models.py`).
+-   `application/processor_service.py`: Orchestrates processing (compat alias to legacy `processor.py`).
+-   `application/mvc_service.py`: MVC estimation service import surface.
+-   `interfaces/api.py`: FastAPI app import surface (wraps legacy `api.py`).
+-   `infrastructure/exporting.py`: Export utilities import surface.
+-   Legacy modules (`emg_analysis.py`, `signal_processing.py`, `processor.py`, `api.py`, `export_utils.py`) remain for compatibility. Prefer the surfaces above for new code.
 
 ## Stateless Data Flow
 
@@ -29,6 +30,13 @@ The backend implements a **bundled response pattern** that eliminates the need f
     - Generates RMS envelopes for visualization
 4.  All results, including metadata, analytics, and complete signal data, are structured using models from `models.py` and returned in a single response.
 5.  No files are persisted to disk - the system is completely stateless for optimal cloud deployment.
+
+## Recommended Imports
+- Domain logic: `from backend.domain.analysis import analyze_contractions`
+- Processing: `from backend.domain.processing import preprocess_emg_signal, ProcessingParameters`
+- Models: `from backend.domain.models import GameSessionParameters, EMGAnalysisResult`
+- Application: `from backend.application import ProcessorService, mvc_service`
+- HTTP: `from backend.interfaces.api import app`
 
 ## Resilient Channel Handling
 

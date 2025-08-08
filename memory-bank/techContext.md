@@ -45,6 +45,10 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 - `zustand` (for state management)
 - Specific `shadcn/ui` components. New components are added via `npx shadcn@latest add <component-name>`.
 
+### Theming
+- Primary color configured via CSS variables in `frontend/src/index.css`: `--primary: 177 87% 43%` (hex `#0ecfc5`). `--ring` matches primary.
+- Tabs in `GameSessionTabs.tsx` use `bg-primary`, `text-primary-foreground`, and `border-primary`.
+
 ## Development Environment
 
 ### Required Tools

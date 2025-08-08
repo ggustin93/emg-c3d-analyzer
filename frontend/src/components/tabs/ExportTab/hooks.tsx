@@ -25,6 +25,7 @@ import {
   isRawChannel,
   isActivatedChannel
 } from './utils';
+// Use only backend-provided processing metadata; do not fabricate defaults
 
 export function useExportData(
   analysisResult: EMGAnalysisResult | null,
@@ -49,7 +50,8 @@ export function useExportData(
     availableChannels.forEach(channel => {
       initialSelection[channel.baseName] = {
         includeRaw: false,
-        includeProcessed: false
+        includeActivated: false,
+        includeProcessedRms: false
       };
     });
     setChannelSelection(initialSelection);
@@ -78,7 +80,7 @@ export function useExportData(
   // Check if any channels are selected
   const hasSelectedChannels = useMemo(() => {
     return Object.values(channelSelection).some(
-      selection => selection.includeRaw || selection.includeProcessed
+      selection => selection.includeRaw || selection.includeActivated || selection.includeProcessedRms
     );
   }, [channelSelection]);
 
@@ -105,6 +107,39 @@ export function useExportData(
         })
       }
     };
+
+    // Include backend-provided signal processing pipeline metadata when available (no fabricated defaults)
+    try {
+      if (analysisResult && analysisResult.emg_signals) {
+        const processedEntryKey = Object.keys(analysisResult.emg_signals).find(k => /\bProcessed$/i.test(k));
+        const processedEntry: any = processedEntryKey ? (analysisResult.emg_signals as any)[processedEntryKey] : null;
+        const analyticsAny: any = (analysisResult as any).analytics || {};
+        const firstChannelName = Object.keys(analyticsAny)[0];
+        const firstChannelAnalytics = firstChannelName ? analyticsAny[firstChannelName] : undefined;
+
+        const pipelineFromProcessed = processedEntry?.processing_metadata?.complete_pipeline_metadata;
+        const pipelineFromAnalytics = firstChannelAnalytics?.signal_processing?.complete_pipeline_metadata;
+
+        const pipeline = pipelineFromAnalytics || pipelineFromProcessed;
+        if (pipeline) {
+          (exportData as any).signalProcessingPipeline = pipeline;
+        }
+
+        // Collect per-channel parameters actually used (if available)
+        const perChannelParams: Record<string, any> = {};
+        Object.keys(analyticsAny).forEach((channel) => {
+          const sp = analyticsAny[channel]?.signal_processing;
+          if (sp?.parameters_used) {
+            perChannelParams[channel] = sp.parameters_used;
+          }
+        });
+        if (Object.keys(perChannelParams).length > 0) {
+          (exportData as any).signalProcessingParametersPerChannel = perChannelParams;
+        }
+      }
+    } catch (e) {
+      // Best-effort enrichment; ignore if structure not present
+    }
 
     // Include analytics if selected
     if (exportOptions.includeAnalytics && analysisResult.analytics) {
@@ -173,7 +208,7 @@ export function useExportData(
 
       Object.keys(channelSelection).forEach(channelBaseName => {
         const selection = channelSelection[channelBaseName];
-        if (!selection.includeRaw && !selection.includeProcessed) return;
+        if (!selection.includeRaw && !selection.includeActivated && !selection.includeProcessedRms) return;
 
         // Find matching signals in the analysis result
         Object.keys(analysisResult.emg_signals).forEach(signalName => {
@@ -240,8 +275,8 @@ export function useExportData(
             processedSignals[signalName] = processedData;
           }
 
-          // Include processed/activated signals if selected
-          if (selection.includeProcessed && isActivatedChannel(signalName)) {
+          // Include activated signals if selected
+          if (selection.includeActivated && isActivatedChannel(signalName)) {
             const processedData: any = { ...signalData };
             
             // For JSON preview: ensure ALL arrays have consistent preview length
@@ -297,6 +332,103 @@ export function useExportData(
             processedSignals[signalName] = processedData;
           }
         });
+
+        // Additionally, if processed RMS is selected, include our rigorous pipeline RMS envelope
+        if (selection.includeProcessedRms) {
+          const rawKey = `${channelBaseName} Raw`;
+          const processedKey = `${channelBaseName} Processed`;
+          const raw = analysisResult.emg_signals[rawKey] as any;
+          const processedEntry = (analysisResult.emg_signals as any)[processedKey] || null;
+          const channelAnalytics: any = (analysisResult as any)?.analytics?.[channelBaseName] || {};
+          // Prefer backend-provided processed entry; fallback to RMS envelope from raw
+          const sourceSamplingRate = processedEntry?.sampling_rate ?? raw?.sampling_rate;
+          const sourceTimeAxis = processedEntry?.time_axis ?? raw?.time_axis;
+          const sourceData = processedEntry?.data ?? processedEntry?.rms_envelope ?? raw?.rms_envelope;
+          if (Array.isArray(sourceData) && sourceData.length > 0 && Array.isArray(sourceTimeAxis)) {
+            const processedData: any = {
+              sampling_rate: sourceSamplingRate,
+              time_axis: sourceTimeAxis,
+              data: sourceData,
+              signal_info: 'RMS envelope (processed) from rigorous pipeline',
+            };
+
+            // Attach only backend-provided processing metadata if available
+            // Prefer analytics pipeline metadata; fallback to what backend placed on processed entry
+            const sp = channelAnalytics?.signal_processing;
+            const processedMeta = processedEntry?.processing_metadata;
+
+            const parametersUsed = sp?.parameters_used ?? processedMeta ?? undefined;
+            const processingSteps = sp?.processing_steps ?? processedEntry?.processing_steps ?? undefined;
+            const qualityMetrics = sp?.quality_metrics ?? processedEntry?.quality_metrics ?? undefined;
+
+            if (parametersUsed) processedData.processing_metadata = parametersUsed;
+            if (Array.isArray(processingSteps)) processedData.processing_steps = processingSteps;
+            if (qualityMetrics) processedData.quality_metrics = qualityMetrics;
+            if (sp || processedMeta) {
+              processedData.processing_metadata_full = sp ?? {
+                parameters_used: processedMeta,
+                processing_steps: processingSteps,
+                quality_metrics: qualityMetrics,
+                source: 'RAW',
+              };
+              // Serialize the full backend pipeline for transparency
+              processedData.signal_processing = {
+                source: (sp && sp.source) ? sp.source : 'RAW',
+                processing_steps: processingSteps ?? [],
+                parameters_used: parametersUsed ?? {},
+                quality_metrics: qualityMetrics,
+              };
+              // Convenience alias explicitly called out in requirements
+              processedData.settings_used_for_rms = parametersUsed;
+            }
+
+            // Contraction detection context from backend analytics only
+            const cd: any = {};
+            if (channelAnalytics?.mvc_threshold_actual_value != null) {
+              cd.mvc_threshold_actual_value = channelAnalytics.mvc_threshold_actual_value;
+            }
+            if (channelAnalytics?.duration_threshold_actual_value != null) {
+              cd.duration_threshold_actual_value = channelAnalytics.duration_threshold_actual_value;
+            }
+            if (Object.keys(cd).length > 0) {
+              processedData.contraction_detection = cd;
+            }
+
+            // Preview handling for processed RMS - ensure ALL arrays are trimmed consistently
+            if (isPreview) {
+              const PREVIEW_LIMIT = 5;
+              // Determine original length from the longest array among keys we care about
+              const arraysToCheck = ['data', 'time_axis'];
+              let originalLength = 0;
+              arraysToCheck.forEach((k) => {
+                if (Array.isArray(processedData[k])) {
+                  originalLength = Math.max(originalLength, processedData[k].length);
+                }
+              });
+
+              const previewLength = Math.min(PREVIEW_LIMIT, originalLength || processedData.data.length || 0);
+              arraysToCheck.forEach((k) => {
+                if (Array.isArray(processedData[k])) {
+                  processedData[k] = processedData[k].slice(0, previewLength);
+                }
+              });
+
+              processedData.preview_note = `PREVIEW EXTRACT: Showing up to ${PREVIEW_LIMIT} elements per array (original max length: ${originalLength})`;
+              processedData.total_samples = originalLength;
+              processedData.download_note = 'Complete signal data available in full download';
+            }
+
+            // Apply downsampling if enabled
+            if (downsamplingOptions.enabled && Array.isArray(processedData.data)) {
+              processedData.data = downsampleArray(processedData.data, downsamplingOptions.samplingRate);
+              processedData.downsampled = true;
+              processedData.original_sampling_rate = processedData.sampling_rate;
+              processedData.sampling_rate = Math.round(processedData.sampling_rate / downsamplingOptions.samplingRate);
+            }
+
+            processedSignals[processedKey] = processedData;
+          }
+        }
       });
 
       if (Object.keys(processedSignals).length > 0) {

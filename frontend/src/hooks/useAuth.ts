@@ -160,7 +160,7 @@ function useAuthInitialization(dispatch: React.Dispatch<AuthAction>, handleError
     const initializeAuth = async () => {
       dispatch({ type: 'INIT_START' });
       
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log('🔐 Initializing authentication...');
       }
       
@@ -183,7 +183,7 @@ function useAuthInitialization(dispatch: React.Dispatch<AuthAction>, handleError
         if (isMarkedAsLoggedIn()) {
           const storedAuth = loadAuthState();
           if (storedAuth) {
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.DEV) {
               console.log('✅ User is marked as logged in, restored from cache:', storedAuth.user.email);
             }
             const restoredAuthState = {

@@ -46,7 +46,7 @@ export const EXPERIMENTAL_WITH_GAME_WEIGHTS: ScoringWeights = {
 // Research-Optimized Contraction Detection Parameters (2024)
 // Based on biomedical engineering literature and clinical validation studies
 export const DEFAULT_DETECTION_PARAMS: ContractionDetectionParameters = {
-  threshold_factor: 0.15,        // Reduced from 30% to 15% for improved sensitivity
+  threshold_factor: 0.20,        // Balanced at 20% for optimal sensitivity/specificity
   min_duration_ms: 100,          // Increased from 50ms to 100ms for clinical relevance
   smoothing_window_ms: 100,      // Increased from 25ms to 100ms for better stability  
   merge_threshold_ms: 200,       // Reduced from 500ms to 200ms for better temporal resolution

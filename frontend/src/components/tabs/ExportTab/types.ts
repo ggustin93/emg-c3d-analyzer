@@ -17,7 +17,8 @@ export interface DownsamplingOptions {
 
 export interface ChannelSelection {
   includeRaw: boolean;
-  includeProcessed: boolean;
+  includeActivated: boolean;
+  includeProcessedRms: boolean;
 }
 
 export interface ChannelSelectionMap {
@@ -27,7 +28,8 @@ export interface ChannelSelectionMap {
 export interface AvailableChannel {
   baseName: string;
   hasRaw: boolean;
-  hasProcessed: boolean;
+  hasActivated: boolean;
+  hasProcessedRms: boolean;
 }
 
 export interface PerformanceSubscore {

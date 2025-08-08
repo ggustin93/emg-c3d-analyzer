@@ -36,6 +36,12 @@ A web-based tool for the analysis and visualization of Electromyography (EMG) da
 - **Visualization:** Recharts for interactive EMG signal plotting
 - **Authentication:** Supabase client integration
 
+#### Theming
+- **Primary color:** `#0ecfc5` (HSL ≈ `hsl(177 87% 43%)`) configured via CSS variables in `frontend/src/index.css` as `--primary` and `--ring`.
+- **Usage:** Components consume `bg-primary`, `text-primary-foreground`, `border-primary` via shadcn tokens.
+- **Tabs:** App tabs (see `GameSessionTabs.tsx`) use the primary tokens for the active state.
+- **Secondary color (recommendation):** deep medical blue (e.g., `#0B4F6C`) for secondary emphasis, info states, or headings if desired.
+
 ### Development & Deployment
 - **Development:** Automated setup scripts, hot reload
 - **Testing:** Jest (frontend), pytest (backend)
@@ -118,24 +124,44 @@ The frontend defaults to connecting to the backend at `http://localhost:8080`. T
 
 ```
 emg-c3d-analyzer/
-├── backend/            # FastAPI application source
-│   ├── api.py          # REST API endpoints
-│   ├── processor.py    # C3D file processing logic
-│   ├── emg_analysis.py # EMG metrics calculation
-│   ├── models.py       # Data models (Pydantic)
-│   └── tests/          # Backend tests
-├── frontend/           # React TypeScript application
-│   ├── public/         # Static assets and index.html
-│   └── src/            # Application source code
-│       ├── components/ # Reusable UI components
-│       ├── hooks/      # Custom React hooks
-│       ├── store/      # Zustand state management
-│       ├── types/      # TypeScript type definitions
-│       └── utils/      # Utility functions
-├── docs/               # Technical documentation
-├── memory-bank/        # Claude session context, tasks & archive
-├── assets/             # Project assets (images, etc.)
-├── start_dev.sh        # Development environment setup script
+├── backend/                           # FastAPI application source
+│   ├── api.py                         # REST API endpoints
+│   ├── processor.py                   # C3D file processing logic (legacy orchestrator)
+│   ├── emg_analysis.py                # EMG metrics and contraction analysis (domain logic)
+│   ├── signal_processing.py           # Standardized EMG processing pipeline (domain logic)
+│   ├── export_utils.py                # Export utilities (infrastructure)
+│   ├── models.py                      # Pydantic data models
+│   ├── domain/                        # DDD: domain layer (compatibility re-exports)
+│   │   ├── __init__.py
+│   │   ├── analysis.py                # Re-exports from emg_analysis
+│   │   ├── models.py                  # Re-exports from models
+│   │   └── processing.py              # Re-exports from signal_processing
+│   ├── application/                   # DDD: application layer
+│   │   ├── __init__.py
+│   │   └── processor_service.py       # Wrapper for legacy processor
+│   ├── infrastructure/                # DDD: infrastructure layer
+│   │   ├── __init__.py
+│   │   └── exporting.py               # Re-exports for export utilities
+│   └── tests/                         # Backend tests
+│       ├── __init__.py
+│       └── domain/
+│           ├── __init__.py
+│           └── test_contraction_flags.py  # Contract tests for contraction flags logic
+├── frontend/                          # React TypeScript application
+│   ├── public/                        # Static assets and index.html
+│   └── src/                           # Application source code
+│       ├── components/                # Reusable UI components
+│       ├── hooks/                     # Custom React hooks
+│       ├── store/                     # Zustand state management
+│       ├── types/                     # TypeScript type definitions
+│       └── utils/                     # Utility functions
+├── docs/                              # Technical documentation
+│   ├── api.md
+│   ├── signal-processing.md           # Pipeline and parameters
+│   └── architecture-ddd.md            # DDD scaffold overview
+├── memory-bank/                       # Project memory & tasks
+├── assets/                            # Images and assets
+├── start_dev.sh                       # Dev environment setup script
 └── README.md
 ```
 
@@ -144,6 +170,8 @@ emg-c3d-analyzer/
 ### For Developers
 - **[Quick Start Guide](./docs/)** - Development setup and workflow
 - **[API Reference](./docs/api.md)** - FastAPI endpoints and models
+- **[Signal Processing](./docs/signal-processing.md)** - EMG pipeline and parameters
+- **[Architecture (DDD)](./docs/architecture-ddd.md)** - Backend layering overview
 - **[Database Schema](./docs/db_schema.md)** - Supabase database structure
 - **[MCP Setup](./docs/setup/mcp-setup.md)** - Claude Code MCP configuration
 
@@ -163,6 +191,7 @@ emg-c3d-analyzer/
 - **Interactive Chart Controls**: Toggle controls for contraction quality and visualization elements
 - **Performance Analysis**: Clinical scoring system with configurable BFR monitoring
 - **Documentation Architecture**: Streamlined 2-layer documentation strategy
+ - **Role-Gated Settings & Theming** (Aug 2025): Therapist-only gating for Performance Scoring & Therapeutic Parameters with Debug override; Read-only ePRO & Contraction Detection; Primary color set to `#0ecfc5`; tabs use primary tokens; scoring normalization UI disabled when `S_game` weight is 0%.
 
 ### 🔜 Planned Features
 - **CRACO to Vite Migration**: Faster development builds and modern tooling

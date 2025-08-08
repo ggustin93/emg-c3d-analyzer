@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
-import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, TargetIcon, MixerHorizontalIcon } from '@radix-ui/react-icons';
+import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, TargetIcon, MixerHorizontalIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ScoringWeights, GameScoreNormalization, EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import { 
@@ -18,6 +18,7 @@ import {
 import UnifiedSettingsCard from './UnifiedSettingsCard';
 import PerformanceEquation from '@/components/tabs/PerformanceTab/components/PerformanceEquation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SCORING_PRESETS = {
   default: DEFAULT_SCORING_WEIGHTS,
@@ -58,6 +59,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   isDebugMode = false,
   analysisResult = null
 }) => {
+  const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isGameNormalizationOpen, setIsGameNormalizationOpen] = useState(false);
@@ -70,6 +72,15 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     min_score: 0,
     max_score: 100
   };
+  const isGameWeightZero = (weights as any)?.gameScore === 0;
+
+  // Role-based editability: Therapist (clinical_specialist) or admin; Debug Mode unlocks
+  const canTherapistEdit = useMemo(() => {
+    const role = authState?.profile?.role;
+    return role === 'clinical_specialist' || role === 'admin';
+  }, [authState?.profile?.role]);
+
+  const canEdit = (isDebugMode || canTherapistEdit) && !disabled;
   
   // Compliance Score sub-component weights (default: equal weighting)
   const complianceWeights = (sessionParams.enhanced_scoring as any)?.compliance_weights || {
@@ -240,7 +251,29 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
           onOpenChange={setIsPerformanceOpen}
           icon={<TargetIcon className="h-5 w-5 text-blue-600" />}
           accentColor="blue-600"
-          badge={isDebugMode ? <Badge variant="outline" className="bg-blue-100 text-blue-800">Debug Mode</Badge> : undefined}
+          muted={!canEdit}
+          badge={
+            <div className="flex items-center gap-2">
+              {isDebugMode && (
+                <Badge variant="outline" className="bg-blue-100 text-blue-800">Debug Mode</Badge>
+              )}
+              <Badge variant="outline" className="bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                <PersonIcon className="h-3.5 w-3.5" /> Therapist
+              </Badge>
+              {!canEdit && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="bg-slate-100 text-slate-800 flex items-center gap-1">
+                      <LockClosedIcon className="h-3.5 w-3.5" /> Locked
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-xs">Therapist-only. Enable Debug Mode or sign in as a therapist/admin to edit.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          }
         >
           <div className="space-y-6">
             {/* Performance Equation Display */}
@@ -258,7 +291,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                     applyPreset(value as keyof typeof SCORING_PRESETS);
                   }
                 }}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-40" disabled={!canEdit}>
                     <SelectValue placeholder="Preset" />
                   </SelectTrigger>
                   <SelectContent>
@@ -311,7 +344,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                       min={0}
                       max={key === 'gameScore' ? 50 : 100}
                       step={1}
-                      disabled={key === 'gameScore' && !isExperimentalEnabled && currentPreset !== 'custom'}
+                      disabled={!canEdit || (key === 'gameScore' && !isExperimentalEnabled && currentPreset !== 'custom')}
                       className={cn(
                         "w-full",
                         key === 'compliance' && "[&>*:nth-child(1)>*:nth-child(1)]:bg-green-500 [&>*:nth-child(2)]:border-green-500",
@@ -377,7 +410,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                                 max={100}
                                 step={1}
                                 className="w-full [&>*:nth-child(1)>*:nth-child(1)]:bg-gray-500 [&>*:nth-child(2)]:border-gray-500"
-                                disabled={disabled}
+                                disabled={!canEdit}
                               />
                             </div>
                           );
@@ -389,7 +422,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                             size="sm"
                             onClick={() => updateComplianceWeights({ completion: 1/3, intensity: 1/3, duration: 1/3 })}
                             className="text-xs h-6 px-2"
-                            disabled={disabled}
+                            disabled={!canEdit}
                           >
                             Equal (33.3% each)
                           </Button>
@@ -398,7 +431,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                             size="sm"
                             onClick={() => updateComplianceWeights({ completion: 0.5, intensity: 0.3, duration: 0.2 })}
                             className="text-xs h-6 px-2"
-                            disabled={disabled}
+                            disabled={!canEdit}
                           >
                             Completion Focus
                           </Button>
@@ -416,6 +449,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={resetToDefaults}
+                  disabled={!canEdit}
                 >
                   Reset to Default
                 </Button>
@@ -423,6 +457,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => applyPreset('quality_focused')}
+                  disabled={!canEdit}
                 >
                   Quality Focus
                 </Button>
@@ -436,12 +471,29 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         {/* Game Score Normalization - Always visible for configuration */}
         <UnifiedSettingsCard
             title="Game Score Normalization"
-            description="Configure how raw game scores are normalized for performance calculation"
+            description="Normalization maps raw game points to a percentage (S_game) contributing to overall performance. It is level- and game-type specific. Disabled if S_game weight is 0%."
             isOpen={isGameNormalizationOpen}
             onOpenChange={setIsGameNormalizationOpen}
             icon={<MixerHorizontalIcon className="h-5 w-5 text-amber-600" />}
             accentColor="amber-600"
-            badge={<Badge variant="outline" className="bg-amber-100 text-amber-800 text-xs">Optional</Badge>}
+            muted={!canEdit || isGameWeightZero}
+            badge={
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 text-xs">Optional</Badge>
+                {(!canEdit || isGameWeightZero) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="bg-slate-100 text-slate-800 flex items-center gap-1">
+                        <LockClosedIcon className="h-3.5 w-3.5" /> {isGameWeightZero ? 'Disabled (S_game=0%)' : 'Locked'}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs max-w-xs">{isGameWeightZero ? 'Increase S_game weight to enable normalization editing.' : 'Therapist-only. Enable Debug Mode to edit temporarily.'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            }
           >
             <div className="space-y-6">
               
@@ -476,7 +528,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                       type="number"
                       value={gameNormalization.min_score}
                       onChange={(e) => updateGameNormalization('min_score', Number(e.target.value))}
-                      disabled={disabled}
+                      disabled={!canEdit || isGameWeightZero}
                       className="h-9 text-sm"
                     />
                     <p className="text-xs text-gray-500">Baseline (typically 0)</p>
@@ -487,7 +539,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                       type="number"
                       value={gameNormalization.max_score}
                       onChange={(e) => updateGameNormalization('max_score', Number(e.target.value))}
-                      disabled={disabled}
+                      disabled={!canEdit || isGameWeightZero}
                       className="h-9 text-sm"
                     />
                     <p className="text-xs text-gray-500">Expected maximum (typically 100)</p>

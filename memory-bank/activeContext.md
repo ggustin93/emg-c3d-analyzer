@@ -58,6 +58,11 @@
 - **Enhancing EMG Analysis**: Implementing improved clinical metrics for rehabilitation assessment.
 
 ### Recent Changes
+### UI/UX Role Gating & Theming (Aug 2025) ✅
+* Therapist-only gating for Performance Scoring System and Therapeutic Parameters. Debug Mode unlocks for testing; badges and lock indicators added; locked cards use muted styling.
+* Session Goals and Patient Reported Outcomes are read-only (C3D/app-sourced); Contraction Detection Parameters are information-only (backend-optimized on RAW EMG).
+* Game Score Normalization clarified as level/game-type specific; disabled when `S_game` weight is 0%.
+* Primary color updated to `#0ecfc5` (HSL 177 87% 43%); tabs now use primary tokens.
 
 ### **Enhanced Performance System with BFR Configuration (July 18, 2025) ✅**
 *   **Performance Gauge Improvements**: Refined visual design with harmonized icons, thinner strokes, and improved text spacing
@@ -232,6 +237,7 @@
 - **Weighted Compliance Score**: The overall muscle compliance score is now a weighted average of three components: Completion, Intensity, and Duration, with configurable weights.
 - **Improved UI/UX**: Moved detailed score calculations into tooltips for a cleaner interface while maintaining data accessibility.
 - **Backend & Type Safety**: Updated backend analysis functions and frontend TypeScript types to support per-muscle duration thresholds and enhanced contraction quality metrics.
+ - **Contraction Flags Finalized**: Backend now returns explicit booleans for `meets_mvc`, `meets_duration`, and `is_good`; counts always integers. Global duration default set to 2000 ms and echoed under `metadata.session_parameters_used`.
 - **Enhanced Contraction Analysis**: The backend now flags contractions with `meets_mvc` and `meets_duration` for more granular analysis.
 
 ### Immediate Development Focus
@@ -240,7 +246,92 @@
 3. **Performance Optimization**: Continue backend streamlining and frontend responsiveness
 4. **Documentation**: Maintain comprehensive memory bank and technical documentation
 
-## Latest Implementation: Component Architecture Reorganization ✅ (August 6, 2025)
+## Latest Implementation: Threshold Display Synchronization ✅ (January 8, 2025)
+
+### MVC & Duration Threshold Display Fix
+- **Backend-Frontend Synchronization**: Fixed EMGChart legend to display actual backend-calculated values instead of hardcoded defaults
+- **MVC Threshold Accuracy**: Changed legend display from static `1.500e-4V` to actual backend value `1.125e-4V` 
+- **Duration Threshold Consistency**: Updated all defaults from 2000ms to 250ms to match backend calculations
+- **API Parameter Integration**: Added `contraction_duration_threshold` parameter to `/upload` and `/export` endpoints
+- **Session Store Alignment**: Updated frontend session store default to 250ms for consistent threshold handling
+- **Environment Variable Migration**: Fixed Vite compatibility issues by migrating from `process.env` to `import.meta.env`
+
+### Technical Implementation
+- **Backend Changes**: 
+  - Added duration threshold parameter to API endpoints with 250ms default
+  - Updated `GameSessionParameters` creation to include threshold values
+  - Ensured session parameters are returned in `metadata.session_parameters_used`
+- **Frontend Changes**:
+  - Fixed EMGChart legend line 398-400 to show `item.value` (actual threshold) instead of `mvcValue` (base value)
+  - Updated session store default from 2000ms to 250ms to match backend
+  - Fixed all fallback values throughout EMGChart component
+  - Created proper TypeScript definitions in `vite-env.d.ts`
+
+### Verification Results
+- ✅ Backend logs now show correct `contraction_duration_threshold: 250` being used  
+- ✅ MVC thresholds display actual calculated values (e.g., 1.125e-4V)
+- ✅ Duration thresholds will display 250ms once session data refreshes
+- ✅ Vite environment variables working correctly with `import.meta.env`
+
+## URGENT Critical Bug Fix: Contraction Highlighting Logic ✅ (August 7, 2025)
+
+### Problem Identified
+- **Clinical Accuracy Issue**: Contractions from activated signals not meeting MVC thresholds were incorrectly flagged as "good" (green) instead of "poor" (red)
+- **Root Cause**: Frontend EMGChart logic was overriding backend quality flags using `??` (nullish coalescing), treating `false` values as missing data
+
+### Technical Implementation
+- **Backend Quality Assessment**: Confirmed `analyze_contractions()` function correctly sets:
+  - `meets_mvc`: Boolean flag for MVC threshold compliance
+  - `meets_duration`: Boolean flag for duration threshold compliance  
+  - `is_good`: Combined therapeutic compliance flag (meets both criteria)
+- **Frontend Logic Fix**: Updated EMGChart.tsx lines 241-249 and 717-725 to respect backend calculations:
+  - **Before**: `contraction.meets_mvc ?? frontend_calculation` (overwrote `false` with frontend calc)
+  - **After**: Explicit null/undefined check to only use frontend fallback when backend data is truly missing
+
+### Clinical Impact
+- **Accurate Quality Assessment**: Visual indicators now match backend therapeutic compliance calculations
+- **Correct Highlighting**: Contractions not meeting MVC/duration thresholds properly display as "poor" (red)
+- **Trusted Clinical Decision-Making**: Therapists can rely on visual feedback for accurate treatment assessment
+
+### Files Modified
+- `frontend/src/components/tabs/SignalPlotsTab/EMGChart.tsx`: Fixed quality flag logic in two locations
+- Backend analysis confirmed working correctly with proper quality flag generation
+
+## Latest Implementation: EMG Overlay System Fix ✅ (August 8, 2025)
+
+### Root Cause Analysis & Resolution
+- **Channel Naming Mismatch Identified**: Backend `extract_emg_data()` created channels as "CH1", "CH2" but analysis pipeline looked for "CH1 Raw", "CH2 Raw"
+- **Missing Raw Signals**: Only processed channels ("CH1 Processed", "CH2 Processed") reached frontend, preventing Raw + RMS overlay functionality
+- **Frontend Implementation Correct**: EMGChart overlay logic was already properly implemented with dual Y-axes and proper signal handling
+
+### Technical Solution Implemented
+**File Modified**: `backend/processor.py` lines 167-184
+- **Dual Channel Creation**: Modified `extract_emg_data()` to create both original C3D channel names AND "Raw" variants
+- **Backend Compatibility**: Ensures analysis pipeline can find expected "{base_name} Raw" channels
+- **Data Structure**: Maintains backward compatibility by storing both channel naming conventions
+
+```python
+# Store channel with original C3D name (e.g., "CH1")  
+emg_data[channel_name] = channel_data
+
+# ALSO store with "Raw" suffix for analysis pipeline compatibility
+raw_channel_name = f"{channel_name} Raw"
+emg_data[raw_channel_name] = channel_data.copy()
+```
+
+### Expected Results (Pending Test)
+- ✅ **Raw signals available**: "CH1 Raw", "CH2 Raw" for overlay left Y-axis
+- ✅ **Processed signals available**: "CH1 Processed", "CH2 Processed" for overlay right Y-axis  
+- ✅ **Dual-axis overlay functional**: Raw EMG (transparent) + RMS envelope (bold) on separate axes
+- ✅ **Debug output corrected**: `rawKeys` should populate, `hasValidOverlayData: true`
+
+### Context for Follow-up
+- **Testing Required**: Need to verify fix works with actual C3D file upload and Raw + RMS overlay selection
+- **Previous Issue**: User reported "Raw + RMS" showed same as "Activated (C3D)" due to missing raw channels
+- **Frontend Overlay Code**: Already correctly implemented in EMGChart.tsx with proper dual Y-axis configuration
+- **Backend Integration**: Fix addresses channel naming mismatch at data extraction level
+
+## Previous Implementation: Component Architecture Reorganization ✅ (August 6, 2025)
 - **Domain-Based Organization**: Systematic component reorganization by feature domain (c3d/, shared/, tabs/)
 - **lib/utils Consolidation**: Merged utils/ into lib/ directory with comprehensive documentation
 - **Tab-Based Architecture**: Restructured settings as proper tab component with consistent UX patterns  

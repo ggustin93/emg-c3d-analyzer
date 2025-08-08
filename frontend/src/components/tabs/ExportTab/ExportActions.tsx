@@ -81,63 +81,68 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Original C3D Download */}
-        <div className="space-y-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownloadOriginal}
-                disabled={downloadStates.original === 'downloading'}
-                variant="outline"
-                className="w-full justify-start gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              >
-                {downloadStates.original === 'success' ? (
-                  <CheckIcon className="h-4 w-4" />
-                ) : (
-                  <DownloadIcon className="h-4 w-4" />
-                )}
-                {downloadStates.original === 'downloading' ? 'Downloading...' : 
-                 downloadStates.original === 'success' ? 'Downloaded!' : 
-                 'Download Original C3D'}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Download the original C3D file: {originalFilename}</p>
-            </TooltipContent>
-          </Tooltip>
-          <p className="text-xs text-muted-foreground px-2">
-            Original file: {originalFilename}
-          </p>
-        </div>
-
-        {/* Export JSON Download */}
-        <div className="space-y-2">
-          <Button
-            onClick={handleDownloadExport}
-            disabled={!hasSelectedData || downloadStates.export === 'downloading'}
-            className="w-full justify-start gap-2"
-          >
-            {downloadStates.export === 'success' ? (
-              <CheckIcon className="h-4 w-4" />
-            ) : (
-              <DownloadIcon className="h-4 w-4" />
-            )}
-            {downloadStates.export === 'downloading' ? 'Exporting...' : 
-             downloadStates.export === 'success' ? 'Exported!' : 
-             'Export JSON Data'}
-          </Button>
-          
-          {hasSelectedData ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Original C3D Download */}
+          <div className="space-y-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleDownloadOriginal}
+                  disabled={downloadStates.original === 'downloading'}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                >
+                  {downloadStates.original === 'success' ? (
+                    <CheckIcon className="h-4 w-4" />
+                  ) : (
+                    <DownloadIcon className="h-4 w-4" />
+                  )}
+                  {downloadStates.original === 'downloading' ? 'Downloading...' : 
+                   downloadStates.original === 'success' ? 'Downloaded!' : 
+                   'Download Original C3D'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download the original C3D file: {originalFilename}</p>
+              </TooltipContent>
+            </Tooltip>
             <p className="text-xs text-muted-foreground px-2">
-              Estimated size: {estimatedSize}
+              Original file: {originalFilename}
             </p>
-          ) : (
-            <Alert className="mt-2">
-              <AlertDescription className="text-xs">
-                Select at least one export option or EMG channel to enable export.
-              </AlertDescription>
-            </Alert>
-          )}
+          </div>
+
+          {/* Export JSON Download */}
+          <div className="space-y-2">
+            <Button
+              onClick={handleDownloadExport}
+              disabled={!hasSelectedData || downloadStates.export === 'downloading'}
+              size="sm"
+              variant="outline"
+              className="w-full justify-start gap-2 border-primary text-primary hover:bg-primary/5"
+            >
+              {downloadStates.export === 'success' ? (
+                <CheckIcon className="h-4 w-4" />
+              ) : (
+                <DownloadIcon className="h-4 w-4" />
+              )}
+              {downloadStates.export === 'downloading' ? 'Exporting...' : 
+               downloadStates.export === 'success' ? 'Exported!' : 
+               'Export JSON Data'}
+            </Button>
+            
+            {hasSelectedData ? (
+              <p className="text-xs text-muted-foreground px-2">
+                Estimated size: {estimatedSize}
+              </p>
+            ) : (
+              <Alert className="mt-2">
+                <AlertDescription className="text-xs">
+                  Select at least one export option or EMG channel to enable export.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

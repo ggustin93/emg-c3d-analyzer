@@ -27,7 +27,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
     for (const channelName of channelNames) {
       const originalChannelData = analysisResult.analytics[channelName];
       const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
-      const durationThreshold = sessionParams.contraction_duration_threshold ?? 250;
+      const durationThreshold = sessionParams.contraction_duration_threshold ?? 2000;
 
       let goodContractions = 0;
       let longContractionCount = 0;

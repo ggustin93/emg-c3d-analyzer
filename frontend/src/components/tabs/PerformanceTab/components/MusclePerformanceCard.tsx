@@ -63,7 +63,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   longGoodContractions,
   expectedShortContractions,
   expectedLongContractions,
-  contractionDurationThreshold = 250,
+  contractionDurationThreshold = 2000,
   sessionParams,
   averageContractionTime,
   mvcValue,

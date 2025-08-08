@@ -16,7 +16,7 @@ import { useSessionStore } from '@/store/sessionStore';
 interface ChannelSelectorProps {
   availableChannels: AvailableChannel[];
   channelSelection: ChannelSelectionMap;
-  onChannelSelectionChange: (channelName: string, field: 'includeRaw' | 'includeProcessed', value: boolean) => void;
+  onChannelSelectionChange: (channelName: string, field: 'includeRaw' | 'includeActivated' | 'includeProcessedRms', value: boolean) => void;
 }
 
 export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
@@ -44,7 +44,8 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
       muscleName: getMuscleNameForChannel(channel.baseName),
       muscleColor: getMuscleColorForChannel(channel.baseName),
       isSelected: channelSelection[channel.baseName]?.includeRaw || 
-                  channelSelection[channel.baseName]?.includeProcessed
+                  channelSelection[channel.baseName]?.includeActivated ||
+                  channelSelection[channel.baseName]?.includeProcessedRms
     }));
   }, [availableChannels, channelSelection, getMuscleNameForChannel, getMuscleColorForChannel]);
   
@@ -87,7 +88,7 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
                 />
                 <div className="flex flex-row justify-between w-full">
                   <Label className="font-medium text-sm">
-                    {channel.baseName}
+                    {channel.baseName} <span className="text-muted-foreground">Signals</span>
                   </Label>
                   <span className="text-xs text-muted-foreground">
                     {channel.muscleName}
@@ -110,7 +111,7 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
                         htmlFor={`${channel.baseName}-raw`}
                         className="text-sm cursor-pointer font-medium"
                       >
-                        Raw Signals
+                        Raw
                       </Label>
                       <Tooltip>
                         <TooltipTrigger>
@@ -125,13 +126,13 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
                   </div>
                 )}
 
-                {channel.hasProcessed && (
+                {channel.hasActivated && (
                   <div className="flex items-center space-x-2">
                     <Switch
                       id={`${channel.baseName}-processed`}
-                      checked={channelSelection[channel.baseName]?.includeProcessed || false}
+                      checked={channelSelection[channel.baseName]?.includeActivated || false}
                       onCheckedChange={(checked) => 
-                        onChannelSelectionChange(channel.baseName, 'includeProcessed', checked)
+                        onChannelSelectionChange(channel.baseName, 'includeActivated', checked)
                       }
                     />
                     <div className="flex items-center space-x-1">
@@ -139,15 +140,44 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
                         htmlFor={`${channel.baseName}-processed`}
                         className="text-sm cursor-pointer font-medium"
                       >
-                        Activated Signals
+                        Activated
                       </Label>
                       <Tooltip>
                         <TooltipTrigger>
                           <QuestionMarkCircledIcon className="h-3 w-3 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs p-3">
-                          <p className="font-semibold text-xs mb-1">Pre-processed Contraction Data</p>
-                          <p className="text-xs">Muscle activity processed by GHOSTLY game engine. Filtered and optimized for contraction detection and therapeutic analysis.</p>
+                          <p className="font-semibold text-xs mb-1">Game Activated EMG</p>
+                          <p className="text-xs">Muscle activity processed by the game engine (used historically). Our rigorous pipeline uses RAW as source of truth.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                )}
+
+                {channel.hasProcessedRms && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`${channel.baseName}-processed-rms`}
+                      checked={channelSelection[channel.baseName]?.includeProcessedRms || false}
+                      onCheckedChange={(checked) => 
+                        onChannelSelectionChange(channel.baseName, 'includeProcessedRms', checked)
+                      }
+                    />
+                    <div className="flex items-center space-x-1">
+                      <Label 
+                        htmlFor={`${channel.baseName}-processed-rms`}
+                        className="text-sm cursor-pointer font-medium"
+                      >
+                        RMS Envelope
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <QuestionMarkCircledIcon className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-3">
+                          <p className="font-semibold text-xs mb-1">Rigorous Pipeline</p>
+                          <p className="text-xs">Our processed envelope built from RAW signals with documented filtering, rectification, and smoothing parameters. Includes detection thresholds and pipeline metadata in export.</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>

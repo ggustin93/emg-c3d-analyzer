@@ -176,7 +176,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   onChannelSelect, 
   sessionExpectedContractions,
   isEMGAnalyticsTab = false,
-  contractionDurationThreshold = 250, // Default 250ms threshold
+  contractionDurationThreshold = 2000, // Default 2000ms threshold (clinical standard)
   sessionParams,
   allChannelsData = {},
   viewMode,

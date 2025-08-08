@@ -8,9 +8,9 @@ C3D data export and debugging.
 
 import json
 from pathlib import Path
-from .processor import GHOSTLYC3DProcessor
-from .models import GameSessionParameters, ProcessingOptions
-from .export_utils import EMGDataExporter, create_quick_export
+from .application.processor import GHOSTLYC3DProcessor
+from .domain.models import GameSessionParameters, ProcessingOptions
+from .infrastructure.exporting import EMGDataExporter, create_quick_export
 
 
 def example_comprehensive_export():

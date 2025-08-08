@@ -73,7 +73,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
                 }}
                 placeholder="0-10"
                 min="0" max="10" step="0.5"
-                disabled={disabled}
+                disabled={true}
                 className="h-9 text-sm border-indigo-300 focus:border-indigo-500"
               />
               <p className="text-xs text-indigo-700">

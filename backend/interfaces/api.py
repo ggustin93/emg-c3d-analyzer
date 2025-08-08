@@ -26,18 +26,19 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .processor import GHOSTLYC3DProcessor
-from .models import (
+from ..application.processor import GHOSTLYC3DProcessor
+from ..domain.models import (
     EMGAnalysisResult, EMGChannelSignalData, ProcessingOptions, GameMetadata, ChannelAnalytics,
     GameSessionParameters, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW, DEFAULT_MVC_THRESHOLD_PERCENTAGE
 )
-from .config import (
+from ..core.config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
     CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS,
     ensure_temp_dir
 )
-from .export_utils import EMGDataExporter
+from ..infrastructure.exporting import EMGDataExporter
+from ..application.mvc_service import mvc_service, MVCEstimation
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -66,6 +67,7 @@ async def root():
         "endpoints": {
             "upload": "POST /upload - Upload and process a C3D file",
             "export": "POST /export - Export comprehensive analysis data as JSON",
+            "mvc_estimate": "POST /mvc/estimate - Estimate MVC values for EMG signals",
         }
     })
 
@@ -84,7 +86,8 @@ async def upload_file(file: UploadFile = File(...),
                       session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
                       session_expected_contractions: Optional[int] = Form(None),
                       session_expected_contractions_ch1: Optional[int] = Form(None),
-                      session_expected_contractions_ch2: Optional[int] = Form(None)):
+                      session_expected_contractions_ch2: Optional[int] = Form(None),
+                      contraction_duration_threshold: Optional[int] = Form(2000)):
     """Upload and process a C3D file."""
     if not file.filename.lower().endswith('.c3d'):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
@@ -111,7 +114,8 @@ async def upload_file(file: UploadFile = File(...),
             session_mvc_threshold_percentage=session_mvc_threshold_percentage,
             session_expected_contractions=session_expected_contractions,
             session_expected_contractions_ch1=session_expected_contractions_ch1,
-            session_expected_contractions_ch2=session_expected_contractions_ch2
+            session_expected_contractions_ch2=session_expected_contractions_ch2,
+            contraction_duration_threshold=contraction_duration_threshold
         )
 
         # Wrap the CPU-bound processing in run_in_threadpool
@@ -141,7 +145,10 @@ async def upload_file(file: UploadFile = File(...),
             file_id=str(uuid.uuid4()), # Generate a new UUID for this stateless request
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
             source_filename=file.filename,
-            metadata=game_metadata,
+            metadata=GameMetadata(**{
+                **game_metadata.model_dump(),
+                'session_parameters_used': session_game_params
+            }),
             analytics=analytics,
             available_channels=result_data['available_channels'],
             emg_signals=processor.emg_data, # Directly assign if structure matches EMGChannelSignalData
@@ -179,6 +186,7 @@ async def export_analysis_data(file: UploadFile = File(...),
                               session_expected_contractions: Optional[int] = Form(None),
                               session_expected_contractions_ch1: Optional[int] = Form(None),
                               session_expected_contractions_ch2: Optional[int] = Form(None),
+                               contraction_duration_threshold: Optional[int] = Form(2000),
                               # Export options
                               include_raw_signals: bool = Form(True),
                               include_debug_info: bool = Form(True)):
@@ -214,7 +222,8 @@ async def export_analysis_data(file: UploadFile = File(...),
             session_mvc_threshold_percentage=session_mvc_threshold_percentage,
             session_expected_contractions=session_expected_contractions,
             session_expected_contractions_ch1=session_expected_contractions_ch1,
-            session_expected_contractions_ch2=session_expected_contractions_ch2
+            session_expected_contractions_ch2=session_expected_contractions_ch2,
+            contraction_duration_threshold=contraction_duration_threshold
         )
 
         # Process the file completely
@@ -242,6 +251,99 @@ async def export_analysis_data(file: UploadFile = File(...),
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
+    finally:
+        if file:
+            await file.close()
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.post("/mvc/estimate", response_model=Dict[str, Dict])
+async def estimate_mvc_values(
+    file: UploadFile = File(...),
+    user_id: Optional[str] = Form(None),
+    session_id: Optional[str] = Form(None),
+    threshold_percentage: float = Form(75.0)
+):
+    """
+    Estimate MVC values from uploaded C3D file using clinical algorithms.
+    
+    Returns MVC estimations for all EMG channels found in the file with
+    confidence scores, metadata, and threshold values.
+    """
+    if not file.filename.lower().endswith('.c3d'):
+        raise HTTPException(status_code=400, detail="File must be a C3D file")
+
+    tmp_path = ""
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".c3d") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+
+        # Process the file to extract EMG signals
+        processor = GHOSTLYC3DProcessor(tmp_path)
+        
+        # Extract raw EMG signals
+        emg_signals = {}
+        sampling_rate = None
+        
+        # Process file to get EMG signals
+        processor._load_c3d_data()  # Load C3D file
+        processor._identify_emg_channels()  # Identify EMG channels
+        processor._extract_emg_data()  # Extract EMG data
+        
+        # Get signals and sampling rate
+        for channel in processor.emg_channels:
+            if hasattr(processor, 'emg_data') and channel in processor.emg_data:
+                emg_signals[channel] = processor.emg_data[channel]['raw']
+                if sampling_rate is None and 'sampling_rate' in processor.emg_data[channel]:
+                    sampling_rate = processor.emg_data[channel]['sampling_rate']
+        
+        if not emg_signals:
+            raise HTTPException(status_code=400, detail="No EMG channels found in C3D file")
+        
+        if sampling_rate is None:
+            # Try to get from C3D file metadata
+            sampling_rate = getattr(processor, 'analog_sample_rate', 1000)  # Default fallback
+        
+        # Use MVC service for bulk estimation
+        mvc_results = await mvc_service.bulk_estimate_mvc(
+            signal_data_dict=emg_signals,
+            sampling_rate=int(sampling_rate),
+            user_id=user_id,
+            session_id=session_id,
+            threshold_percentage=threshold_percentage
+        )
+        
+        # Convert results to JSON-serializable format
+        response_data = {}
+        for channel, estimation in mvc_results.items():
+            response_data[channel] = {
+                "mvc_value": estimation.mvc_value,
+                "threshold_value": estimation.threshold_value,
+                "threshold_percentage": estimation.threshold_percentage,
+                "estimation_method": estimation.estimation_method,
+                "confidence_score": estimation.confidence_score,
+                "metadata": estimation.metadata,
+                "timestamp": estimation.timestamp.isoformat()
+            }
+        
+        return JSONResponse(content={
+            "status": "success",
+            "file_info": {
+                "filename": file.filename,
+                "channels_processed": list(emg_signals.keys()),
+                "sampling_rate": sampling_rate
+            },
+            "mvc_estimations": response_data
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"ERROR in /mvc/estimate: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error estimating MVC: {str(e)}")
     finally:
         if file:
             await file.close()

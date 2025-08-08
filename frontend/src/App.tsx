@@ -11,6 +11,7 @@ import { useGameSessionData } from "./hooks/useGameSessionData";
 import { useMvcInitialization } from "./hooks/useMvcInitialization";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/tabs/SignalPlotsTab/EMGChart";
+import { SignalDisplayType } from "./components/tabs/SignalPlotsTab/ThreeChannelSignalSelector";
 import C3DSourceSelector from "./components/c3d/C3DSourceSelector";
 import AuthGuard from "./components/auth/AuthGuard";
 import Header from "./components/layout/Header";
@@ -25,7 +26,7 @@ function AppContent() {
   const [appError, setAppError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
-  const [plotMode, setPlotMode] = useState<'raw' | 'activated'>('activated');
+  const [signalType, setSignalType] = useState<SignalDisplayType>('activated');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   
   // Authentication state
@@ -54,7 +55,7 @@ function AppContent() {
     allAvailableChannels,
     updateChannelsAfterUpload,
     resetChannelSelections,
-  } = useChannelManagement(analysisResult, plotMode);
+  } = useChannelManagement(analysisResult, signalType);
 
   // Ensure muscle mappings are initialized
   useEffect(() => {
@@ -324,7 +325,7 @@ function AppContent() {
     const name1 = plotChannel1Name;
     const name2 = plotChannel2Name;
 
-    if (process.env.NODE_ENV === 'development' && analysisResult) {
+    if (import.meta.env.DEV && analysisResult) {
       console.log('Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
     }
 
@@ -410,8 +411,8 @@ function AppContent() {
                 mainPlotChannel2Data={plotChannel2Data}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                plotMode={plotMode}
-                setPlotMode={setPlotMode}
+                signalType={signalType}
+                setSignalType={setSignalType}
                 appIsLoading={isLoading}
                 uploadedFileName={uploadedFileName}
               />

@@ -52,6 +52,7 @@ Upload and process C3D file.
 | `session_expected_contractions` | int | ❌ | null | Expected contractions |
 | `session_expected_contractions_ch1` | int | ❌ | null | Expected contractions CH1 |
 | `session_expected_contractions_ch2` | int | ❌ | null | Expected contractions CH2 |
+| `contraction_duration_threshold` | int | ❌ | 2000 | Global duration threshold (ms) |
 
 **Response**: `EMGAnalysisResult`
 ```json
@@ -63,7 +64,11 @@ Upload and process C3D file.
     "game_name": "GHOSTLY",
     "level": "Level 1",
     "duration": 120.5,
-    "score": 850.0
+    "score": 850.0,
+    "session_parameters_used": {
+      "contraction_duration_threshold": 2000,
+      "session_mvc_threshold_percentage": 75
+    }
   },
   "analytics": {
     "CH1": {

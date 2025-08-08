@@ -77,7 +77,7 @@ const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: s
   return mvcValue * (thresholdPercent / 100);
 };
 
-export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, contractionDurationThreshold: number = 250) => {
+export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, contractionDurationThreshold: number = 2000) => {
   const { sessionParams } = useSessionStore();
 
   const performanceData = useMemo(() => {
@@ -138,7 +138,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       let longGoodContractions = 0;
       let muscleContractionDurations: number[] = [];
       
-      const durationThreshold = sessionParams.contraction_duration_threshold ?? 250;
+     const durationThreshold = sessionParams.contraction_duration_threshold ?? 2000;
 
       if (channelData.contractions && Array.isArray(channelData.contractions)) {
         channelData.contractions.forEach((c: Contraction) => {
@@ -229,7 +229,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       }
     }
 
-    const durationThreshold = sessionParams?.contraction_duration_threshold ?? contractionDurationThreshold;
+   const durationThreshold = sessionParams?.contraction_duration_threshold ?? contractionDurationThreshold;
     
     // Calculate average contraction time
     const averageContractionTime = allContractionDurations.length > 0 

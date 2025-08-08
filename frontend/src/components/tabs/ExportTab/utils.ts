@@ -15,22 +15,46 @@ export function extractAvailableChannels(analysisResult: EMGAnalysisResult | nul
 
   const channelMap = new Map<string, AvailableChannel>();
   
+  const normalizeBaseName = (name: string): string => {
+    let parts = name.trim().replace(/\s+/g, ' ').split(' ');
+    const suffixes = new Set(['raw', 'activated', 'processed', 'rms', 'envelope']);
+    while (parts.length > 1 && suffixes.has(parts[parts.length - 1].toLowerCase())) {
+      parts.pop();
+    }
+    return parts.join(' ');
+  };
+  
   Object.keys(analysisResult.emg_signals).forEach(channelName => {
-    const baseName = channelName.replace(' Raw', '').replace(' activated', '');
-    const isRaw = channelName.includes('Raw');
-    const isActivated = channelName.includes('activated');
+    // Normalize base names by removing common suffixes (robust)
+    const baseName = normalizeBaseName(channelName);
+    const isRaw = /\bRaw$/i.test(channelName);
+    const isActivated = /\bactivated$/i.test(channelName);
+    const isProcessedChannel = /\bProcessed$/i.test(channelName);
     
     if (!channelMap.has(baseName)) {
       channelMap.set(baseName, {
         baseName,
         hasRaw: false,
-        hasProcessed: false
+        hasActivated: false,
+        hasProcessedRms: false
       });
     }
     
     const channel = channelMap.get(baseName)!;
     if (isRaw) channel.hasRaw = true;
-    if (isActivated) channel.hasProcessed = true;
+    if (isActivated) channel.hasActivated = true;
+    // Also consider a channel as having processed RMS if:
+    // 1) its raw entry contains an RMS envelope, or
+    // 2) there exists a separate "Processed" channel entry
+    if (isRaw) {
+      const rawData = analysisResult.emg_signals[channelName] as any;
+      if (rawData && Array.isArray(rawData.rms_envelope) && rawData.rms_envelope.length > 0) {
+        channel.hasProcessedRms = true;
+      }
+    }
+    if (isProcessedChannel) {
+      channel.hasProcessedRms = true;
+    }
   });
   
   return Array.from(channelMap.values()).sort((a, b) => a.baseName.localeCompare(b.baseName));

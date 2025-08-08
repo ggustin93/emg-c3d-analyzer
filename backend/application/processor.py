@@ -29,18 +29,19 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from .emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms
-from .models import GameSessionParameters
+from ..domain.analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms
+from ..domain.models import GameSessionParameters
+from ..domain.processing import preprocess_emg_signal, get_processing_metadata, ProcessingParameters
 
 # Import configuration
-from .config import (
+from ..core.config import (
     DEFAULT_SAMPLING_RATE,
     DEFAULT_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW,
     MERGE_THRESHOLD_MS,
     REFRACTORY_PERIOD_MS,
-    RMS_ENVELOPE_WINDOW_MS,
+    # RMS envelope window is centralized in ProcessingParameters.SMOOTHING_WINDOW_MS
     EMG_COLOR,
     CONTRACTION_COLOR,
     ACTIVITY_COLORS
@@ -159,17 +160,29 @@ class GHOSTLYC3DProcessor:
 
                     time_axis = np.arange(len(signal_data)) / sampling_rate
 
-                    # Calculate RMS envelope
-                    rms_env_window_samples = int((RMS_ENVELOPE_WINDOW_MS / 1000) * sampling_rate)
-                    calculated_rms_envelope = moving_rms(signal_data, rms_env_window_samples).tolist()
+                    # Calculate RMS envelope using centralized processing window
+                    rms_env_window_samples = int((ProcessingParameters.SMOOTHING_WINDOW_MS / 1000) * sampling_rate)
+                    # Use rectified signal for RMS per clinical practice
+                    calculated_rms_envelope = moving_rms(np.abs(signal_data), rms_env_window_samples).tolist()
 
-                    emg_data[channel_name] = {
+                    # Channel data structure
+                    channel_data = {
                         'data': signal_data.tolist(),
                         'time_axis': time_axis.tolist(),
                         'sampling_rate': sampling_rate,
                         'rms_envelope': calculated_rms_envelope,
-                        'activated_data': None  # This can be populated later if needed
+                        'activated_data': None,  # Legacy field - not used in rigorous pipeline
+                        'processed_data': None  # Will be populated during analysis with our processing
                     }
+                    
+                    # Store channel with original C3D name (e.g., "CH1")
+                    emg_data[channel_name] = channel_data
+                    
+                    # ALSO store with "Raw" suffix for analysis pipeline compatibility
+                    # This ensures the analysis pipeline can find "{base_name} Raw" channels
+                    raw_channel_name = f"{channel_name} Raw"
+                    emg_data[raw_channel_name] = channel_data.copy()
+                    print(f"✅ Created raw channel entries: '{channel_name}' and '{raw_channel_name}'")
                 except IndexError:
                     errors.append(f"Data index out of range for channel {channel_name}")
                 except Exception as e:
@@ -250,32 +263,42 @@ class GHOSTLYC3DProcessor:
             # Store expected contractions in analytics
             channel_analytics['expected_contractions'] = expected_contractions
             
-            # Determine channel-specific MVC threshold
+            # CLINICAL MVC THRESHOLD ESTIMATION
+            # Priority: User-provided > Backend estimation > No threshold (limited quality assessment)
             actual_mvc_threshold: Optional[float] = None
+            mvc_estimation_method = "none"
             
-            # First check if we have channel-specific MVC values
+            # First check if we have explicitly provided MVC values
             if (hasattr(session_params, 'session_mvc_values') and 
                 session_params.session_mvc_values and 
-                base_name in session_params.session_mvc_values):
+                base_name in session_params.session_mvc_values and
+                session_params.session_mvc_values[base_name] is not None):
                 
                 channel_mvc = session_params.session_mvc_values.get(base_name)
+                threshold_percentage = 75.0  # Default clinical standard
                 
                 # Use channel-specific threshold percentage if available
                 if (hasattr(session_params, 'session_mvc_threshold_percentages') and 
                     session_params.session_mvc_threshold_percentages and 
-                    base_name in session_params.session_mvc_threshold_percentages):
-                    
-                    threshold_percentage = session_params.session_mvc_threshold_percentages.get(base_name)
-                    if channel_mvc is not None and threshold_percentage is not None:
-                        actual_mvc_threshold = channel_mvc * (threshold_percentage / 100.0)
+                    base_name in session_params.session_mvc_threshold_percentages and
+                    session_params.session_mvc_threshold_percentages[base_name] is not None):
+                    threshold_percentage = session_params.session_mvc_threshold_percentages[base_name]
+                elif session_params.session_mvc_threshold_percentage is not None:
+                    threshold_percentage = session_params.session_mvc_threshold_percentage
                 
-                # Fall back to global threshold percentage
-                elif channel_mvc is not None and session_params.session_mvc_threshold_percentage is not None:
-                    actual_mvc_threshold = channel_mvc * (session_params.session_mvc_threshold_percentage / 100.0)
-            
-            # Fall back to global MVC threshold
-            else:
+                actual_mvc_threshold = channel_mvc * (threshold_percentage / 100.0)
+                mvc_estimation_method = "user_provided"
+                
+            # Fall back to global MVC if provided
+            elif global_mvc_threshold is not None:
                 actual_mvc_threshold = global_mvc_threshold
+                mvc_estimation_method = "global_provided"
+                
+            # Backend clinical estimation based on signal characteristics (when no MVC provided)
+            else:
+                # We'll estimate after getting the signal - for now set to None
+                actual_mvc_threshold = None
+                mvc_estimation_method = "backend_estimation"
             
             # --- Full-Signal Analysis on RAW data ---
             raw_channel_name = f"{base_name} Raw"
@@ -292,35 +315,120 @@ class GHOSTLYC3DProcessor:
                         channel_errors[func_name] = f"Analysis failed: {str(e)}"
                         channel_analytics[func_name] = None
 
-            # --- Contraction Analysis ---
-            # SIGNAL SELECTION STRATEGY:
-            # The system uses a hierarchical approach to select the most appropriate signal for contraction analysis:
-            # 1. Prefer "Raw" signals for scientific rigor and algorithm optimization
-            # 2. Fall back to "activated" signals (processed by GHOSTLY game) if raw signals are not available  
-            # 3. Use base channel name as final fallback for different C3D naming conventions
-            # This ensures optimal algorithm performance by avoiding double-processing of GHOSTLY's preprocessed signals.
+            # --- RIGOROUS SIGNAL PROCESSING PIPELINE ---
+            # DESIGN PRINCIPLE: Single Source of Truth
+            # 1. ALWAYS start with RAW signals (scientific rigor)
+            # 2. Apply OUR controlled, documented processing
+            # 3. Use this processed signal for ALL analysis
+            # 4. NEVER use "activated" signals from C3D (unknown processing)
+            # 5. Ensure MVC thresholds match the processed signal
             
-            signal_for_contraction = None
-            activated_channel_name = f"{base_name} activated"
+            raw_signal = None
+            sampling_rate = None
+            signal_source = ""
+            processing_result = None
             
+            # Step 1: Find RAW signal (required for scientific rigor)
             if raw_channel_name in self.emg_data:
-                # Use raw signal - preferred for contraction analysis (scientific rigor)
-                signal_for_contraction = np.array(self.emg_data[raw_channel_name]['data'])
+                raw_signal = np.array(self.emg_data[raw_channel_name]['data'])
                 sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
-                # Note: Using Raw signal for optimal algorithm performance and scientific transparency
-            elif activated_channel_name in self.emg_data:
-                # Fall back to activated signal if raw is not available
-                signal_for_contraction = np.array(self.emg_data[activated_channel_name]['data'])
-                sampling_rate = self.emg_data[activated_channel_name]['sampling_rate']
-                channel_errors['contractions_source'] = "Used Activated signal for contractions (Raw not found)"
+                signal_source = "RAW"
+                print(f"✅ Found RAW signal for {base_name}: {len(raw_signal)} samples at {sampling_rate}Hz")
             else:
-                # Try the base name itself as a fallback for different naming conventions
+                # Try base channel name as fallback for different naming conventions
                 if base_name in self.emg_data:
-                    signal_for_contraction = np.array(self.emg_data[base_name]['data'])
+                    raw_signal = np.array(self.emg_data[base_name]['data'])
                     sampling_rate = self.emg_data[base_name]['sampling_rate']
-                    channel_errors['contractions_source'] = f"Used {base_name} signal for contractions"
+                    signal_source = f"BASE ({base_name})"
+                    print(f"⚠️ RAW signal not found, using base channel {base_name}")
+                else:
+                    # Critical error: No raw signal available
+                    channel_errors['signal_processing'] = f"No RAW signal available for {base_name} - cannot perform rigorous analysis"
+                    print(f"❌ CRITICAL: No RAW signal available for {base_name}")
+                    continue  # Skip this channel
+            
+            # Step 2: Apply our rigorous processing pipeline
+            if raw_signal is not None:
+                print(f"\n{'='*60}")
+                print(f"🔬 RIGOROUS SIGNAL PROCESSING for {base_name}")
+                print(f"{'='*60}")
+                
+                processing_result = preprocess_emg_signal(
+                    raw_signal=raw_signal,
+                    sampling_rate=sampling_rate,
+                    enable_filtering=True,  # Remove high-frequency noise
+                    enable_rectification=True,  # Full-wave rectification for amplitude
+                    enable_smoothing=True  # Envelope extraction
+                )
+                
+                if processing_result['processed_signal'] is None:
+                    # Processing failed
+                    channel_errors['signal_processing'] = f"Signal processing failed: {processing_result.get('error', 'Unknown error')}"
+                    print(f"❌ Signal processing failed for {base_name}: {processing_result.get('error')}")
+                    continue  # Skip this channel
+                
+                # Log processing details
+                print(f"📊 Processing Results:")
+                print(f"  - Source: {signal_source}")
+                print(f"  - Steps applied: {len(processing_result['processing_steps'])}")
+                for step in processing_result['processing_steps']:
+                    print(f"    • {step}")
+                
+                quality = processing_result['quality_metrics']
+                print(f"  - Quality: {'✅ Valid' if quality['valid'] else '❌ Invalid'}")
+                print(f"  - Original signal: mean={quality['original_signal_stats']['mean']:.6e}V, std={quality['original_signal_stats']['std']:.6e}V")
+                print(f"  - Processed signal: mean={quality['processed_signal_stats']['mean']:.6e}V, std={quality['processed_signal_stats']['std']:.6e}V")
+                
+                # Store processing metadata for transparency
+                channel_analytics['signal_processing'] = {
+                    'source': signal_source,
+                    'processing_steps': processing_result['processing_steps'],
+                    'parameters_used': processing_result['parameters_used'],
+                    'quality_metrics': processing_result['quality_metrics']
+                }
+                
+                # Store processed signal for frontend access
+                # Create processed channel name for frontend display options
+                processed_channel_name = f"{base_name} Processed"
+                if raw_channel_name in self.emg_data:
+                    # Add processed data to the raw channel entry
+                    self.emg_data[raw_channel_name]['processed_data'] = processing_result['processed_signal'].tolist()
+                    
+                    # Also create separate processed channel for frontend flexibility
+                    time_axis = self.emg_data[raw_channel_name]['time_axis']
+                    
+                    # Import signal processing metadata to include in each processed signal
+                    from ..domain.processing import get_processing_metadata
+                    
+                    self.emg_data[processed_channel_name] = {
+                        'data': processing_result['processed_signal'].tolist(),
+                        'time_axis': time_axis,
+                        'sampling_rate': sampling_rate,
+                        'rms_envelope': processing_result['processed_signal'].tolist(),  # Processed signal IS the envelope
+                        'activated_data': None,  # Not used
+                        'processed_data': None,  # This IS the processed data
+                        'is_processed': True,  # Flag to identify processed signals
+                        'processing_metadata': {
+                            # Include parameters actually used during processing
+                            **processing_result['parameters_used'],
+                            # Include complete pipeline metadata for export
+                            'complete_pipeline_metadata': get_processing_metadata(),
+                            # Processing steps applied to this specific signal
+                            'processing_steps_applied': processing_result['processing_steps'],
+                            # Quality assessment for this signal
+                            'quality_metrics': processing_result['quality_metrics'],
+                            # Clinical context
+                            'signal_info': f"RMS envelope (processed) from rigorous clinical pipeline - {len(processing_result['processing_steps'])} steps applied"
+                        }
+                    }
+                    print(f"✅ Stored processed signal as '{processed_channel_name}'")
+                
+                print(f"{'='*60}\n")
+            
+            # Step 3: Use processed signal for ALL analysis
+            signal_for_analysis = processing_result['processed_signal'] if processing_result else None
 
-            if signal_for_contraction is not None:
+            if signal_for_analysis is not None:
                 try:
                     # Get duration threshold from session params
                     # Priority: per-muscle threshold (seconds) > global threshold (milliseconds)
@@ -348,8 +456,27 @@ class GHOSTLYC3DProcessor:
                     else:
                         print(f"  ❌ No duration threshold found - will use default")
                     
+                    # Backend MVC estimation if no threshold provided
+                    if mvc_estimation_method == "backend_estimation":
+                        # Clinical estimation: Use 95th percentile of rectified signal as MVC estimate
+                        # This represents a strong voluntary contraction level
+                        rectified_signal = np.abs(signal_for_analysis)
+                        estimated_mvc = np.percentile(rectified_signal, 95)
+                        threshold_percentage = session_params.session_mvc_threshold_percentage or 75.0
+                        actual_mvc_threshold = estimated_mvc * (threshold_percentage / 100.0)
+                        
+                        print(f"🤖 Backend MVC Estimation for {base_name}:")
+                        print(f"  - Signal 95th percentile: {estimated_mvc:.6e}V")
+                        print(f"  - Estimated MVC threshold ({threshold_percentage}%): {actual_mvc_threshold:.6e}V")
+                        print(f"  - Method: Clinical estimation from signal statistics")
+                        
+                        # Store the estimated MVC value for frontend use
+                        if not hasattr(session_params, 'session_mvc_values') or not session_params.session_mvc_values:
+                            session_params.session_mvc_values = {}
+                        session_params.session_mvc_values[base_name] = estimated_mvc
+                        
                     contraction_stats = analyze_contractions(
-                        signal=signal_for_contraction,
+                        signal=signal_for_analysis,
                         sampling_rate=sampling_rate,
                         threshold_factor=threshold_factor,
                         min_duration_ms=min_duration_ms,
@@ -361,30 +488,168 @@ class GHOSTLYC3DProcessor:
                     )
                     channel_analytics.update(contraction_stats)
                     
+                    # Store estimation metadata for frontend
+                    channel_analytics['mvc_estimation_method'] = mvc_estimation_method
+                    
                     # Store the actual duration threshold used for this channel
                     channel_analytics['duration_threshold_actual_value'] = duration_threshold_ms
                     
-                    # Initialize MVC value to max amplitude if not provided
+                    # CRITICAL FIX: Only initialize MVC if explicitly requested or in development mode
+                    # Auto-initializing to max amplitude creates inflated thresholds that mark all contractions as "good"
                     max_amplitude = contraction_stats.get('max_amplitude', 0.0)
-                    if (not session_params.session_mvc_values or 
-                        base_name not in session_params.session_mvc_values or 
-                        session_params.session_mvc_values[base_name] is None):
-                        print(f"Initializing MVC value for {base_name} to max amplitude: {max_amplitude}")
-                        if not session_params.session_mvc_values:
-                            session_params.session_mvc_values = {}
-                        session_params.session_mvc_values[base_name] = max_amplitude
+                    
+                    # Store the actual MVC threshold that was used for quality calculation
+                    channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+                    
+                    # Enhanced debug logging for contraction analysis
+                    print(f"\n{'='*60}")
+                    print(f"🎯 CONTRACTION ANALYSIS DEBUG for {base_name}")
+                    print(f"{'='*60}")
+                    print(f"📊 Signal Information:")
+                    print(f"  - Signal source: {signal_source}")
+                    print(f"  - Signal min/max: {np.min(signal_for_analysis):.6e}V / {np.max(signal_for_analysis):.6e}V")
+                    print(f"  - Signal mean: {np.mean(np.abs(signal_for_analysis)):.6e}V")
+                    print(f"  - Max amplitude from contractions: {max_amplitude:.6e}V")
+                    
+                    print(f"\n⚙️ Thresholds:")
+                    print(f"  - MVC base value: {session_params.session_mvc_values.get(base_name) if session_params.session_mvc_values else None}")
+                    print(f"  - MVC threshold percentage: {session_params.session_mvc_threshold_percentages.get(base_name) if session_params.session_mvc_threshold_percentages else session_params.session_mvc_threshold_percentage}%")
+                    print(f"  - Actual MVC threshold: {actual_mvc_threshold:.6e}V" if actual_mvc_threshold else "  - Actual MVC threshold: None")
+                    print(f"  - Duration threshold: {duration_threshold_ms}ms")
+                    
+                    # PhD-Level Comprehensive Contraction Analysis
+                    contractions = contraction_stats.get('contractions', [])
+                    if contractions:
+                        # Signal processing context
+                        signal_duration_s = len(signal_for_analysis) / sampling_rate
+                        print(f"\n🔬 CONTRACTION DETECTION RESULTS")
+                        print(f"{'='*80}")
+                        print(f"📊 Signal Processing Context:")
+                        print(f"  - Input signal: {len(signal_for_analysis):,} samples at {sampling_rate}Hz ({signal_duration_s:.1f}s duration)")
+                        print(f"  - Processing pipeline: {' → '.join(processing_result['processing_steps'])}")
                         
-                        # Recalculate MVC threshold with the new MVC value
-                        if session_params.session_mvc_threshold_percentages and base_name in session_params.session_mvc_threshold_percentages:
-                            threshold_percentage = session_params.session_mvc_threshold_percentages[base_name]
-                            if threshold_percentage is not None:
-                                actual_mvc_threshold = max_amplitude * (threshold_percentage / 100.0)
-                                # Update the threshold in the analytics
-                                channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
-                        elif session_params.session_mvc_threshold_percentage:
-                            actual_mvc_threshold = max_amplitude * (session_params.session_mvc_threshold_percentage / 100.0)
-                            # Update the threshold in the analytics
-                            channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+                        # Detection algorithm parameters
+                        print(f"\n🎯 Detection Algorithm Parameters:")
+                        signal_max = np.max(signal_for_analysis)
+                        detection_threshold = signal_max * threshold_factor
+                        print(f"  - Detection threshold: {threshold_factor*100:.0f}% of max amplitude = {detection_threshold:.6e}V")
+                        print(f"  - Minimum duration: {min_duration_ms}ms ({int(min_duration_ms/1000*sampling_rate)} samples)")
+                        print(f"  - Smoothing window: {smoothing_window} samples ({smoothing_window/sampling_rate*1000:.1f}ms)")
+                        if actual_mvc_threshold:
+                            print(f"  - MVC threshold: {actual_mvc_threshold:.6e}V ({session_params.session_mvc_threshold_percentages.get(base_name, session_params.session_mvc_threshold_percentage or 75):.0f}% of MVC)")
+                        print(f"  - Duration threshold: {duration_threshold_ms}ms")
+                        
+                        # Comprehensive contraction listing
+                        print(f"\n📋 DETECTED CONTRACTIONS ({len(contractions)} total):")
+                        print(f"{'='*80}")
+                        
+                        # Statistical calculations
+                        durations = [c['duration_ms'] for c in contractions]
+                        amplitudes = [c['max_amplitude'] for c in contractions]
+                        good_contractions = [c for c in contractions if c.get('is_good')]
+                        mvc_compliant = [c for c in contractions if c.get('meets_mvc')]
+                        duration_compliant = [c for c in contractions if c.get('meets_duration')]
+                        
+                        # Show ALL contractions with detailed analysis
+                        for idx, contraction in enumerate(contractions, 1):
+                            start_time_s = contraction['start_time_ms'] / 1000
+                            end_time_s = contraction['end_time_ms'] / 1000
+                            duration_ms = contraction['duration_ms']
+                            max_amp = contraction['max_amplitude']
+                            mean_amp = contraction['mean_amplitude']
+                            
+                            # Classification
+                            meets_mvc = contraction.get('meets_mvc', False)
+                            meets_duration = contraction.get('meets_duration', False) 
+                            is_good = contraction.get('is_good', False)
+                            
+                            # Status indicators
+                            mvc_indicator = "✓" if meets_mvc else "✗"
+                            dur_indicator = "✓" if meets_duration else "✗"
+                            quality_status = "EXCELLENT" if is_good else "ADEQUATE" if (meets_mvc or meets_duration) else "INSUFFICIENT"
+                            quality_color = "🟢" if is_good else "🟡" if (meets_mvc or meets_duration) else "🔴"
+                            
+                            print(f"  [{idx:02d}] {start_time_s:6.2f}-{end_time_s:6.2f}s ({duration_ms:6.0f}ms): "
+                                  f"amp={max_amp:.6e}V, mvc={mvc_indicator}, dur={dur_indicator} → "
+                                  f"{quality_color} {quality_status}")
+                            
+                            # Detailed breakdown for first few contractions
+                            if idx <= 3:
+                                print(f"       ├─ Peak amplitude: {max_amp:.6e}V (mean: {mean_amp:.6e}V)")
+                                if actual_mvc_threshold:
+                                    mvc_ratio = (max_amp / actual_mvc_threshold) * 100
+                                    print(f"       ├─ MVC compliance: {max_amp:.6e}V {'≥' if meets_mvc else '<'} {actual_mvc_threshold:.6e}V ({mvc_ratio:.1f}% of MVC)")
+                                duration_ratio = (duration_ms / duration_threshold_ms) * 100
+                                print(f"       └─ Duration compliance: {duration_ms:.0f}ms {'≥' if meets_duration else '<'} {duration_threshold_ms}ms ({duration_ratio:.1f}% of target)")
+                        
+                        if len(contractions) > 3:
+                            print(f"       ... {len(contractions) - 3} additional contractions logged above")
+                        
+                        # Advanced Statistical Analysis
+                        print(f"\n📈 STATISTICAL ANALYSIS:")
+                        print(f"{'='*80}")
+                        
+                        # Quality distribution
+                        excellent_count = len(good_contractions)
+                        adequate_count = len(mvc_compliant) + len(duration_compliant) - len(good_contractions)  # Remove double counting
+                        insufficient_count = len(contractions) - excellent_count - adequate_count
+                        
+                        print(f"📊 Quality Distribution:")
+                        print(f"  • Excellent (both criteria):  {excellent_count:2d}/{len(contractions)} ({excellent_count/len(contractions)*100:5.1f}%)")
+                        print(f"  • Adequate (one criterion):   {adequate_count:2d}/{len(contractions)} ({adequate_count/len(contractions)*100:5.1f}%)")
+                        print(f"  • Insufficient (neither):     {insufficient_count:2d}/{len(contractions)} ({insufficient_count/len(contractions)*100:5.1f}%)")
+                        
+                        # Compliance analysis
+                        print(f"\n📊 Compliance Analysis:")
+                        mvc_compliance_rate = len(mvc_compliant) / len(contractions) * 100 if contractions else 0
+                        duration_compliance_rate = len(duration_compliant) / len(contractions) * 100 if contractions else 0
+                        overall_compliance_rate = len(good_contractions) / len(contractions) * 100 if contractions else 0
+                        
+                        print(f"  • MVC compliance:      {len(mvc_compliant):2d}/{len(contractions)} ({mvc_compliance_rate:5.1f}%)")
+                        print(f"  • Duration compliance: {len(duration_compliant):2d}/{len(contractions)} ({duration_compliance_rate:5.1f}%)")
+                        print(f"  • Overall compliance:  {len(good_contractions):2d}/{len(contractions)} ({overall_compliance_rate:5.1f}%)")
+                        
+                        # Temporal analysis
+                        if durations:
+                            print(f"\n📊 Temporal Characteristics:")
+                            print(f"  • Duration stats: mean={np.mean(durations):.0f}ms, std={np.std(durations):.0f}ms")
+                            print(f"  • Duration range: {np.min(durations):.0f}ms - {np.max(durations):.0f}ms")
+                            print(f"  • Total active time: {np.sum(durations)/1000:.1f}s ({np.sum(durations)/1000/signal_duration_s*100:.1f}% of recording)")
+                        
+                        # Amplitude analysis
+                        if amplitudes:
+                            print(f"\n📊 Amplitude Characteristics:")
+                            print(f"  • Amplitude stats: mean={np.mean(amplitudes):.6e}V, std={np.std(amplitudes):.6e}V")
+                            print(f"  • Amplitude range: {np.min(amplitudes):.6e}V - {np.max(amplitudes):.6e}V")
+                            if actual_mvc_threshold:
+                                max_mvc_percentage = np.max(amplitudes) / actual_mvc_threshold * 100
+                                mean_mvc_percentage = np.mean(amplitudes) / actual_mvc_threshold * 100
+                                print(f"  • MVC percentages: max={max_mvc_percentage:.1f}%, mean={mean_mvc_percentage:.1f}%")
+                        
+                        # Clinical recommendations
+                        print(f"\n🏥 CLINICAL ASSESSMENT:")
+                        print(f"{'='*80}")
+                        if overall_compliance_rate >= 80:
+                            print(f"  ✅ EXCELLENT therapeutic compliance ({overall_compliance_rate:.1f}%)")
+                        elif overall_compliance_rate >= 60:
+                            print(f"  🟡 MODERATE therapeutic compliance ({overall_compliance_rate:.1f}%) - consider coaching")
+                        else:
+                            print(f"  🔴 POOR therapeutic compliance ({overall_compliance_rate:.1f}%) - intervention needed")
+                        
+                        if mvc_compliance_rate < 70:
+                            print(f"  📝 Recommendation: Focus on force generation (only {mvc_compliance_rate:.1f}% meet MVC threshold)")
+                        if duration_compliance_rate < 70:
+                            print(f"  📝 Recommendation: Focus on contraction duration (only {duration_compliance_rate:.1f}% meet duration threshold)")
+                        
+                        print(f"{'='*80}")
+                    else:
+                        print(f"\n⚠️ NO CONTRACTIONS DETECTED")
+                        print(f"  - Signal max amplitude: {np.max(signal_for_analysis):.6e}V")
+                        print(f"  - Detection threshold: {np.max(signal_for_analysis) * threshold_factor:.6e}V")
+                        print(f"  - Consider adjusting detection parameters or signal quality")
+                    
+                    print(f"\n{'='*80}\n")
+                    print(f"  - Threshold percentage: {session_params.session_mvc_threshold_percentage}%")
                     
                     # Initialize MVC threshold percentage if not provided
                     if (not session_params.session_mvc_threshold_percentages or 
@@ -588,15 +853,9 @@ class GHOSTLYC3DProcessor:
             elif session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
                 actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
             
-            # Count good contractions based on MVC threshold
-            good_contraction_count = 0
-            if actual_mvc_threshold is not None:
-                for contraction in contractions:
-                    if contraction.get('max_amplitude', 0) >= actual_mvc_threshold:
-                        contraction['is_good'] = True
-                        good_contraction_count += 1
-                    else:
-                        contraction['is_good'] = False
+            # Count good contractions - use the authoritative count from emg_analysis.py
+            # The is_good field is already correctly calculated in analyze_contractions()
+            good_contraction_count = contraction_stats.get('good_contraction_count', 0)
             
             # Update the channel analytics
             channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold

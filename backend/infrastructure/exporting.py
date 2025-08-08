@@ -16,7 +16,8 @@ Features:
 import json
 from datetime import datetime
 from typing import Dict, Any, Optional
-from .models import GameSessionParameters
+from ..domain.models import GameSessionParameters
+from ..domain.processing import get_processing_metadata
 
 
 class EMGDataExporter:
@@ -53,6 +54,7 @@ class EMGDataExporter:
             "file_info": self._create_file_info(),
             "game_metadata": self.processor.game_metadata,
             "processing_parameters": self._create_processing_parameters(session_params, processing_opts),
+            "signal_processing_pipeline": get_processing_metadata(),
             "channels": self._create_channels_export(include_raw_signals),
             "analytics": self._create_analytics_export(),
             "summary_statistics": self._create_summary_statistics()
@@ -167,6 +169,23 @@ class EMGDataExporter:
                     "signal_type": self._classify_signal_type(channel_name)
                 }
             }
+            
+            # Add processing metadata for processed signals
+            if channel_data.get('is_processed', False):
+                channel_export["metadata"]["is_processed_signal"] = True
+                
+                # Include complete processing metadata if available
+                if 'processing_metadata' in channel_data:
+                    channel_export["processing_metadata"] = {
+                        **channel_data['processing_metadata'],
+                        "signal_processing_pipeline": get_processing_metadata()
+                    }
+                else:
+                    # Fallback: include general processing metadata
+                    channel_export["processing_metadata"] = {
+                        "signal_processing_pipeline": get_processing_metadata(),
+                        "signal_info": "RMS envelope (processed) from rigorous pipeline"
+                    }
             
             if include_raw_signals:
                 channel_export["signals"] = {

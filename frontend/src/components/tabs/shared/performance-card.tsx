@@ -16,7 +16,7 @@ export interface PerformanceCardProps {
 
 const PerformanceCard: React.FC<PerformanceCardProps> = ({
   analysisResult,
-  contractionDurationThreshold = 250,
+  contractionDurationThreshold = 2000,
   sessionParams,
 }) => {
   const { sessionParams: storeSessionParams } = useSessionStore();

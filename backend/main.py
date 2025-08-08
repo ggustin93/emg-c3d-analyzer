@@ -18,7 +18,7 @@ logger = logging.getLogger("backend")
 
 # Try to import the app with proper error handling
 try:
-    from .api import app
+    from .interfaces.api import app
     logger.info("Successfully imported FastAPI application")
 except ImportError as e:
     logger.error(f"Failed to import API: {e}")
@@ -29,7 +29,7 @@ except ImportError as e:
 try:
     # In the stateless architecture, we only need a temporary directory for file uploads during processing
     # These files will not persist between requests
-    from .config import ensure_temp_dir
+    from .core.config import ensure_temp_dir
     temp_dir = ensure_temp_dir()
     logger.info(f"Temporary upload directory verified: {temp_dir}")
 except Exception as e:
@@ -41,14 +41,14 @@ except Exception as e:
 if __name__ == "__main__":
     try:
         # Get configuration from config module
-        from .config import get_port, get_host, get_log_level
+        from .core.config import get_port, get_host, get_log_level
         port = get_port()
         host = get_host()
         log_level = get_log_level()
         
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
         # Remove reload=True to avoid the warning in production
-        uvicorn.run("backend.api:app", host=host, port=port, log_level=log_level)
+        uvicorn.run("backend.interfaces.api:app", host=host, port=port, log_level=log_level)
     except Exception as e:
         logger.error(f"Failed to start uvicorn server: {e}")
         logger.error(traceback.format_exc())

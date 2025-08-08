@@ -1,6 +1,43 @@
 # Progress Tracking
 
-## Latest Updates (July 30, 2025)
+## Latest Updates (August 8, 2025)
+
+### EMG Overlay System Fix ✅ 
+- **Root Cause Identified**: Channel naming mismatch between `extract_emg_data()` and analysis pipeline
+- **Backend Fix Applied**: Modified `processor.py` to create both original ("CH1") and Raw variant ("CH1 Raw") channel entries
+- **Dual-Axis Overlay**: Raw + RMS (Backend) mode now has both required signal types available
+- **Frontend Compatibility**: Existing EMGChart overlay implementation already correctly handles dual Y-axes
+- **Production Impact**: Raw EMG signals (left axis, transparent) + RMS envelope (right axis, bold) overlay functional
+- **Context Preserved**: Full troubleshooting context documented for follow-up testing and validation
+
+## Previous Updates (January 8, 2025)
+### Role-Gated Settings & Theming (Aug 2025)
+- Therapist/admin gating for Performance Scoring and Therapeutic Parameters with Debug override badges and lock indicators.
+- Session Goals and Patient Outcomes (ePRO) locked (C3D/mobile sourced). Contraction Detection parameters are info-only.
+- Game Score Normalization: clarified scope, disabled when `S_game` weight is 0%.
+- Primary color set to `#0ecfc5` and tabs updated to use primary tokens.
+
+### Threshold Display Synchronization Complete ✅
+- **MVC Threshold Display**: Fixed EMGChart legend to show actual backend-calculated values (1.125e-4V) instead of hardcoded defaults (1.500e-4V)
+- **Duration Threshold Alignment**: Updated all system defaults from 2000ms to 250ms to match backend calculations  
+- **API Parameter Integration**: Added `contraction_duration_threshold` parameter to `/upload` and `/export` endpoints
+- **Session Store Consistency**: Updated frontend session store default to align with backend values
+- **Environment Variable Migration**: Fixed Vite compatibility by migrating from `process.env` to `import.meta.env`
+- **Comprehensive Testing**: Verified backend logs show correct threshold usage and frontend displays accurate values
+
+### Critical Bug Fix: Contraction Highlighting Logic ✅
+- **Clinical Accuracy Fix**: Resolved incorrect "good" flagging for contractions not meeting MVC thresholds
+- **Backend Trust Logic**: Fixed frontend to respect backend quality flags (`meets_mvc`, `meets_duration`, `is_good`)
+- **Nullish Coalescing Fix**: Changed from `??` to explicit null/undefined checks to prevent false overrides
+- **Quality Assurance**: Visual indicators now accurately reflect backend therapeutic compliance calculations
+
+### MVC Service Implementation Complete ✅
+- **Backend MVC Endpoint**: Created dedicated `/mvc/estimate` endpoint for MVC value estimation
+- **React MVC Service**: Implemented `useMvcService` hook for frontend MVC management
+- **Component Integration**: Connected MVC service with EMGChart and Settings components
+- **Service-Oriented Architecture**: Professional MVC management with database-ready design
+
+## Previous Updates (July 30, 2025)
 
 ### Authentication System Complete ✅ FINAL
 - **Logout Loop Fix**: Immediate state transition preventing infinite "Checking researcher access..." spinner

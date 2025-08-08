@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { EMGAnalysisResult } from '../types/emg';
+import { SignalDisplayType } from '../components/tabs/SignalPlotsTab/ThreeChannelSignalSelector';
 
 /**
  * Manages the state for channel selections within the UI.
@@ -33,7 +34,7 @@ export interface ChannelManagementControls {
 
 export const useChannelManagement = (
   analysisResult: EMGAnalysisResult | null,
-  plotMode: 'raw' | 'activated'
+  signalType: SignalDisplayType
 ): ChannelManagementControls => {
   const [plotChannel1Name, setPlotChannel1Name] = useState<string | null>(null);
   const [plotChannel2Name, setPlotChannel2Name] = useState<string | null>(null);
@@ -52,7 +53,9 @@ export const useChannelManagement = (
   useEffect(() => {
     if (muscleChannels.length === 0) return;
 
-    const suffix = plotMode === 'raw' ? ' Raw' : ' activated';
+    const suffix = signalType === 'raw' ? ' Raw' 
+                 : signalType === 'processed' ? ' Processed'
+                 : ' activated';
     
     const potentialPlot1 = `${muscleChannels[0]}${suffix}`;
     setPlotChannel1Name(allAvailableChannels.includes(potentialPlot1) ? potentialPlot1 : null);
@@ -63,7 +66,7 @@ export const useChannelManagement = (
     } else {
       setPlotChannel2Name(null);
     }
-  }, [plotMode, muscleChannels, allAvailableChannels]);
+  }, [signalType, muscleChannels, allAvailableChannels]);
 
   const updateChannelsAfterUpload = useCallback((data: EMGAnalysisResult) => {
     if (!data || !data.analytics) return;

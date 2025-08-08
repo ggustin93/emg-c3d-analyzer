@@ -45,31 +45,29 @@ export const useMvcInitialization = () => {
     // Ensure all available channels have MVC values
     if (availableChannels.length > 0) {
       availableChannels.forEach((channel) => {
-        // Initialize MVC values if not present
-        if (newSessionMVCValues[channel] === undefined) {
-          // Check if the analytics has max_amplitude value (directly from contraction analysis)
+        // MVC VALUE PRIORITY: Backend estimation > User provided > Limited assessment
+        if (newSessionMVCValues[channel] === undefined || newSessionMVCValues[channel] === null) {
           const channelAnalytics = data.analytics[channel];
-          if (channelAnalytics && 
-              channelAnalytics.max_amplitude !== undefined && 
-              channelAnalytics.max_amplitude !== null) {
-            // Use the max_amplitude directly as the MVC value
-            const mvcValue = formatMVCValue(channelAnalytics.max_amplitude);
-            console.log(`Initializing MVC value for ${channel} from backend MAX amplitude: ${mvcValue}`);
+          
+          // Priority 1: Use backend-estimated MVC values (clinical estimation from signal)
+          if (sessionParamsUsed.session_mvc_values && 
+              sessionParamsUsed.session_mvc_values[channel] !== undefined &&
+              sessionParamsUsed.session_mvc_values[channel] !== null &&
+              channelAnalytics?.mvc_estimation_method === 'backend_estimation') {
+            const mvcValue = formatMVCValue(sessionParamsUsed.session_mvc_values[channel]);
+            console.log(`✅ Using backend-estimated MVC for ${channel}: ${mvcValue} (95th percentile method)`);
             newSessionMVCValues[channel] = mvcValue;
-          } else if (channelAnalytics && 
-                    channelAnalytics.mvc_threshold_actual_value !== undefined && 
-                    channelAnalytics.mvc_threshold_actual_value !== null) {
-            // Fallback to deriving from threshold if max_amplitude is not available
-            const thresholdPercentage = sessionParamsUsed.session_mvc_threshold_percentage || 75;
-            const rawMvcValue = channelAnalytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
-            const mvcValue = formatMVCValue(rawMvcValue);
-            console.log(`Initializing MVC value for ${channel} from threshold: ${mvcValue}`);
+          }
+          // Priority 2: Use explicitly provided MVC values
+          else if (sessionParamsUsed.session_mvc_value !== undefined && sessionParamsUsed.session_mvc_value !== null) {
+            const mvcValue = formatMVCValue(sessionParamsUsed.session_mvc_value);
+            console.log(`✅ Using provided global MVC for ${channel}: ${mvcValue}`);
             newSessionMVCValues[channel] = mvcValue;
-          } else {
-            // Fallback to global MVC value if available
-            const globalMVC = sessionParamsUsed.session_mvc_value !== undefined ? 
-              sessionParamsUsed.session_mvc_value : null;
-            newSessionMVCValues[channel] = formatMVCValue(globalMVC);
+          } 
+          // Priority 3: Limited assessment without MVC
+          else {
+            console.log(`⚠️ No MVC estimation available for ${channel} - quality assessment will be limited to duration only`);
+            newSessionMVCValues[channel] = null;
           }
         }
         

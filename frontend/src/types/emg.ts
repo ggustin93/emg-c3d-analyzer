@@ -247,6 +247,7 @@ export interface ChannelAnalyticsData {
   mvc_contraction_count?: number | null; // Meets MVC criteria only  
   duration_contraction_count?: number | null; // Meets duration criteria only
   duration_threshold_actual_value?: number | null; // Actual duration threshold used
+  mvc_estimation_method?: string; // Method used for MVC estimation: 'user_provided' | 'backend_estimation' | 'global_provided' | 'none'
   
   // Additional counts for long and short contractions
   long_contraction_count?: number | null;

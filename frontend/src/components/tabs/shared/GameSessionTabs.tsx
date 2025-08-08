@@ -9,6 +9,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as PieTooltip } from 
 import MetricCard from './metric-card';
 import { EMGChart, ChartControlHeader } from '../SignalPlotsTab';
 import { CombinedChartDataPoint } from '../SignalPlotsTab/EMGChart';
+import { SignalDisplayType } from '../SignalPlotsTab/ThreeChannelSignalSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
@@ -63,8 +64,8 @@ interface GameSessionTabsProps {
   mainPlotChannel2Data: EMGChannelSignalData | null;
   activeTab: string;
   onTabChange: (value: string) => void;
-  plotMode: 'raw' | 'activated';
-  setPlotMode: (mode: 'raw' | 'activated') => void;
+  signalType: SignalDisplayType;
+  setSignalType: (type: SignalDisplayType) => void;
   onRecalculateScores?: () => void;
   appIsLoading: boolean;
   uploadedFileName?: string | null;
@@ -90,8 +91,8 @@ export default function GameSessionTabs({
   mainPlotChannel2Data,
   activeTab,
   onTabChange,
-  plotMode,
-  setPlotMode,
+  signalType,
+  setSignalType,
   onRecalculateScores,
   appIsLoading,
   uploadedFileName,
@@ -204,8 +205,10 @@ export default function GameSessionTabs({
     setViewMode(mode);
     if (mode === 'single' && channel) {
       setSelectedChannelForStats(channel);
-      // Automatically select the corresponding plot channel, respecting plotMode
-      const desiredSuffix = plotMode === 'activated' ? ' activated' : ' Raw';
+      // Automatically select the corresponding plot channel, respecting signalType
+      const desiredSuffix = signalType === 'activated' ? ' activated' 
+                           : signalType === 'processed' ? ' Processed' 
+                           : ' Raw';
       let plotChannel = allAvailableChannels.find(c => c === channel + desiredSuffix);
       // Fallback if the specific mode doesn't exist for some reason
       if (!plotChannel) {
@@ -216,7 +219,9 @@ export default function GameSessionTabs({
 
     } else if (mode === 'comparison') {
         setSelectedChannelForStats(null);
-        const desiredSuffix = plotMode === 'activated' ? ' activated' : ' Raw';
+        const desiredSuffix = signalType === 'activated' ? ' activated' 
+                                  : signalType === 'processed' ? ' Processed' 
+                                  : ' Raw';
         const baseChannels = allAvailableChannels
             .map(c => c.replace(/ (Raw|activated)$/, ''))
             .filter((v, i, a) => a.indexOf(v) === i);
@@ -252,13 +257,15 @@ export default function GameSessionTabs({
     }
   }, [plotChannel1Name, plotChannel2Name]);
   
-  // Keep plotMode and sessionParams.show_raw_signals in sync
+  // Keep signalType and sessionParams.show_raw_signals in sync for backward compatibility
   useEffect(() => {
     const rawSignalsEnabled = sessionParams.show_raw_signals === true;
-    if ((rawSignalsEnabled && plotMode !== 'raw') || (!rawSignalsEnabled && plotMode !== 'activated')) {
-      setPlotMode(rawSignalsEnabled ? 'raw' : 'activated');
+    if (rawSignalsEnabled && signalType !== 'raw') {
+      setSignalType('raw');
+    } else if (!rawSignalsEnabled && signalType === 'raw') {
+      setSignalType('activated');
     }
-  }, [sessionParams.show_raw_signals, plotMode, setPlotMode]);
+  }, [sessionParams.show_raw_signals, signalType, setSignalType]);
 
   // Helper function to calculate the total score for a muscle
   const calculateMuscleScore = (channelData: ChannelAnalyticsData, expectedContractions: number | null): number => {
@@ -338,20 +345,20 @@ export default function GameSessionTabs({
   return (
     <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-blue-500 rounded-lg shadow-sm bg-white overflow-hidden">
       <div className="border-b mb-4 relative">
-        <TabsList className="w-full flex justify-between border border-blue-500">
-          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+        <TabsList className="w-full flex justify-between border border-primary">
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <ActivityLogIcon className="w-4 h-4" />
               <span>EMG Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <BarChartIcon className="w-4 h-4" />
               <span>Performance Analysis</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <HeartIcon className="w-4 h-4" />
               <span>BFR Monitoring</span>
@@ -367,13 +374,13 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <GearIcon className="w-4 h-4" />
               <span>Settings</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <Share1Icon className="w-4 h-4" />
               <span>Export</span>
@@ -391,10 +398,12 @@ export default function GameSessionTabs({
                 sessionParams={sessionParams}
                 activeFilter={{ mode: viewMode, channel: selectedChannelForStats }}
                 onFilterChange={handleFilterChange}
-                plotMode={plotMode}
-                setPlotMode={setPlotMode}
+                signalType={signalType}
+                setSignalType={setSignalType}
                 showContractionHighlights={showContractionHighlights}
                 setShowContractionHighlights={setShowContractionHighlights}
+                dataPoints={dataPoints}
+                setDataPoints={setDataPoints}
                 hasContractionData={!!(liveAnalytics && Object.keys(liveAnalytics).length > 0)}
                 isLoading={appIsLoading}
               />
@@ -410,8 +419,7 @@ export default function GameSessionTabs({
               sessionParams={sessionParams}
               isLoading={appIsLoading}
               showSignalSwitch={false}
-              plotMode={plotMode}
-              setPlotMode={setPlotMode}
+              externalPlotMode={signalType}
               analytics={liveAnalytics}
               showGoodContractions={showContractionHighlights && showGoodContractions}
               showPoorContractions={showContractionHighlights && showPoorContractions}
@@ -434,14 +442,14 @@ export default function GameSessionTabs({
                 onChannelSelect={setSelectedChannelForStats}
                 sessionExpectedContractions={sessionParams.session_expected_contractions ? parseInt(String(sessionParams.session_expected_contractions), 10) : null}
                 isEMGAnalyticsTab={true}
-                contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 250}
+               contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? 2000}
                 sessionParams={sessionParams}
                 allChannelsData={allChannelsData ?? undefined}
                 viewMode={viewMode}
                 onFilterChange={handleFilterChange}
                 isInitializingComparison={isInitializingComparison}
-                plotMode={plotMode}
-                setPlotMode={setPlotMode}
+                plotMode={signalType === 'raw' ? 'raw' : 'activated'}
+                setPlotMode={(mode: 'raw' | 'activated') => setSignalType(mode)}
               />
             </div>
           </CardContent>
