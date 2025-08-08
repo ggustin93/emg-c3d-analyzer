@@ -9,19 +9,31 @@ import os
 from pathlib import Path
 
 # --- EMG Processing Parameters ---
-DEFAULT_SAMPLING_RATE = 1000  # Hz
+DEFAULT_SAMPLING_RATE = 2000  # Hz (updated)
+DEFAULT_LOWPASS_CUTOFF = 500  # Hz
+DEFAULT_FILTER_ORDER = 4
+DEFAULT_RMS_WINDOW_MS = 50  # milliseconds
 
 # Optimized Contraction Detection Parameters (Research-Based 2024)
-# Based on biomedical engineering literature and clinical validation studies
-DEFAULT_THRESHOLD_FACTOR = 0.20  # 20% of max amplitude (balanced for optimal sensitivity/specificity)
-                                # Research shows adaptive thresholds are more effective than fixed percentages
-DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms (increased from 50ms for clinical relevance)
-DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples (increased from 25 for better stability)
-                               # Research indicates 100-160ms windows optimal for noise reduction vs temporal resolution
+DEFAULT_THRESHOLD_FACTOR = 0.20  # 20% of max amplitude
+DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms
+DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
+DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # milliseconds
 
-# --- Analysis Parameters ---
-# RMS envelope window is now centralized in signal_processing.ProcessingParameters
+# --- File Processing ---
+MAX_FILE_SIZE_MB = 100
+SUPPORTED_FILE_EXTENSIONS = ['.c3d']
+TEMP_DIR_PREFIX = 'emg_analysis_'
+
+# --- Performance & Caching ---
+CACHE_TIMEOUT_SECONDS = 3600  # 1 hour
+MAX_CACHE_SIZE = 100  # number of cached results
+
+# --- Clinical Constants ---
+BORG_CR10_SCALE_MAX = 10
+BFR_PRESSURE_RANGE = (40, 80)  # % AOP
+THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
 
 # Advanced Contraction Detection Parameters (Research-Optimized)
 MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them (ms)

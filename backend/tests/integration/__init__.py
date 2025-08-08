@@ -1,1 +1,0 @@
-"""Integration tests for EMG C3D Analyzer."""
