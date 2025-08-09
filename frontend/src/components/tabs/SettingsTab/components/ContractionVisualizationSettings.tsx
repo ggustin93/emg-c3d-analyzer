@@ -31,6 +31,7 @@ interface ContractionVisualizationSettingsProps {
   // Enhanced mode toggle
   useEnhancedQuality?: boolean;
   compact?: boolean;
+  showQuickPresets?: boolean;
 }
 
 const ContractionVisualizationSettings: React.FC<ContractionVisualizationSettingsProps> = ({
@@ -58,6 +59,7 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
   disabled,
   useEnhancedQuality = false,
   compact = false,
+  showQuickPresets = false,
 }) => {
   // Quick preset handlers
   const handleShowAll = () => {
@@ -105,39 +107,41 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
       )}
       
       <div className="space-y-4">
-        {/* Quick Presets */}
-        <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
-          <h5 className="text-xs font-medium text-gray-600">Quick Presets</h5>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShowAll}
-              disabled={disabled}
-              className="text-xs h-7"
-            >
-              Show All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClinicalStandard}
-              disabled={disabled}
-              className="text-xs h-7"
-            >
-              Clinical Standard
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleHideAll}
-              disabled={disabled}
-              className="text-xs h-7"
-            >
-              Hide All
-            </Button>
+        {/* Quick Presets (optional) */}
+        {showQuickPresets && (
+          <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
+            <h5 className="text-xs font-medium text-gray-600">Quick Presets</h5>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShowAll}
+                disabled={disabled}
+                className="text-xs h-7"
+              >
+                Show All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClinicalStandard}
+                disabled={disabled}
+                className="text-xs h-7"
+              >
+                Clinical Standard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleHideAll}
+                disabled={disabled}
+                className="text-xs h-7"
+              >
+                Hide All
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Contraction Quality Controls */}
         <div className={compact ? 'space-y-2.5' : 'space-y-3'}>

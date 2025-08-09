@@ -156,7 +156,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
         </div>
         
         <div className="flex items-center justify-between">
-          {/* Larger Gauge */}
+           {/* Larger Gauge - modern KISS style */}
           <div className="relative">
             <svg width="180" height="180" className="transform -rotate-90">
               {/* Background circle */}
@@ -180,41 +180,18 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 strokeLinecap="round"
                 className="transition-all duration-500 ease-in-out"
               />
-              {/* Therapeutic range indicators */}
+              {/* Therapeutic range ring (subtle) */}
               <circle
                 cx="90"
                 cy="90"
                 r={radius - 6}
-                stroke="#dc2626"
-                strokeWidth="3"
-                fill="none"
-                strokeDasharray={`${(40 / 100) * circumference} ${circumference}`}
-                strokeLinecap="round"
-                opacity="0.3"
-              />
-              <circle
-                cx="90"
-                cy="90"
-                r={radius - 6}
-                stroke="#059669"
-                strokeWidth="4"
+                stroke="#10b981"
+                strokeWidth="6"
                 fill="none"
                 strokeDasharray={`${(20 / 100) * circumference} ${circumference}`}
                 strokeDashoffset={`${-(40 / 100) * circumference}`}
                 strokeLinecap="round"
-                opacity="0.4"
-              />
-              <circle
-                cx="90"
-                cy="90"
-                r={radius - 6}
-                stroke="#dc2626"
-                strokeWidth="3"
-                fill="none"
-                strokeDasharray={`${(40 / 100) * circumference} ${circumference}`}
-                strokeDashoffset={`${-(60 / 100) * circumference}`}
-                strokeLinecap="round"
-                opacity="0.3"
+                opacity="0.15"
               />
             </svg>
             
