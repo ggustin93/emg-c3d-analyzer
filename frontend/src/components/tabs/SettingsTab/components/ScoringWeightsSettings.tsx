@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { TherapistBadge, LockedBadge } from '@/components/ui/StatusBadges';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
@@ -255,22 +256,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
           badge={
             <div className="flex items-center gap-2">
               {isDebugMode && (
-                <Badge variant="outline" className="bg-blue-100 text-blue-800">Debug Mode</Badge>
+                <Badge variant="warning" className="text-xs">Debug Mode</Badge>
               )}
-              <Badge variant="outline" className="bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                <PersonIcon className="h-3.5 w-3.5" /> Therapist
-              </Badge>
+              <TherapistBadge />
               {!canEdit && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="bg-slate-100 text-slate-800 flex items-center gap-1">
-                      <LockClosedIcon className="h-3.5 w-3.5" /> Locked
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-xs">Therapist-only. Enable Debug Mode or sign in as a therapist/admin to edit.</p>
-                  </TooltipContent>
-                </Tooltip>
+                <LockedBadge />
               )}
             </div>
           }

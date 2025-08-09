@@ -28,7 +28,6 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
       badge={
         <div className="flex items-center gap-2">
           <LockedBadge />
-          <SourceStatusBadge source="c3d" ok={false} />
           {isDebugMode && (
             <Badge variant="warning" className="text-xs">Debug Mode</Badge>
           )}
@@ -69,6 +68,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium text-gray-800">Post-Session RPE</Label>
                 <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">Scoring Input</Badge>
+                <SourceStatusBadge source="c3d" ok={false} />
               </div>
               <Input
                 type="number"
@@ -92,23 +92,7 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
           </div>
         </div>
         
-        {/* Mobile App Integration - now as tooltip */}
-        <div className="flex items-center justify-center mt-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline" className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 cursor-help">
-                <InfoCircledIcon className="h-3 w-3 mr-1" />
-                <span className="text-xs">Mobile App Integration</span>
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-md">
-              <div className="text-xs">
-                <p className="font-medium text-indigo-800 mb-2">Mobile App Integration</p>
-                <p><strong>Production Mode:</strong> Patient Reported Outcomes are automatically imported from the GHOSTLY+ mobile application, including validated questionnaire responses and app usage metrics. Debug mode allows manual adjustment for testing purposes.</p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        {/* Removed Mobile App Integration badge per UI consistency */}
       </TooltipProvider>
     </UnifiedSettingsCard>
   );
