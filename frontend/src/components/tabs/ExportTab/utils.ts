@@ -112,17 +112,31 @@ export function calculateMusclePerformance(
   const totalContractions = analytics.contraction_count || 0;
   const goodContractions = analytics.good_contraction_count || 0;
   
+  // Count contractions that meet MVC threshold and duration threshold separately
+  let mvcContractions = analytics.mvc_contraction_count || 0;
+  let durationContractions = analytics.duration_contraction_count || 0;
+  
+  // If backend doesn't provide these counts, calculate from contractions array
+  if (analytics.contractions && Array.isArray(analytics.contractions)) {
+    if (mvcContractions === 0 && analytics.mvc_contraction_count === undefined) {
+      mvcContractions = analytics.contractions.filter((c: any) => c.meets_mvc === true).length;
+    }
+    if (durationContractions === 0 && analytics.duration_contraction_count === undefined) {
+      durationContractions = analytics.contractions.filter((c: any) => c.meets_duration === true).length;
+    }
+  }
+  
   // R_comp: Completion Rate
   const completionRate = expectedContractions > 0 ? 
     Math.min(totalContractions / expectedContractions, 1.0) : 0;
   
-  // R_int: Intensity Rate (≥75% MVC) 
+  // R_int: Intensity Rate (≥75% MVC) - use contractions that meet MVC, not just good ones
   const intensityRate = totalContractions > 0 ? 
-    (goodContractions / totalContractions) : 0;
+    (mvcContractions / totalContractions) : 0;
   
-  // R_dur: Duration Rate (≥2s threshold)
+  // R_dur: Duration Rate (≥threshold) - use contractions that meet duration, not just good ones
   const durationRate = totalContractions > 0 ? 
-    (goodContractions / totalContractions) : 0; // Approximation
+    (durationContractions / totalContractions) : 0;
   
   // S_comp^muscle: Per-muscle compliance (equal weights: 1/3 each)
   const muscleCompliance = (completionRate + intensityRate + durationRate) / 3;
@@ -137,7 +151,7 @@ export function calculateMusclePerformance(
     intensity_rate: {
       value: intensityRate,
       percentage: (intensityRate * 100).toFixed(1) + '%',
-      formula: `${goodContractions}/${totalContractions}`,
+      formula: `${mvcContractions}/${totalContractions}`,
       description: "Fraction of contractions ≥75% MVC threshold"
     },
     duration_rate: {

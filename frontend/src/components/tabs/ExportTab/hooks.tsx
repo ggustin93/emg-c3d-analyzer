@@ -65,7 +65,7 @@ export function useExportData(
   // Channel selection handlers
   const handleChannelSelectionChange = useCallback((
     channelName: string, 
-    field: 'includeRaw' | 'includeProcessed', 
+    field: 'includeRaw' | 'includeActivated' | 'includeProcessedRms', 
     value: boolean
   ) => {
     setChannelSelection(prev => ({
