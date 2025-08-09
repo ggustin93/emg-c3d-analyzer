@@ -1088,7 +1088,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             {contractionAreas.length > 0 && console.log('📊 Rendering contractions:', contractionAreas.length, 'Sample areas:', contractionAreas.slice(0, 2).map(a => ({isGood: a.isGood, meetsMvc: a.meetsMvc, meetsDuration: a.meetsDuration})))}
             
             {/* Contraction areas - colorize EMG lines between two abscissas with enhanced quality colors */}
-            {showContractionAreas && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 && hasValidOverlayData &&
+            {showContractionAreas && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 &&
              contractionAreas
               .filter(area => (area.isGood && showGoodContractions) || (!area.isGood && showPoorContractions))
               .map((area, index) => {
@@ -1107,6 +1107,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   meetsDuration: area.meetsDuration
                 });
                 
+                console.log(`🎨 Color for area ${index}:`, {
+                  flags: { isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration },
+                  colors: { fill: fillColor, stroke: strokeColor },
+                  channel: area.channel
+                });
+                
                 return (
                   <ReferenceArea
                     key={`contraction-area-${index}`}
@@ -1123,7 +1129,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               })}
             
             {/* Contraction peak dots - mark the peak amplitude of each contraction with enhanced quality indicators */}
-            {showContractionDots && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 && hasValidOverlayData &&
+            {showContractionDots && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 &&
              contractionAreas
               .filter(area => (area.isGood && showGoodContractions) || (!area.isGood && showPoorContractions))
               .map((area, index) => {
