@@ -370,12 +370,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               </div>
             </div>
 
-            {/* Status Message */}
-            <div className={`p-3 rounded-md ${sideParams.is_compliant ? 'bg-green-50' : 'bg-red-50'}`}>
-              <p className={`text-xs ${sideParams.is_compliant ? 'text-green-800' : 'text-red-800'}`}>
-                <strong>{sideParams.is_compliant ? 'Safe:' : 'Warning:'}</strong> {complianceStatus.message}
-              </p>
-            </div>
+           
           </div>
 
           {/* Therapeutic Range Configuration Section */}
@@ -384,39 +379,40 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               <div className="flex items-center gap-2">
                 <GearIcon className="h-4 w-4 text-purple-600" />
                 <h5 className="text-sm font-semibold text-gray-800">Therapeutic Range</h5>
+                <ClinicalTooltip
+                  title="Therapeutic Range Customization"
+                  description="Adjustable safety and effectiveness parameters for individualized treatment"
+                  sections={[
+                    {
+                      title: "Clinical Rationale:",
+                      type: "list",
+                      items: [
+                        { description: "Standard range: 40-60% AOP for most patients" },
+                        { description: "May be modified based on patient condition and clinical protocol" },
+                        { description: "Lower ranges for sensitive or injured tissues" },
+                        { description: "Higher ranges may be used for advanced training phases" }
+                      ]
+                    },
+                    {
+                      title: "Safety Considerations:",
+                      type: "list",  
+                      items: [
+                        { description: "Always maintain minimum effective pressure (≥40%)" },
+                        { description: "Never exceed maximum safe pressure (≤80%)" },
+                        { description: "Monitor patient response and adjust accordingly" }
+                      ]
+                    }
+                  ]}
+                  side="right"
+                  triggerClassName="h-3 w-3"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <TherapistBadge />
                 <LockedBadge />
               </div>
             </div>
-            <ClinicalTooltip
-                title="Therapeutic Range Customization"
-                description="Adjustable safety and effectiveness parameters for individualized treatment"
-                sections={[
-                  {
-                    title: "Clinical Rationale:",
-                    type: "list",
-                    items: [
-                      { description: "Standard range: 40-60% AOP for most patients" },
-                      { description: "May be modified based on patient condition and clinical protocol" },
-                      { description: "Lower ranges for sensitive or injured tissues" },
-                      { description: "Higher ranges may be used for advanced training phases" }
-                    ]
-                  },
-                  {
-                    title: "Safety Considerations:",
-                    type: "list",  
-                    items: [
-                      { description: "Always maintain minimum effective pressure (≥40%)" },
-                      { description: "Never exceed maximum safe pressure (≤80%)" },
-                      { description: "Monitor patient response and adjust accordingly" }
-                    ]
-                  }
-                ]}
-                side="right"
-                triggerClassName="h-3 w-3"
-              />
+            
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

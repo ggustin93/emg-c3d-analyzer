@@ -2,6 +2,7 @@ import React from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { Badge } from "@/components/ui/badge";
 import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from "@/components/ui/clinical-tooltip";
+import { CheckCircledIcon } from "@radix-ui/react-icons";
 
 interface BFRMonitoringTabProps {
   className?: string;
@@ -300,9 +301,9 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
 
   return (
     <div className={`p-6 ${className}`}>
-      {/* Header with compact overall status (omit redundant title since tab provides context) */}
+      {/* Header – single-line status with info + check icon */}
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-3 mb-2">
+        <div className="flex items-center justify-center gap-2">
           <ClinicalTooltip
             title="GHOSTLY+ BFR Protocol"
             description="Evidence-based Blood Flow Restriction training protocol for quadriceps strengthening"
@@ -329,21 +330,10 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             ]}
             side="bottom"
           />
-          {/* Overall status badge (compact) */}
-          <div className={`${overallStatus.color} px-3 py-1 text-xs font-semibold rounded-full border-2 cursor-help shadow-sm inline-flex items-center gap-2`}>
-            <div className={`w-2 h-2 rounded-full ${
-              overallStatus.badge === 'PASS' ? 'bg-emerald-600' : 
-              overallStatus.badge === 'FAIL' ? 'bg-red-600' : 'bg-amber-600'
-            }`} />
-            {overallStatus.badge}
-          </div>
-        </div>
-        {/* Compact overall message */}
-        <div className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${
-          overallStatus.badge === 'PASS' ? 'bg-emerald-50 text-emerald-800' : 
-          overallStatus.badge === 'FAIL' ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-800'
-        }`}>
-          {overallStatus.message}
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
+            <CheckCircledIcon className="h-4 w-4" />
+            {overallStatus.message}
+          </span>
         </div>
       </div>
 
