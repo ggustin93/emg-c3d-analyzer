@@ -338,7 +338,6 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             {overallStatus.badge}
           </div>
         </div>
-        <p className="text-sm text-gray-600">Blood Flow Restriction Protocol Status - Independent Left & Right Muscle Monitoring</p>
         {/* Compact overall message */}
         <div className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${
           overallStatus.badge === 'PASS' ? 'bg-emerald-50 text-emerald-800' : 
