@@ -1,6 +1,5 @@
 # EMG C3D Analyzer - Claude Development Context
 
-An organized and streamlined version of the document is presented below, tailored for a senior software architect's perspective.
 
 ### **1. Introduction and Core Principles**
 
