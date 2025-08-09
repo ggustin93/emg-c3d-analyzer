@@ -300,10 +300,9 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
 
   return (
     <div className={`p-6 ${className}`}>
-      {/* Header with comprehensive clinical tooltip */}
+      {/* Header with compact overall status (omit redundant title since tab provides context) */}
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <h2 className="text-2xl font-semibold text-gray-900">BFR Monitoring</h2>
+        <div className="flex items-center justify-center gap-3 mb-2">
           <ClinicalTooltip
             title="GHOSTLY+ BFR Protocol"
             description="Evidence-based Blood Flow Restriction training protocol for quadriceps strengthening"
@@ -330,8 +329,23 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             ]}
             side="bottom"
           />
+          {/* Overall status badge (compact) */}
+          <div className={`${overallStatus.color} px-3 py-1 text-xs font-semibold rounded-full border-2 cursor-help shadow-sm inline-flex items-center gap-2`}>
+            <div className={`w-2 h-2 rounded-full ${
+              overallStatus.badge === 'PASS' ? 'bg-emerald-600' : 
+              overallStatus.badge === 'FAIL' ? 'bg-red-600' : 'bg-amber-600'
+            }`} />
+            {overallStatus.badge}
+          </div>
         </div>
         <p className="text-sm text-gray-600">Blood Flow Restriction Protocol Status - Independent Left & Right Muscle Monitoring</p>
+        {/* Compact overall message */}
+        <div className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${
+          overallStatus.badge === 'PASS' ? 'bg-emerald-50 text-emerald-800' : 
+          overallStatus.badge === 'FAIL' ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-800'
+        }`}>
+          {overallStatus.message}
+        </div>
       </div>
 
       {/* Main Content - Two Enhanced Muscle Cards */}
@@ -341,62 +355,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
           <MuscleCard side="right" title="Right Muscle" colorIndicator="bg-red-500" />
         </div>
         
-        {/* Overall Status Summary */}
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
-          <div className="flex flex-col items-center gap-4">
-            <ClinicalTooltip
-              title="Overall BFR Compliance Status"
-              description={overallStatus.message}
-              sections={[
-                {
-                  title: "Therapeutic Safety Range:",
-                  type: "list",
-                  items: [
-                    { label: "Below 40%", description: "May be ineffective for therapeutic benefit" },
-                    { label: "40-60%", description: "Therapeutic range - safe and effective" },
-                    { label: "Above 60%", description: "Risk of tissue damage and complications" },
-                    { label: "Target", description: "50% AOP for optimal GHOSTLY+ TBM protocol" }
-                  ]
-                },
-                {
-                  title: "Current Status:",
-                  type: "table",
-                  items: [
-                    { 
-                      label: "Left Muscle", 
-                      value: `${bfrParams.left.percentage_aop.toFixed(1)}%`,
-                      color: bfrParams.left.is_compliant ? "text-green-600" : "text-red-600"
-                    },
-                    { 
-                      label: "Right Muscle", 
-                      value: `${bfrParams.right.percentage_aop.toFixed(1)}%`,
-                      color: bfrParams.right.is_compliant ? "text-green-600" : "text-red-600"
-                    }
-                  ]
-                }
-              ]}
-              side="top"
-            >
-              <div className={`${overallStatus.color} px-6 py-3 text-sm font-semibold rounded-full border-2 cursor-help shadow-sm`}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    overallStatus.badge === 'PASS' ? 'bg-emerald-600' : 
-                    overallStatus.badge === 'FAIL' ? 'bg-red-600' : 'bg-amber-600'
-                  }`}></div>
-                  {overallStatus.badge}
-                </div>
-              </div>
-            </ClinicalTooltip>
-            
-            {/* Safety message */}
-            <div className={`text-sm text-center px-4 py-2 rounded-lg ${
-              overallStatus.badge === 'PASS' ? 'bg-emerald-50 text-emerald-800' : 
-              overallStatus.badge === 'FAIL' ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-800'
-            }`}>
-              {overallStatus.message}
-            </div>
-          </div>
-        </div>
+        {/* Removed large overall status summary for a more compact layout */}
       </div>
     </div>
   );
