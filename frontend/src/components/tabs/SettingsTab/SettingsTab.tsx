@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { EMGChannelSignalData, EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import DebugModeSwitch from './components/DebugModeSwitch';
+import { Button } from '@/components/ui/button';
 import DisplaySettings from './components/DisplaySettings';
 import TherapeuticParametersSettings from './components/TherapeuticParametersSettings';
 import PatientOutcomesSettings from './components/PatientOutcomesSettings';
 import BFRParametersSettings from './components/BFRParametersSettings';
 import ScoringWeightsSettings from './components/ScoringWeightsSettings';
 import ContractionDetectionSettings from './components/ContractionDetectionSettings';
+import ContractionColorDebugPanel from '@/components/debug/ContractionColorDebugPanel';
 
 interface SettingsPanelProps {
   muscleChannels: string[];
@@ -83,6 +85,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isDebugMode, setIsDebugMode] = useState(false);
 
+  const handleRecalculate = () => {
+    // Force a backend recalc by changing the sessionParams object identity
+    setSessionParams((prev) => ({ ...prev }));
+  };
+
   useEffect(() => {
     const channelMuscleMapping = sessionParams.channel_muscle_mapping || {};
     const muscleColorMapping = sessionParams.muscle_color_mapping || {};
@@ -126,6 +133,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         disabled={disabled}
       />
       
+      {/* Quick Actions */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={handleRecalculate} disabled={disabled}>
+          Recalculate Analytics
+        </Button>
+      </div>
+
       {/* Standard Settings - Always visible */}
       <div className="space-y-4">
         {/* Display & Visualization Settings */}
@@ -197,6 +211,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         {/* Contraction Detection Settings - Last component */}
         <ContractionDetectionSettings />
       </div>
+
+      {/* Debug Panel - Only visible in debug mode */}
+      {isDebugMode && (
+        <div className="mt-8 border-t-2 border-red-200 pt-6">
+          <ContractionColorDebugPanel
+            analytics={analysisResult?.analytics || null}
+            sessionParams={sessionParams}
+          />
+        </div>
+      )}
     </div>
   );
 };
