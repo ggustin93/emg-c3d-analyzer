@@ -75,11 +75,7 @@ class GameSessionParameters(BaseModel):
     session_expected_contractions_ch1: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 1")
     session_expected_contractions_ch2: Optional[int] = Field(None, ge=0, description="Target number of contractions for channel 2")
     
-    # Detailed expected contractions by type
-    session_expected_long_left: Optional[int] = Field(None, ge=0, description="Target number of long contractions for left muscle")
-    session_expected_short_left: Optional[int] = Field(None, ge=0, description="Target number of short contractions for left muscle")
-    session_expected_long_right: Optional[int] = Field(None, ge=0, description="Target number of long contractions for right muscle")
-    session_expected_short_right: Optional[int] = Field(None, ge=0, description="Target number of short contractions for right muscle")
+    # Deprecated detailed expected contractions by type (removed)
     
     # Contraction classification threshold (clinically standard 2.0s default)
     contraction_duration_threshold: Optional[int] = Field(2000, ge=0, description="Global threshold in milliseconds to classify contractions as short or long")

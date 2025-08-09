@@ -19,7 +19,7 @@ ASSUMPTIONS & PARAMETERS:
    - Channel naming: Assumes channels with 'activated' or activity names ('jumping', 'shooting')
    - Signal processing: Smoothing window applied to reduce noise
 
-2. CONTRACTION DETECTION (Research-Optimized 2024):
+2. CONTRACTION DETECTION:
    - Threshold: 15% of maximum amplitude by default (threshold_factor=0.15)
      * Reduced from 30% based on biomedical engineering research for improved sensitivity
    - Minimum duration: 100ms by default (min_duration_ms=100)

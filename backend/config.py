@@ -35,7 +35,7 @@ BORG_CR10_SCALE_MAX = 10
 BFR_PRESSURE_RANGE = (40, 80)  # % AOP
 THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
 
-# Advanced Contraction Detection Parameters (Research-Optimized)
+# Advanced Contraction Detection Parameters 
 MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them (ms)
                          # Research-based: 200ms based on motor unit firing rates and muscle response times
                          # Reduced from 500ms for better temporal resolution while maintaining physiological accuracy
