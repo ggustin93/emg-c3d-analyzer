@@ -135,3 +135,7 @@ htmlcov/
 # Logs
 logs/
 *.log
+
+# Logs
+logs/*.log
+logs/**/*.log
