@@ -907,17 +907,66 @@ class GHOSTLYC3DProcessor:
             elif session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
                 actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
             
-            # Count good contractions from existing contraction list
-            good_contraction_count = 0
+            # Determine duration threshold for this channel (ms)
+            duration_threshold_ms: Optional[float] = None
             try:
-                good_contraction_count = len([c for c in contractions if c.get('is_good')])
+                if (hasattr(session_game_params, 'session_duration_thresholds_per_muscle') and
+                    session_game_params.session_duration_thresholds_per_muscle and
+                    base_name in session_game_params.session_duration_thresholds_per_muscle):
+                    per_muscle_seconds = session_game_params.session_duration_thresholds_per_muscle.get(base_name)
+                    if per_muscle_seconds is not None:
+                        duration_threshold_ms = float(per_muscle_seconds) * 1000.0
+                elif session_game_params.contraction_duration_threshold is not None:
+                    duration_threshold_ms = float(session_game_params.contraction_duration_threshold)
             except Exception:
+                duration_threshold_ms = channel_analytics.get('duration_threshold_actual_value')
+
+            # Recompute flags and counts from existing contraction measurements
+            good_contraction_count = 0
+            mvc_contraction_count = 0
+            duration_contraction_count = 0
+            updated_contractions: List[Dict[str, Any]] = []
+            try:
+                for c in contractions:
+                    max_amp = c.get('max_amplitude')
+                    dur_ms = c.get('duration_ms')
+                    meets_mvc = bool(actual_mvc_threshold is not None and max_amp is not None and max_amp >= actual_mvc_threshold)
+                    meets_duration = bool(duration_threshold_ms is not None and dur_ms is not None and dur_ms >= duration_threshold_ms)
+                    # Align with backend analyze_contractions semantics
+                    if actual_mvc_threshold is not None and duration_threshold_ms is not None:
+                        is_good = meets_mvc and meets_duration
+                    elif actual_mvc_threshold is not None and duration_threshold_ms is None:
+                        is_good = meets_mvc
+                    elif actual_mvc_threshold is None and duration_threshold_ms is not None:
+                        is_good = meets_duration
+                    else:
+                        is_good = False
+                    if meets_mvc:
+                        mvc_contraction_count += 1
+                    if meets_duration:
+                        duration_contraction_count += 1
+                    if is_good:
+                        good_contraction_count += 1
+                    # Update contraction entry
+                    updated = dict(c)
+                    updated['meets_mvc'] = meets_mvc
+                    updated['meets_duration'] = meets_duration
+                    updated['is_good'] = is_good
+                    updated_contractions.append(updated)
+            except Exception:
+                # Fallback to original if malformed
+                updated_contractions = contractions
+                mvc_contraction_count = channel_analytics.get('mvc_contraction_count', 0) or 0
+                duration_contraction_count = channel_analytics.get('duration_contraction_count', 0) or 0
                 good_contraction_count = channel_analytics.get('good_contraction_count', 0) or 0
             
             # Update the channel analytics
             channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
+            channel_analytics['duration_threshold_actual_value'] = duration_threshold_ms
             channel_analytics['good_contraction_count'] = good_contraction_count
-            channel_analytics['contractions'] = contractions
+            channel_analytics['mvc_contraction_count'] = mvc_contraction_count
+            channel_analytics['duration_contraction_count'] = duration_contraction_count
+            channel_analytics['contractions'] = updated_contractions
             channel_analytics['expected_contractions'] = expected_contractions  # Add expected contractions to analytics
             
             # Add the updated analytics to the result
