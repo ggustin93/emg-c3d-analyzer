@@ -287,6 +287,20 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
 - `frontend/src/components/tabs/SignalPlotsTab/EMGChart.tsx`
 
 #### **6.3. Previous Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
+#### **6.4. TODO: Duration SoT & Real-Time Recalc Data Flow**
+- Add debounce + cancel for `/recalc` in `useLiveAnalytics` and show pending UI near chart/stats.
+- Extract `getEffectiveDurationThreshold` util and reuse across hook/stats.
+- Key re-renders off `duration_threshold_actual_value` changes.
+- Add per-muscle duration sliders (seconds) in Settings (Debug only), store in `session_duration_thresholds_per_muscle`.
+- Instrument deltas and add tests for end-to-end update (slider → recalc → highlight/gauges).
+
+Current URGENT files:
+- `memory-bank/tasks/URGENT-2025-08-09-duration-sot-realtime.md`
+- `memory-bank/tasks/URGENT-2025-08-09-compliance-score-averaging.md`
+
+#### **6.5. TODO: Compliance Score Averaging**
+- Left/Right Compliance score should be the arithmetic mean of three subscores (Completion, Intensity, Duration).
+- Update computation and UI labels to ensure the main percentage equals the average of the three displayed sub-metrics.
 
 *   **Status:** PRODUCTION READY - Provides consistent data resolution across all components.
 *   Priority-based configuration and logging improvements.

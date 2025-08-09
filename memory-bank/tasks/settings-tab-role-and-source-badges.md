@@ -28,4 +28,8 @@
 - Clear role communication: display role badges without silently unlocking.
 - Debug Mode is the explicit switch for temporary editing where allowed.
 
+## URGENT TODOs (Dated)
+- See: `memory-bank/tasks/URGENT-2025-08-09-duration-sot-realtime.md`
+- See: `memory-bank/tasks/URGENT-2025-08-09-compliance-score-averaging.md`
+
 

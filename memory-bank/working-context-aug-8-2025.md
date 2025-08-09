@@ -72,3 +72,7 @@
 2. Use: `git status --porcelain | head -10` to show manageable chunks
 3. Offer: `git add -p` for interactive staging
 4. Create: Focused commits with clear, single-purpose messages
+
+## Active URGENT Tasks (2025-08-09)
+- Duration SoT & Real-Time Recalc Data Flow — see `memory-bank/tasks/URGENT-2025-08-09-duration-sot-realtime.md`
+- Compliance Score Averaging — see `memory-bank/tasks/URGENT-2025-08-09-compliance-score-averaging.md`
