@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from './badge';
-import { LockClosedIcon } from '@radix-ui/react-icons';
+import { LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 
 type CommonProps = {
@@ -38,9 +38,26 @@ export function SourceStatusBadge({ source, ok, className }: { source: string; o
   );
 }
 
+export function TherapistBadge({ className }: CommonProps) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        'text-xs bg-blue-100 text-blue-800 border-blue-300',
+        'inline-flex items-center',
+        className,
+      )}
+    >
+      <PersonIcon className="h-3 w-3 mr-1" />
+      Therapist
+    </Badge>
+  );
+}
+
 export default {
   LockedBadge,
   SourceStatusBadge,
+  TherapistBadge,
 };
 
 
