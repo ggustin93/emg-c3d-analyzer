@@ -392,3 +392,33 @@ backend/
 - **Module Resolution**: ✅ No more `ImportError: cannot import name 'Signals' from 'signal'`
 - **API Functionality**: ✅ Backend can be started with `python -m uvicorn backend.api.api:app --reload`
 - **Clean Architecture**: ✅ Follows KISS principle with clear separation of concerns 
+
+## Acceptance Metrics SoT & Visualization Alignment ✅ (August 9, 2025)
+
+### Problem
+- Inconsistency between Stats panel acceptance metrics and chart highlighting:
+  - “Good Rate” could show 100% while Duration Acceptance was 0%.
+  - Chart sometimes showed green when thresholds were incomplete.
+
+### Decisions
+- Single Source of Truth (SoT) for acceptance metrics:
+  - Good = meets both MVC and Duration criteria.
+  - MVC Acceptance = meets_mvc.
+  - Duration Acceptance = meets_duration.
+  - Denominators: include only channels where respective thresholds exist; Good Rate denominator includes only channels with both thresholds defined.
+- Visualization alignment:
+  - Chart green (good) only when both thresholds exist and are met.
+  - Yellow for exactly one criterion met; red for none.
+
+### Implementation
+- Frontend
+  - `frontend/src/lib/acceptanceRates.ts`: Correct denominators; Good requires both flags; MVC/Duration denominators restricted to channels with respective thresholds.
+  - `frontend/src/hooks/useContractionAnalysis.ts`: `visualIsGood` requires both thresholds present and met; used for areas/dots coloring and legend counts.
+  - `frontend/src/components/tabs/SignalPlotsTab/EMGChart.tsx`: Stable keys for `ReferenceArea`/`ReferenceDot` to prevent stale color reuse when series change.
+- Backend
+  - Existing flags (`is_good`, `meets_mvc`, `meets_duration`) remain authoritative; frontend never re-derives thresholds.
+
+### Outcome
+- Stats and Area Charts are consistent with `metricsDefinitions.md`.
+- No more 100% Good with 0% Duration mismatches.
+- Comparison mode colors remain correct with stable keying.

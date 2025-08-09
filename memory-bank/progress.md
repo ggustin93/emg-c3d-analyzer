@@ -21,6 +21,11 @@
 - **Build Verification**: All refactoring maintains functionality with successful build completion
 - **Performance Enhancement**: Structured logging with categories (CHART_RENDER, DATA_PROCESSING, MVC_CALCULATION, etc.)
 
+### Acceptance Metrics SoT & Chart Alignment ✅
+- Corrected acceptance rate denominators (Good requires both thresholds; MVC/Duration require their respective thresholds)
+- Updated hook to color green only when both criteria exist and are met; yellow for exactly one; red for none
+- Added stable keys to `ReferenceArea`/`ReferenceDot` to prevent stale props in comparison/3-signal scenarios
+
 ## Previous Updates (August 8, 2025)
 
 ### Backend Reorganization & KISS Principle ✅

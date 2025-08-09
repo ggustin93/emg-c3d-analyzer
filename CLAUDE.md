@@ -272,13 +272,24 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
 - Comparison tab upgraded to show avg ± std with clinical tooltips (MPF, MDF full names).
 
 
-#### **6.2. Latest Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
+#### **6.2. Latest Update: Acceptance Metrics SoT & Visualization Alignment ✅ (Aug 9, 2025)**
 
-*   **Status:** PRODUCTION READY - This system provides consistent data resolution across all components.
-*   It features a unified Patient ID/Session Date resolution with a priority-based configuration.
-*   It is built with SOLID engineering patterns and self-documenting configuration headers.
-*   It includes a Storage subfolder (highest) → C3D metadata (fallback) priority system.
-*   It has robust TypeScript support with comprehensive logging and error handling.
+**What changed**
+- Acceptance metrics are now strictly SoT with backend flags/thresholds.
+- Good Rate denominator includes only channels where BOTH thresholds exist.
+- MVC/Duration denominators include only channels where the respective threshold exists.
+- Area Chart “good” (green) requires both thresholds present and met; yellow for exactly one; red for none.
+- Stable keys for ReferenceArea/Dot prevent stale color reuse in multi-series/comparison modes.
+
+**Files**
+- `frontend/src/lib/acceptanceRates.ts`
+- `frontend/src/hooks/useContractionAnalysis.ts`
+- `frontend/src/components/tabs/SignalPlotsTab/EMGChart.tsx`
+
+#### **6.3. Previous Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
+
+*   **Status:** PRODUCTION READY - Provides consistent data resolution across all components.
+*   Priority-based configuration and logging improvements.
 
 
 

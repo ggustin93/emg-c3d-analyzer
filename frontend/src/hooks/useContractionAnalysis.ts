@@ -82,10 +82,13 @@ export function useContractionAnalysis({
       const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
       if (channelDisplayed && channelData.contractions) {
         // Check if we have quality criteria data
-        if (channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined) {
+        const channelHasMvcThreshold = channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined;
+        const channelHasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
+
+        if (channelHasMvcThreshold) {
           hasMvcCriteria = true;
         }
-        if (channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined) {
+        if (channelHasDurationThreshold) {
           hasDurationCriteria = true;
         }
         
@@ -109,21 +112,24 @@ export function useContractionAnalysis({
         });
         
         channelData.contractions.forEach((contraction, idx) => {
-          // PRIORITY: Always use backend calculation when available for consistency
+          // SINGLE SOURCE OF TRUTH: Backend analytics flags are authoritative
+          // Only fallback to threshold calculations when backend flags are missing
           const hasBackendMvc = contraction.meets_mvc !== null && contraction.meets_mvc !== undefined;
           const hasBackendDuration = contraction.meets_duration !== null && contraction.meets_duration !== undefined;
           const hasBackendGood = contraction.is_good !== null && contraction.is_good !== undefined;
           
-          // Use backend values when available, otherwise calculate
+          // Trust backend flags first, NEVER re-derive when flags exist
           const meetsMvc = hasBackendMvc 
             ? contraction.meets_mvc 
             : (mvcThreshold !== null && mvcThreshold !== undefined && contraction.max_amplitude >= mvcThreshold);
           const meetsDuration = hasBackendDuration 
             ? contraction.meets_duration 
             : (contraction.duration_ms >= durationThreshold);
-          const isGood = hasBackendGood 
-            ? contraction.is_good 
+          const rawIsGood = hasBackendGood 
+            ? contraction.is_good   // Backend SoT - TRUST THIS VALUE
             : (meetsMvc && meetsDuration);
+          // Visualization alignment with metrics definitions: only GREEN when both criteria are defined and met
+          const visualIsGood = (channelHasMvcThreshold && channelHasDurationThreshold) ? (meetsMvc && meetsDuration) : false;
           
           logger.contractionAnalysis(`Contraction ${idx} in ${channelName}`, {
             duration_ms: contraction.duration_ms,
@@ -139,16 +145,17 @@ export function useContractionAnalysis({
             final: {
               meetsMvc,
               meetsDuration,
-              isGood,
-              source: hasBackendGood ? 'backend' : 'frontend-calculated'
+              isGood: visualIsGood,
+              source: hasBackendGood ? 'backend' : 'frontend-calculated',
+              rawIsGood
             }
           });
           
           // Only count contractions that are currently visible
-          if ((isGood && showGoodContractions) || (!isGood && showPoorContractions)) {
+          if ((visualIsGood && showGoodContractions) || (!visualIsGood && showPoorContractions)) {
             totalCount++;
             
-            if (isGood) {
+            if (visualIsGood) {
               goodCount++;
             } else if (meetsMvc && !meetsDuration) {
               mvcOnlyCount++;
@@ -200,8 +207,18 @@ export function useContractionAnalysis({
     Object.entries(analytics).forEach(([channelName, channelData]) => {
       const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
       
+      // 🔍 COMPARISON MODE DEBUG: Log channel processing
+      logger.contractionAnalysis(`Processing channel ${channelName}`, {
+        channelDisplayed,
+        finalDisplayDataKeys,
+        contractionsCount: channelData.contractions?.length || 0,
+        mode: finalDisplayDataKeys.length > 1 ? 'comparison' : 'single'
+      });
+      
       if (channelDisplayed && channelData.contractions) {
         const mvcThreshold = channelData.mvc_threshold_actual_value;
+        const channelHasMvcThreshold = channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined;
+        const channelHasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
         
         // Get per-muscle duration threshold with same priority as backend
         let durationThreshold = defaultDurationThreshold;
@@ -220,21 +237,24 @@ export function useContractionAnalysis({
           
           // Validate contraction is within chart time range
           if (startTime >= timeRange.min && endTime <= timeRange.max) {
-            // PRIORITY: Always use backend calculation when available for consistency
+            // SINGLE SOURCE OF TRUTH: Backend analytics flags are authoritative
+            // Only fallback to threshold calculations when backend flags are missing
             const hasBackendMvc = contraction.meets_mvc !== null && contraction.meets_mvc !== undefined;
             const hasBackendDuration = contraction.meets_duration !== null && contraction.meets_duration !== undefined;
             const hasBackendGood = contraction.is_good !== null && contraction.is_good !== undefined;
             
-            // Use backend values when available, otherwise calculate
+            // Trust backend flags first, NEVER re-derive when flags exist
             const meetsMvc = hasBackendMvc 
               ? contraction.meets_mvc 
               : (mvcThreshold !== null && mvcThreshold !== undefined && contraction.max_amplitude >= mvcThreshold);
             const meetsDuration = hasBackendDuration 
               ? contraction.meets_duration 
               : (contraction.duration_ms >= durationThreshold);
-            const isGood = hasBackendGood 
-              ? contraction.is_good 
+            const rawIsGood = hasBackendGood 
+              ? contraction.is_good   // Backend SoT - TRUST THIS VALUE
               : (meetsMvc && meetsDuration);
+            // Visualization alignment with metrics definitions: only GREEN when both criteria are defined and met
+            const visualIsGood = (channelHasMvcThreshold && channelHasDurationThreshold) ? (meetsMvc && meetsDuration) : false;
             
             // Validation: Warn if backend and frontend calculations differ
             if (hasBackendGood && mvcThreshold !== null && mvcThreshold !== undefined && durationThreshold !== null) {
@@ -242,9 +262,9 @@ export function useContractionAnalysis({
               const frontendMeetsDuration = contraction.duration_ms >= durationThreshold;
               const frontendIsGood = frontendMeetsMvc && frontendMeetsDuration;
               
-              if (isGood !== frontendIsGood) {
+              if (rawIsGood !== frontendIsGood) {
                 logger.warn(LogCategory.CONTRACTION_ANALYSIS, `Backend/Frontend mismatch for contraction ${idx} in ${channelName}`, {
-                  backend: { isGood, meetsMvc, meetsDuration },
+                  backend: { isGood: rawIsGood, meetsMvc, meetsDuration },
                   frontend: { isGood: frontendIsGood, meetsMvc: frontendMeetsMvc, meetsDuration: frontendMeetsDuration },
                   data: { max_amplitude: contraction.max_amplitude, duration_ms: contraction.duration_ms },
                   thresholds: { mvcThreshold, durationThreshold }
@@ -252,7 +272,7 @@ export function useContractionAnalysis({
               }
             }
             
-            logger.contractionAnalysis(`Area ${idx} in ${channelName}`, {
+            logger.contractionAnalysis(`🔍 Area ${idx} in ${channelName} (${finalDisplayDataKeys.length > 1 ? 'COMPARISON' : 'SINGLE'} mode)`, {
               duration_ms: contraction.duration_ms,
               max_amplitude: contraction.max_amplitude,
               durationThreshold,
@@ -265,16 +285,18 @@ export function useContractionAnalysis({
               final: {
                 meetsMvc,
                 meetsDuration,
-                isGood,
-                source: hasBackendGood ? 'backend' : 'frontend-calculated'
+                isGood: visualIsGood,
+                source: hasBackendGood ? 'backend' : 'frontend-calculated',
+                rawIsGood
               },
-              visualization: { startTime, endTime }
+              visualization: { startTime, endTime },
+              expectedColor: visualIsGood ? 'GREEN' : ((meetsMvc && !meetsDuration) || (!meetsMvc && meetsDuration)) ? 'YELLOW' : 'RED'
             });
             
             areas.push({
               startTime,
               endTime,
-              isGood: isGood === true, // Ensure boolean type
+              isGood: visualIsGood === true, // Ensure boolean type
               meetsMvc: meetsMvc === true, // Ensure boolean type
               meetsDuration: meetsDuration === true, // Ensure boolean type
               channel: channelName,
