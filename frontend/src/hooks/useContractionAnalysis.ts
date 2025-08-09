@@ -61,7 +61,7 @@ export function useContractionAnalysis({
       durationThresholdUsed: null
     };
     
-    // Get default duration threshold - should be consistent with backend logic
+    // Get default duration threshold (ms) and prefer backend-actual per channel when available
     const defaultDurationThreshold = sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS;
     
     logger.contractionAnalysis('Analyzing contraction quality summary', {
@@ -94,9 +94,10 @@ export function useContractionAnalysis({
         
         // Calculate good contractions using the same logic as backend processor.py
         const mvcThreshold = channelData.mvc_threshold_actual_value;
+        const channelDurationActual = channelData.duration_threshold_actual_value ?? null;
         
         // Get per-muscle duration threshold with same priority as backend
-        let durationThreshold = defaultDurationThreshold;
+        let durationThreshold = channelDurationActual ?? defaultDurationThreshold;
         if (sessionParams.session_duration_thresholds_per_muscle && 
             sessionParams.session_duration_thresholds_per_muscle[channelName]) {
           const muscleThresholdSeconds = sessionParams.session_duration_thresholds_per_muscle[channelName];
@@ -184,7 +185,7 @@ export function useContractionAnalysis({
     
     logger.startTimer('contraction-areas-calculation');
     
-    // Get default duration threshold - consistent with legend calculation
+    // Get default duration threshold - consistent with legend calculation, prefer backend actual per channel later
     const defaultDurationThreshold = sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS;
     
     const areas: ContractionArea[] = [];
@@ -221,7 +222,7 @@ export function useContractionAnalysis({
         const channelHasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
         
         // Get per-muscle duration threshold with same priority as backend
-        let durationThreshold = defaultDurationThreshold;
+        let durationThreshold = channelData.duration_threshold_actual_value ?? defaultDurationThreshold;
         if (sessionParams.session_duration_thresholds_per_muscle && 
             sessionParams.session_duration_thresholds_per_muscle[channelName]) {
           const muscleThresholdSeconds = sessionParams.session_duration_thresholds_per_muscle[channelName];
