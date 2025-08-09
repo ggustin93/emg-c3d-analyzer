@@ -16,7 +16,7 @@ interface SignalTypeSelectProps {
 const LABELS: Record<SignalDisplayType, string> = {
   raw: 'Raw (C3D)',
   activated: 'Activated (C3D)',
-  processed: 'RMS (Backend)',
+  processed: 'RMS Envelope',
   raw_with_rms: 'Raw + RMS (Backend)' // Keep for type compatibility, but not in OPTIONS
 };
 
