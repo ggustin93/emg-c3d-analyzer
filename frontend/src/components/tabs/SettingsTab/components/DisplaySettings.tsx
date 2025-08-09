@@ -47,27 +47,37 @@ const DisplaySettings: React.FC<DisplaySettingsProps> = (props) => {
   return (
     <UnifiedSettingsCard
       title="Display Settings"
-      description="Chart visualization, channel configuration and contraction display preferences"
+      description="Chart visualization, channels, and contraction display"
       isOpen={isDisplaySettingsOpen}
       onOpenChange={setIsDisplaySettingsOpen}
       icon={<EyeOpenIcon className="h-5 w-5 text-purple-600" />}
       accentColor="purple-600"
     >
-      <ChartDisplaySettings
-        dataPoints={props.dataPoints}
-        setDataPoints={props.setDataPoints}
-        plotChannel1Data={props.plotChannel1Data}
-        plotChannel2Data={props.plotChannel2Data}
-      />
-      <ChannelConfiguration
-        muscleChannels={props.muscleChannels}
-        disabled={props.disabled}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-      />
-      <ContractionVisualizationSettings
-        {...props}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left column: Chart + Contraction (compact) */}
+        <div className="space-y-6">
+          <ChartDisplaySettings
+            dataPoints={props.dataPoints}
+            setDataPoints={props.setDataPoints}
+            plotChannel1Data={props.plotChannel1Data}
+            plotChannel2Data={props.plotChannel2Data}
+          />
+          <ContractionVisualizationSettings
+            {...props}
+            compact
+          />
+        </div>
+
+        {/* Right column: Channel configuration */}
+        <div className="space-y-6">
+          <ChannelConfiguration
+            muscleChannels={props.muscleChannels}
+            disabled={props.disabled}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+          />
+        </div>
+      </div>
     </UnifiedSettingsCard>
   );
 };

@@ -30,6 +30,7 @@ interface ContractionVisualizationSettingsProps {
   
   // Enhanced mode toggle
   useEnhancedQuality?: boolean;
+  compact?: boolean;
 }
 
 const ContractionVisualizationSettings: React.FC<ContractionVisualizationSettingsProps> = ({
@@ -56,6 +57,7 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
   setShowContractionDots,
   disabled,
   useEnhancedQuality = false,
+  compact = false,
 }) => {
   // Quick preset handlers
   const handleShowAll = () => {
@@ -94,15 +96,17 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
     }
   };
   return (
-    <div className="space-y-4">
+    <div className={compact ? 'space-y-3' : 'space-y-4'}>
       <h4 className="text-sm font-medium text-gray-700">Contraction Visualization</h4>
-      <p className="text-xs text-slate-500">
-        Configure how muscle contractions are displayed when "Contraction Highlights" is enabled.
-      </p>
+      {!compact && (
+        <p className="text-xs text-slate-500">
+          Configure how muscle contractions are displayed when "Contraction Highlights" is enabled.
+        </p>
+      )}
       
       <div className="space-y-4">
         {/* Quick Presets */}
-        <div className="space-y-2">
+        <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
           <h5 className="text-xs font-medium text-gray-600">Quick Presets</h5>
           <div className="flex gap-2">
             <Button
@@ -136,7 +140,7 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
         </div>
 
         {/* Contraction Quality Controls */}
-        <div className="space-y-3">
+        <div className={compact ? 'space-y-2.5' : 'space-y-3'}>
           <div className="flex items-center gap-2">
             <h5 className="text-xs font-medium text-gray-600">Therapeutic Quality Categories</h5>
             <div className="group relative">
@@ -238,7 +242,7 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
         </div>
         
         {/* Display Style Controls */}
-        <div className="space-y-3">
+        <div className={compact ? 'space-y-2.5' : 'space-y-3'}>
           <h5 className="text-xs font-medium text-gray-600">Display Style</h5>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -269,20 +273,21 @@ const ContractionVisualizationSettings: React.FC<ContractionVisualizationSetting
         </div>
       </div>
       
-      {/* Information */}
-      <div className="p-3 bg-blue-50 rounded-md space-y-2">
-        <p className="text-xs text-blue-800">
-          <strong>Visualization:</strong> Areas highlight contraction duration, dots mark peak amplitude points with quality indicators.
-        </p>
-        {useEnhancedQuality && (
-          <div className="text-xs text-blue-700">
-            <strong>Quality Symbols:</strong> ✓ = Excellent, F = Force adequate, D = Duration adequate, ✗ = Insufficient
-          </div>
-        )}
-        <p className="text-xs text-blue-700">
-          <strong>Clinical Standard:</strong> Shows therapeutic-quality contractions (excellent + adequate) while hiding insufficient ones.
-        </p>
-      </div>
+      {!compact && (
+        <div className="p-3 bg-blue-50 rounded-md space-y-2">
+          <p className="text-xs text-blue-800">
+            <strong>Visualization:</strong> Areas highlight contraction duration, dots mark peak amplitude points with quality indicators.
+          </p>
+          {useEnhancedQuality && (
+            <div className="text-xs text-blue-700">
+              <strong>Quality Symbols:</strong> ✓ = Excellent, F = Force adequate, D = Duration adequate, ✗ = Insufficient
+            </div>
+          )}
+          <p className="text-xs text-blue-700">
+            <strong>Clinical Standard:</strong> Shows therapeutic-quality contractions (excellent + adequate) while hiding insufficient ones.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
