@@ -1,6 +1,8 @@
 // Centralized, accessible color tokens for contraction quality visuals
 // These colors are tuned for contrast on light backgrounds and consistency across the UI
 
+import { logger, LogCategory } from '@/services/logger';
+
 export type ContractionQualityFlags = {
   isGood: boolean;
   meetsMvc: boolean;
@@ -19,17 +21,20 @@ export const QUALITY_COLORS = {
 } as const;
 
 export function getContractionAreaColors(flags: ContractionQualityFlags): QualityColors {
-  console.log('🎯 getContractionAreaColors called with:', flags);
+  logger.contractionAnalysis('🎯 getContractionAreaColors called', flags);
   
   if (flags.isGood) {
-    console.log('→ Returning GOOD colors (green)');
+    logger.contractionAnalysis('→ Returning GOOD colors (green)', { colorType: 'good' });
     return QUALITY_COLORS.good;
   }
   if ((flags.meetsMvc && !flags.meetsDuration) || (!flags.meetsMvc && flags.meetsDuration)) {
-    console.log('→ Returning ADEQUATE colors (yellow)');
+    logger.contractionAnalysis('→ Returning ADEQUATE colors (yellow)', { 
+      colorType: 'adequate',
+      reason: flags.meetsMvc && !flags.meetsDuration ? 'mvc-only' : 'duration-only'
+    });
     return QUALITY_COLORS.adequate;
   }
-  console.log('→ Returning POOR colors (red)');
+  logger.contractionAnalysis('→ Returning POOR colors (red)', { colorType: 'poor' });
   return QUALITY_COLORS.poor;
 }
 

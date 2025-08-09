@@ -84,12 +84,12 @@ export const getMuscleColor = (muscleName: string, customColors?: Record<string,
 export const getColorForChannel = (channelName: string, muscleMapping?: Record<string, string>, customColors?: Record<string, string>) => {
   if (!muscleMapping) {
     // Fallback to index-based coloring if no mapping provided
-    const baseChannelName = channelName.replace(/ (Raw|activated)$/, '');
+    const baseChannelName = channelName.replace(/ (Raw|activated|Processed)$/, '');
     const channelIndex = parseInt(baseChannelName.replace('CH', '')) - 1;
     return getChannelColor(channelIndex);
   }
   
-  const baseChannelName = channelName.replace(/ (Raw|activated)$/, '');
+  const baseChannelName = channelName.replace(/ (Raw|activated|Processed)$/, '');
   const muscleName = muscleMapping[baseChannelName];
   
   if (muscleName) {

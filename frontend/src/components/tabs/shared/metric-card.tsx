@@ -17,6 +17,16 @@ interface MetricCardProps {
   error?: string | null;
   validationStatus?: 'validated' | 'to-be-validated' | 'strong-assumption';
   tooltipContent?: string;
+  // Visual hierarchy and auxiliary content
+  variant?: 'primary' | 'secondary';
+  subtext?: string;
+  valueClassName?: string;
+  /** Force unit to render even when value is not a finite number */
+  forceShowUnit?: boolean;
+  /** Compact layout reduces paddings and font sizes */
+  compact?: boolean;
+  /** Controls value size; defaults to md */
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export default function MetricCard({
@@ -32,6 +42,12 @@ export default function MetricCard({
   error,
   validationStatus,
   tooltipContent,
+  variant = 'secondary',
+  subtext,
+  valueClassName,
+  forceShowUnit = false,
+  compact = false,
+  size = 'md',
 }: MetricCardProps) {
   const formattedValue = error
     ? '---'
@@ -41,11 +57,18 @@ export default function MetricCard({
         useScientificNotation,
       });
 
+  const titleClass = variant === 'primary'
+    ? 'text-sm font-semibold'
+    : 'text-sm font-medium';
+
+  const baseSize = size === 'sm' ? 'text-xl' : size === 'lg' ? 'text-4xl' : 'text-3xl';
+  const valueTextClass = `${baseSize} font-bold ${valueClassName ?? ''}`.trim();
+
   const renderCardContent = () => (
     <Card className="relative flex flex-col justify-between h-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${compact ? 'pb-1' : 'pb-2'}`}>
         <div className="flex items-center">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle className={titleClass}>{title}</CardTitle>
           {(tooltipContent || description) && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -60,12 +83,15 @@ export default function MetricCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center flex-grow">
-        <div className="text-3xl font-bold">
-          {formattedValue}
-        </div>
-        {typeof value === 'number' && !isNaN(value) && value !== null && !error && (
+      <CardContent className={`flex flex-col items-center justify-center flex-grow ${compact ? 'py-2' : ''}`}>
+        <div className={valueTextClass}>{formattedValue}</div>
+        {(forceShowUnit || (typeof value === 'number' && isFinite(value) && value !== null)) && !error && unit && (
           <div className="text-md text-muted-foreground">{unit}</div>
+        )}
+        {subtext && (
+          <div className="text-xs text-slate-500 mt-1 text-center">
+            {subtext}
+          </div>
         )}
       </CardContent>
     </Card>

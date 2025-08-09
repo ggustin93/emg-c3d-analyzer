@@ -61,79 +61,13 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   // Unified Grid Layout: Everything in a single, cohesive grid system
   return (
     <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm border border-slate-200">
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center justify-center gap-2">
-          Performance Analysis
-          <ClinicalTooltip
-            title="Performance Analysis Dashboard"
-            description="Multi-dimensional rehabilitation assessment combining compliance, symmetry, effort, and engagement."
-            sections={[
-              {
-                title: "Performance Formula:",
-                type: "formula",
-                items: [
-                  { 
-                    label: "P", 
-                    value: " = w<sub>c</sub>·S<sub>comp</sub> + w<sub>s</sub>·S<sub>sym</sub> + w<sub>e</sub>·S<sub>effort</sub> + w<sub>g</sub>·S<sub>game</sub>" 
-                  }
-                ]
-              },
-              {
-                title: "Components:",
-                type: "list",
-                items: [
-                  { label: "Compliance", description: "Exercise quality: completion, intensity ≥75% MVC, duration" },
-                  { label: "Symmetry", description: "Bilateral muscle balance assessment" },
-                  { label: "Effort", description: "Patient exertion (Borg CR10 scale)" },
-                  { label: "Game", description: "GHOSTLY+ engagement metrics" }
-                ]
-              },
-              {
-                title: "Applications:",
-                type: "list",
-                items: [
-                  { description: "Real-time session monitoring" },
-                  { description: "Progress tracking across sessions" },
-                  { description: "Evidence-based treatment optimization" },
-                  { description: "Patient motivation through gamification" }
-                ]
-              }
-            ]}
-            side="top"
-            triggerClassName="ml-1"
-          />
-        </h2>
-        <p className="text-slate-600 text-sm">Comprehensive rehabilitation session assessment</p>
-      </div>
+      {/* Compact header removed; tab already provides context */}
       
       {/* UNIFIED GRID LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-        {/* Overall Performance - Takes 2 columns */}
-        <div className="lg:col-span-2 relative hover:z-10">
-          <OverallPerformanceCard
-            totalScore={overallScore}
-            scoreLabel={overallScoreLabel?.label}
-            scoreTextColor={overallScoreLabel?.text}
-            scoreBgColor={overallScoreLabel?.bg}
-            scoreHexColor={overallScoreLabel?.hex}
-            muscleCount={muscleData.length}
-            symmetryScore={symmetryScore}
-            subjectiveFatigueLevel={rpeLevel as number | undefined}
-            averageContractionTime={averageContractionTime}
-            totalContractions={totalContractions}
-            goodContractions={totalGoodContractions}
-            expectedContractions={totalExpectedContractions}
-            gameScore={gameScore}
-            gameLevel={gameLevel}
-            therapeuticComplianceScore={therapeuticComplianceScore}
-            leftMuscleScore={leftMuscleScore}
-            rightMuscleScore={rightMuscleScore}
-          />
-        </div>
-        
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Quadriceps Compliance */}
         {analysisResult && muscleData.length > 0 && muscleData[0] && (
-          <div className="lg:col-span-2 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-lg hover:z-10 relative">
+          <div className="lg:col-span-4 xl:col-span-4 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-lg hover:z-10 relative">
             <MusclePerformanceCard
               channel={muscleData[0].channelName}
               totalScore={muscleData[0].totalScore}
@@ -163,9 +97,35 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
           </div>
         )}
         
+        {/* Overall Performance - centered between left and right, same width with accented border */}
+        <div
+          className="lg:col-span-4 xl:col-span-4 col-span-1 relative hover:z-10 rounded-xl border-2 shadow-md"
+          style={{ borderColor: overallScoreLabel?.hex || '#e5e7eb' }}
+        >
+          <OverallPerformanceCard
+            totalScore={overallScore}
+            scoreLabel={overallScoreLabel?.label}
+            scoreTextColor={overallScoreLabel?.text}
+            scoreBgColor={overallScoreLabel?.bg}
+            scoreHexColor={overallScoreLabel?.hex}
+            muscleCount={muscleData.length}
+            symmetryScore={symmetryScore}
+            subjectiveFatigueLevel={rpeLevel as number | undefined}
+            averageContractionTime={averageContractionTime}
+            totalContractions={totalContractions}
+            goodContractions={totalGoodContractions}
+            expectedContractions={totalExpectedContractions}
+            gameScore={gameScore}
+            gameLevel={gameLevel}
+            therapeuticComplianceScore={therapeuticComplianceScore}
+            leftMuscleScore={leftMuscleScore}
+            rightMuscleScore={rightMuscleScore}
+          />
+        </div>
+
         {/* Right Quadriceps Compliance */}
         {analysisResult && muscleData.length > 1 && muscleData[1] && (
-          <div className="lg:col-span-2 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-lg hover:z-10 relative">
+          <div className="lg:col-span-4 xl:col-span-4 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-lg hover:z-10 relative">
             <MusclePerformanceCard
               channel={muscleData[1].channelName}
               totalScore={muscleData[1].totalScore}
@@ -197,17 +157,17 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
       </div>
       
       {/* SECOND ROW: Supporting Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
         {/* Muscle Symmetry */}
         {symmetryScore !== undefined && (
-          <div className="lg:col-span-2 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
+          <div className="lg:col-span-4 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <MuscleSymmetryCard symmetryScore={symmetryScore} />
           </div>
         )}
         
         {/* RPE Score */}
         {rpeLevel !== undefined && (
-          <div className="lg:col-span-2 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
+          <div className="lg:col-span-4 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <SubjectiveFatigueCard 
               fatigueLevel={rpeLevel} 
               showBadge={true}
@@ -217,7 +177,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         
         {/* GHOSTLY Game Score */}
         {(gameScore !== undefined || gameLevel !== undefined) && (
-          <div className="lg:col-span-2 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
+          <div className="lg:col-span-4 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <GHOSTLYGameCard 
               gameScore={gameScore}
               gameLevel={gameLevel}
