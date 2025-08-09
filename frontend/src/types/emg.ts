@@ -120,11 +120,7 @@ export interface GameSessionParameters {
   session_expected_contractions_ch1?: number | null;
   session_expected_contractions_ch2?: number | null;
   
-  // Contraction expectations
-  session_expected_long_left?: number | null;
-  session_expected_short_left?: number | null;
-  session_expected_long_right?: number | null;
-  session_expected_short_right?: number | null;
+  // Contraction expectations by type (removed)
   
   // Thresholds
   contraction_duration_threshold?: number | null;
