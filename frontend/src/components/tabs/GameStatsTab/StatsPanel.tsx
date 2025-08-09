@@ -11,6 +11,12 @@ import ChannelFilter, { FilterMode } from '@/components/shared/ChannelFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatMetricValue } from '@/lib/formatters';
 import { computeAcceptanceRates } from '@/lib/acceptanceRates';
+import RadialProgress from '@/components/ui/radial-progress';
+import DonutGauge from '@/components/ui/donut-gauge';
+
+// Visual constants for donut gauges
+const DONUT_SIZE = 128;
+const DONUT_THICKNESS = 7;
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
 interface StatsPanelComponentProps extends ExternalStatsPanelProps {
@@ -69,59 +75,7 @@ const expertTooltips = {
   fatigueIndex: "Dimitrov's Fatigue Index (FI_nsm5) is a sensitive spectral parameter that increases exponentially with fatigue development. It's calculated as the ratio of low to high frequency power and is particularly sensitive to early-stage fatigue."
 };
 
-const CircularProgress: React.FC<{ value: number; label: string; color: string }> = ({ value, label, color }) => {
-  // Calculate the circle's circumference and stroke-dasharray
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (value / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative w-28 h-28">
-        {/* Background circle */}
-        <svg className="w-full h-full" viewBox="0 0 100 100">
-          <circle 
-            cx="50" cy="50" r={radius} 
-            fill="transparent" 
-            stroke="#e5e7eb" 
-            strokeWidth="8"
-          />
-          {/* Progress circle */}
-          <circle 
-            cx="50" cy="50" r={radius} 
-            fill="transparent" 
-            stroke="currentColor" 
-            strokeWidth="8" 
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className={color}
-            transform="rotate(-90 50 50)"
-          />
-          {/* Percentage text */}
-          <text 
-            x="50" y="45" 
-            textAnchor="middle" 
-            fontSize="18" 
-            fontWeight="bold"
-            fill="currentColor"
-          >
-            {value}%
-          </text>
-          <text 
-            x="50" y="65" 
-            textAnchor="middle" 
-            fontSize="12"
-            className={color}
-          >
-            {label}
-          </text>
-        </svg>
-      </div>
-    </div>
-  );
-};
+// removed local CircularProgress in favor of shared RadialProgress
 
 // New MetricTooltip component to fix the error
 const MetricTooltip: React.FC<{ tooltip: string | undefined }> = ({ tooltip }) => {
@@ -401,7 +355,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <MetricTooltip tooltip={expertTooltips.contractionQuantity} />
                     </div>
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <MetricCard
                       title="Total"
                       value={displayAnalytics.contraction_count}
@@ -421,17 +375,37 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                             ? 'text-amber-600'
                             : 'text-red-600';
                         return (
-                          <MetricCard
-                            title="Good Rate"
-                            value={rate}
-                            unit="%"
-                            description="Percent of contractions meeting both MVC and duration criteria (backend SoT)."
-                            tooltipContent="Combined acceptance rate: contractions that meet BOTH amplitude (MVC) and duration thresholds. Backend analytics is the authoritative source."
-                            subtext={`${acceptanceRates.good} of ${acceptanceRates.total}`}
-                            valueClassName={valueClass}
-                            variant="primary"
-                            forceShowUnit
-                          />
+                          <Card className="relative flex flex-col justify-between h-full">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <div className="flex items-center">
+                                <CardTitle className="text-sm font-semibold">Good Rate</CardTitle>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
+                                      <InfoCircledIcon className="h-4 w-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                                    <p>Percent of contractions meeting both MVC and duration criteria (backend SoT).</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-center py-5">
+                              <DonutGauge
+                                percent={rate}
+                                size={DONUT_SIZE}
+                                thickness={DONUT_THICKNESS}
+                                colorHex={valueClass.includes('emerald') ? '#059669' : valueClass.includes('amber') ? '#d97706' : '#dc2626'}
+                                centerRender={(p) => (
+                                  <div className="text-center">
+                                    <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
+                                    <div className="text-xs text-muted-foreground">{`${acceptanceRates.good} of ${acceptanceRates.total}`}</div>
+                                  </div>
+                                )}
+                              />
+                            </CardContent>
+                          </Card>
                         );
                       })()
                     )}
@@ -449,17 +423,37 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                           ? `≥${acceptanceRates.mvcThreshold.toFixed(3)}mV`
                           : 'threshold TBD';
                         return (
-                          <MetricCard
-                            title="MVC Acceptance"
-                            value={rate}
-                            unit="%"
-                            description="Percent meeting amplitude threshold (backend SoT)."
-                            tooltipContent={`Contractions meeting the MVC amplitude threshold (${thresholdText}). Backend mvc_threshold_actual_value is authoritative.`}
-                            subtext={`${acceptanceRates.mvc} of ${acceptanceRates.mvcTotal}`}
-                            valueClassName={valueClass}
-                            variant="secondary"
-                            forceShowUnit
-                          />
+                          <Card className="relative flex flex-col justify-between h-full">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <div className="flex items-center">
+                                <CardTitle className="text-sm font-medium">MVC Acceptance</CardTitle>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
+                                      <InfoCircledIcon className="h-4 w-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                                    <p>{`Contractions meeting the MVC amplitude threshold (${thresholdText}). Backend mvc_threshold_actual_value is authoritative.`}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-center py-5">
+                              <DonutGauge
+                                percent={rate}
+                                size={DONUT_SIZE}
+                                thickness={DONUT_THICKNESS}
+                                colorHex={valueClass.includes('emerald') ? '#059669' : valueClass.includes('amber') ? '#d97706' : '#dc2626'}
+                                centerRender={(p) => (
+                                  <div className="text-center">
+                                    <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
+                                    <div className="text-xs text-muted-foreground">{`${acceptanceRates.mvc} of ${acceptanceRates.mvcTotal}`}</div>
+                                  </div>
+                                )}
+                              />
+                            </CardContent>
+                          </Card>
                         );
                       })()
                     )}
@@ -477,17 +471,37 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                           ? `≥${acceptanceRates.durationThreshold}ms`
                           : 'threshold TBD';
                         return (
-                          <MetricCard
-                            title="Duration Acceptance"
-                            value={rate}
-                            unit="%"
-                            description="Percent meeting duration threshold (backend SoT)."
-                            tooltipContent={`Contractions meeting the duration threshold (${thresholdText}). Backend duration_threshold_actual_value is authoritative.`}
-                            subtext={`${acceptanceRates.duration} of ${acceptanceRates.durationTotal}`}
-                            valueClassName={valueClass}
-                            variant="secondary"
-                            forceShowUnit
-                          />
+                          <Card className="relative flex flex-col justify-between h-full">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <div className="flex items-center">
+                                <CardTitle className="text-sm font-medium">Duration Acceptance</CardTitle>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
+                                      <InfoCircledIcon className="h-4 w-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                                    <p>{`Contractions meeting the duration threshold (${thresholdText}). Backend duration_threshold_actual_value is authoritative.`}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-center py-5">
+                              <DonutGauge
+                                percent={rate}
+                                size={DONUT_SIZE}
+                                thickness={DONUT_THICKNESS}
+                                colorHex={valueClass.includes('emerald') ? '#059669' : valueClass.includes('amber') ? '#d97706' : '#dc2626'}
+                                centerRender={(p) => (
+                                  <div className="text-center">
+                                    <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
+                                    <div className="text-xs text-muted-foreground">{`${acceptanceRates.duration} of ${acceptanceRates.durationTotal}`}</div>
+                                  </div>
+                                )}
+                              />
+                            </CardContent>
+                          </Card>
                         );
                       })()
                     )}
@@ -519,15 +533,20 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm font-medium">{title}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-center">
-                          <div className="text-3xl font-bold text-slate-800">
-                            {formatMetricValue(valueMs, { precision })}
-                          </div>
-                          <div className="text-md text-muted-foreground">ms</div>
-                          <Progress value={toPercent(valueMs)} />
-                          <div className="text-xs text-muted-foreground">
-                            {toPercent(valueMs)}% of {Math.round(maxMs)} ms
-                          </div>
+                        <CardContent className="flex items-center justify-center py-5">
+                          <DonutGauge
+                            percent={toPercent(valueMs)}
+                             size={DONUT_SIZE}
+                             thickness={DONUT_THICKNESS}
+                            colorHex={'#0f766e'}
+                            centerRender={() => (
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-slate-800">{formatMetricValue(valueMs, { precision })}</div>
+                                <div className="text-xs text-muted-foreground">ms</div>
+                                <div className="text-[10px] text-muted-foreground mt-0.5">{toPercent(valueMs)}% of {Math.round(maxMs)} ms</div>
+                              </div>
+                            )}
+                          />
                         </CardContent>
                       </Card>
                     );
@@ -559,39 +578,53 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                     </div>
                     <div className="flex gap-2" />
                   </h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        RMS 
-                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
-                      </p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(
-                          (displayAnalytics as any).rms_temporal_stats?.mean_value ?? displayAnalytics.rms,
-                          (displayAnalytics as any).rms_temporal_stats?.std_value ?? undefined,
-                          'mV', { useScientificNotation: true }
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        MAV 
-                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
-                      </p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(
-                          (displayAnalytics as any).mav_temporal_stats?.mean_value ?? displayAnalytics.mav,
-                          (displayAnalytics as any).mav_temporal_stats?.std_value ?? undefined,
-                          'mV', { useScientificNotation: true }
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-700">Max Amplitude</p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.max_amplitude, undefined, 'mV', { useScientificNotation: true })}
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {(() => {
+                      const rmsAvg = (displayAnalytics as any).rms_temporal_stats?.mean_value ?? displayAnalytics.rms
+                      const rmsStd = (displayAnalytics as any).rms_temporal_stats?.std_value ?? undefined
+                      const mavAvg = (displayAnalytics as any).mav_temporal_stats?.mean_value ?? displayAnalytics.mav
+                      const mavStd = (displayAnalytics as any).mav_temporal_stats?.std_value ?? undefined
+
+                      return (
+                        <>
+                          <MetricCard
+                            title="RMS"
+                            value={Number(rmsAvg)}
+                            unit="mV"
+                            description={expertTooltips.rms}
+                            precision={2}
+                            useScientificNotation
+                            subtext={Number.isFinite(rmsStd) ? `± ${formatMetricValue(rmsStd as number, { precision: 2, useScientificNotation: true })} mV` : undefined}
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                          <MetricCard
+                            title="MAV"
+                            value={Number(mavAvg)}
+                            unit="mV"
+                            description={expertTooltips.mav}
+                            precision={2}
+                            useScientificNotation
+                            subtext={Number.isFinite(mavStd) ? `± ${formatMetricValue(mavStd as number, { precision: 2, useScientificNotation: true })} mV` : undefined}
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                          <MetricCard
+                            title="Max Amplitude"
+                            value={Number(displayAnalytics.max_amplitude as number)}
+                            unit="mV"
+                            description="Peak signal amplitude during detected contractions."
+                            precision={2}
+                            useScientificNotation
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -604,46 +637,54 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                     </div>
                     <div className="flex gap-2" />
                   </h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        MPF 
-                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
-                      </p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(
-                          (displayAnalytics as any).mpf_temporal_stats?.mean_value ?? displayAnalytics.mpf ?? null,
-                          (displayAnalytics as any).mpf_temporal_stats?.std_value ?? undefined,
-                          'Hz'
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        MDF 
-                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
-                      </p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(
-                          (displayAnalytics as any).mdf_temporal_stats?.mean_value ?? displayAnalytics.mdf ?? null,
-                          (displayAnalytics as any).mdf_temporal_stats?.std_value ?? undefined,
-                          'Hz'
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        Fatigue Index (FI) 
-                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
-                      </p>
-                      <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(
-                          (displayAnalytics as any).fatigue_index_temporal_stats?.mean_value ?? displayAnalytics.fatigue_index_fi_nsm5 ?? null,
-                          (displayAnalytics as any).fatigue_index_temporal_stats?.std_value ?? undefined,
-                          '', { useScientificNotation: true, precision: 2 }
-                        )}
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {(() => {
+                      const mpfAvg = (displayAnalytics as any).mpf_temporal_stats?.mean_value ?? displayAnalytics.mpf
+                      const mpfStd = (displayAnalytics as any).mpf_temporal_stats?.std_value ?? undefined
+                      const mdfAvg = (displayAnalytics as any).mdf_temporal_stats?.mean_value ?? displayAnalytics.mdf
+                      const mdfStd = (displayAnalytics as any).mdf_temporal_stats?.std_value ?? undefined
+                      const fiAvg = (displayAnalytics as any).fatigue_index_temporal_stats?.mean_value ?? displayAnalytics.fatigue_index_fi_nsm5
+                      const fiStd = (displayAnalytics as any).fatigue_index_temporal_stats?.std_value ?? undefined
+
+                      return (
+                        <>
+                          <MetricCard
+                            title="MPF"
+                            value={Number(mpfAvg)}
+                            unit="Hz"
+                            description={expertTooltips.mpf}
+                            precision={2}
+                            subtext={Number.isFinite(mpfStd) ? `± ${formatMetricValue(mpfStd as number, { precision: 2 })} Hz` : undefined}
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                          <MetricCard
+                            title="MDF"
+                            value={Number(mdfAvg)}
+                            unit="Hz"
+                            description={expertTooltips.mdf}
+                            precision={2}
+                            subtext={Number.isFinite(mdfStd) ? `± ${formatMetricValue(mdfStd as number, { precision: 2 })} Hz` : undefined}
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                          <MetricCard
+                            title="Fatigue Index (FI)"
+                            value={Number(fiAvg)}
+                            unit=""
+                            description={expertTooltips.fatigueIndex}
+                            precision={2}
+                            useScientificNotation
+                            subtext={Number.isFinite(fiStd) ? `± ${formatMetricValue(fiStd as number, { precision: 2, useScientificNotation: true })}` : undefined}
+                            variant="secondary"
+                            compact
+                            size="sm"
+                          />
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
