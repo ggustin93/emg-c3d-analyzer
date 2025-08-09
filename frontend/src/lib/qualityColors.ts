@@ -19,12 +19,17 @@ export const QUALITY_COLORS = {
 } as const;
 
 export function getContractionAreaColors(flags: ContractionQualityFlags): QualityColors {
+  console.log('🎯 getContractionAreaColors called with:', flags);
+  
   if (flags.isGood) {
+    console.log('→ Returning GOOD colors (green)');
     return QUALITY_COLORS.good;
   }
   if ((flags.meetsMvc && !flags.meetsDuration) || (!flags.meetsMvc && flags.meetsDuration)) {
+    console.log('→ Returning ADEQUATE colors (yellow)');
     return QUALITY_COLORS.adequate;
   }
+  console.log('→ Returning POOR colors (red)');
   return QUALITY_COLORS.poor;
 }
 

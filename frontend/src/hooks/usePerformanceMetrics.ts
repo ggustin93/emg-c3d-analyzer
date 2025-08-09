@@ -112,21 +112,13 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       if (!channelData) return;
 
       let expectedContractions: number | null = null;
-      let expectedShortContractions: number | undefined;
-      let expectedLongContractions: number | undefined;
       const params = sessionParams;
 
       if (params) {
         const perChannelKey = `session_expected_contractions_ch${index + 1}` as keyof typeof params;
         expectedContractions = (params[perChannelKey] as number | null) ?? params.session_expected_contractions ?? null;
         
-        if (index === 0) {
-          expectedShortContractions = typeof params.session_expected_short_left === 'number' ? params.session_expected_short_left : undefined;
-          expectedLongContractions = typeof params.session_expected_long_left === 'number' ? params.session_expected_long_left : undefined;
-        } else if (index === 1) {
-          expectedShortContractions = typeof params.session_expected_short_right === 'number' ? params.session_expected_short_right : undefined;
-          expectedLongContractions = typeof params.session_expected_long_right === 'number' ? params.session_expected_long_right : undefined;
-        }
+        // Removed type-specific expected counts (long/short) usage
       }
       
       const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
@@ -202,8 +194,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
         shortGoodContractions,
         longContractions,
         longGoodContractions,
-        expectedShortContractions,
-        expectedLongContractions,
+        // type-specific expectations removed
         averageContractionTime: muscleAverageContractionTime,
         mvcValue: sessionParams.session_mvc_values?.[channelName] ?? sessionParams.session_mvc_value ?? null,
         mvcThreshold,
