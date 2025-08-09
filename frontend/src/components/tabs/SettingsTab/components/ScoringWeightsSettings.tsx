@@ -100,9 +100,14 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         return average;
       }
     }
-    return sessionParams.contraction_duration_threshold_ms 
-      ? sessionParams.contraction_duration_threshold_ms / 1000
-      : 2.0;
+    // Fallback to global threshold in ms if present; otherwise default 2.0s
+    if (sessionParams.contraction_duration_threshold_ms != null) {
+      return sessionParams.contraction_duration_threshold_ms / 1000;
+    }
+    if (sessionParams.contraction_duration_threshold != null) {
+      return sessionParams.contraction_duration_threshold / 1000;
+    }
+    return 2.0;
   };
 
   const getAverageMvcThreshold = () => {
@@ -135,9 +140,14 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         return `${avg.toFixed(1)} (${min}-${max})`;
       }
     }
-    return sessionParams.contraction_duration_threshold_ms 
-      ? (sessionParams.contraction_duration_threshold_ms / 1000).toFixed(1)
-      : '2.0';
+    // Prefer explicit ms field when provided; otherwise use global threshold
+    if (sessionParams.contraction_duration_threshold_ms != null) {
+      return (sessionParams.contraction_duration_threshold_ms / 1000).toFixed(1);
+    }
+    if (sessionParams.contraction_duration_threshold != null) {
+      return (sessionParams.contraction_duration_threshold / 1000).toFixed(1);
+    }
+    return '2.0';
   };
 
   // Get clinically appropriate MVC threshold display
