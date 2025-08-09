@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { EMGAnalysisResult, GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
+import { MVCService } from '@/services/mvcService';
 
 const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
   if (!params) return null;
@@ -15,17 +16,33 @@ const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: s
 
 export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
   const { sessionParams } = useSessionStore();
+  const [serverResult, setServerResult] = useState<EMGAnalysisResult | null>(analysisResult);
+
+  // Recalculate analytics on backend whenever sessionParams change
+  useEffect(() => {
+    if (!analysisResult) return;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const updated = await MVCService.recalc(analysisResult, sessionParams);
+        if (!controller.signal.aborted) setServerResult(updated);
+      } catch (e) {
+        console.warn('Recalc failed; falling back to original analytics', e);
+        if (!controller.signal.aborted) setServerResult(analysisResult);
+      }
+    })();
+    return () => controller.abort();
+  }, [analysisResult, sessionParams]);
 
   const liveAnalytics = useMemo(() => {
-    if (!analysisResult?.analytics || !sessionParams) {
-      return null;
-    }
+    const base = serverResult ?? analysisResult;
+    if (!base?.analytics || !sessionParams) return null;
 
     const updatedAnalytics: { [key: string]: ChannelAnalyticsData } = {};
-    const channelNames = Object.keys(analysisResult.analytics);
+    const channelNames = Object.keys(base.analytics);
 
     for (const channelName of channelNames) {
-      const originalChannelData = analysisResult.analytics[channelName];
+      const originalChannelData = base.analytics[channelName];
       const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
       const durationThreshold = sessionParams.contraction_duration_threshold ?? 2000;
 
@@ -80,7 +97,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
 
     return updatedAnalytics;
 
-  }, [analysisResult, sessionParams]);
+  }, [serverResult, analysisResult, sessionParams]);
 
   return liveAnalytics;
 }; 

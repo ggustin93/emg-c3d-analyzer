@@ -33,6 +33,25 @@ export class MVCService {
   private static readonly BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   /**
+   * Recalculate analytics on the backend using existing analysis and updated session params
+   */
+  static async recalc(
+    existing: EMGAnalysisResult,
+    session_params: any
+  ): Promise<EMGAnalysisResult> {
+    const response = await fetch(`${this.BASE_URL}/recalc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ existing, session_params })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
    * Estimate MVC values from uploaded file
    */
   static async estimateMVC(
