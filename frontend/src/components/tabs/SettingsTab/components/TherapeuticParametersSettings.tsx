@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { LockedBadge, SourceStatusBadge } from "@/components/ui/StatusBadges";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { useMvcService } from '@/hooks/useMvcService';
@@ -80,7 +81,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
           {isDebugMode ? (
             <Badge variant="warning" className="text-xs">Debug Unlocked</Badge>
           ) : (
-            <Badge variant="outline" className="text-xs">Locked</Badge>
+            <LockedBadge />
           )}
         </div>
       }

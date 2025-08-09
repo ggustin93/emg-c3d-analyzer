@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PersonIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Badge } from '@/components/ui/badge';
+import { LockedBadge, SourceStatusBadge } from '@/components/ui/StatusBadges';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;
@@ -26,11 +27,10 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
       accentColor="indigo-600"
       badge={
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">Locked</Badge>
-          <Badge variant="outline" className="text-xs">c3d</Badge>
-          <Badge variant="outline" className="text-xs">×</Badge>
+          <LockedBadge />
+          <SourceStatusBadge source="c3d" ok={false} />
           {isDebugMode && (
-            <Badge variant="outline" className="text-xs">Debug Mode</Badge>
+            <Badge variant="warning" className="text-xs">Debug Mode</Badge>
           )}
         </div>
       }

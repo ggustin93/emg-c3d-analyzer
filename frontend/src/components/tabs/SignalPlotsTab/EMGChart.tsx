@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   Brush,
   ReferenceLine,
   ReferenceDot,
@@ -17,9 +16,15 @@ import { getColorForChannel } from '@/lib/colorMappings';
 import { FilterMode } from '@/components/shared/ChannelFilter';
 import { GameSessionParameters, ChannelAnalyticsData } from "@/types/emg";
 import { SignalDisplayType } from './ThreeChannelSignalSelector';
+import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
+import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
+import { logger } from '@/services/logger';
+import { useMVCCalculations } from '@/hooks/useMVCCalculations';
+import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
+import EMGChartLegend from './EMGChartLegend';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
+import { Legend } from 'recharts';
 
 const Spinner = () => (
   <div className="flex items-center justify-center space-x-2">
@@ -94,21 +99,21 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   // Normalize overlay availability: allow 'raw_with_rms' only if both raw and processed keys exist
   const overlayAvailable = React.useMemo(() => {
     const keys = availableChannels;
-    console.log('🔍 Overlay Availability Check:', { availableChannels: keys });
+    logger.dataProcessing('Overlay Availability Check', { availableChannels: keys });
     
     if (!keys || keys.length === 0) return false;
     const baseNames = keys.map(k => k.replace(/ (Raw|activated|Processed)$/,'')).filter((v,i,a)=>a.indexOf(v)===i);
     
-    console.log('🔍 Base Names:', baseNames);
+    logger.dataProcessing('Base Names', baseNames);
     
     const hasOverlay = baseNames.some(base => {
       const hasRaw = keys.includes(`${base} Raw`);
       const hasProcessed = keys.includes(`${base} Processed`);
-      console.log(`🔍 ${base}: Raw=${hasRaw}, Processed=${hasProcessed}`);
+      logger.dataProcessing(`Checking signals for ${base}`, { hasRaw, hasProcessed });
       return hasRaw && hasProcessed;
     });
     
-    console.log('🔍 Overlay Available:', hasOverlay);
+    logger.dataProcessing('Overlay Available', { hasOverlay });
     return hasOverlay;
   }, [availableChannels]);
 
@@ -127,7 +132,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     const keys = chartData?.[0] && typeof chartData[0] === 'object' 
       ? Object.keys(chartData[0]).filter(key => key !== 'time') 
       : [];
-    console.log('🔍 Chart Data Keys:', keys);
+    logger.dataProcessing('Chart Data Keys', keys);
     return keys;
   }, [chartData]);
 
@@ -152,9 +157,30 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     return displayDataKeys.length > 0 ? displayDataKeys : availableDataKeys;
   }, [viewMode, availableChannels, selectedChannel, availableDataKeys]);
 
+  // Initialize hooks for MVC calculations and contraction analysis
+  const { getChannelMVCThreshold, getMuscleName, getThresholdData } = useMVCCalculations({
+    sessionParams,
+    mvcThresholdForPlot,
+    analytics,
+    channel_muscle_mapping,
+    muscle_color_mapping,
+    finalDisplayDataKeys,
+    effectivePlotMode,
+    getColorForChannel
+  });
+
+  const { contractionAreas, qualitySummary } = useContractionAnalysis({
+    analytics,
+    sessionParams,
+    finalDisplayDataKeys,
+    chartData,
+    showGoodContractions,
+    showPoorContractions
+  });
+
   // For overlay mode, we need both Raw and RMS data keys
   const overlayDataKeys = useMemo(() => {
-    console.log('🔍 Overlay Debug - plotMode:', plotMode, 'overlayAvailable:', overlayAvailable);
+    logger.dataProcessing('Overlay Debug', { plotMode, overlayAvailable });
     
     if (plotMode !== 'raw_with_rms') return null;
     
@@ -180,7 +206,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
       const processedKey = availableDataKeys.find(key => key === `${baseChannel} Processed`);
       if (processedKey) rmsKeys.push(processedKey);
       
-      console.log(`🔍 ${baseChannel}: Raw=${rawKey}, Processed=${processedKey}`);
+      logger.dataProcessing(`Channel mapping for ${baseChannel}`, { rawKey, processedKey });
     });
     
     console.log('🔍 Overlay Keys Result:', { rawKeys, rmsKeys });
@@ -198,197 +224,10 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     return hasValid;
   }, [plotMode, overlayDataKeys]);
 
-  const getMuscleName = useCallback((channelName: string | null): string => {
-    if (!channelName) return '';
-    try {
-      const baseChannelName = channelName.split(' ')[0];
-      const muscleName = channel_muscle_mapping?.[baseChannelName] || baseChannelName;
-      
-      // Support new 3-channel system
-      const signalTypeName = effectivePlotMode === 'raw' ? 'Raw (C3D)'
-                           : effectivePlotMode === 'activated' ? 'Activated (C3D)'
-                           : effectivePlotMode === 'processed' ? 'RMS (Backend)'
-                           : effectivePlotMode === 'raw_with_rms' ? 'Raw + RMS (Backend)'
-                           : 'Activated'; // fallback
-      
-      return `${muscleName} ${signalTypeName}`;
-    } catch (error) {
-      return channelName || '';
-    }
-  }, [channel_muscle_mapping, effectivePlotMode]);
-
-  const getChannelMVCThreshold = useCallback((channel: string): number | null => {
-    const baseChannelName = channel.split(' ')[0];
-    
-    // PRIORITY: Use backend-calculated threshold from analytics (ensures consistency)
-    if (analytics && analytics[baseChannelName] && analytics[baseChannelName].mvc_threshold_actual_value !== null && analytics[baseChannelName].mvc_threshold_actual_value !== undefined) {
-      const backendThreshold = analytics[baseChannelName].mvc_threshold_actual_value;
-      console.log(`🎯 Using backend-calculated MVC threshold for ${baseChannelName}: ${backendThreshold}`);
-      return backendThreshold ?? null; // Ensure null instead of undefined
-    }
-    
-    // FALLBACK: Calculate from session parameters (for backward compatibility)
-    if (sessionParams?.session_mvc_values?.[baseChannelName]) {
-      const channelMVC = sessionParams.session_mvc_values[baseChannelName];
-      if (sessionParams.session_mvc_threshold_percentages?.[baseChannelName]) {
-        const thresholdPercentage = sessionParams.session_mvc_threshold_percentages[baseChannelName];
-        if (channelMVC !== null && thresholdPercentage !== null) {
-          const threshold = channelMVC * (thresholdPercentage / 100);
-          console.log(`📊 Calculated MVC threshold for ${baseChannelName}: ${threshold} (fallback calculation)`);
-          return threshold;
-        }
-      }
-      if (channelMVC !== null && sessionParams.session_mvc_threshold_percentage) {
-        const threshold = channelMVC * (sessionParams.session_mvc_threshold_percentage / 100);
-        console.log(`📊 Calculated MVC threshold for ${baseChannelName}: ${threshold} (fallback calculation)`);
-        return threshold;
-      }
-    }
-    
-    // LEGACY: Global session parameters
-    if (sessionParams?.session_mvc_value !== null && sessionParams?.session_mvc_value !== undefined && 
-        sessionParams?.session_mvc_threshold_percentage !== null && sessionParams?.session_mvc_threshold_percentage !== undefined) {
-      const threshold = sessionParams.session_mvc_value * (sessionParams.session_mvc_threshold_percentage / 100);
-      console.log(`📊 Calculated global MVC threshold: ${threshold} (legacy fallback)`);
-      return threshold;
-    }
-    
-    // FINAL FALLBACK: External prop
-    if (mvcThresholdForPlot != null) {
-      console.log(`📊 Using external MVC threshold: ${mvcThresholdForPlot} (prop fallback)`);
-      return mvcThresholdForPlot;
-    }
-    
-    console.log(`⚠️ No MVC threshold available for ${baseChannelName}`);
-    return null;
-  }, [sessionParams, mvcThresholdForPlot, analytics]);
+  // Note: getMuscleName and getChannelMVCThreshold are now provided by useMVCCalculations hook
 
 
-  // Enhanced contraction quality summary for legend with detailed breakdown
-  // This matches the calculation in usePerformanceMetrics.ts for consistency
-  const qualitySummary = useMemo(() => {
-    if (!analytics || !sessionParams) return { 
-      goodCount: 0, totalCount: 0, mvcOnlyCount: 0, durationOnlyCount: 0,
-      hasMvcCriteria: false, hasDurationCriteria: false,
-      durationThresholdUsed: null
-    };
-    
-    // Get default duration threshold - should be consistent with backend logic
-    const defaultDurationThreshold = sessionParams.contraction_duration_threshold ?? 2000;
-    
-    console.log('🔍 EMGChart Duration Threshold Debug:', {
-      sessionParams_contraction_duration_threshold: sessionParams.contraction_duration_threshold,
-      sessionParams_session_duration_thresholds_per_muscle: sessionParams.session_duration_thresholds_per_muscle,
-      defaultDurationThreshold,
-      expectedValue: '2000ms (2 seconds)',
-      unit: 'milliseconds'
-    });
-    
-    let goodCount = 0;        // Meets both MVC and duration
-    let mvcOnlyCount = 0;     // Meets MVC only (but not duration)
-    let durationOnlyCount = 0; // Meets duration only (but not MVC)
-    let totalCount = 0;
-    let hasMvcCriteria = false;
-    let hasDurationCriteria = false;
-    
-    Object.entries(analytics).forEach(([channelName, channelData]) => {
-      const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
-      if (channelDisplayed && channelData.contractions) {
-        // Check if we have quality criteria data
-        if (channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined) {
-          hasMvcCriteria = true;
-        }
-        if (channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined) {
-          hasDurationCriteria = true;
-        }
-        
-        // Calculate good contractions using the same logic as backend processor.py
-        const mvcThreshold = channelData.mvc_threshold_actual_value;
-        
-        // Get per-muscle duration threshold with same priority as backend
-        let durationThreshold = defaultDurationThreshold;
-        if (sessionParams.session_duration_thresholds_per_muscle && 
-            sessionParams.session_duration_thresholds_per_muscle[channelName]) {
-          const muscleThresholdSeconds = sessionParams.session_duration_thresholds_per_muscle[channelName];
-          if (muscleThresholdSeconds !== null && muscleThresholdSeconds !== undefined) {
-            durationThreshold = muscleThresholdSeconds * 1000; // Convert seconds to milliseconds
-          }
-        }
-        
-        console.log(`🔍 Duration threshold for ${channelName}:`, {
-          perMuscleThresholdSeconds: sessionParams.session_duration_thresholds_per_muscle?.[channelName],
-          finalThresholdMs: durationThreshold,
-          defaultThresholdMs: defaultDurationThreshold
-        });
-        
-        channelData.contractions.forEach((contraction, idx) => {
-          // PRIORITY: Always use backend calculation when available for consistency
-          // Backend values should be authoritative - only fallback to frontend calculation when backend is null/undefined
-          const hasBackendMvc = contraction.meets_mvc !== null && contraction.meets_mvc !== undefined;
-          const hasBackendDuration = contraction.meets_duration !== null && contraction.meets_duration !== undefined;
-          const hasBackendGood = contraction.is_good !== null && contraction.is_good !== undefined;
-          
-          // Use backend values when available, otherwise calculate
-          const meetsMvc = hasBackendMvc 
-            ? contraction.meets_mvc 
-            : (mvcThreshold !== null && mvcThreshold !== undefined && contraction.max_amplitude >= mvcThreshold);
-          const meetsDuration = hasBackendDuration 
-            ? contraction.meets_duration 
-            : (contraction.duration_ms >= durationThreshold);
-          const isGood = hasBackendGood 
-            ? contraction.is_good 
-            : (meetsMvc && meetsDuration);
-          
-          // Enhanced debug logging to track backend vs frontend calculations
-          console.log(`🔍 Contraction ${idx} in ${channelName}:`, {
-            // Raw data
-            duration_ms: contraction.duration_ms,
-            max_amplitude: contraction.max_amplitude,
-            // Thresholds
-            durationThreshold,
-            mvcThreshold,
-            // Backend values (as received)
-            backend: {
-              is_good: contraction.is_good,
-              meets_mvc: contraction.meets_mvc,
-              meets_duration: contraction.meets_duration,
-              hasValues: { mvc: hasBackendMvc, duration: hasBackendDuration, good: hasBackendGood }
-            },
-            // Final values used
-            final: {
-              meetsMvc,
-              meetsDuration,
-              isGood,
-              source: hasBackendGood ? 'backend' : 'frontend-calculated'
-            }
-          });
-          
-          // Only count contractions that are currently visible
-          if ((isGood && showGoodContractions) || (!isGood && showPoorContractions)) {
-            totalCount++;
-            
-            if (isGood) {
-              goodCount++;
-            } else if (meetsMvc && !meetsDuration) {
-              mvcOnlyCount++;
-            } else if (meetsDuration && !meetsMvc) {
-              durationOnlyCount++;
-            }
-          }
-        });
-      }
-    });
-    
-    return { 
-      goodCount, 
-      totalCount, 
-      mvcOnlyCount, 
-      durationOnlyCount,
-      hasMvcCriteria,
-      hasDurationCriteria,
-      durationThresholdUsed: defaultDurationThreshold
-    };
-  }, [analytics, finalDisplayDataKeys, showGoodContractions, showPoorContractions, sessionParams]);
+  // Note: qualitySummary is now provided by useContractionAnalysis hook
 
 
   const renderLegend = useCallback((props: any) => {
@@ -762,7 +601,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   // Optimized: Separate contraction areas from main chart data
   // CRITICAL: Use the same calculation logic as the legend for consistency
   // FORCE REFRESH: Added analytics timestamp to dependencies to force recalculation
-  const contractionAreas = useMemo(() => {
+  const contractionAreasLocal = useMemo(() => {
     if (!analytics || !sessionParams) return [];
     
     // Get default duration threshold - consistent with legend calculation
@@ -965,12 +804,18 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               verticalAlign="top" 
               height={36} 
               wrapperStyle={{ top: -5, right: 0, backgroundColor: 'transparent' }} 
-              content={renderLegend}
+              content={() => (
+                <EMGChartLegend 
+                  thresholds={getThresholdData()}
+                  qualitySummary={qualitySummary}
+                  sessionParams={sessionParams}
+                />
+              )}
             />
             
             {(() => {
               const shouldRenderOverlay = plotMode === 'raw_with_rms' && overlayDataKeys && hasValidOverlayData;
-              console.log('🔍 Rendering Decision:', { 
+              logger.chartRender('Rendering Decision', { 
                 plotMode, 
                 isRawWithRms: plotMode === 'raw_with_rms',
                 overlayDataKeys: !!overlayDataKeys, 
@@ -1050,7 +895,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             {/* MVC Reference Lines - use appropriate Y-axis for overlay mode */}
             {(() => {
               const keysForThresholds = plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys;
-              console.log('🔍 MVC Reference Lines Keys:', keysForThresholds);
+              logger.chartRender('MVC Reference Lines Keys', keysForThresholds);
               return keysForThresholds;
             })().map((dataKey) => {
               const threshold = getChannelMVCThreshold(dataKey);
@@ -1085,14 +930,17 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             )}
 
             {/* Debug: Log when rendering contraction visualizations */}
-            {contractionAreas.length > 0 && console.log('📊 Rendering contractions:', contractionAreas.length, 'Sample areas:', contractionAreas.slice(0, 2).map(a => ({isGood: a.isGood, meetsMvc: a.meetsMvc, meetsDuration: a.meetsDuration})))}
+            {contractionAreas.length > 0 && logger.chartRender('Rendering contractions', { 
+              count: contractionAreas.length, 
+              sample: contractionAreas.slice(0, 2).map(a => ({isGood: a.isGood, meetsMvc: a.meetsMvc, meetsDuration: a.meetsDuration}))
+            })}
             
             {/* Contraction areas - colorize EMG lines between two abscissas with enhanced quality colors */}
             {showContractionAreas && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 &&
              contractionAreas
               .filter(area => (area.isGood && showGoodContractions) || (!area.isGood && showPoorContractions))
               .map((area, index) => {
-                console.log(`🔍 ReferenceArea ${index}:`, {
+                logger.chartRender(`ReferenceArea ${index}`, {
                   x1: area.startTime,
                   x2: area.endTime,
                   isGood: area.isGood,
@@ -1107,7 +955,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   meetsDuration: area.meetsDuration
                 });
                 
-                console.log(`🎨 Color for area ${index}:`, {
+                logger.chartRender(`Color for area ${index}`, {
                   flags: { isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration },
                   colors: { fill: fillColor, stroke: strokeColor },
                   channel: area.channel
@@ -1133,7 +981,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
              contractionAreas
               .filter(area => (area.isGood && showGoodContractions) || (!area.isGood && showPoorContractions))
               .map((area, index) => {
-                console.log(`🔍 ReferenceDot ${index}:`, {
+                logger.chartRender(`ReferenceDot ${index}`, {
                   x: area.peakTime,
                   y: area.maxAmplitude,
                   isGood: area.isGood,

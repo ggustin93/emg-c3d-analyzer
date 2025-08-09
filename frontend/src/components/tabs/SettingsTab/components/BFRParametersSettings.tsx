@@ -4,6 +4,7 @@ import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { LockedBadge, SourceStatusBadge } from '@/components/ui/StatusBadges';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HeartIcon, MixerHorizontalIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
@@ -129,8 +130,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                 {isDebugMode && <span className="text-xs font-normal text-gray-500">(Editable in debug mode)</span>}
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">c3d</Badge>
-                <Badge variant="outline" className="text-xs">×</Badge>
+                <SourceStatusBadge source="c3d" ok={false} />
               </div>
             </div>
             
@@ -387,7 +387,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">Therapist</Badge>
-                <Badge variant="outline" className="text-xs">Locked</Badge>
+                <LockedBadge />
               </div>
             </div>
             <ClinicalTooltip
