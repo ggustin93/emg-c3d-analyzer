@@ -78,10 +78,11 @@ export class MVCService {
 
     for (const [channel, analytics] of Object.entries(analysisResult.analytics)) {
       if (analytics.mvc_threshold_actual_value !== null && 
+          analytics.mvc_threshold_actual_value !== undefined &&
           analytics.mvc_estimation_method) {
         
-        // Calculate original MVC value from threshold
-        const thresholdPercentage = analytics.mvc_threshold_percentage || 75;
+        // Calculate original MVC value from threshold - use 75% as default
+        const thresholdPercentage = 75; // Standard threshold percentage
         const mvcValue = analytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
 
         mvcResults[channel] = {
@@ -89,11 +90,11 @@ export class MVCService {
           threshold_value: analytics.mvc_threshold_actual_value,
           threshold_percentage: thresholdPercentage,
           estimation_method: analytics.mvc_estimation_method as any,
-          confidence_score: analytics.confidence_score || 0.8, // Default confidence
+          confidence_score: 0.8, // Default confidence
           metadata: {
             extracted_from_analysis: true,
-            total_contractions: analytics.total_contractions,
-            good_contractions: analytics.good_contractions,
+            total_contractions: analytics.contraction_count || 0,
+            good_contractions: analytics.good_contraction_count || 0,
             analysis_timestamp: analysisResult.timestamp
           },
           timestamp: new Date().toISOString()
