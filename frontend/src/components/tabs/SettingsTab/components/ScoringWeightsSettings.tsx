@@ -469,12 +469,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
             muted={!canEdit || isGameWeightZero}
             badge={
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-amber-100 text-amber-800 text-xs">Optional</Badge>
                 {(!canEdit || isGameWeightZero) && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge variant="outline" className="bg-slate-100 text-slate-800 flex items-center gap-1">
-                        <LockClosedIcon className="h-3.5 w-3.5" /> {isGameWeightZero ? 'Disabled (S_game=0%)' : 'Locked'}
+                        <LockClosedIcon className="h-3.5 w-3.5" /> {isGameWeightZero ? 'Disabled' : 'Locked'}
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
