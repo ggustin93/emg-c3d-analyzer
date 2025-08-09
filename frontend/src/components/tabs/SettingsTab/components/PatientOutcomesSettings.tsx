@@ -24,7 +24,16 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
       onOpenChange={setIsPatientOutcomesOpen}
       icon={<PersonIcon className="h-5 w-5 text-indigo-600" />}
       accentColor="indigo-600"
-      badge={isDebugMode ? <Badge variant="outline" className="bg-indigo-100 text-indigo-800">Debug Mode</Badge> : undefined}
+      badge={
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">Locked</Badge>
+          <Badge variant="outline" className="text-xs">c3d</Badge>
+          <Badge variant="outline" className="text-xs">×</Badge>
+          {isDebugMode && (
+            <Badge variant="outline" className="text-xs">Debug Mode</Badge>
+          )}
+        </div>
+      }
     >
       <TooltipProvider>
         {/* Subjective Effort Assessment */}

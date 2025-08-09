@@ -93,16 +93,9 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     // Auto-distribute expected contractions between channels
     if (name === 'session_expected_contractions' && numValue !== null) {
       const halfExpected = numValue / 2;
-      
-      // Update channel values
+      // Update channel values only
       updatedParams.session_expected_contractions_ch1 = Math.ceil(halfExpected);
       updatedParams.session_expected_contractions_ch2 = Math.floor(halfExpected);
-      
-      // Update type values
-      updatedParams.session_expected_short_left = Math.ceil(halfExpected / 2);
-      updatedParams.session_expected_long_left = Math.floor(halfExpected / 2);
-      updatedParams.session_expected_short_right = Math.ceil(halfExpected / 2);
-      updatedParams.session_expected_long_right = Math.floor(halfExpected / 2);
     }
 
     setSessionParams(updatedParams);
@@ -150,7 +143,6 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
   useEffect(() => {
     const errors: {
       channels?: string;
-      types?: string;
     } = {};
     
     // Validate channels
@@ -160,17 +152,6 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
     
     if (ch1 + ch2 > 0 && ch1 + ch2 !== total) {
       errors.channels = `Channel sum (${ch1 + ch2}) doesn't match total (${total})`;
-    }
-    
-    // Validate types
-    const longLeft = sessionParams.session_expected_long_left || 0;
-    const shortLeft = sessionParams.session_expected_short_left || 0;
-    const longRight = sessionParams.session_expected_long_right || 0;
-    const shortRight = sessionParams.session_expected_short_right || 0;
-    const typeSum = longLeft + shortLeft + longRight + shortRight;
-    
-    if (typeSum > 0 && typeSum !== total) {
-      errors.types = `Type sum (${typeSum}) doesn't match total (${total})`;
     }
     
     setValidationErrors(errors);
@@ -352,9 +333,8 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-2">
             <Tabs defaultValue="channels">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="channels">By Channel</TabsTrigger>
-                <TabsTrigger value="types">By Type</TabsTrigger>
               </TabsList>
               
               <TabsContent value="channels" className="space-y-4 pt-2">
@@ -403,89 +383,7 @@ const ScoringConfigPanel: React.FC<ScoringConfigPanelProps> = ({
                 </div>
               </TabsContent>
               
-              <TabsContent value="types" className="space-y-4 pt-2">
-                {validationErrors.types && (
-                  <Alert variant="destructive" className="py-2 text-sm">
-                    <AlertDescription>{validationErrors.types}</AlertDescription>
-                  </Alert>
-                )}
-                
-                {/* Long Left */}
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="session_expected_long_left" className="text-sm font-medium flex-grow">
-                      Expected Long Left
-                    </Label>
-                  </div>
-                  <Input
-                    type="number"
-                    id="session_expected_long_left"
-                    name="session_expected_long_left"
-                    value={sessionParams.session_expected_long_left ?? ''}
-                    onChange={handleChange}
-                    placeholder="e.g., 5"
-                    min="0" step="1"
-                    disabled={disabled}
-                  />
-                </div>
-                
-                {/* Short Left */}
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="session_expected_short_left" className="text-sm font-medium flex-grow">
-                      Expected Short Left
-                    </Label>
-                  </div>
-                  <Input
-                    type="number"
-                    id="session_expected_short_left"
-                    name="session_expected_short_left"
-                    value={sessionParams.session_expected_short_left ?? ''}
-                    onChange={handleChange}
-                    placeholder="e.g., 5"
-                    min="0" step="1"
-                    disabled={disabled}
-                  />
-                </div>
-                
-                {/* Long Right */}
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="session_expected_long_right" className="text-sm font-medium flex-grow">
-                      Expected Long Right
-                    </Label>
-                  </div>
-                  <Input
-                    type="number"
-                    id="session_expected_long_right"
-                    name="session_expected_long_right"
-                    value={sessionParams.session_expected_long_right ?? ''}
-                    onChange={handleChange}
-                    placeholder="e.g., 5"
-                    min="0" step="1"
-                    disabled={disabled}
-                  />
-                </div>
-                
-                {/* Short Right */}
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="session_expected_short_right" className="text-sm font-medium flex-grow">
-                      Expected Short Right
-                    </Label>
-                  </div>
-                  <Input
-                    type="number"
-                    id="session_expected_short_right"
-                    name="session_expected_short_right"
-                    value={sessionParams.session_expected_short_right ?? ''}
-                    onChange={handleChange}
-                    placeholder="e.g., 5"
-                    min="0" step="1"
-                    disabled={disabled}
-                  />
-                </div>
-              </TabsContent>
+              {/* Removed type-specific expectations UI */}
             </Tabs>
           </CollapsibleContent>
         </Collapsible>
