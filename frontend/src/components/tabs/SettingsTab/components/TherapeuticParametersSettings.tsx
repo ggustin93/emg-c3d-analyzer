@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { LockedBadge, SourceStatusBadge } from "@/components/ui/StatusBadges";
+import { LockedBadge, SourceStatusBadge, TherapistBadge } from "@/components/ui/StatusBadges";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { useMvcService } from '@/hooks/useMvcService';
@@ -77,7 +77,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       muted={!canEdit}
       badge={
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">Therapist</Badge>
+          <TherapistBadge />
           {isDebugMode ? (
             <Badge variant="warning" className="text-xs">Debug Unlocked</Badge>
           ) : (
@@ -95,10 +95,9 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 <TargetIcon className="h-4 w-4 text-green-600" />
                 <h5 className="text-sm font-semibold text-gray-800">Session Goals</h5>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">c3d</Badge>
-                <Badge variant="outline" className="text-xs">×</Badge>
-              </div>
+            <div className="flex items-center gap-2">
+              <SourceStatusBadge source="c3d" ok={false} />
+            </div>
             </div>
             <Tooltip>
                 <TooltipTrigger asChild>
