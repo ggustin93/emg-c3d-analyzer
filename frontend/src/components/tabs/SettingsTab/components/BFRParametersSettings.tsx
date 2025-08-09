@@ -122,10 +122,16 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
         <div className="space-y-6">
           {/* Measured Values Section */}
           <div className="space-y-4 p-4 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <MixerHorizontalIcon className="h-4 w-4 text-blue-600" />
-              <h5 className="text-sm font-semibold text-gray-800">Measured Values</h5>
-              {isDebugMode && <span className="text-xs font-normal text-gray-500">(Editable in debug mode)</span>}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MixerHorizontalIcon className="h-4 w-4 text-blue-600" />
+                <h5 className="text-sm font-semibold text-gray-800">Measured Values</h5>
+                {isDebugMode && <span className="text-xs font-normal text-gray-500">(Editable in debug mode)</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">c3d</Badge>
+                <Badge variant="outline" className="text-xs">×</Badge>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -374,11 +380,17 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
 
           {/* Therapeutic Range Configuration Section */}
           <div className="space-y-4 p-4 border border-purple-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <GearIcon className="h-4 w-4 text-purple-600" />
-              <h5 className="text-sm font-semibold text-gray-800">Therapeutic Range</h5>
-              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">Customizable</Badge>
-              <ClinicalTooltip
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GearIcon className="h-4 w-4 text-purple-600" />
+                <h5 className="text-sm font-semibold text-gray-800">Therapeutic Range</h5>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">Therapist</Badge>
+                <Badge variant="outline" className="text-xs">Locked</Badge>
+              </div>
+            </div>
+            <ClinicalTooltip
                 title="Therapeutic Range Customization"
                 description="Adjustable safety and effectiveness parameters for individualized treatment"
                 sections={[
@@ -405,7 +417,6 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                 side="right"
                 triggerClassName="h-3 w-3"
               />
-            </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
 import { Input } from "@/components/ui/input";
@@ -22,12 +22,8 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
   const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isClinicalParametersOpen, setIsClinicalParametersOpen] = useState(false);
-  // Role gating: therapist/admin can edit; debug overrides
-  const canTherapistEdit = useMemo(() => {
-    const role = authState?.profile?.role;
-    return role === 'clinical_specialist' || role === 'admin';
-  }, [authState?.profile?.role]);
-  const canEdit = (isDebugMode || canTherapistEdit) && !disabled;
+  // Editing unlocks only via Debug Mode (production locked)
+  const canEdit = isDebugMode && !disabled;
   
   // MVC Service Integration
   const mvcService = useMvcService();
@@ -78,16 +74,32 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       icon={<ActivityLogIcon className="h-5 w-5 text-green-600" />}
       accentColor="green-600"
       muted={!canEdit}
-      badge={<Badge variant="outline" className="bg-green-100 text-green-800 text-xs">Clinical Parameters</Badge>}
+      badge={
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">Therapist</Badge>
+          {isDebugMode ? (
+            <Badge variant="warning" className="text-xs">Debug Unlocked</Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs">Locked</Badge>
+          )}
+        </div>
+      }
     >
       <TooltipProvider>
         <div className="space-y-6">
           {/* Session Goals Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <TargetIcon className="h-4 w-4 text-green-600" />
-              <h5 className="text-sm font-semibold text-gray-800">Session Goals</h5>
-              <Tooltip>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TargetIcon className="h-4 w-4 text-green-600" />
+                <h5 className="text-sm font-semibold text-gray-800">Session Goals</h5>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">c3d</Badge>
+                <Badge variant="outline" className="text-xs">×</Badge>
+              </div>
+            </div>
+            <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoCircledIcon className="h-4 w-4 text-gray-500" />
                 </TooltipTrigger>
@@ -95,9 +107,9 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                   <p className="text-sm">
                     Define therapeutic targets for this session. These goals are used to calculate completion rates and overall performance metrics.
                   </p>
+                <p className="text-xs text-slate-600 mt-1">Sourced from C3D (planned). Currently locked in production.</p>
                 </TooltipContent>
               </Tooltip>
-            </div>
             
             <div className="p-4">
               <div className="grid grid-cols-2 gap-4">
@@ -401,7 +413,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                       <Label className="text-sm font-medium text-gray-700">Minimum Duration</Label>
                       <Input
                         type="number"
-                        value={Math.round(durationValue * 1000)} // Display in milliseconds
+                        value={Math.round(durationValue * 1000)}
                         onChange={(e) => {
                           const valueMs = parseInt(e.target.value) || 2000;
                           const valueSeconds = valueMs / 1000;
