@@ -36,7 +36,7 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from ..emg.emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms
+from ..emg.emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms, calculate_temporal_stats
 from ..models.models import GameSessionParameters
 from ..emg.signal_processing import preprocess_emg_signal, get_processing_metadata, ProcessingParameters
 
@@ -321,6 +321,53 @@ class GHOSTLYC3DProcessor:
                     except Exception as e:
                         channel_errors[func_name] = f"Analysis failed: {str(e)}"
                         channel_analytics[func_name] = None
+
+                # Compute temporal stats (mean ± std over windows) on raw signal for amplitude/fatigue metrics
+                try:
+                    temporal = calculate_temporal_stats(raw_signal, sampling_rate)
+                    channel_analytics['rms_temporal_stats'] = {
+                        'mean_value': temporal['rms']['mean'],
+                        'std_value': temporal['rms']['std'],
+                        'min_value': temporal['rms'].get('min'),
+                        'max_value': temporal['rms'].get('max'),
+                        'valid_windows': temporal['rms'].get('n'),
+                        'coefficient_of_variation': temporal['rms'].get('cv')
+                    }
+                    channel_analytics['mav_temporal_stats'] = {
+                        'mean_value': temporal['mav']['mean'],
+                        'std_value': temporal['mav']['std'],
+                        'min_value': temporal['mav'].get('min'),
+                        'max_value': temporal['mav'].get('max'),
+                        'valid_windows': temporal['mav'].get('n'),
+                        'coefficient_of_variation': temporal['mav'].get('cv')
+                    }
+                    channel_analytics['fatigue_index_temporal_stats'] = {
+                        'mean_value': temporal['fatigue_index_fi_nsm5']['mean'],
+                        'std_value': temporal['fatigue_index_fi_nsm5']['std'],
+                        'min_value': temporal['fatigue_index_fi_nsm5'].get('min'),
+                        'max_value': temporal['fatigue_index_fi_nsm5'].get('max'),
+                        'valid_windows': temporal['fatigue_index_fi_nsm5'].get('n'),
+                        'coefficient_of_variation': temporal['fatigue_index_fi_nsm5'].get('cv')
+                    }
+                    # Also surface MPF/MDF temporal stats for UI
+                    channel_analytics['mpf_temporal_stats'] = {
+                        'mean_value': temporal['mpf']['mean'],
+                        'std_value': temporal['mpf']['std'],
+                        'min_value': temporal['mpf'].get('min'),
+                        'max_value': temporal['mpf'].get('max'),
+                        'valid_windows': temporal['mpf'].get('n'),
+                        'coefficient_of_variation': temporal['mpf'].get('cv')
+                    }
+                    channel_analytics['mdf_temporal_stats'] = {
+                        'mean_value': temporal['mdf']['mean'],
+                        'std_value': temporal['mdf']['std'],
+                        'min_value': temporal['mdf'].get('min'),
+                        'max_value': temporal['mdf'].get('max'),
+                        'valid_windows': temporal['mdf'].get('n'),
+                        'coefficient_of_variation': temporal['mdf'].get('cv')
+                    }
+                except Exception as e:
+                    channel_errors['temporal_stats'] = f"Temporal analysis failed: {str(e)}"
 
             # --- RIGOROUS SIGNAL PROCESSING PIPELINE ---
             # DESIGN PRINCIPLE: Single Source of Truth
@@ -860,9 +907,12 @@ class GHOSTLYC3DProcessor:
             elif session_game_params.session_mvc_value is not None and session_game_params.session_mvc_threshold_percentage is not None:
                 actual_mvc_threshold = session_game_params.session_mvc_value * (session_game_params.session_mvc_threshold_percentage / 100.0)
             
-            # Count good contractions - use the authoritative count from emg_analysis.py
-            # The is_good field is already correctly calculated in analyze_contractions()
-            good_contraction_count = contraction_stats.get('good_contraction_count', 0)
+            # Count good contractions from existing contraction list
+            good_contraction_count = 0
+            try:
+                good_contraction_count = len([c for c in contractions if c.get('is_good')])
+            except Exception:
+                good_contraction_count = channel_analytics.get('good_contraction_count', 0) or 0
             
             # Update the channel analytics
             channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold

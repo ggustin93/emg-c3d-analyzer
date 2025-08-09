@@ -65,6 +65,8 @@ class ChannelAnalytics(BaseModel):
     # Temporal analysis fields
     rms_temporal_stats: Optional[TemporalAnalysisStats] = None
     mav_temporal_stats: Optional[TemporalAnalysisStats] = None
+    mpf_temporal_stats: Optional[TemporalAnalysisStats] = None
+    mdf_temporal_stats: Optional[TemporalAnalysisStats] = None
     fatigue_index_temporal_stats: Optional[TemporalAnalysisStats] = None
 
 

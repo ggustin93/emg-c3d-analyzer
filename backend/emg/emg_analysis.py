@@ -38,7 +38,12 @@ Detailed hypotheses for each parameter are documented within the relevant functi
 
 import numpy as np
 from scipy.signal import welch
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+from ..config import (
+    DEFAULT_TEMPORAL_WINDOW_SIZE_MS,
+    DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE,
+    MIN_TEMPORAL_WINDOWS_REQUIRED,
+)
 
 # --- Contraction Analysis ---
 
@@ -539,6 +544,69 @@ def calculate_fatigue_index_fi_nsm5(signal: np.ndarray, sampling_rate: int) -> D
 
     fi_nsm5 = moment_neg_1 / moment_5
     return {"fatigue_index_fi_nsm5": float(fi_nsm5)}
+
+
+# ---- Temporal analysis helpers (mean ± std across overlapping windows) ----
+
+def _segment_signal(signal: np.ndarray, sampling_rate: int, window_ms: int, overlap_pct: float) -> List[np.ndarray]:
+    if window_ms <= 0 or sampling_rate <= 0:
+        return []
+    window_samples = int((window_ms / 1000.0) * sampling_rate)
+    if window_samples <= 1:
+        return []
+    step = max(1, int(window_samples * (1 - overlap_pct / 100.0)))
+    windows: List[np.ndarray] = []
+    for start in range(0, max(0, len(signal) - window_samples + 1), step):
+        windows.append(signal[start:start + window_samples])
+    return windows
+
+def _compute_temporal_stats(values: List[Optional[float]]) -> Dict[str, Optional[float]]:
+    vals = [v for v in values if v is not None]
+    if len(vals) < MIN_TEMPORAL_WINDOWS_REQUIRED:
+        return {"mean": None, "std": None, "min": None, "max": None, "n": len(vals), "cv": None}
+    arr = np.array(vals, dtype=float)
+    mean = float(np.mean(arr))
+    std = float(np.std(arr, ddof=1)) if len(arr) > 1 else 0.0
+    min_v = float(np.min(arr))
+    max_v = float(np.max(arr))
+    cv = float(std / mean) if mean != 0 else None
+    return {"mean": mean, "std": std, "min": min_v, "max": max_v, "n": len(vals), "cv": cv}
+
+def calculate_temporal_stats(signal: np.ndarray, sampling_rate: int) -> Dict[str, Dict[str, Optional[float]]]:
+    """
+    Calculate mean±std over time for amplitude and fatigue metrics using overlapping windows.
+    Returns a dict with keys: 'rms', 'mav', 'mpf', 'mdf', 'fatigue_index_fi_nsm5'.
+    """
+    windows = _segment_signal(signal, sampling_rate, DEFAULT_TEMPORAL_WINDOW_SIZE_MS, DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE)
+    if not windows:
+        return {
+            'rms': {"mean": None, "std": None, "n": 0},
+            'mav': {"mean": None, "std": None, "n": 0},
+            'mpf': {"mean": None, "std": None, "n": 0},
+            'mdf': {"mean": None, "std": None, "n": 0},
+            'fatigue_index_fi_nsm5': {"mean": None, "std": None, "n": 0},
+        }
+
+    rms_vals: List[float] = []
+    mav_vals: List[float] = []
+    mpf_vals: List[Optional[float]] = []
+    mdf_vals: List[Optional[float]] = []
+    fi_vals: List[Optional[float]] = []
+
+    for w in windows:
+        rms_vals.append(float(np.sqrt(np.mean(np.square(w)))))
+        mav_vals.append(float(np.mean(np.abs(w))))
+        mpf_vals.append(calculate_mpf(w, sampling_rate).get('mpf'))
+        mdf_vals.append(calculate_mdf(w, sampling_rate).get('mdf'))
+        fi_vals.append(calculate_fatigue_index_fi_nsm5(w, sampling_rate).get('fatigue_index_fi_nsm5'))
+
+    return {
+        'rms': _compute_temporal_stats(rms_vals),
+        'mav': _compute_temporal_stats(mav_vals),
+        'mpf': _compute_temporal_stats(mpf_vals),
+        'mdf': _compute_temporal_stats(mdf_vals),
+        'fatigue_index_fi_nsm5': _compute_temporal_stats(fi_vals),
+    }
 
 
 

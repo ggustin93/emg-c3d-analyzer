@@ -21,6 +21,11 @@ DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
 DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # milliseconds
 
+# Temporal Analysis Configuration (used for mean ± std over time)
+DEFAULT_TEMPORAL_WINDOW_SIZE_MS = 1000  # 1 second windows
+DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE = 50.0  # 50% overlap
+MIN_TEMPORAL_WINDOWS_REQUIRED = 3  # Minimum windows required for valid stats
+
 # --- File Processing ---
 MAX_FILE_SIZE_MB = 100
 SUPPORTED_FILE_EXTENSIONS = ['.c3d']

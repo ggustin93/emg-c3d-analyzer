@@ -10,6 +10,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons";
 import ChannelFilter, { FilterMode } from '@/components/shared/ChannelFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatMetricValue } from '@/lib/formatters';
+import { computeAcceptanceRates } from '@/lib/acceptanceRates';
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
 interface StatsPanelComponentProps extends ExternalStatsPanelProps {
@@ -214,6 +215,26 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
     ? allChannelsData 
     : localAllChannelsData;
 
+  // SINGLE SOURCE OF TRUTH: Compute acceptance rates using backend analytics
+  const acceptanceRates = React.useMemo(() => {
+    let analyticsForSoT: Record<string, ChannelAnalyticsData> | null = null;
+    
+    if (viewMode === 'single' && channelAnalytics && selectedChannel) {
+      analyticsForSoT = { [selectedChannel]: channelAnalytics };
+    } else {
+      // Filter out null values for the SoT calculation
+      const filteredData: Record<string, ChannelAnalyticsData> = {};
+      Object.entries(displayAllChannelsData).forEach(([key, value]) => {
+        if (value !== null) {
+          filteredData[key] = value;
+        }
+      });
+      analyticsForSoT = Object.keys(filteredData).length > 0 ? filteredData : null;
+    }
+    
+    return computeAcceptanceRates(analyticsForSoT);
+  }, [channelAnalytics, selectedChannel, displayAllChannelsData, viewMode]);
+
   // Check if we have enough data to display in comparison mode
   const hasEnoughDataForComparison = viewMode === 'comparison' && 
     availableChannels.length > 0 &&
@@ -308,7 +329,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   const minValue = stats ? stats.min : NaN;
   const maxValue = stats ? stats.max : NaN;
 
-  // Categorize contractions as short or long if available
+  // SINGLE SOURCE OF TRUTH: Use backend flags for contraction categorization
   let shortContractions = 0;
   let longContractions = 0;
   let shortGoodContractions = 0;
@@ -318,10 +339,12 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
     displayAnalytics.contractions.forEach(contraction => {
       if (contraction.duration_ms < contractionDurationThreshold) {
         shortContractions++;
-        if (contraction.is_good) shortGoodContractions++;
+        // TRUST backend is_good flag, never re-derive
+        if (contraction.is_good === true) shortGoodContractions++;
       } else {
         longContractions++;
-        if (contraction.is_good) longGoodContractions++;
+        // TRUST backend is_good flag, never re-derive
+        if (contraction.is_good === true) longGoodContractions++;
       }
     });
   }
@@ -341,12 +364,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
             />
           ) : (
             <>
-              <div className="mb-4 flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                  Work in Progress
-                </Badge>
-                <p className="text-sm text-muted-foreground">Metrics will display 'average ± std' once backend calculations are complete.</p>
-              </div>
+              {/* WIP banner removed now that temporal stats are implemented */}
 
               {hasPerformanceData && !isEMGAnalyticsTab && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-white rounded-lg shadow">
@@ -383,48 +401,95 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <MetricTooltip tooltip={expertTooltips.contractionQuantity} />
                     </div>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     <MetricCard
-                      title="Total Contractions"
+                      title="Total"
                       value={displayAnalytics.contraction_count}
                       unit=""
                       isInteger={true}
                       description="Total muscle contractions detected based on signal amplitude and duration criteria."
                       error={displayAnalytics.errors?.contractions}
+                      variant="primary"
                     />
-                    {/* Only show Good Contractions in Game Stats tab, not EMG Analytics */}
-                    {displayAnalytics.good_contraction_count !== null && 
-                     displayAnalytics.good_contraction_count !== undefined && 
-                     !isEMGAnalyticsTab && (
-                      <MetricCard
-                        title="Good Contractions"
-                        value={displayAnalytics.good_contraction_count}
-                        unit={sessionExpectedContractions !== null ? `/ ${sessionExpectedContractions}` : ""}
-                        isInteger={true}
-                        description={`Contractions meeting muscle-specific MVC threshold (${(displayAnalytics.mvc_threshold_actual_value ?? 0).toFixed(3)} mV). Expected: ${sessionExpectedContractions ?? 'N/A'}`}
-                        error={displayAnalytics.errors?.contractions}
-                        tooltipContent={expertTooltips.goodContractions}
-                      />
+                    {/* SINGLE SOURCE OF TRUTH: Good Rate using backend flags */}
+                    {acceptanceRates.total > 0 && (
+                      (() => {
+                        const rate = Math.round(acceptanceRates.goodPct);
+                        const valueClass = rate >= 70
+                          ? 'text-emerald-600'
+                          : rate >= 40
+                            ? 'text-amber-600'
+                            : 'text-red-600';
+                        return (
+                          <MetricCard
+                            title="Good Rate"
+                            value={rate}
+                            unit="%"
+                            description="Percent of contractions meeting both MVC and duration criteria (backend SoT)."
+                            tooltipContent="Combined acceptance rate: contractions that meet BOTH amplitude (MVC) and duration thresholds. Backend analytics is the authoritative source."
+                            subtext={`${acceptanceRates.good} of ${acceptanceRates.total}`}
+                            valueClassName={valueClass}
+                            variant="primary"
+                            forceShowUnit
+                          />
+                        );
+                      })()
                     )}
-                    {hasContractionTypeData && (
-                      <>
-                        <MetricCard
-                          title={`Short (<${contractionDurationThreshold}ms)`}
-                          value={shortContractions}
-                          unit={`(${shortGoodContractions} good)`}
-                          isInteger
-                          description={`Contractions shorter than ${contractionDurationThreshold}ms.`}
-                          tooltipContent={`Contractions with a duration less than ${contractionDurationThreshold}ms. These are often brief, phasic muscle activations.`}
-                        />
-                        <MetricCard
-                          title={`Long (≥${contractionDurationThreshold}ms)`}
-                          value={longContractions}
-                          unit={`(${longGoodContractions} good)`}
-                          isInteger
-                          description={`Contractions longer than ${contractionDurationThreshold}ms.`}
-                          tooltipContent={`Contractions with a duration of ${contractionDurationThreshold}ms or more. These are sustained, tonic muscle activations.`}
-                        />
-                      </>
+
+                    {/* NEW: MVC Acceptance Rate */}
+                    {acceptanceRates.mvcTotal > 0 && (
+                      (() => {
+                        const rate = Math.round(acceptanceRates.mvcPct);
+                        const valueClass = rate >= 70
+                          ? 'text-emerald-600'
+                          : rate >= 40
+                            ? 'text-amber-600'
+                            : 'text-red-600';
+                        const thresholdText = acceptanceRates.mvcThreshold 
+                          ? `≥${acceptanceRates.mvcThreshold.toFixed(3)}mV`
+                          : 'threshold TBD';
+                        return (
+                          <MetricCard
+                            title="MVC Acceptance"
+                            value={rate}
+                            unit="%"
+                            description="Percent meeting amplitude threshold (backend SoT)."
+                            tooltipContent={`Contractions meeting the MVC amplitude threshold (${thresholdText}). Backend mvc_threshold_actual_value is authoritative.`}
+                            subtext={`${acceptanceRates.mvc} of ${acceptanceRates.mvcTotal}`}
+                            valueClassName={valueClass}
+                            variant="secondary"
+                            forceShowUnit
+                          />
+                        );
+                      })()
+                    )}
+
+                    {/* NEW: Duration Acceptance Rate */}
+                    {acceptanceRates.durationTotal > 0 && (
+                      (() => {
+                        const rate = Math.round(acceptanceRates.durationPct);
+                        const valueClass = rate >= 70
+                          ? 'text-emerald-600'
+                          : rate >= 40
+                            ? 'text-amber-600'
+                            : 'text-red-600';
+                        const thresholdText = acceptanceRates.durationThreshold 
+                          ? `≥${acceptanceRates.durationThreshold}ms`
+                          : 'threshold TBD';
+                        return (
+                          <MetricCard
+                            title="Duration Acceptance"
+                            value={rate}
+                            unit="%"
+                            description="Percent meeting duration threshold (backend SoT)."
+                            tooltipContent={`Contractions meeting the duration threshold (${thresholdText}). Backend duration_threshold_actual_value is authoritative.`}
+                            subtext={`${acceptanceRates.duration} of ${acceptanceRates.durationTotal}`}
+                            valueClassName={valueClass}
+                            variant="secondary"
+                            forceShowUnit
+                          />
+                        );
+                      })()
                     )}
                   </div>
                 </div>
@@ -437,40 +502,52 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <MetricTooltip tooltip={expertTooltips.durationMetrics} />
                     </div>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <MetricCard
-                      title="Avg Duration"
-                      value={displayAnalytics.avg_duration_ms}
-                      unit="ms"
-                      description="Average contraction length."
-                      precision={1} // Limit to 1 decimal place
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                    <MetricCard
-                      title="Total Duration"
-                      value={displayAnalytics.total_time_under_tension_ms}
-                      unit="ms"
-                      description="Total time muscle was contracting."
-                      precision={0} // No decimal places for total duration
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                    <MetricCard
-                      title="Max Duration"
-                      value={displayAnalytics.max_duration_ms}
-                      unit="ms"
-                      description="Longest contraction detected."
-                      precision={1} // Limit to 1 decimal place
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                    <MetricCard
-                      title="Min Duration"
-                      value={displayAnalytics.min_duration_ms}
-                      unit="ms"
-                      description="Shortest contraction detected."
-                      precision={1} // Limit to 1 decimal place
-                      error={displayAnalytics.errors?.contractions}
-                    />
-                  </div>
+                  {(() => {
+                    const thresholdMs = contractionDurationThreshold ?? 2000;
+                    const maxCandidate = Number.isFinite(displayAnalytics.max_duration_ms)
+                      ? Math.max(displayAnalytics.max_duration_ms as number, thresholdMs)
+                      : thresholdMs * 2;
+                    const maxMs = Math.max(maxCandidate, thresholdMs);
+
+                    const toPercent = (val: number) => {
+                      if (!Number.isFinite(val)) return 0;
+                      return Math.max(0, Math.min(100, Math.round((val / maxMs) * 100)));
+                    };
+
+                    const renderProgressCard = (title: string, valueMs: number, precision: number = 1) => (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-center">
+                          <div className="text-3xl font-bold text-slate-800">
+                            {formatMetricValue(valueMs, { precision })}
+                          </div>
+                          <div className="text-md text-muted-foreground">ms</div>
+                          <Progress value={toPercent(valueMs)} />
+                          <div className="text-xs text-muted-foreground">
+                            {toPercent(valueMs)}% of {Math.round(maxMs)} ms
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {renderProgressCard('Avg Duration', Number(displayAnalytics.avg_duration_ms), 1)}
+                        <MetricCard
+                          title="Total Duration"
+                          value={displayAnalytics.total_time_under_tension_ms}
+                          unit="ms"
+                          description="Total time muscle was contracting."
+                          precision={0}
+                          error={displayAnalytics.errors?.contractions}
+                        />
+                        {renderProgressCard('Max Duration', Number(displayAnalytics.max_duration_ms), 1)}
+                        {renderProgressCard('Min Duration', Number(displayAnalytics.min_duration_ms), 1)}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* --- Amplitude Analysis --- */}
@@ -480,29 +557,33 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <span>Amplitude Analysis</span>
                       <MetricTooltip tooltip={expertTooltips.amplitudeMetrics} />
                     </div>
-                    <div className="flex gap-2">
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                        Temporal Stats Coming Soon
-                      </Badge>
-                    </div>
+                    <div className="flex gap-2" />
                   </h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="font-medium text-gray-700">
                         RMS 
-                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
                       </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.rms, undefined, 'mV', { useScientificNotation: true })}
+                        {formatValue(
+                          (displayAnalytics as any).rms_temporal_stats?.mean_value ?? displayAnalytics.rms,
+                          (displayAnalytics as any).rms_temporal_stats?.std_value ?? undefined,
+                          'mV', { useScientificNotation: true }
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-700">
                         MAV 
-                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
                       </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mav, undefined, 'mV', { useScientificNotation: true })}
+                        {formatValue(
+                          (displayAnalytics as any).mav_temporal_stats?.mean_value ?? displayAnalytics.mav,
+                          (displayAnalytics as any).mav_temporal_stats?.std_value ?? undefined,
+                          'mV', { useScientificNotation: true }
+                        )}
                       </p>
                     </div>
                     <div>
@@ -521,38 +602,46 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <span>Fatigue Analysis</span>
                       <MetricTooltip tooltip={expertTooltips.fatigueMetrics} />
                     </div>
-                    <div className="flex gap-2">
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                        Temporal Stats Coming Soon
-                      </Badge>
-                    </div>
+                    <div className="flex gap-2" />
                   </h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="font-medium text-gray-700">
                         MPF 
-                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
                       </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mpf, undefined, 'Hz')}
+                        {formatValue(
+                          (displayAnalytics as any).mpf_temporal_stats?.mean_value ?? displayAnalytics.mpf ?? null,
+                          (displayAnalytics as any).mpf_temporal_stats?.std_value ?? undefined,
+                          'Hz'
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-700">
                         MDF 
-                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
                       </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.mdf, undefined, 'Hz')}
+                        {formatValue(
+                          (displayAnalytics as any).mdf_temporal_stats?.mean_value ?? displayAnalytics.mdf ?? null,
+                          (displayAnalytics as any).mdf_temporal_stats?.std_value ?? undefined,
+                          'Hz'
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-700">
                         Fatigue Index (FI) 
-                        <span className="text-xs text-muted-foreground ml-1">(average)</span>
+                        <span className="text-xs text-muted-foreground ml-1">(avg ± std)</span>
                       </p>
                       <p className="text-xl font-semibold text-gray-800">
-                        {formatValue(displayAnalytics.fatigue_index_fi_nsm5, undefined, '', { useScientificNotation: true, precision: 2 })}
+                        {formatValue(
+                          (displayAnalytics as any).fatigue_index_temporal_stats?.mean_value ?? displayAnalytics.fatigue_index_fi_nsm5 ?? null,
+                          (displayAnalytics as any).fatigue_index_temporal_stats?.std_value ?? undefined,
+                          '', { useScientificNotation: true, precision: 2 }
+                        )}
                       </p>
                     </div>
                   </div>

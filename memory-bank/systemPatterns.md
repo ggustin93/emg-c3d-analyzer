@@ -37,6 +37,13 @@ The application follows a decoupled, two-part architecture: a **Backend API** an
     - **Implementation**: SOLID principles with consistent priority-based configuration
     - **Components**: C3DFileBrowser and FileMetadataBar use identical resolution logic
     - **Maintainability**: Senior engineering patterns for easy priority modification
+- **EMG Chart Architecture (August 2025)**:
+    - **Component Extraction**: Applied SOLID principles with separation of concerns
+    - **Custom Hooks**: `useMVCCalculations` and `useContractionAnalysis` for domain logic
+    - **Centralized Configuration**: `emgChartConfig.ts` for magic numbers and constants
+    - **Structured Logging**: Professional logging service with categories and performance timing
+    - **Performance Optimization**: React.memo, useMemo, useCallback for efficient rendering
+    - **Maintainable Architecture**: Reduced from 1181 lines to clean, modular structure
 
 ### Directory Structure
 ```
@@ -52,6 +59,18 @@ emg-c3d-analyzer/
 │   ├── main.py
 ├── frontend/
 │   └── src/
+│       ├── components/
+│       │   └── tabs/
+│       │       └── SignalPlotsTab/
+│       │           ├── EMGChart.tsx          # Main chart component
+│       │           └── EMGChartLegend.tsx   # Extracted legend component
+│       ├── hooks/
+│       │   ├── useMVCCalculations.ts        # MVC threshold logic
+│       │   └── useContractionAnalysis.ts    # Contraction analysis logic
+│       ├── config/
+│       │   └── emgChartConfig.ts           # Centralized configuration
+│       └── services/
+│           └── logger.ts                   # Structured logging service
 ├── pyproject.toml
 └── start_dev.sh
 ```
@@ -101,7 +120,7 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
      * MAV (Mean Absolute Value) for amplitude assessment
      * Spectral parameters (MPF, MDF) for frequency analysis
      * Fatigue indices (including Dimitrov's FI_nsm5) for fatigue estimation
-   * **Temporal Analysis**: New advanced temporal analysis provides statistical metrics (mean, std, min, max, coefficient of variation) for each parameter.
+    * **Temporal Analysis**: Advanced temporal analysis provides statistical metrics (mean, std, min, max, coefficient of variation) for RMS, MAV, MPF, MDF, and FI; surfaced as `*_temporal_stats`.
 
 2. **Contraction Analysis**:
    * **Detection Algorithm**: Identifies muscle contractions based on signal characteristics.
@@ -141,6 +160,8 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
   - `usePlotDataProcessor`: Processes EMG signal data for visualization (downsampling, etc.).
   - `useGameSessionData`: Manages the state of the `GameSession` object.
   - `usePerformanceMetrics`: Calculates performance metrics from analysis results.
+  - `useMVCCalculations`: Extracts MVC threshold calculation logic with backend priority
+  - `useContractionAnalysis`: Handles contraction area visualization and quality summary
 - **Zustand for Global State**: A centralized Zustand store (`useSessionStore`) holds all patient-specific session parameters (MVC values, thresholds, etc.). This is the single source of truth for configuration.
 - **Reactive Hooks**: Custom hooks (`usePerformanceMetrics`, `useLiveAnalytics`) subscribe to the Zustand store. When parameters in the store change, these hooks automatically re-calculate analytics and performance scores, triggering seamless UI updates.
 - **Weighted Score Calculation**: The `usePerformanceMetrics` hook now calculates the overall muscle compliance score as a weighted average of Completion, Intensity, and Duration components, with weights being configurable through the UI.
@@ -149,6 +170,13 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
   - Optional raw EMG display for detailed analysis when needed.
   - Contraction period visualization directly on charts.
   - MVC threshold reference lines for performance assessment.
+- **EMG Chart Refactoring Patterns (August 2025)**:
+  - **SOLID Principles Applied**: Single responsibility components, dependency injection, separation of concerns
+  - **Custom Hook Extraction**: Domain logic moved to specialized hooks (`useMVCCalculations`, `useContractionAnalysis`)
+  - **Configuration Management**: Centralized constants and magic numbers in `emgChartConfig.ts`
+  - **Structured Logging**: Professional logging service with categories (CHART_RENDER, DATA_PROCESSING, MVC_CALCULATION, CONTRACTION_ANALYSIS, PERFORMANCE, USER_INTERACTION)
+  - **Performance Optimization**: Proper React memoization with useMemo, useCallback, React.memo
+  - **Component Composition**: Large components broken into focused, testable units
 
 ### Role-based UX & Theming Tokens
 - Settings follow a role-gated UX: Therapist/Admin can edit Performance Scoring and Therapeutic Parameters; Debug Mode temporarily unlocks controls; others are read-only with locks and badges.
@@ -168,12 +196,60 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
    - `usePlotDataProcessor` handles downsampling for efficient plotting
    - `EMGChart` renders the data with RMS envelope, optional raw EMG, and contraction markers
    - `StatsPanel` displays the analytics in a clinically relevant format
+5. **Chart Rendering (Refactored Architecture)**:
+   - `useMVCCalculations` provides threshold calculations with backend priority
+   - `useContractionAnalysis` generates contraction areas and quality summaries
+   - `EMGChartLegend` component handles all legend display logic
+   - Structured logging tracks performance and debugging information
 
 ### Dependencies
 - FastAPI ← Pydantic Models
 - `GHOSTLYC3DProcessor` ← `emg_analysis` functions
 - Frontend Hooks ← API Service
 - `EMGChart` ← Recharts
+- **New Component Dependencies**:
+  - `EMGChart` ← `useMVCCalculations` + `useContractionAnalysis` + `EMGChartLegend`
+  - `useMVCCalculations` ← `emgChartConfig` + `logger`
+  - `useContractionAnalysis` ← `emgChartConfig` + `logger`
+  - All components ← `logger` service for structured logging
+
+### EMG Chart Component Architecture (August 2025)
+
+#### Core Components
+```typescript
+// Main chart component - orchestrates rendering
+EMGChart.tsx (567 lines → clean, focused)
+├── useMVCCalculations      // MVC threshold logic
+├── useContractionAnalysis  // Contraction visualization logic  
+├── EMGChartLegend         // Legend display component
+├── logger                 // Structured logging service
+└── emgChartConfig         // Centralized constants
+```
+
+#### Hook Responsibilities
+- **`useMVCCalculations`**: 
+  - Backend-prioritized MVC threshold calculations
+  - Muscle name resolution with signal type support
+  - Threshold data generation for legend display
+- **`useContractionAnalysis`**:
+  - Contraction area processing for visualization
+  - Quality summary calculations (good/poor/mvc-only/duration-only counts)
+  - Backend quality flag prioritization with frontend fallback
+
+#### Logging Architecture
+```typescript
+// Professional logging with categories and performance timing
+enum LogLevel { DEBUG, INFO, WARN, ERROR, NONE }
+enum LogCategory { 
+  CHART_RENDER, DATA_PROCESSING, MVC_CALCULATION, 
+  CONTRACTION_ANALYSIS, PERFORMANCE, USER_INTERACTION 
+}
+
+// Usage examples
+logger.startTimer('contraction-areas-calculation');
+logger.mvcCalculation('Using backend threshold', { source: 'backend' });
+logger.endTimer('contraction-areas-calculation');
+```
 
 ## Technical Patterns
 
@@ -184,12 +260,18 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
 - Logging and monitoring
 - User feedback
 - Type safety with proper handling of nullable fields
+- **Structured Error Logging**: Categories and context for debugging
 
 ### Performance Optimization
 - **Stateless Processing**: All data is processed on-demand without relying on file storage between requests.
 - **Bundled Response**: All necessary data is returned in a single API call, reducing network overhead.
 - **Frontend Processing**: Signal downsampling and visualization processing are handled client-side.
 - **Component-Level Memoization**: Key components use `React.memo`, `useMemo`, and `useCallback` for efficiency.
+- **EMG Chart Performance Patterns**:
+  - Proper React memoization for expensive calculations
+  - Custom hook memoization with dependency arrays
+  - Performance timing with logger.startTimer/endTimer
+  - Efficient re-rendering with React.memo and useCallback
 
 ### Security
 - Input validation
@@ -197,6 +279,14 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
 - Size limitations
 - Access control
 - Data protection
+
+### Code Quality Patterns (August 2025)
+- **SOLID Principles**: Single responsibility, open/closed, dependency inversion
+- **Configuration Management**: Centralized constants prevent magic numbers
+- **Structured Logging**: Categorized logging with performance timing
+- **Component Extraction**: Large components broken into focused, testable units
+- **Custom Hook Pattern**: Domain logic extracted to reusable hooks
+- **Professional Architecture**: Senior engineering patterns for maintainability
 
 ## Testing Patterns
 - Unit tests for components
@@ -217,3 +307,4 @@ The system intelligently processes EMG signals with a focus on clinical relevanc
 - **Temporal Analysis**: Statistical insights into muscle activity patterns
 - **Contraction Quality**: Assessment based on MVC thresholds
 - **Fatigue Estimation**: Multiple metrics for comprehensive fatigue analysis 
+- **Professional Visualization**: Clean, maintainable chart architecture supporting clinical workflows

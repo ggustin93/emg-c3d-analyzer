@@ -265,6 +265,12 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
 
 ### **6. Project Status and Roadmap**
 
+### 6.3 Achievements (Aug 2025)
+- Temporal stats implemented end-to-end (backend windowing → frontend avg ± std for RMS, MAV, MPF, MDF, FI). UI banner removed.
+- Single Source of Truth for acceptance metrics (Good, MVC, Duration) using backend flags/counts/thresholds; shared helper `acceptanceRates.ts` used across views.
+- Chart color consistency: RMS (Processed) uses store muscle colors via `getColorForChannel` suffix handling.
+- Comparison tab upgraded to show avg ± std with clinical tooltips (MPF, MDF full names).
+
 
 #### **6.2. Latest Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
 

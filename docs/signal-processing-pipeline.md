@@ -46,6 +46,17 @@ Processed signals in exported JSON include complete pipeline metadata:
 - **Data Format**: Float64 precision for numerical stability
 - **Quality Validation**: Signal-to-noise ratio and variation checks
 
+## Temporal Analysis (New)
+
+We compute statistics across overlapping windows to quantify variability:
+
+- Default window: 1000 ms, 50% overlap (configurable)
+- Minimum windows: 3 (configurable)
+- For each window we compute RMS, MAV, MPF, MDF, and FI; the report includes:
+  - mean, standard deviation, min, max, coefficient of variation, valid window count
+- Exposed via `*_temporal_stats` in the API per channel
+- Frontend renders values as “avg ± std” in Analytics and Comparison tabs
+
 ## Differences from C3D "Activated" Channels
 
 This pipeline processes raw signals with documented, controlled parameters. Results may differ from pre-processed "activated" channels in C3D files due to:
