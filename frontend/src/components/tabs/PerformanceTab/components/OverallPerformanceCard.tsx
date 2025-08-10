@@ -157,39 +157,35 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   Overall Performance
                   <ClinicalTooltip
                     title="GHOSTLY+ Overall Performance Score"
-                    description="Real-time, objective assessment of rehabilitation effectiveness during game-based therapy sessions"
+                    description="Composite score (0–100). Higher is better. Weights are configurable by therapists."
                     sections={[
                       {
-                        title: "Evidence-Based Components:",
-                        type: "list",
+                        title: "Formula",
+                        type: "formula" as const,
                         items: [
-                          ...(complianceWeight > 0 ? [{ percentage: `${Math.round(complianceWeight * 100)}`, label: "Therapeutic Compliance", description: "Exercise execution quality", color: "text-green-600" }] : []),
-                          ...(symmetryWeight > 0 ? [{ percentage: `${Math.round(symmetryWeight * 100)}`, label: "Muscle Symmetry", description: "Bilateral balance assessment", color: "text-purple-600" }] : []),
-                          ...(effortWeight > 0 ? [{ percentage: `${Math.round(effortWeight * 100)}`, label: "Subjective Effort", description: "RPE-based exertion evaluation", color: "text-orange-600" }] : []),
-                          ...(gameWeight > 0 ? [{ percentage: `${Math.round(gameWeight * 100)}`, label: "Game Performance", description: "Normalized engagement metric", color: "text-cyan-600" }] : [])
+                          {
+                            label: "P<sub>overall</sub> =",
+                            value: `w<sub>c</sub>·S<sub>compliance</sub> + w<sub>s</sub>·S<sub>symmetry</sub> + w<sub>e</sub>·S<sub>effort</sub>${gameWeight > 0 ? ' + w<sub>g</sub>·S<sub>game</sub>' : ''}`,
+                            color: "text-slate-800"
+                          }
                         ]
                       },
-                    
-                      ...(totalContractions > 0 || expectedContractions ? [{
-                        title: "Current Session Data:",
+                      {
+                        title: "Weights",
                         type: "table" as const,
                         items: [
-                          ...(expectedContractions ? [{ label: "Expected", value: `${expectedContractions} per muscle` }] : []),
-                          { label: "Completed", value: `${totalContractions} total` },
-                          { label: "MVC Quality", value: `${goodContractions}/${totalContractions} (≥75%)` },
-                          ...(averageContractionTime ? [{ label: "Avg. Duration", value: `${(averageContractionTime / 1000).toFixed(1)}s` }] : [])
+                          ...(complianceWeight > 0 ? [{ label: "Compliance (C)", value: `${Math.round(complianceWeight * 100)}%`, color: "text-green-700" }] : []),
+                          ...(symmetryWeight > 0 ? [{ label: "Symmetry (S)", value: `${Math.round(symmetryWeight * 100)}%`, color: "text-purple-700" }] : []),
+                          ...(effortWeight > 0 ? [{ label: "Effort (E)", value: `${Math.round(effortWeight * 100)}%`, color: "text-orange-700" }] : []),
+                          ...(gameWeight > 0 ? [{ label: "Game (G)", value: `${Math.round(gameWeight * 100)}%`, color: "text-cyan-700" }] : [])
                         ]
-                      }] : []),
-                    
+                      },
                       {
-                        title: "Clinical Interpretation:",
-                        type: "list",
+                        title: "Notes",
+                        type: "list" as const,
                         items: [
-                          { percentage: "≥90", description: "Excellent - Optimal therapeutic benefit", color: "text-emerald-600" },
-                          { percentage: "80-89", description: "Good - Effective therapy", color: "text-green-600" },
-                          { percentage: "70-79", description: "Moderate - Benefit achieved", color: "text-yellow-600" },
-                          { percentage: "60-69", description: "Fair - Modifications needed", color: "text-orange-600" },
-                          { percentage: "<60", description: "Poor - Review required", color: "text-red-600" }
+                          { label: "Interpretation", description: "Score aggregates weighted components; 100 = optimal therapeutic performance" },
+                          { label: "Configuration", description: "Adjust weights in Settings → Performance" }
                         ]
                       }
                     ]}
