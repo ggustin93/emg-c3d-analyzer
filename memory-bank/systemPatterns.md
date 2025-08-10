@@ -288,12 +288,35 @@ logger.endTimer('contraction-areas-calculation');
 - **Custom Hook Pattern**: Domain logic extracted to reusable hooks
 - **Professional Architecture**: Senior engineering patterns for maintainability
 
-## Testing Patterns
-- Unit tests for components
-- Integration tests for API
-- Performance benchmarks
-- Error case validation
-- Security testing
+## Testing Architecture
+
+### Test Organization Strategy
+- **Co-located Testing**: Unit tests live next to source code in `__tests__/` directories
+- **Integration Testing**: Cross-component tests in `src/tests/` directory
+- **Test Framework**: Vitest with TypeScript support and React Testing Library
+
+### Test Structure Pattern
+```
+src/
+├── hooks/
+│   ├── usePerformanceMetrics.ts
+│   └── __tests__/
+│       └── usePerformanceMetrics.test.ts        # Hook unit tests
+├── components/tabs/SignalPlotsTab/
+│   ├── EMGChart.tsx
+│   └── __tests__/
+│       └── contraction-filtering.test.ts        # Component tests
+└── tests/
+    ├── authBestPractices.test.tsx               # Integration tests
+    └── authFlowTest.tsx
+```
+
+### Testing Patterns
+- **Hook Testing**: Export utility functions for comprehensive unit testing
+- **Component Testing**: User interaction focus with Testing Library
+- **Business Logic Testing**: Critical calculations with edge case coverage
+- **Integration Testing**: Cross-component workflows and authentication flows
+- **Performance Testing**: Benchmarks for data processing and rendering
 
 ## Interactive Features
 - RMS envelope as primary signal display

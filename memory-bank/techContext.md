@@ -231,8 +231,34 @@ ignore = ['W291', 'W292', 'W293']
 - Vercel provides logging for the deployed frontend.
 
 ### Testing
-- Unit tests with pytest (current coverage may vary).
-- API integration tests (current coverage may vary).
+
+#### Frontend Testing (Vitest + React Testing Library)
+- **Test Framework**: Vitest for fast unit testing with TypeScript support
+- **Component Testing**: React Testing Library for user-focused component tests
+- **Test Organization**: Co-located tests in `__tests__/` directories following React best practices
+- **Coverage**: Comprehensive business logic testing with edge case validation
+- **Hook Testing**: Custom hooks tested with exported utility functions
+- **Integration Tests**: Cross-component workflows in dedicated `src/tests/` directory
+
+#### Backend Testing (pytest)
+- Unit tests with pytest (current coverage may vary)
+- API integration tests (current coverage may vary)
+
+#### Test Commands
+```bash
+# Frontend Tests
+cd frontend
+npm test                    # Run all tests in watch mode
+npm test -- --run         # Run tests once
+npm test hooks             # Run hook tests only
+npm test components        # Run component tests only
+npm test -- --coverage    # Run with coverage report
+
+# Backend Tests  
+cd backend
+python -m pytest tests/                    # Run backend tests
+python -m pytest tests/ -v --cov=.        # Run with coverage
+```
 
 ### Deprecated Scripts
 - `setup.sh` has been deleted as its functionality was outdated and is now covered by `README.md` manual setup instructions. `start_dev.sh` updated accordingly.
