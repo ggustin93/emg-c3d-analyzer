@@ -278,24 +278,29 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                 className="bg-white p-3 shadow-lg border border-slate-200 max-w-xs"
               >
                 <div>
-                  <h4 className="text-sm font-semibold mb-2">Compliance Score Calculation</h4>
+                  <h4 className="text-sm font-semibold mb-2">Compliance Score Calculation (Average)</h4>
                   {componentScores && (
                     <div className="text-xs text-gray-600 space-y-1">
                       <div className="flex justify-between items-center">
                         <span>Completion ({(componentScores.completion.weight * 100).toFixed(0)}%):</span>
-                        <span className="font-medium">{componentScores.completion.score ?? 'N/A'}</span>
+                        <span className="font-medium">{componentScores.completion.score ?? 'N/A'}%</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Intensity ({(componentScores.intensity.weight * 100).toFixed(0)}%):</span>
-                        <span className="font-medium">{componentScores.intensity.score ?? 'N/A'}</span>
+                        <span className="font-medium">{componentScores.intensity.score ?? 'N/A'}%</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Duration ({(componentScores.duration.weight * 100).toFixed(0)}%):</span>
-                        <span className="font-medium">{componentScores.duration.score ?? 'N/A'}</span>
+                        <span className="font-medium">{componentScores.duration.score ?? 'N/A'}%</span>
                       </div>
-                      <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between items-center font-semibold">
-                        <span>Overall Score:</span>
-                        <span className={scoreColors.text}>{totalScore}</span>
+                      <div className="border-t border-gray-300 mt-2 pt-2">
+                        <div className="text-xs text-gray-500 mb-1">
+                          Average: ({componentScores.completion.score ?? 0} + {componentScores.intensity.score ?? 0} + {componentScores.duration.score ?? 0}) / 3
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                          <span>Overall Score:</span>
+                          <span className={scoreColors.text}>{totalScore}%</span>
+                        </div>
                       </div>
                     </div>
                   )}

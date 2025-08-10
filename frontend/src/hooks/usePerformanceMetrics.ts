@@ -3,13 +3,13 @@ import { EMGAnalysisResult, Contraction, GameSessionParameters } from '../types/
 import { getScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 
-const calculateContractionScore = (count: number, expected: number | null): number => {
+export const calculateContractionScore = (count: number, expected: number | null): number => {
   if (!expected || expected <= 0) return 100;
   const ratio = count / expected;
   return Math.min(Math.round(ratio * 100), 100);
 };
 
-const calculateGoodContractionScore = (goodCount: number, totalCount: number): number | null => {
+export const calculateGoodContractionScore = (goodCount: number, totalCount: number): number | null => {
   if (totalCount <= 0) return null;
   return Math.round((goodCount / totalCount) * 100);
 };
@@ -22,7 +22,7 @@ const calculateGoodContractionScore = (goodCount: number, totalCount: number): n
  * @param weights Optional weights for each subscore [completion, intensity, duration]
  * @returns Weighted average score rounded to nearest integer
  */
-const calculateTotalScore = (
+export const calculateTotalScore = (
   subscore1: number | null, 
   subscore2: number | null, 
   subscore3: number | null,
