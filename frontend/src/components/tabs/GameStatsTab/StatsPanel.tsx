@@ -17,6 +17,8 @@ import DonutGauge from '@/components/ui/donut-gauge';
 // Visual constants for donut gauges
 const DONUT_SIZE = 128;
 const DONUT_THICKNESS = 7;
+// Neutral color for Duration Metrics donuts (Tailwind gray-500)
+const DURATION_DONUT_COLOR = '#6b7280';
 
 // Combine props if StatsPanelProps from emg.ts is just for the 'stats' prop.
 interface StatsPanelComponentProps extends ExternalStatsPanelProps {
@@ -555,7 +557,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                 percent={clamped}
                                 size={DONUT_SIZE}
                                 thickness={DONUT_THICKNESS}
-                                colorHex={'#0f766e'}
+                                colorHex={DURATION_DONUT_COLOR}
                                 centerRender={() => (
                                   <div className="text-center">
                                     <div className="text-2xl font-bold text-slate-800">{valueSecsText}</div>
