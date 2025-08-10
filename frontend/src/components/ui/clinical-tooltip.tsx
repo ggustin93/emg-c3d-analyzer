@@ -61,23 +61,17 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           )}
         </TooltipTrigger>
         <TooltipContent 
-          side="top"
-          sideOffset={0}
+          side={side}
+          sideOffset={8}
           align="center"
-          avoidCollisions={false}
+          avoidCollisions
           className={cn(
-            "w-[32rem] z-[999] bg-amber-50",
-            "border-2 border-amber-300 shadow-2xl p-0 overflow-hidden rounded-lg",
-            "!fixed !top-1/2 !left-1/2 !transform !-translate-x-1/2 !-translate-y-1/2",
+            "z-[999] bg-amber-50",
+            "border-2 border-amber-300 shadow-2xl p-0 rounded-lg",
+            // Responsive sizing: never overflow viewport
+            "max-w-[95vw] sm:max-w-[36rem] w-[min(95vw,36rem)] max-h-[80vh] overflow-auto overscroll-contain",
             className
           )}
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 9999
-          }}
         >
           <div>
             {/* Elegant Header */}
