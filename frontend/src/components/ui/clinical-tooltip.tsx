@@ -45,8 +45,8 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   description,
   sections = [],
   children,
-  side = 'bottom',
-  align = 'start',
+  side = 'top',
+  align = 'center',
   className,
   triggerClassName,
   variant = 'default',
@@ -70,6 +70,7 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           sideOffset={centered ? 0 : 8}
           align={centered ? undefined : align}
           avoidCollisions={!centered}
+          collisionPadding={12}
           className={cn(
             "z-[10000] bg-amber-50",
             "border-2 border-amber-300 shadow-2xl p-0 rounded-lg",
