@@ -4,7 +4,7 @@ This directory contains the React TypeScript frontend for the GHOSTLY+ EMG C3D A
 
 ## Architecture
 
-The frontend follows a **modern React architecture** with TypeScript, component-based design, and comprehensive state management optimized for EMG data visualization.
+The frontend follows a **React architecture** with TypeScript, component-based design, and state management optimized for EMG data visualization.
 
 ### Key Technologies
 
@@ -88,7 +88,7 @@ The application uses **Zustand** for efficient state management:
 
 ## Testing Architecture
 
-The frontend implements **comprehensive testing** following React/TypeScript best practices:
+The frontend implements **testing** following React/TypeScript best practices:
 
 ### Test Organization
 - **Co-located Unit Tests**: `__tests__/` directories next to source code
@@ -115,7 +115,7 @@ src/
 ### Test Framework
 - **Vitest**: Fast unit testing with TypeScript support
 - **Testing Library**: Component testing with user interaction focus
-- **Coverage**: Comprehensive test coverage for critical business logic
+- **Coverage**: Test coverage for critical business logic (17 tests currently passing)
 
 ## Available Scripts
 
@@ -129,9 +129,10 @@ npm run build      # Production build
 
 ### Testing
 ```bash
-npm test hooks     # Run hook tests only
-npm test components # Run component tests
-npm test -- --coverage # Run tests with coverage report
+npm test hooks                      # Run hook tests only (6 tests)
+npm test components                 # Run component tests (11 tests) 
+npm test -- --coverage             # Run tests with coverage report
+npm test usePerformanceMetrics     # Run specific test suite
 ```
 
 ### Code Quality

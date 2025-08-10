@@ -76,7 +76,7 @@ The GHOSTLY+ EMG C3D Analyzer is a rehabilitation technology platform designed t
 #### **3.1. Current Architecture**
 
 *   **Backend:** FastAPI with Python is used for processing C3D files and calculating EMG metrics.
-*   **Frontend:** The frontend is built with React/TypeScript and the CRACO build system, with Recharts used for visualization.
+*   **Frontend:** The frontend is built with React/TypeScript and the Vite build system, with Recharts used for visualization.
 *   **State Management:** Zustand is used for managing session parameters.
 *   **Data Flow:** The data flow follows the pattern of Upload → Process → Analyze → Visualize.
 
@@ -214,28 +214,36 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
     ```bash
     # Backend
     cd backend
-    uvicorn main:app --reload --port 8000
+    uvicorn main:app --reload --port 8080
 
     # Frontend
     cd frontend
-    npm start         # Start development server with CRACO
+    npm start         # Start development server with Vite
+
+    # Full Development Environment
+    ./start_dev.sh    # Start both backend and frontend
     ```
 
 *   **Building and Testing**
     ```bash
-    # Backend
+    # Backend Tests (Note: Currently have import issues requiring maintenance)
     cd backend
     python -m pytest tests/                    # Run backend tests
-    python -m pytest tests/ -v --cov=.        # Run with coverage
-    python -m pylint *.py                     # Lint Python code
-    uvicorn main:app --reload --port 8000     # Test server startup
+    python -m pytest tests/ -v                # Run with verbose output
+    python -m pytest tests/test_emg_analysis.py  # Run specific test module
 
-    # Frontend
+    # Frontend Tests (17 tests currently passing)
+    cd frontend
+    npm test                            # Run tests in watch mode
+    npm test -- --run                  # Run tests once with results
+    npm test hooks                      # Run hook tests only (6 tests)
+    npm test -- --coverage             # Run with coverage report
+
+    # Build and Quality
     cd frontend
     npm run build     # TypeScript check and production build
-    npm run test      # Run frontend tests (Jest via CRACO)
-    npm run lint      # Run ESLint (if configured)
-    npm start         # Test development server startup
+    npm run lint      # ESLint analysis (if configured)
+    npm run type-check # TypeScript validation
 
     # Integration Testing
     # Test full upload → process → analyze → visualize flow
