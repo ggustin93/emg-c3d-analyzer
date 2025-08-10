@@ -225,28 +225,19 @@ export default function GameSessionTabs({
                                   : signalType === 'processed' ? ' Processed' 
                                   : ' Raw';
         const baseChannels = allAvailableChannels
-            .map(c => c.replace(/ (Raw|activated)$/, ''))
+            .map(c => c.replace(/ (Raw|activated|Processed)$/i, ''))
             .filter((v, i, a) => a.indexOf(v) === i);
 
-        if (baseChannels.length > 0) {
-            let firstPlotChannel = allAvailableChannels.find(c => c === baseChannels[0] + desiredSuffix);
-            if (!firstPlotChannel) {
-                firstPlotChannel = allAvailableChannels.find(c => c.startsWith(baseChannels[0]));
-            }
-            setPlotChannel1Name(firstPlotChannel || null);
-        } else {
-            setPlotChannel1Name(null);
-        }
-        
-        if (baseChannels.length > 1) {
-            let secondPlotChannel = allAvailableChannels.find(c => c === baseChannels[1] + desiredSuffix);
-            if (!secondPlotChannel) {
-                secondPlotChannel = allAvailableChannels.find(c => c.startsWith(baseChannels[1]));
-            }
-            setPlotChannel2Name(secondPlotChannel || null);
-        } else {
-            setPlotChannel2Name(null);
-        }
+        const resolve = (base?: string) => {
+          if (!base) return null;
+          return allAvailableChannels.find(c => c === base + desiredSuffix)
+              || allAvailableChannels.find(c => c.startsWith(base))
+              || null;
+        };
+
+        // Always set both channels explicitly
+        setPlotChannel1Name(resolve(baseChannels[0]));
+        setPlotChannel2Name(resolve(baseChannels[1]));
     }
   };
 
@@ -461,7 +452,7 @@ export default function GameSessionTabs({
       <TabsContent value="game" className="bg-gray-50/50 p-4 rounded-b-lg">
        
         <PerformanceCard 
-          analysisResult={analysisResult}
+          analysisResult={liveAnalytics ? { ...analysisResult!, analytics: liveAnalytics } : analysisResult}
           sessionParams={sessionParams}
           contractionDurationThreshold={sessionParams.contraction_duration_threshold ?? undefined}
         />

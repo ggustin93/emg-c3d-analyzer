@@ -157,7 +157,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     }).filter(key => availableDataKeys.includes(key));
     
     return displayDataKeys.length > 0 ? displayDataKeys : availableDataKeys;
-  }, [viewMode, availableChannels, selectedChannel, availableDataKeys]);
+  }, [viewMode, availableChannels, selectedChannel, availableDataKeys, chartData]);
 
   // Initialize hooks for MVC calculations and contraction analysis
   const { getChannelMVCThreshold, getMuscleName, getThresholdData } = useMVCCalculations({

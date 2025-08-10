@@ -174,22 +174,7 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
       const durationQualityScore = totalContractions > 0 ? Math.round((longContractions / totalContractions) * 100) : 0;
-      
-      // Debug: Log the scores and weights to identify the issue
-      console.log(`🎯 Performance Score Calculation for ${channelName}:`, {
-        contractionScore,
-        goodContractionScore, 
-        durationQualityScore,
-        scoreWeights,
-        completionWeight,
-        intensityWeight,
-        durationWeight
-      });
-      
       const totalScore = calculateTotalScore(contractionScore, goodContractionScore, durationQualityScore, scoreWeights);
-      
-      console.log(`🎯 Final totalScore for ${channelName}: ${totalScore}%`);
-      
       const scoreColors = getScoreColors(totalScore);
       
       muscleScores.push(totalScore);
