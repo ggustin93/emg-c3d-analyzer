@@ -366,3 +366,8 @@
   - Applied SOLID principles with component extraction, custom hooks, and centralized configuration
   - Maintained functionality while dramatically improving maintainability and code quality
   - Implemented professional logging service and performance optimization patterns
+- **Performance Score Reactive Updates Fix** (August 10, 2025):
+  - Fixed total score not updating when TherapeuticParametersSettings are changed
+  - Implemented Single Source of Truth pattern in usePerformanceMetrics using backend analytics flags
+  - Updated MusclePerformanceCard tooltip to show correct weighted average calculation
+  - Ensured consistent reactive updates across all performance metrics when MVC/duration thresholds change

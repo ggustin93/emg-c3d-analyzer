@@ -132,10 +132,86 @@ This framework requires experimental validation to determine:
 
 ---
 
-## 7. Implementation Notes
+## 7. MVC Threshold Calculation Priority System
+
+**Technical Specification**: The system implements a priority-based hierarchy for MVC threshold determination, ensuring clinical accuracy and data-driven validation.
+
+### 7.1 MVC Calculation Hierarchy
+
+**Priority 1 - Backend-Calculated MVC (Recommended)**:
+- **Source**: `analytics.mvc_threshold_actual_value`
+- **Method**: Clinical estimation using 95th percentile analysis
+- **Signal Processing Pipeline**:
+  ```
+  Raw EMG → High-pass Filter (20Hz) → Rectification → Low-pass Filter (10Hz) → RMS Envelope → 95th Percentile
+  ```
+- **Clinical Validation**: RMS envelope method is physiologically superior to linear envelope for MVC quantification
+- **Confidence Scoring**: Includes statistical confidence assessment based on signal characteristics
+- **Patient-Specific**: Calculated from actual patient data during session
+
+**Priority 2 - User-Defined MVC (Fallback)**:
+- **Source**: `sessionParams.session_mvc_values` + threshold percentages
+- **Method**: Manual values × threshold percentage (typically 75%)
+- **Use Cases**: Backup when signal analysis unavailable, clinical override scenarios
+- **Limitations**: Not patient-specific, potential inaccuracy
+
+### 7.2 Scientific Rationale
+
+**RMS vs Linear Envelope** (validated via literature review):
+- **RMS Envelope**: Captures signal power, robust to noise, physiologically meaningful
+- **Linear Envelope**: Simple rectification + filtering, more noise-sensitive
+- **Clinical Consensus**: RMS envelope preferred for EMG MVC calculations
+
+**95th Percentile Method**:
+- Represents strong voluntary contraction capacity
+- Clinically validated approach for MVC estimation
+- Avoids outlier artifacts while capturing peak performance
+
+### 7.3 MVC Detection from C3D Baseline Sessions
+
+MVC detection from C3D files follows a standardized scientific process to ensure therapeutic personalization. The system first extracts raw EMG signals from GHOSTLY+ "baseline" game sessions, then applies a clinically validated processing pipeline. This pipeline includes high-pass filtering at 20Hz to eliminate baseline drift, rectification to convert bipolar signals to unipolar amplitude, low-pass filtering at 10Hz to create a smooth envelope, and 50ms RMS smoothing for final envelope extraction.
+
+MVC estimation uses the 95th percentile method on the processed signal, a clinically validated approach that represents strong voluntary contraction capacity while avoiding outlier artifacts. This method is superior to simple maximum detection because it captures real patient performance without being influenced by artificial peaks. The system also calculates a confidence score based on signal variability, peak prominence, and data length to validate estimation quality.
+
+The final therapeutic threshold is calculated as 75% of the estimated MVC value, creating personalized targets adapted to each patient's real physiological condition. This approach ensures therapeutic exercises are calibrated to individual capabilities measured during baseline sessions, unlike generic manual values that do not reflect inter-individual variations.
+
+```mermaid
+flowchart TD
+    A[C3D Baseline File] --> B[Raw EMG Signal Extraction]
+    B --> C[Signal Quality Validation]
+    C --> D{Valid Signal?}
+    D -->|No| E[Fallback MVC = 0.001]
+    D -->|Yes| F[High-pass Filter 20Hz]
+    F --> G[Full-wave Rectification]
+    G --> H[Low-pass Filter 10Hz]
+    H --> I[RMS Smoothing 50ms]
+    I --> J[95th Percentile Calculation]
+    J --> K[Confidence Score Assessment]
+    K --> L[MVC Estimation Complete]
+    L --> M[Therapeutic Threshold = MVC × 0.75]
+    M --> N[Patient-Specific Training Target]
+    
+    style A fill:#e1f5fe
+    style J fill:#f3e5f5
+    style M fill:#e8f5e8
+    style N fill:#fff3e0
+```
+
+### 7.4 Current Implementation Status
+
+- ✅ **Priority System Active**: Backend-calculated MVC takes precedence over manual values
+- ✅ **RMS Pipeline Implemented**: Uses scientifically validated signal processing chain
+- ✅ **Clinical Parameters**: 20Hz high-pass, 10Hz low-pass, 50ms smoothing window
+- ✅ **C3D Baseline Detection**: Automated MVC estimation from game session data
+- ✅ **Fallback Protection**: System gracefully handles missing backend calculations
+
+---
+
+## 8. Implementation Notes
 
 - **Real-time Calculation**: All metrics calculated during session for immediate feedback
 - **Configurable Weights**: All weights adjustable through settings interface
 - **Safety Priority**: BFR violations override all other performance metrics
 - **Clinical Population**: Optimized for hospitalized older adults with mobility restrictions
+- **MVC Data Quality**: Backend calculations preferred for clinical accuracy
 - **Open Source**: Available at https://github.com/openfeasyo/OpenFeasyo
