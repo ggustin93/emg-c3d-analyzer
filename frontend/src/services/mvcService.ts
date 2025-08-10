@@ -37,12 +37,14 @@ export class MVCService {
    */
   static async recalc(
     existing: EMGAnalysisResult,
-    session_params: any
+    session_params: any,
+    signal?: AbortSignal
   ): Promise<EMGAnalysisResult> {
     const response = await fetch(`${this.BASE_URL}/recalc`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ existing, session_params })
+      body: JSON.stringify({ existing, session_params }),
+      signal
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

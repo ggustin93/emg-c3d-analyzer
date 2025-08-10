@@ -8,6 +8,7 @@ import { GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 import { CombinedChartDataPoint } from '@/components/tabs/SignalPlotsTab/EMGChart';
 import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
+import { getEffectiveDurationThreshold } from '@/lib/durationThreshold';
 
 export interface ContractionArea {
   startTime: number;
@@ -61,8 +62,16 @@ export function useContractionAnalysis({
       durationThresholdUsed: null
     };
     
-    // Get default duration threshold (ms) and prefer backend-actual per channel when available
-    const defaultDurationThreshold = sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS;
+    // Compute an effective duration threshold for displayed channels (average across displayed)
+    const displayedChannels = Object.keys(analytics).filter((channelName) =>
+      finalDisplayDataKeys.some(key => key.startsWith(channelName))
+    );
+    const effectiveDurations = displayedChannels.map((ch) =>
+      getEffectiveDurationThreshold(ch, sessionParams, analytics[ch])
+    );
+    const defaultDurationThreshold = effectiveDurations.length > 0
+      ? Math.round(effectiveDurations.reduce((a, b) => a + b, 0) / effectiveDurations.length)
+      : (sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS);
     
     logger.contractionAnalysis('Analyzing contraction quality summary', {
       defaultDurationThreshold,
@@ -96,8 +105,8 @@ export function useContractionAnalysis({
         const mvcThreshold = channelData.mvc_threshold_actual_value;
         const channelDurationActual = channelData.duration_threshold_actual_value ?? null;
         
-        // Get per-muscle duration threshold with same priority as backend
-        let durationThreshold = channelDurationActual ?? defaultDurationThreshold;
+         // Get per-muscle duration threshold with same priority as backend
+         let durationThreshold = channelDurationActual ?? getEffectiveDurationThreshold(channelName, sessionParams, channelData);
         if (sessionParams.session_duration_thresholds_per_muscle && 
             sessionParams.session_duration_thresholds_per_muscle[channelName]) {
           const muscleThresholdSeconds = sessionParams.session_duration_thresholds_per_muscle[channelName];

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { EMGAnalysisResult, GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 import { MVCService } from '@/services/mvcService';
+import { useRecalcStore } from '@/store/recalcStore';
 
 const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
   if (!params) return null;
@@ -17,87 +18,68 @@ const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: s
 export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
   const { sessionParams } = useSessionStore();
   const [serverResult, setServerResult] = useState<EMGAnalysisResult | null>(analysisResult);
+  const { setRecalcPending, markRecalcComplete } = useRecalcStore();
+  const debounceTimerRef = useRef<number | null>(null);
+  const inFlightAbortRef = useRef<AbortController | null>(null);
 
   // Recalculate analytics on backend whenever sessionParams change
   useEffect(() => {
     if (!analysisResult) return;
-    const controller = new AbortController();
-    (async () => {
+    // Clear previous debounce
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    // Abort any in-flight request
+    if (inFlightAbortRef.current) {
+      inFlightAbortRef.current.abort();
+      inFlightAbortRef.current = null;
+    }
+
+    // Set pending immediately
+    setRecalcPending(true);
+
+    // Debounce 300ms before firing
+    debounceTimerRef.current = window.setTimeout(async () => {
+      const controller = new AbortController();
+      inFlightAbortRef.current = controller;
       try {
-        const updated = await MVCService.recalc(analysisResult, sessionParams);
-        if (!controller.signal.aborted) setServerResult(updated);
+        const updated = await MVCService.recalc(analysisResult, sessionParams, controller.signal);
+        if (!controller.signal.aborted) {
+          setServerResult(updated);
+        }
       } catch (e) {
-        console.warn('Recalc failed; falling back to original analytics', e);
-        if (!controller.signal.aborted) setServerResult(analysisResult);
+        if ((e as any)?.name === 'AbortError') {
+          // Swallow aborted fetch
+        } else {
+          console.warn('Recalc failed; falling back to original analytics', e);
+          if (!controller.signal.aborted) setServerResult(analysisResult);
+        }
+      } finally {
+        if (!controller.signal.aborted) markRecalcComplete();
+        inFlightAbortRef.current = null;
       }
-    })();
-    return () => controller.abort();
-  }, [analysisResult, sessionParams]);
+    }, 300);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      if (inFlightAbortRef.current) {
+        inFlightAbortRef.current.abort();
+        inFlightAbortRef.current = null;
+      }
+    };
+  }, [analysisResult, sessionParams, setRecalcPending, markRecalcComplete]);
 
   const liveAnalytics = useMemo(() => {
     const base = serverResult ?? analysisResult;
-    if (!base?.analytics || !sessionParams) return null;
-
-    const updatedAnalytics: { [key: string]: ChannelAnalyticsData } = {};
-    const channelNames = Object.keys(base.analytics);
-
-    for (const channelName of channelNames) {
-      const originalChannelData = base.analytics[channelName];
-      const mvcThreshold = getMvcThresholdForChannel(sessionParams, channelName);
-      const durationThreshold = sessionParams.contraction_duration_threshold ?? 2000;
-
-      let goodContractions = 0;
-      let longContractionCount = 0;
-      let shortContractionCount = 0;
-      let goodLongContractionCount = 0;
-      let goodShortContractionCount = 0;
-
-      let updatedContractions = originalChannelData.contractions;
-      
-      if (originalChannelData.contractions && Array.isArray(originalChannelData.contractions)) {
-        // Update contractions with is_good property
-        updatedContractions = originalChannelData.contractions.map(c => {
-          const isGood = mvcThreshold !== null && c.max_amplitude >= mvcThreshold;
-          if (isGood) {
-            goodContractions++;
-          }
-          if (c.duration_ms < durationThreshold) {
-            shortContractionCount++;
-            if (isGood) goodShortContractionCount++;
-          } else {
-            longContractionCount++;
-            if (isGood) goodLongContractionCount++;
-          }
-          
-          return {
-            ...c,
-            is_good: isGood,
-            is_long: c.duration_ms >= durationThreshold
-          };
-        });
-      } else {
-        goodContractions = originalChannelData.good_contraction_count ?? 0;
-        longContractionCount = originalChannelData.long_contraction_count ?? 0;
-        shortContractionCount = originalChannelData.short_contraction_count ?? 0;
-        goodLongContractionCount = originalChannelData.good_long_contraction_count ?? 0;
-        goodShortContractionCount = originalChannelData.good_short_contraction_count ?? 0;
-      }
-      
-      updatedAnalytics[channelName] = {
-        ...originalChannelData,
-        contractions: updatedContractions,
-        good_contraction_count: goodContractions,
-        mvc_threshold_actual_value: mvcThreshold,
-        long_contraction_count: longContractionCount,
-        short_contraction_count: shortContractionCount,
-        good_long_contraction_count: goodLongContractionCount,
-        good_short_contraction_count: goodShortContractionCount,
-      };
-    }
-
-    return updatedAnalytics;
-
-  }, [serverResult, analysisResult, sessionParams]);
+    if (!base?.analytics) return null;
+    // TRUST backend analytics entirely (flags, thresholds, counts)
+    return base.analytics as { [key: string]: ChannelAnalyticsData };
+  }, [serverResult, analysisResult]);
 
   return liveAnalytics;
 }; 

@@ -422,3 +422,36 @@ backend/
 - Stats and Area Charts are consistent with `metricsDefinitions.md`.
 - No more 100% Good with 0% Duration mismatches.
 - Comparison mode colors remain correct with stable keying.
+
+## Data Consistency Fix: Single Source of Truth Implementation ✅ (August 10, 2025)
+
+### Problem Identified
+- **useEnhancedPerformanceMetrics** was recalculating MVC and duration quality scores independently, creating inconsistent values across UI components:
+  - `useContractionAnalysis` → Trusted backend `meets_mvc` and `meets_duration` flags
+  - `useLiveAnalytics` → Used `MVCService.recalc()` with backend analytics as SoT
+  - `StatsPanel` → Used `computeAcceptanceRates()` with backend data as SoT
+  - `TherapeuticParametersSettings` → Validated frontend against backend thresholds
+  - **useEnhancedPerformanceMetrics** → ❌ Recalculated independently, causing metric discrepancies
+
+### Technical Implementation
+- **MVC Quality Calculation**: Updated to trust `meets_mvc` backend flag when available, with fallback calculation only for missing data
+- **Duration Quality Calculation**: Updated to trust `meets_duration` backend flag when available, with fallback calculation only for missing data  
+- **Single Source of Truth Pattern**: Added comprehensive documentation explaining consistent data flow across all components
+- **Backward Compatibility**: Maintained graceful fallbacks for cases where backend flags are not yet available
+
+### Code Changes
+**File Modified**: `frontend/src/hooks/useEnhancedPerformanceMetrics.ts`
+- Lines 128-139: Updated MVC quality calculation with explicit backend flag prioritization
+- Lines 148-157: Updated duration quality calculation with explicit backend flag prioritization  
+- Lines 111-112: Added comprehensive documentation about SoT pattern consistency
+
+### Verification
+- ✅ **TypeScript Compilation**: Passes without errors
+- ✅ **Build Process**: Production build successful
+- ✅ **Performance Tests**: 6/6 usePerformanceMetrics tests passing
+- ✅ **Data Consistency**: All hooks now use identical backend data as Single Source of Truth
+
+### Impact
+- **Consistent Metrics**: All UI components now display identical acceptance rates and quality scores
+- **Trusted Analytics**: Backend analytics flags are the authoritative source across entire application
+- **Better Clinical Decisions**: Eliminates confusion from conflicting metric values in different UI sections

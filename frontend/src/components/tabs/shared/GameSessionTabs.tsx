@@ -27,6 +27,7 @@ import SettingsTab from '@/components/tabs/SettingsTab';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
+import { usePersistedSessionSettings } from '@/hooks/usePersistedSessionSettings';
 import { BFRMonitoringTab } from '../BFRMonitoringTab';
 import ExportTab from '../ExportTab/ExportTab';
 
@@ -99,6 +100,7 @@ export default function GameSessionTabs({
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
   const liveAnalytics = useLiveAnalytics(analysisResult);
+  usePersistedSessionSettings(analysisResult);
 
   // Initialize BFR parameters if they don't exist
   useEffect(() => {
@@ -374,16 +376,16 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <GearIcon className="w-4 h-4" />
-              <span>Settings</span>
-            </div>
-          </TabsTrigger>
           <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <Share1Icon className="w-4 h-4" />
               <span>Export</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <div className="flex items-center gap-2">
+              <GearIcon className="w-4 h-4" />
+              <span>Settings</span>
             </div>
           </TabsTrigger>
         </TabsList>
@@ -469,6 +471,13 @@ export default function GameSessionTabs({
         <BFRMonitoringTab />
       </TabsContent>
 
+      <TabsContent value="export" className="p-4 bg-white rounded-lg shadow-sm">
+        <ExportTab 
+          analysisResult={analysisResult}
+          uploadedFileName={uploadedFileName}
+        />
+      </TabsContent>
+
       <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">
         <SettingsTab
           muscleChannels={muscleChannels}
@@ -503,13 +512,6 @@ export default function GameSessionTabs({
           
           // Enhanced mode
           useEnhancedQuality={useEnhancedQuality}
-        />
-      </TabsContent>
-
-      <TabsContent value="export" className="p-4 bg-white rounded-lg shadow-sm">
-        <ExportTab 
-          analysisResult={analysisResult}
-          uploadedFileName={uploadedFileName}
         />
       </TabsContent>
     </Tabs>

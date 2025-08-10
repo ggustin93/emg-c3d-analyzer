@@ -189,6 +189,9 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
     return computeAcceptanceRates(analyticsForSoT);
   }, [channelAnalytics, selectedChannel, displayAllChannelsData, viewMode]);
 
+  // Unified display value for duration threshold (Backend SoT > prop > default)
+  const durationThresholdMs = (acceptanceRates.durationThreshold ?? contractionDurationThreshold ?? 2000);
+
   // Check if we have enough data to display in comparison mode
   const hasEnoughDataForComparison = viewMode === 'comparison' && 
     availableChannels.length > 0 &&
@@ -438,6 +441,9 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
+                              <div className="text-xs text-muted-foreground">
+                                {`${acceptanceRates.mvcThreshold != null ? `MVC ≥${acceptanceRates.mvcThreshold.toFixed(3)} mV` : 'MVC threshold: TBD'} • Duration ≥${Math.round(durationThresholdMs)} ms`}
+                              </div>
                             </CardHeader>
                             <CardContent className="flex items-center justify-center py-5">
                               <DonutGauge
@@ -486,6 +492,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
+                              <div className="text-xs text-muted-foreground">{`Duration ≥${Math.round(durationThresholdMs)} ms`}</div>
                             </CardHeader>
                             <CardContent className="flex items-center justify-center py-5">
                               <DonutGauge
@@ -515,6 +522,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <span>Duration Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.durationMetrics} />
                     </div>
+                    <div className="text-xs text-muted-foreground">{`Duration threshold: ≥${Math.round(durationThresholdMs)} ms`}</div>
                   </h4>
                   {(() => {
                     const thresholdMs = contractionDurationThreshold ?? 2000;

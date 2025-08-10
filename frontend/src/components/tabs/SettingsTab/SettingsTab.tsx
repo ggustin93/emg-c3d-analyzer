@@ -5,6 +5,7 @@ import DebugModeSwitch from './components/DebugModeSwitch';
 import { Button } from '@/components/ui/button';
 import DisplaySettings from './components/DisplaySettings';
 import TherapeuticParametersSettings from './components/TherapeuticParametersSettings';
+import PerMuscleDurationThresholds from './components/PerMuscleDurationThresholds';
 import PatientOutcomesSettings from './components/PatientOutcomesSettings';
 import BFRParametersSettings from './components/BFRParametersSettings';
 import ScoringWeightsSettings from './components/ScoringWeightsSettings';
@@ -133,12 +134,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         disabled={disabled}
       />
       
-      {/* Quick Actions */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleRecalculate} disabled={disabled}>
-          Recalculate Analytics
-        </Button>
-      </div>
+      {/* Quick Actions removed (auto-recalc enabled). Force recalc available in Debug within Therapeutic Parameters. */}
 
       {/* Standard Settings - Always visible */}
       <div className="space-y-4">
@@ -195,6 +191,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           disabled={disabled}
           isDebugMode={isDebugMode}
         />
+
+        {isDebugMode && (
+          <PerMuscleDurationThresholds
+            muscleChannels={muscleChannels}
+            disabled={disabled}
+          />
+        )}
         
         {/* Patient Reported Outcomes - Always visible */}
         <PatientOutcomesSettings

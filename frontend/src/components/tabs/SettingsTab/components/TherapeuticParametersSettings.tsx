@@ -436,6 +436,14 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 );
               })}
             </div>
+
+            {canEdit && (
+              <div className="mt-2">
+                <Button variant="outline" size="sm" onClick={() => setSessionParams(prev => ({ ...prev }))}>
+                  Force Recalculate (Debug)
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </TooltipProvider>

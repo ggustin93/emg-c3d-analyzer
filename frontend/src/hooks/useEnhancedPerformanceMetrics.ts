@@ -108,6 +108,8 @@ const calculateComplianceScore = (bfrParameters?: any): number => {
 };
 
 // Fonction pour calculer les métriques d'un muscle
+// SINGLE SOURCE OF TRUTH: Uses backend flags (meets_mvc, meets_duration) when available
+// This ensures consistency with useContractionAnalysis, useLiveAnalytics, and StatsPanel
 const calculateMuscleMetrics = (
   channelData: ChannelAnalyticsData,
   expectedContractions: number,
@@ -125,13 +127,18 @@ const calculateMuscleMetrics = (
     formula: "min(actual/expected × 100, 100)"
   };
   
-  // 2. MVC Quality Score (recalculé avec seuil dynamique)
-  const mvcThresholdValue = channelData.mvc_threshold_actual_value || 0;
-  const dynamicMvcThreshold = mvcThresholdValue * (mvcThreshold / 100);
-  
-  const goodMVCCount = contractions.filter(c => 
-    c.max_amplitude >= dynamicMvcThreshold
-  ).length;
+  // 2. MVC Quality Score (SINGLE SOURCE OF TRUTH: Trust backend flags)
+  // Use backend meets_mvc flag when available, fallback to calculation only if needed
+  const goodMVCCount = contractions.filter(c => {
+    // TRUST backend meets_mvc flag when available
+    if (c.meets_mvc !== null && c.meets_mvc !== undefined) {
+      return c.meets_mvc === true;
+    }
+    // Fallback calculation only if backend flag is missing
+    const mvcThresholdValue = channelData.mvc_threshold_actual_value || 0;
+    const dynamicMvcThreshold = mvcThresholdValue * (mvcThreshold / 100);
+    return c.max_amplitude >= dynamicMvcThreshold;
+  }).length;
   
   const mvcQualityScore: ComponentScore = {
     value: totalContractions > 0 ? (goodMVCCount / totalContractions) * 100 : 0,
@@ -140,8 +147,16 @@ const calculateMuscleMetrics = (
     formula: `contractions ≥${mvcThreshold}% MVC / total × 100`
   };
   
-  // 3. Quality Threshold Score (adaptatif pour la réhabilitation)
-  const qualityThresholdCount = contractions.filter(c => c.duration_ms >= durationThreshold).length;
+  // 3. Quality Threshold Score (SINGLE SOURCE OF TRUTH: Trust backend flags)
+  // Use backend meets_duration flag when available, fallback to calculation only if needed
+  const qualityThresholdCount = contractions.filter(c => {
+    // TRUST backend meets_duration flag when available
+    if (c.meets_duration !== null && c.meets_duration !== undefined) {
+      return c.meets_duration === true;
+    }
+    // Fallback calculation only if backend flag is missing
+    return c.duration_ms >= durationThreshold;
+  }).length;
   const qualityThresholdScore: ComponentScore = {
     value: totalContractions > 0 ? (qualityThresholdCount / totalContractions) * 100 : 0,
     count: qualityThresholdCount,
