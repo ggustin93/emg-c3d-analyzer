@@ -32,6 +32,7 @@ interface ClinicalTooltipProps {
   }>;
   children?: React.ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left';
+  align?: 'start' | 'center' | 'end';
   className?: string;
   triggerClassName?: string;
   variant?: 'default' | 'compact';
@@ -44,11 +45,12 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   description,
   sections = [],
   children,
-  side = 'right',
+  side = 'bottom',
+  align = 'start',
   className,
   triggerClassName,
   variant = 'default',
-  centered = true
+  centered = false
 }) => {
   return (
     <TooltipProvider>
@@ -66,7 +68,7 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
         <TooltipContent 
           side={centered ? undefined : side}
           sideOffset={centered ? 0 : 8}
-          align={centered ? undefined : 'center'}
+          align={centered ? undefined : align}
           avoidCollisions={!centered}
           className={cn(
             "z-[10000] bg-amber-50",
