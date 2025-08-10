@@ -5,30 +5,31 @@
 
 import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
+import { vi } from 'vitest'
 import { useAuth } from '../contexts/AuthContext'
 import AuthGuard from '../components/auth/AuthGuard'
 
-// Mock the auth service
-jest.mock('../services/authService', () => ({
+// Mock the auth service (Vitest API)
+vi.mock('../services/authService', () => ({
   AuthService: {
-    getCurrentSession: jest.fn(),
-    getCurrentUser: jest.fn(),
-    getResearcherProfile: jest.fn(),
-    onAuthStateChange: jest.fn(() => ({
-      data: { subscription: { unsubscribe: jest.fn() } }
+    getCurrentSession: vi.fn(),
+    getCurrentUser: vi.fn(),
+    getResearcherProfile: vi.fn(),
+    onAuthStateChange: vi.fn(() => ({
+      data: { subscription: { unsubscribe: vi.fn() } }
     })),
-    login: jest.fn(),
-    logout: jest.fn()
+    login: vi.fn(),
+    logout: vi.fn()
   }
 }))
 
-jest.mock('../lib/supabase', () => ({
-  isSupabaseConfigured: jest.fn(() => true)
+vi.mock('../lib/supabase', () => ({
+  isSupabaseConfigured: vi.fn(() => true)
 }))
 
 describe('Authentication Best Practices', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
   })
   
@@ -85,8 +86,8 @@ describe('Authentication Best Practices', () => {
     })
     
     it('should cleanup subscriptions on unmount', () => {
-      const unsubscribe = jest.fn()
-      require('../services/authService').AuthService.onAuthStateChange.mockReturnValue({
+    const unsubscribe = vi.fn()
+    require('../services/authService').AuthService.onAuthStateChange.mockReturnValue({
         data: { subscription: { unsubscribe } }
       })
       

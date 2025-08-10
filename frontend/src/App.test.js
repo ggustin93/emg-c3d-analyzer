@@ -1,8 +1,13 @@
+import React from 'react';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import App from './App.tsx';
+import App from './App';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+describe('App', () => {
+  it('renders the header', () => {
+    render(<App />);
+    // Header should render as a banner landmark
+    const header = screen.getByRole('banner');
+    expect(header).toBeTruthy();
+  });
 });
