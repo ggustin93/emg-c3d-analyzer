@@ -58,6 +58,28 @@ The frontend implements **flexible channel handling** to accommodate various C3D
 - **SettingsPanel**: Configuration interface for muscle naming and colors
 - **MuscleNameDisplay**: Consistent muscle name rendering across components
 
+## Data Consistency Architecture
+
+The frontend implements **Single Source of Truth (SoT)** for all analytics data:
+
+### Backend Analytics Priority
+- **Primary Source**: Backend analytics flags (`meets_mvc`, `meets_duration`, `is_good`) are authoritative
+- **Consistent Values**: All components use identical real-time values from backend calculations
+- **Fallback Logic**: Graceful frontend calculations only when backend flags are missing
+- **Priority Chain**: Backend > Per-muscle > Global > Default thresholds
+
+### Key Components Using SoT
+- **useContractionAnalysis**: Trusts backend flags, uses centralized duration threshold logic
+- **useLiveAnalytics**: Calls `MVCService.recalc()` and trusts backend analytics entirely  
+- **StatsPanel**: Uses `computeAcceptanceRates()` with backend data as single source of truth
+- **useEnhancedPerformanceMetrics**: Prioritizes backend `meets_mvc` and `meets_duration` flags
+- **TherapeuticParametersSettings**: Validates frontend calculations against backend thresholds
+
+### Benefits
+- **Consistent UI**: All components show identical acceptance rates and quality scores
+- **Trusted Analytics**: Backend is the authoritative source across the entire application
+- **Better Clinical Decisions**: Eliminates confusion from conflicting metrics in different UI sections
+
 ## State Management
 
 The application uses **Zustand** for efficient state management:
@@ -115,7 +137,7 @@ src/
 ### Test Framework
 - **Vitest**: Fast unit testing with TypeScript support
 - **Testing Library**: Component testing with user interaction focus
-- **Coverage**: Test coverage for critical business logic (17 tests currently passing)
+- **Coverage**: Test coverage for critical business logic (20 tests currently passing)
 
 ## Available Scripts
 
@@ -129,10 +151,11 @@ npm run build      # Production build
 
 ### Testing
 ```bash
-npm test hooks                      # Run hook tests only (6 tests)
-npm test components                 # Run component tests (11 tests) 
+npm test hooks                      # Run hook tests only (7 tests)
+npm test components                 # Run component tests (12 tests) 
 npm test -- --coverage             # Run tests with coverage report
 npm test usePerformanceMetrics     # Run specific test suite
+npm test -- --run                  # Run all tests once (20 total)
 ```
 
 ### Code Quality

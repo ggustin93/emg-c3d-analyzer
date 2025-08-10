@@ -153,6 +153,7 @@ export function useMVCCalculations({
       durationThreshold?: number | null
     }> = [];
     
+    // Ensure thresholds for both left/right channels appear even if one key is missing in the current row
     finalDisplayDataKeys.forEach((key) => {
       const threshold = getChannelMVCThreshold(key);
       if (threshold !== null) {
@@ -166,14 +167,13 @@ export function useMVCCalculations({
         const percentage = sessionParams?.session_mvc_threshold_percentages?.[baseChannelName] || 
                            sessionParams?.session_mvc_threshold_percentage || EMG_CHART_CONFIG.MVC_THRESHOLD_PERCENTAGE;
         
-        // Get duration threshold for this channel with proper conversion
+        // Get duration threshold for this channel with proper conversion and backend override
+        const backendDuration = analytics?.[baseChannelName]?.duration_threshold_actual_value;
         const defaultDurationThreshold = sessionParams?.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS;
-        let durationThreshold = defaultDurationThreshold;
-        if (sessionParams?.session_duration_thresholds_per_muscle?.[baseChannelName]) {
-          const muscleThresholdSeconds = sessionParams.session_duration_thresholds_per_muscle[baseChannelName];
-          if (muscleThresholdSeconds !== null && muscleThresholdSeconds !== undefined) {
-            durationThreshold = muscleThresholdSeconds * EMG_CHART_CONFIG.DURATION_THRESHOLD_CONVERSION_FACTOR;
-          }
+        let durationThreshold = backendDuration ?? defaultDurationThreshold;
+        const perMuscleSeconds = sessionParams?.session_duration_thresholds_per_muscle?.[baseChannelName];
+        if (backendDuration == null && perMuscleSeconds != null) {
+          durationThreshold = perMuscleSeconds * EMG_CHART_CONFIG.DURATION_THRESHOLD_CONVERSION_FACTOR;
         }
         
         thresholds.push({ 

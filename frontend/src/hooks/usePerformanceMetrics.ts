@@ -102,10 +102,18 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
     let allContractionDurations: number[] = [];
 
     // Get scoring weights from session parameters
+    // Default to equal weights (arithmetic mean) if not configured
     const completionWeight = sessionParams?.enhanced_scoring?.weights?.completion ?? 1/3;
     const intensityWeight = sessionParams?.enhanced_scoring?.weights?.mvcQuality ?? 1/3;
+    // Note: qualityThreshold is used for duration weight (naming inconsistency to be fixed)
     const durationWeight = sessionParams?.enhanced_scoring?.weights?.qualityThreshold ?? 1/3;
-    const scoreWeights: [number, number, number] = [completionWeight, intensityWeight, durationWeight];
+    
+    // Pass raw weights - calculateTotalScore will normalize them internally
+    const scoreWeights: [number, number, number] = [
+      completionWeight, 
+      intensityWeight, 
+      durationWeight
+    ];
 
     channelNames.forEach((channelName, index) => {
       const channelData = analysisResult.analytics[channelName];
@@ -166,7 +174,22 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
       const contractionScore = calculateContractionScore(totalContractions, expectedContractions);
       const goodContractionScore = calculateGoodContractionScore(goodContractions, totalContractions);
       const durationQualityScore = totalContractions > 0 ? Math.round((longContractions / totalContractions) * 100) : 0;
+      
+      // Debug: Log the scores and weights to identify the issue
+      console.log(`🎯 Performance Score Calculation for ${channelName}:`, {
+        contractionScore,
+        goodContractionScore, 
+        durationQualityScore,
+        scoreWeights,
+        completionWeight,
+        intensityWeight,
+        durationWeight
+      });
+      
       const totalScore = calculateTotalScore(contractionScore, goodContractionScore, durationQualityScore, scoreWeights);
+      
+      console.log(`🎯 Final totalScore for ${channelName}: ${totalScore}%`);
+      
       const scoreColors = getScoreColors(totalScore);
       
       muscleScores.push(totalScore);
@@ -199,10 +222,11 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
         mvcValue: sessionParams.session_mvc_values?.[channelName] ?? sessionParams.session_mvc_value ?? null,
         mvcThreshold,
         // Add component scores and weights for detailed display
+        // Normalize weights for display (matching what calculateTotalScore does internally)
         componentScores: {
-          completion: { score: contractionScore, weight: completionWeight },
-          intensity: { score: goodContractionScore, weight: intensityWeight },
-          duration: { score: durationQualityScore, weight: durationWeight }
+          completion: { score: contractionScore, weight: completionWeight / (completionWeight + intensityWeight + durationWeight) },
+          intensity: { score: goodContractionScore, weight: intensityWeight / (completionWeight + intensityWeight + durationWeight) },
+          duration: { score: durationQualityScore, weight: durationWeight / (completionWeight + intensityWeight + durationWeight) }
         }
       });
     });

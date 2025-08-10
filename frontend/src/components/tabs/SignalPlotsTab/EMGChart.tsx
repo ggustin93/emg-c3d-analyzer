@@ -128,21 +128,23 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   const showContractionDots = propShowContractionDots;
   
 
-  const dataKeys = useMemo(() => {
-    const keys = chartData?.[0] && typeof chartData[0] === 'object' 
-      ? Object.keys(chartData[0]).filter(key => key !== 'time') 
-      : [];
-    logger.dataProcessing('Chart Data Keys', keys);
+  const availableDataKeys = useMemo(() => {
+    if (!chartData || chartData.length === 0) return [] as string[];
+    const keySet = new Set<string>();
+    for (const point of chartData) {
+      if (!point || typeof point !== 'object') continue;
+      Object.keys(point).forEach((k) => {
+        if (k !== 'time') keySet.add(k);
+      });
+    }
+    const keys = Array.from(keySet);
+    logger.dataProcessing('Chart Data Keys (union across all rows)', keys);
     return keys;
   }, [chartData]);
 
-  const availableDataKeys = useMemo(() => {
-    return dataKeys.length > 0 ? dataKeys : [];
-  }, [dataKeys]);
-
   const finalDisplayDataKeys = useMemo(() => {
     const displayChannels = viewMode === 'comparison'
-      ? availableChannels.length > 0 ? availableChannels : availableDataKeys
+      ? (availableChannels.length > 0 ? availableChannels : availableDataKeys)
       : selectedChannel 
         ? [selectedChannel] 
         : availableChannels.length > 0 ? [availableChannels[0]] : [];
