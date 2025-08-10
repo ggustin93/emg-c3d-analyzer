@@ -35,6 +35,8 @@ interface ClinicalTooltipProps {
   className?: string;
   triggerClassName?: string;
   variant?: 'default' | 'compact';
+  /** When true, force tooltip content to appear centered in the viewport */
+  centered?: boolean;
 }
 
 export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
@@ -45,7 +47,8 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   side = 'right',
   className,
   triggerClassName,
-  variant = 'default'
+  variant = 'default',
+  centered = true
 }) => {
   return (
     <TooltipProvider>
@@ -61,17 +64,19 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           )}
         </TooltipTrigger>
         <TooltipContent 
-          side={side}
-          sideOffset={8}
-          align="center"
-          avoidCollisions
+          side={centered ? undefined : side}
+          sideOffset={centered ? 0 : 8}
+          align={centered ? undefined : 'center'}
+          avoidCollisions={!centered}
           className={cn(
             "z-[999] bg-amber-50",
             "border-2 border-amber-300 shadow-2xl p-0 rounded-lg",
             // Responsive sizing: never overflow viewport
             "max-w-[95vw] sm:max-w-[36rem] w-[min(95vw,36rem)] max-h-[80vh] overflow-auto overscroll-contain",
+            centered && "!fixed !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2",
             className
           )}
+          style={centered ? { position: 'fixed' } : undefined}
         >
           <div>
             {/* Elegant Header */}
