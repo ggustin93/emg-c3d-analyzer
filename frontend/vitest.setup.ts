@@ -1,3 +1,4 @@
+
 // Polyfill window.fetch if needed in tests
 if (!globalThis.fetch) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires

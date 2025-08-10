@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
-import { vi } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAuth } from '../contexts/AuthContext'
 import AuthGuard from '../components/auth/AuthGuard'
 
