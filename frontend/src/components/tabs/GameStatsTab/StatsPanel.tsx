@@ -522,18 +522,22 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       <span>Duration Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.durationMetrics} />
                     </div>
-                    <div className="text-xs text-muted-foreground">{`Duration threshold: ≥${Math.round(durationThresholdMs)} ms`}</div>
+                    {(() => {
+                      const thrText = `${(Number(durationThresholdMs) / 1000).toFixed(1)} s`;
+                      return <div className="text-xs text-muted-foreground">{`Duration threshold: ≥${thrText}`}</div>;
+                    })()}
                   </h4>
                   {(() => {
-                    const thresholdMs = contractionDurationThreshold ?? 2000;
-                    const maxCandidate = Number.isFinite(displayAnalytics.max_duration_ms)
-                      ? Math.max(displayAnalytics.max_duration_ms as number, thresholdMs)
-                      : thresholdMs * 2;
-                    const maxMs = Math.max(maxCandidate, thresholdMs);
+                    // Use unified threshold value so gauge scaling and legend are based on duration threshold
+                    const thresholdMs = durationThresholdMs;
 
-                    const toPercent = (val: number) => {
-                      if (!Number.isFinite(val)) return 0;
-                      return Math.max(0, Math.min(100, Math.round((val / maxMs) * 100)));
+                    const computePercents = (val: number) => {
+                      if (!Number.isFinite(val) || !Number.isFinite(thresholdMs) || thresholdMs <= 0) {
+                        return { raw: 0, clamped: 0 };
+                      }
+                      const raw = Math.round((val / thresholdMs) * 100);
+                      const clamped = Math.max(0, Math.min(100, raw));
+                      return { raw, clamped };
                     };
 
                     const renderProgressCard = (title: string, valueMs: number, precision: number = 1) => (
@@ -542,19 +546,25 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                           <CardTitle className="text-sm font-medium">{title}</CardTitle>
                         </CardHeader>
                         <CardContent className="flex items-center justify-center py-5">
-                          <DonutGauge
-                            percent={toPercent(valueMs)}
-                             size={DONUT_SIZE}
-                             thickness={DONUT_THICKNESS}
-                            colorHex={'#0f766e'}
-                            centerRender={() => (
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-slate-800">{formatMetricValue(valueMs, { precision })}</div>
-                                <div className="text-xs text-muted-foreground">ms</div>
-                                <div className="text-[10px] text-muted-foreground mt-0.5">{toPercent(valueMs)}% of {Math.round(maxMs)} ms</div>
-                              </div>
-                            )}
-                          />
+                          {(() => {
+                            const { raw, clamped } = computePercents(valueMs);
+                            const valueSecsText = `${(Number(valueMs) / 1000).toFixed(2)} s`;
+                            const thrText = `${(Number(thresholdMs) / 1000).toFixed(1)} s`;
+                            return (
+                              <DonutGauge
+                                percent={clamped}
+                                size={DONUT_SIZE}
+                                thickness={DONUT_THICKNESS}
+                                colorHex={'#0f766e'}
+                                centerRender={() => (
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-slate-800">{valueSecsText}</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">{raw}% of {thrText}</div>
+                                  </div>
+                                )}
+                              />
+                            );
+                          })()}
                         </CardContent>
                       </Card>
                     );
@@ -562,14 +572,23 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                     return (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         {renderProgressCard('Avg Duration', Number(displayAnalytics.avg_duration_ms), 1)}
-                        <MetricCard
-                          title="Total Duration"
-                          value={displayAnalytics.total_time_under_tension_ms}
-                          unit="ms"
-                          description="Total time muscle was contracting."
-                          precision={0}
-                          error={displayAnalytics.errors?.contractions}
-                        />
+                        {(() => {
+                          const totalMs = Number(displayAnalytics.total_time_under_tension_ms);
+                          const showSeconds = Number.isFinite(totalMs) && totalMs >= 1000;
+                          const value = showSeconds ? totalMs / 1000 : totalMs;
+                          const unit = showSeconds ? 's' : 'ms';
+                          const precision = showSeconds ? 2 : 0;
+                          return (
+                            <MetricCard
+                              title="Total Duration"
+                              value={value}
+                              unit={unit}
+                              description="Total time muscle was contracting."
+                              precision={precision}
+                              error={displayAnalytics.errors?.contractions}
+                            />
+                          );
+                        })()}
                         {renderProgressCard('Max Duration', Number(displayAnalytics.max_duration_ms), 1)}
                         {renderProgressCard('Min Duration', Number(displayAnalytics.min_duration_ms), 1)}
                       </div>

@@ -89,7 +89,7 @@ export default function MetricCard({
           <div className="text-md text-muted-foreground">{unit}</div>
         )}
         {subtext && (
-          <div className="text-xs text-slate-500 mt-1 text-center">
+          <div className="text-sm text-slate-600 mt-1.5 text-center">
             {subtext}
           </div>
         )}
