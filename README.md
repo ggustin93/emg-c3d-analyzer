@@ -84,7 +84,21 @@ The GHOSTLY+ EMG Analyzer implements a **full-stack architecture** designed arou
                                └───────────────────────────┘
 ```
 
-### 3.2 Source Code Structure
+### 3.2 Data Consistency Architecture
+
+The system implements **Single Source of Truth (SoT)** for all analytics data across the frontend:
+
+**Backend Analytics Priority**: Backend analytics flags (`meets_mvc`, `meets_duration`, `is_good`) serve as the authoritative source for all clinical assessments. All frontend components use identical real-time values from backend calculations, ensuring consistency across the entire UI.
+
+**Key Implementation Patterns**:
+- **Priority Chain**: Backend > Per-muscle > Global > Default thresholds with centralized logic
+- **Graceful Fallback**: Frontend calculations only when backend flags are unavailable
+- **Real-time Synchronization**: `MVCService.recalc()` triggers backend updates for live parameter changes
+- **Consistent Components**: All hooks (`useContractionAnalysis`, `useLiveAnalytics`, `useEnhancedPerformanceMetrics`) and UI components trust backend data
+
+**Clinical Benefits**: Eliminates confusion from conflicting metrics in different UI sections, ensures consistent acceptance rates across all views, and provides trusted analytics for better clinical decision-making.
+
+### 3.3 Source Code Structure
 ```
 src/
 ├── backend/
@@ -123,7 +137,7 @@ src/
 │       └── emg.ts                     # TypeScript EMG data models
 ```
 
-### 3.3 Frontend (React 19 + TypeScript)
+### 3.4 Frontend (React 19 + TypeScript)
 
 The frontend implements **React architecture** with TypeScript, utilizing concurrent rendering and component-based design optimized for clinical EMG data visualization.
 
@@ -149,7 +163,7 @@ The frontend implements a **layered service architecture** with services for cli
 - **Authentication Integration**: Role-based access with therapist/admin permissions and debug mode capabilities
 - **Performance Optimization**: Downsampling for large EMG datasets while preserving clinical accuracy
 
-### 3.4 Backend (Python / FastAPI)
+### 3.5 Backend (Python / FastAPI)
 
 The Python backend uses **FastAPI for asynchronous capabilities** and implements an **EMG processing architecture** with clear separation of clinical and technical concerns:
 
@@ -160,7 +174,7 @@ The Python backend uses **FastAPI for asynchronous capabilities** and implements
 - **MVCService**: Maximum Voluntary Contraction threshold estimation and management
 - **ExportService**: Clinical data export in research-standard formats
 
-### 3.5 Data & Persistence (Supabase)
+### 3.6 Data & Persistence (Supabase)
 
 Supabase provides **PostgreSQL database and secure file storage** with authentication. Clinical data schema includes:
 - **Session Parameters**: Therapist-configured MVC thresholds, muscle naming, and therapeutic protocols
@@ -197,9 +211,10 @@ The current testing implementation provides a solid foundation for research and 
 The testing approach follows a **"clinical-first" strategy** focusing on therapeutic accuracy and reliable clinical workflows rather than comprehensive edge case coverage.
 
 ### 5.1 Current Test Results
-✅ **Frontend Tests: 17 PASSED**
+✅ **Frontend Tests: 20 PASSED**
 - Performance metrics calculation (6 tests): Arithmetic mean validation, compliance scoring, edge case handling
 - Contraction filtering tests (11 tests): EMG signal processing, contraction detection, quality assessment
+- Authentication best practices (3 tests): Clean auth implementation patterns, subscription cleanup, stable state management
 - React hook testing with business logic coverage
 - Component interaction testing with user workflow simulation
 
