@@ -86,13 +86,52 @@ The application uses **Zustand** for efficient state management:
 - **Lazy Loading**: Component splitting for improved initial load times
 - **Debounced Updates**: Smooth interaction without performance degradation
 
+## Testing Architecture
+
+The frontend implements **comprehensive testing** following React/TypeScript best practices:
+
+### Test Organization
+- **Co-located Unit Tests**: `__tests__/` directories next to source code
+- **Integration Tests**: `src/tests/` for cross-component workflows
+- **Component Tests**: Component-specific test files for UI validation
+- **Hook Tests**: Custom hook testing with comprehensive coverage
+
+### Test Structure
+```
+src/
+├── hooks/
+│   ├── usePerformanceMetrics.ts
+│   └── __tests__/
+│       └── usePerformanceMetrics.test.ts
+├── components/tabs/SignalPlotsTab/
+│   ├── EMGChart.tsx
+│   └── __tests__/
+│       └── contraction-filtering.test.ts
+└── tests/
+    ├── authBestPractices.test.tsx
+    └── authFlowTest.tsx
+```
+
+### Test Framework
+- **Vitest**: Fast unit testing with TypeScript support
+- **Testing Library**: Component testing with user interaction focus
+- **Coverage**: Comprehensive test coverage for critical business logic
+
 ## Available Scripts
 
 ### Development
 ```bash
 npm start          # Development server on localhost:3000
-npm test           # Run test suite
+npm test           # Run test suite (watch mode)
+npm test -- --run  # Run tests once with results
 npm run build      # Production build
+```
+
+### Testing
+```bash
+npm test hooks     # Run hook tests only
+npm test components # Run component tests
+npm test -- --coverage # Run tests with coverage report
 ```
 
 ### Code Quality
