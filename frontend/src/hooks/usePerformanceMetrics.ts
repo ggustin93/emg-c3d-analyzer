@@ -142,9 +142,18 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
 
       if (channelData.contractions && Array.isArray(channelData.contractions)) {
         channelData.contractions.forEach((c: Contraction) => {
-          const isGood = mvcThreshold !== null && c.max_amplitude >= mvcThreshold;
+          // SINGLE SOURCE OF TRUTH: Use backend flags when available, fallback to manual calculation
+          const hasBackendMvc = c.meets_mvc !== null && c.meets_mvc !== undefined;
+          const hasBackendDuration = c.meets_duration !== null && c.meets_duration !== undefined;
           
-          if (isGood) goodContractions++;
+          const meetsMvc = hasBackendMvc 
+            ? c.meets_mvc 
+            : (mvcThreshold !== null && c.max_amplitude >= mvcThreshold);
+          const meetsDuration = hasBackendDuration 
+            ? c.meets_duration 
+            : (c.duration_ms >= durationThreshold);
+          
+          if (meetsMvc) goodContractions++;
           
           // Collect duration for overall average calculation
           if (c.duration_ms && c.duration_ms > 0) {
@@ -152,12 +161,12 @@ export const usePerformanceMetrics = (analysisResult: EMGAnalysisResult | null, 
             muscleContractionDurations.push(c.duration_ms);
           }
 
-          if (c.duration_ms < durationThreshold) {
+          if (!meetsDuration) {
             shortContractions++;
-            if (isGood) shortGoodContractions++;
+            if (meetsMvc) shortGoodContractions++;
           } else {
             longContractions++;
-            if (isGood) longGoodContractions++;
+            if (meetsMvc) longGoodContractions++;
           }
         });
       } else {

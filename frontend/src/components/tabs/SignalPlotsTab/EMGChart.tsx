@@ -143,21 +143,103 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }, [chartData]);
 
   const finalDisplayDataKeys = useMemo(() => {
-    const displayChannels = viewMode === 'comparison'
-      ? (availableChannels.length > 0 ? availableChannels : availableDataKeys)
-      : selectedChannel 
+    logger.dataProcessing('Final Display Keys Calculation', { 
+      viewMode, 
+      availableChannels, 
+      selectedChannel, 
+      availableDataKeys,
+      plotMode: effectivePlotMode 
+    });
+
+    if (viewMode === 'comparison') {
+      // For comparison mode, we need to find the correct data keys based on current signal type
+      // Extract base channel names from availableChannels (which now contains suffixed names)
+      const baseChannels = availableChannels.length > 0 
+        ? availableChannels.map(c => c.replace(/ (Raw|activated|Processed)$/i, '')).filter((v, i, a) => a.indexOf(v) === i)
+        : [];
+      
+      if (baseChannels.length === 0) {
+        logger.dataProcessing('No base channels available, using all available data keys');
+        return availableDataKeys;
+      }
+
+      // Map base channels to actual data keys based on current plot mode
+      const resolvedKeys: string[] = [];
+      const suffixMap: Record<string, string[]> = {
+        'raw': [' Raw', ''],
+        'activated': [' activated', ''],
+        'processed': [' Processed', ''],
+        'raw_with_rms': [' Raw', ' Processed'] // For overlay mode, prefer Raw but also check Processed
+      };
+
+      const possibleSuffixes = suffixMap[effectivePlotMode] || [''];
+      
+      baseChannels.forEach(baseChannel => {
+        let foundKey: string | undefined;
+        
+        // First, try exact match with expected suffixes for current plot mode
+        for (const suffix of possibleSuffixes) {
+          const expectedKey = baseChannel + suffix;
+          if (availableDataKeys.includes(expectedKey)) {
+            foundKey = expectedKey;
+            break;
+          }
+        }
+        
+        // If no exact match, try startsWith approach (fallback)
+        if (!foundKey) {
+          foundKey = availableDataKeys.find(key => 
+            key.startsWith(baseChannel) && 
+            (key.includes(' Raw') || key.includes(' activated') || key.includes(' Processed') || key === baseChannel)
+          );
+        }
+        
+        if (foundKey) {
+          resolvedKeys.push(foundKey);
+          logger.dataProcessing(`Resolved channel mapping`, { baseChannel, foundKey, plotMode: effectivePlotMode });
+        } else {
+          logger.dataProcessing(`Failed to resolve channel`, { baseChannel, availableDataKeys, plotMode: effectivePlotMode });
+        }
+      });
+      
+      logger.dataProcessing('Comparison mode resolved keys', { 
+        baseChannels, 
+        resolvedKeys, 
+        expectedCount: baseChannels.length 
+      });
+      
+      // Ensure we have at least the expected number of channels for comparison
+      if (resolvedKeys.length < Math.min(2, baseChannels.length)) {
+        logger.dataProcessing('Insufficient resolved keys, falling back to available data keys', {
+          resolvedCount: resolvedKeys.length,
+          expectedCount: Math.min(2, baseChannels.length)
+        });
+        
+        // Fallback: use first available keys that match our base channels
+        const fallbackKeys = availableDataKeys.filter(key => 
+          baseChannels.some(base => key.startsWith(base))
+        ).slice(0, Math.min(2, baseChannels.length));
+        
+        return fallbackKeys.length > 0 ? fallbackKeys : availableDataKeys.slice(0, 2);
+      }
+      
+      return resolvedKeys;
+    } else {
+      // Single channel mode logic (unchanged)
+      const displayChannels = selectedChannel 
         ? [selectedChannel] 
         : availableChannels.length > 0 ? [availableChannels[0]] : [];
-    
-    const displayDataKeys = displayChannels.map(channel => {
-      if (availableDataKeys.includes(channel)) return channel;
-      const matchingKey = availableDataKeys.find(key => key.startsWith(channel));
-      if (matchingKey) return matchingKey;
-      return channel;
-    }).filter(key => availableDataKeys.includes(key));
-    
-    return displayDataKeys.length > 0 ? displayDataKeys : availableDataKeys;
-  }, [viewMode, availableChannels, selectedChannel, availableDataKeys, chartData]);
+      
+      const displayDataKeys = displayChannels.map(channel => {
+        if (availableDataKeys.includes(channel)) return channel;
+        const matchingKey = availableDataKeys.find(key => key.startsWith(channel));
+        if (matchingKey) return matchingKey;
+        return channel;
+      }).filter(key => availableDataKeys.includes(key));
+      
+      return displayDataKeys.length > 0 ? displayDataKeys : availableDataKeys.slice(0, 1);
+    }
+  }, [viewMode, availableChannels, selectedChannel, availableDataKeys, effectivePlotMode]);
 
   // Initialize hooks for MVC calculations and contraction analysis
   const { getChannelMVCThreshold, getMuscleName, getThresholdData } = useMVCCalculations({
@@ -413,7 +495,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             ) : (
               // Standard single-signal mode
               finalDisplayDataKeys.map((dataKey) => {
-                const baseChannelName = finalDisplayDataKeys.find(ch => dataKey.startsWith(ch)) || dataKey.split(' ')[0];
+                const baseChannelName = dataKey.split(' ')[0];
                 const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
                 
                 return (
@@ -432,30 +514,78 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               })
             )}
 
-            {/* MVC Reference Lines - use appropriate Y-axis for overlay mode */}
+            {/* MVC Reference Lines - exactly 2 lines for comparison mode */}
             {(() => {
               const keysForThresholds = plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys;
               logger.chartRender('MVC Reference Lines Keys', keysForThresholds);
-              return keysForThresholds;
-            })().map((dataKey) => {
-              const threshold = getChannelMVCThreshold(dataKey);
-              if (threshold !== null) {
-                const baseChannelName = dataKey.split(' ')[0];
-                const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+              
+              // In comparison mode, ensure we have exactly 2 lines (one per base channel)
+              if (viewMode === 'comparison') {
+                // Get unique base channel names from the data keys
+                const baseChannelNames = new Set<string>();
+                keysForThresholds.forEach(dataKey => {
+                  const baseChannelName = dataKey.split(' ')[0];
+                  baseChannelNames.add(baseChannelName);
+                });
                 
-                return (
+                const thresholdLines: Array<{
+                  threshold: number;
+                  baseChannelName: string;
+                  colorStyle: { stroke: string };
+                }> = [];
+                
+                // Create exactly one line per base channel
+                Array.from(baseChannelNames).forEach(baseChannelName => {
+                  // Find a data key for this base channel to get the threshold
+                  const dataKey = keysForThresholds.find(key => key.split(' ')[0] === baseChannelName);
+                  if (dataKey) {
+                    const threshold = getChannelMVCThreshold(dataKey);
+                    if (threshold !== null) {
+                      const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+                      thresholdLines.push({ threshold, baseChannelName, colorStyle });
+                    }
+                  }
+                });
+                
+                logger.chartRender('Comparison Mode MVC Lines', {
+                  baseChannels: Array.from(baseChannelNames),
+                  thresholdCount: thresholdLines.length,
+                  thresholds: thresholdLines.map(t => ({ channel: t.baseChannelName, value: t.threshold }))
+                });
+                
+                return thresholdLines.map((item, index) => (
                   <ReferenceLine 
-                    key={`mvc-${dataKey}`}
+                    key={`mvc-comparison-${item.baseChannelName}`}
                     yAxisId={plotMode === 'raw_with_rms' ? 'right' : 'left'}
-                    y={threshold} 
-                    stroke={colorStyle.stroke}
+                    y={item.threshold} 
+                    stroke={item.colorStyle.stroke}
                     strokeDasharray="3 3" 
                     strokeWidth={2.5}
                   />
-                );
+                ));
+              } else {
+                // Single mode - original logic
+                return keysForThresholds.map((dataKey) => {
+                  const threshold = getChannelMVCThreshold(dataKey);
+                  if (threshold !== null) {
+                    const baseChannelName = dataKey.split(' ')[0];
+                    const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
+                    
+                    return (
+                      <ReferenceLine 
+                        key={`mvc-single-${dataKey}`}
+                        yAxisId={plotMode === 'raw_with_rms' ? 'right' : 'left'}
+                        y={threshold} 
+                        stroke={colorStyle.stroke}
+                        strokeDasharray="3 3" 
+                        strokeWidth={2.5}
+                      />
+                    );
+                  }
+                  return null;
+                }).filter(Boolean);
               }
-              return null;
-            })}
+            })()}
 
             {/* Global MVC threshold fallback */}
             {(plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys).every(dataKey => getChannelMVCThreshold(dataKey) === null) && 

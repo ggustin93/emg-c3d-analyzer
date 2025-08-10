@@ -295,7 +295,7 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                       </div>
                       <div className="border-t border-gray-300 mt-2 pt-2">
                         <div className="text-xs text-gray-500 mb-1">
-                          Average: ({componentScores.completion.score ?? 0} + {componentScores.intensity.score ?? 0} + {componentScores.duration.score ?? 0}) / 3
+                          Weighted Average: ({componentScores.completion.score ?? 0} × {(componentScores.completion.weight * 100).toFixed(0)}% + {componentScores.intensity.score ?? 0} × {(componentScores.intensity.weight * 100).toFixed(0)}% + {componentScores.duration.score ?? 0} × {(componentScores.duration.weight * 100).toFixed(0)}%)
                         </div>
                         <div className="flex justify-between items-center font-semibold">
                           <span>Overall Score:</span>

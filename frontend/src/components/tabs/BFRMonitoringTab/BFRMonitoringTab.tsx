@@ -334,6 +334,10 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             <CheckCircledIcon className="h-4 w-4" />
             {overallStatus.message}
           </span>
+          <div className="ml-3 inline-flex items-center gap-2 opacity-80">
+            <Badge variant="destructive" className="text-[10px] px-2 py-0.5">c3d:x</Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border-slate-300">Fake data</Badge>
+          </div>
         </div>
       </div>
 

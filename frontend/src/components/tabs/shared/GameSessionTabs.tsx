@@ -403,7 +403,7 @@ export default function GameSessionTabs({
             )}
             <EMGChart 
               chartData={mainChartData}
-              availableChannels={muscleChannels}
+              availableChannels={allAvailableChannels}
               selectedChannel={selectedChannelForStats}
               viewMode={viewMode}
               mvcThresholdForPlot={mvcThresholdForPlot}
