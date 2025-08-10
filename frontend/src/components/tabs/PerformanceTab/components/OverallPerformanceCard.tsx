@@ -171,6 +171,16 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         ]
                       },
                       {
+                        title: "Components",
+                        type: "list" as const,
+                        items: [
+                          ...(complianceWeight > 0 ? [{ label: "Compliance (C)", description: "Exercise execution quality — completion, intensity (≥75% MVC), and duration (≥2.0s)", color: "text-green-700" }] : []),
+                          ...(symmetryWeight > 0 ? [{ label: "Symmetry (S)", description: "Bilateral activation balance — higher = more balanced", color: "text-purple-700" }] : []),
+                          ...(effortWeight > 0 ? [{ label: "Effort (E)", description: "Patient-reported exertion (Borg CR10) — target: 4–6", color: "text-orange-700" }] : []),
+                          ...(gameWeight > 0 ? [{ label: "Game (G)", description: "Experimental engagement signal — use only if clinically relevant", color: "text-cyan-700" }] : [])
+                        ]
+                      },
+                      {
                         title: "Weights",
                         type: "table" as const,
                         items: [
@@ -184,8 +194,8 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         title: "Notes",
                         type: "list" as const,
                         items: [
-                          { label: "Interpretation", description: "Score aggregates weighted components; 100 = optimal therapeutic performance" },
-                          { label: "Configuration", description: "Adjust weights in Settings → Performance" }
+                          { label: "Interpretation", description: "Aggregates weighted components. 100 = optimal performance." },
+                          { label: "Configuration", description: "Adjust weights in Settings → Performance." }
                         ]
                       }
                     ]}
