@@ -162,16 +162,17 @@ This framework requires experimental validation to determine:
 - **Linear Envelope**: Simple rectification + filtering, more noise-sensitive
 - **Clinical Consensus**: RMS envelope preferred for EMG MVC calculations
 
-**95th Percentile Method**:
-- Represents strong voluntary contraction capacity
-- Clinically validated approach for MVC estimation
-- Avoids outlier artifacts while capturing peak performance
+**Peak and RMS Methods (Standard Clinical Practice)**:
+- **Peak Value**: Highest amplitude of rectified EMG during MVC - captures maximum instantaneous activation
+- **RMS/ARV**: Root Mean Square or Average Rectified Value - more stable and reliable measure of sustained activation
+- **Clinical Consensus**: Both peak and RMS should be reported together for comprehensive MVC assessment
+- **Normalization Standard**: Task-related EMG expressed as %MVC for cross-subject comparison
 
 ### 7.3 MVC Detection from C3D Baseline Sessions
 
 MVC detection from C3D files follows a standardized scientific process to ensure therapeutic personalization. The system first extracts raw EMG signals from GHOSTLY+ "baseline" game sessions, then applies a clinically validated processing pipeline. This pipeline includes high-pass filtering at 20Hz to eliminate baseline drift, rectification to convert bipolar signals to unipolar amplitude, low-pass filtering at 10Hz to create a smooth envelope, and 50ms RMS smoothing for final envelope extraction.
 
-MVC estimation uses the 95th percentile method on the processed signal, a clinically validated approach that represents strong voluntary contraction capacity while avoiding outlier artifacts. This method is superior to simple maximum detection because it captures real patient performance without being influenced by artificial peaks. The system also calculates a confidence score based on signal variability, peak prominence, and data length to validate estimation quality.
+MVC estimation follows standard clinical practice by calculating both peak values and RMS measurements from the processed signal. The system primarily uses the peak value method (maximum amplitude of rectified EMG) as the gold standard for MVC determination, which represents the highest instantaneous muscle activation capacity. Additionally, RMS values are calculated to provide a stable measure of sustained activation. This dual approach ensures comprehensive MVC assessment following established clinical guidelines while maintaining compatibility with therapeutic gaming environments.
 
 The final therapeutic threshold is calculated as 75% of the estimated MVC value, creating personalized targets adapted to each patient's real physiological condition. This approach ensures therapeutic exercises are calibrated to individual capabilities measured during baseline sessions, unlike generic manual values that do not reflect inter-individual variations.
 
@@ -185,8 +186,8 @@ flowchart TD
     F --> G[Full-wave Rectification]
     G --> H[Low-pass Filter 10Hz]
     H --> I[RMS Smoothing 50ms]
-    I --> J[95th Percentile Calculation]
-    J --> K[Confidence Score Assessment]
+    I --> J[Peak MVC Calculation]
+    J --> K[RMS/ARV Calculation]
     K --> L[MVC Estimation Complete]
     L --> M[Therapeutic Threshold = MVC × 0.75]
     M --> N[Patient-Specific Training Target]
