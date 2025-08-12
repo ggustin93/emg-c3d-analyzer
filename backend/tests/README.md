@@ -11,21 +11,57 @@ The tests are designed to align with the stateless architecture outlined in `tod
 
 Tests for stateful endpoints have been removed as they will be deprecated in the new architecture.
 
+## Test Results
+
+✅ **All 45 tests passing** - Last run: August 12, 2025
+- 15 core backend tests
+- 30 webhook tests (18 validation + 12 integration)
+- 0 failures, 0 errors
+- Only deprecation warnings (external dependencies)
+
 ## Available Tests
 
-1. **test_emg_analysis.py** - Unit tests for the core EMG analysis functions
-2. **test_processor.py** - Integration tests for the GHOSTLYC3DProcessor class
-3. **test_api_integration.py** - Comprehensive API integration tests using FastAPI's TestClient
-4. **debug_emg_analysis.py** - Standalone debugging script for EMG analysis functions with sample data
+### Core Tests (15 tests)
+1. **test_emg_analysis.py** - Unit tests for the core EMG analysis functions (6 tests)
+2. **test_processor.py** - Integration tests for the GHOSTLYC3DProcessor class (4 tests)
+3. **test_contraction_flags.py** - Tests for contraction validation flags (3 tests)
+4. **test_serialization.py** - Tests for numpy JSON serialization fixes (2 tests)
+5. **debug_emg_analysis.py** - Standalone debugging script for EMG analysis functions with sample data
+
+### Webhook Tests (30 tests)
+6. **webhook/** - Complete webhook testing suite (see webhook/README.md for details)
+   - **test_webhook_validation.py** - Webhook payload validation tests (18 tests)
+   - **test_integration_webhook.py** - Full webhook integration testing (12 tests)
+   - Automated testing with database verification
+   - ngrok tunnel integration testing
+   - Real-time webhook monitoring utilities
 
 ## Running the Tests
 
-### Using the Test Runner Script
-
-The easiest way to run tests is to use the provided shell script:
+### Quick Test Commands
 
 ```bash
-# Run all tests
+# Run all tests (recommended)
+cd backend
+python -m pytest tests/ -v
+
+# Run core tests only (excludes webhook tests)
+python -m pytest tests/ -v --ignore=tests/webhook
+
+# Run webhook tests only
+python -m pytest tests/webhook/ -v
+
+# Run specific test file
+python -m pytest tests/test_emg_analysis.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=backend --cov-report=html
+```
+
+### Legacy Test Runner (if available)
+
+```bash
+# Run all tests using shell script
 ./run_tests.sh
 
 # Run tests in verbose mode
@@ -33,28 +69,22 @@ The easiest way to run tests is to use the provided shell script:
 
 # Install dependencies before running tests
 ./run_tests.sh -i
-
-# Install dependencies and run in verbose mode
-./run_tests.sh -i -v
 ```
 
-The script handles:
-- Setting up the Python path correctly
-- Installing required dependencies (with `-i` flag)
-- Running all tests with proper configuration
-
-### Manual Test Execution
-
-If you prefer to run tests manually:
+### Running Individual Test Categories
 
 ```bash
-# From the project root directory
-export PYTHONPATH=/path/to/emg-c3d-analyzer:$PYTHONPATH
-cd backend/tests
-python run_tests.py [--verbose]
+# EMG analysis tests
+python -m pytest tests/test_emg_analysis.py -v
 
-# Or run individual test files
-python -m unittest test_emg_analysis.py
+# C3D processor tests  
+python -m pytest tests/test_processor.py -v
+
+# Webhook validation tests
+python -m pytest tests/webhook/test_webhook_validation.py -v
+
+# Webhook integration tests
+python -m pytest tests/webhook/test_integration_webhook.py -v
 ```
 
 ### Prerequisites

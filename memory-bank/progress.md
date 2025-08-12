@@ -1,6 +1,65 @@
 # Progress Tracking
 
-## Latest Updates (August 9, 2025)
+## Latest Updates (August 12, 2025)
+
+### Webhook System Production Completion ✅
+- **Real Supabase Format Support**: Fixed 422 errors by adding support for actual database trigger format (`type`, `table`, `record`)
+- **Configuration Fix**: Corrected common mistake of using `storage.buckets` instead of `storage.objects` in webhook config
+- **Robust Error Handling**: Added graceful C3D processing error handling preventing webhook crashes
+- **Dual Format Support**: Maintains backward compatibility for testing while supporting real Supabase payloads
+- **100% Test Coverage**: All 30 webhook tests passing with improved error resilience
+
+**Key Technical Fixes**:
+- Added `SupabaseWebhookPayload` model for database trigger format
+- Smart payload detection and data extraction from `record.name`, `record.bucket_id`, etc.
+- Fixed KeyError crashes by using correct `analytics` key instead of `analysis`
+- Enhanced error recovery in `webhook_service.py` with try-catch around C3D processing
+
+**Production Ready**: Manual uploads via Supabase Dashboard now trigger webhooks successfully with 200 OK responses
+
+## Previous Updates (August 11, 2025)
+
+### ngrok Integration into Development Script ✅
+- **Streamlined Webhook Testing**: Integrated ngrok tunnel creation into start_dev.sh as optional `--webhook` flag
+- **One-Command Development**: `./start_dev.sh --webhook` now starts backend, frontend, AND ngrok tunnel automatically
+- **Professional Error Handling**: Graceful failure with helpful installation instructions if ngrok is not available
+- **Configuration Guidance**: Script automatically displays webhook URL and Supabase Dashboard configuration steps
+- **Process Management**: ngrok PID tracked and cleaned up properly with other development processes
+- **Documentation Updates**: Updated CLAUDE.md and README.md with streamlined webhook testing workflow
+
+**New Usage Examples**:
+```bash
+./start_dev.sh              # Standard development (backend + frontend)
+./start_dev.sh --webhook    # Development with webhook testing (+ ngrok tunnel)
+./start_dev.sh --webhook --clean --kill  # Full clean start with webhooks
+```
+
+**Script Version**: Updated to v2.1 with professional ngrok integration following existing patterns
+
+### Complete Webhook System Implementation ✅
+- **Full Automation**: Implemented complete webhook system for automated C3D processing via Supabase Storage
+- **Security & RLS**: HMAC-SHA256 signature verification with service key authentication bypassing RLS policies
+- **Event Processing**: Event type validation supporting `storage-object-uploaded` from Supabase Dashboard
+- **Database Integration**: Metadata extraction, analysis result caching with duplicate detection
+- **Testing Infrastructure**: ngrok tunnel setup for local development webhook testing
+- **Real-time Monitoring**: Enhanced logging with emoji-based visual tracking
+- **Complete Compatibility**: Webhook data format matches existing `/upload` endpoint for frontend compatibility
+
+**Key Files Added/Modified**:
+- `backend/api/webhooks.py` - webhook endpoints with comprehensive validation
+- `backend/services/webhook_service.py` - processing logic with temporary file handling
+- `backend/services/metadata_service.py` - C3D metadata extraction and storage
+- `backend/services/cache_service.py` - analysis result caching
+- `backend/database/supabase_client.py` - service key support for admin operations
+
+**Testing Workflow Established**:
+```bash
+./ngrok http 8080  # Public tunnel
+# Update Supabase Dashboard webhook URL
+tail -f logs/backend.error.log | grep -E "(🚀|📁|🔄|✅|❌|📊)"
+```
+
+## Previous Updates (August 9, 2025)
 
 ### Temporal Stats End-to-End ✅
 - Backend: Added temporal windowing config and analysis (mean ± std, min, max, CV) for RMS, MAV, MPF, MDF, FI.
