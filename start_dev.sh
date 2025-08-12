@@ -2,11 +2,12 @@
 
 # GHOSTLY+ EMG C3D Analyzer Development Startup Script
 #
-# v2.0 - Improved for Robustness and Standard Practices
+# v2.1 - Added ngrok Integration for Webhook Testing
 #
 # This script automates the setup and running of the development environment
 # for the EMG C3D Analyzer, including both the backend API server and the
 # frontend development server. It also handles logging and process management.
+# Optional ngrok integration enables webhook testing for Supabase Storage events.
 
 # --- Script Configuration ---
 # Exit immediately if a command exits with a non-zero status.
@@ -36,7 +37,9 @@ readonly LOG_DIR="$BASE_DIR/$LOG_DIR_NAME"
 readonly PID_FILE="$BASE_DIR/$PID_FILE_NAME"
 BACKEND_PID=""
 FRONTEND_PID=""
+NGROK_PID=""
 FRONTEND_URL=""
+NGROK_URL=""
 
 # --- Logging Functions ---
 # (These are already excellent, no major changes needed)
@@ -75,6 +78,7 @@ Options:
   -k, --kill          Tries to kill processes on ports 8080 and 3000 before starting.
   -d, --clear-cache   Clears data cache directories (uploads, results, cache).
   -l, --keep-logs     Prevents clearing logs on startup.
+  -w, --webhook       Starts ngrok tunnel for webhook testing (requires ngrok installation).
   -h, --help          Show this help message.
 EOF
 }
@@ -273,6 +277,63 @@ start_frontend() {
     cd "$BASE_DIR"
 }
 
+start_ngrok() {
+    log_header "Starting ngrok Tunnel for Webhook Testing"
+    
+    # Check if ngrok is installed
+    if ! command -v ngrok >/dev/null 2>&1; then
+        log_error "ngrok is not installed. Please install ngrok first:"
+        log_error "  1. Sign up at https://ngrok.com/"
+        log_error "  2. Download and install ngrok"
+        log_error "  3. Run: ngrok config add-authtoken YOUR_TOKEN"
+        exit 1
+    fi
+    
+    log_info "Starting ngrok tunnel for port 8080..."
+    local ngrok_log="$LOG_DIR/ngrok.log"
+    local ngrok_err_log="$LOG_DIR/ngrok.error.log"
+    
+    # Start ngrok in background
+    ngrok http 8080 >"$ngrok_log" 2>"$ngrok_err_log" &
+    NGROK_PID=$!
+    echo "$NGROK_PID" >> "$PID_FILE" # Append ngrok PID
+    
+    log_info "Waiting for ngrok tunnel to be ready... (PID: $NGROK_PID)"
+    local ready=false
+    for _ in $(seq 1 15); do # Timeout after 15 seconds
+        # Extract ngrok public URL from log file
+        NGROK_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.ngrok-free\.app' "$ngrok_log" | head -n 1)
+        if [[ -n "$NGROK_URL" ]]; then
+            log_success "ngrok tunnel is ready!"
+            ready=true
+            break
+        fi
+        sleep 1
+    done
+    
+    if [[ "$ready" == false ]]; then
+        log_error "ngrok tunnel failed to start or is taking too long."
+        log_error "Check logs for details: $ngrok_err_log"
+        log_error "Last 10 lines of error log:"
+        tail -n 10 "$ngrok_err_log" | sed "s/^/    ${RED}| ${NC}/"
+        cleanup
+    fi
+    
+    # Display webhook configuration instructions
+    echo ""
+    log_header "Webhook Configuration"
+    echo -e "${BOLD}ngrok Tunnel URL:${NC} $NGROK_URL"
+    echo -e "${BOLD}Webhook Endpoint:${NC} $NGROK_URL/webhooks/storage/c3d-upload"
+    echo ""
+    log_info "Configure this webhook URL in your Supabase Dashboard:"
+    echo -e "  ${YELLOW}1.${NC} Go to your Supabase project dashboard"
+    echo -e "  ${YELLOW}2.${NC} Navigate to Database > Webhooks"
+    echo -e "  ${YELLOW}3.${NC} Set URL to: ${BOLD}$NGROK_URL/webhooks/storage/c3d-upload${NC}"
+    echo -e "  ${YELLOW}4.${NC} Set HTTP method to: ${BOLD}POST${NC}"
+    echo -e "  ${YELLOW}5.${NC} Enable the webhook and test by uploading a C3D file"
+    echo ""
+}
+
 # --- Main Execution ---
 main() {
     # Trap SIGINT (Ctrl+C) and SIGTERM to call cleanup
@@ -283,9 +344,10 @@ main() {
     local KILL_PORTS=false
     local CLEAR_CACHE=false
     local CLEAR_LOGS_ON_START=true
+    local ENABLE_WEBHOOK=false
 
     # Parse arguments with getopts
-    while getopts ":ckdlh-:" opt; do
+    while getopts ":ckdlwh-:" opt; do
         case "${opt}" in
             -) # For long options --foo
                 case "${OPTARG}" in
@@ -293,6 +355,7 @@ main() {
                     kill) KILL_PORTS=true ;;
                     clear-cache) CLEAR_CACHE=true ;;
                     keep-logs) CLEAR_LOGS_ON_START=false ;;
+                    webhook) ENABLE_WEBHOOK=true ;;
                     help) usage; exit 0 ;;
                     *) echo "Invalid option: --${OPTARG}" >&2; usage; exit 1 ;;
                 esac;;
@@ -300,6 +363,7 @@ main() {
             k) KILL_PORTS=true ;;
             d) CLEAR_CACHE=true ;;
             l) CLEAR_LOGS_ON_START=false ;;
+            w) ENABLE_WEBHOOK=true ;;
             h) usage; exit 0 ;;
             \?) echo "Invalid option: -${OPTARG}" >&2; usage; exit 1 ;;
             :) echo "Option -${OPTARG} requires an argument." >&2; usage; exit 1 ;;
@@ -321,11 +385,19 @@ main() {
     # Start services
     start_backend
     start_frontend
+    
+    # Start ngrok tunnel if webhook testing is enabled
+    if [[ "$ENABLE_WEBHOOK" == true ]]; then
+        start_ngrok
+    fi
 
     # --- Keep Alive and Monitor ---
     log_header "Development Environment is Running"
     echo -e "${BOLD}Backend API:${NC}  http://localhost:8080"
     echo -e "${BOLD}Frontend App:${NC} ${FRONTEND_URL:-http://localhost:3000 (assumed)}"
+    if [[ "$ENABLE_WEBHOOK" == true ]]; then
+        echo -e "${BOLD}Webhook URL:${NC}  $NGROK_URL/webhooks/storage/c3d-upload"
+    fi
     echo ""
     log_info "Monitoring server health. Press ${BOLD}Ctrl+C${NC} to stop all services."
 
@@ -339,6 +411,11 @@ main() {
         # Check if frontend is still running (if it was started)
         if [[ -n "$FRONTEND_PID" ]] && ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
             log_error "Frontend process (PID $FRONTEND_PID) has died unexpectedly!"
+            break # Exit loop to trigger cleanup
+        fi
+        # Check if ngrok is still running (if it was started)
+        if [[ -n "$NGROK_PID" ]] && ! kill -0 "$NGROK_PID" 2>/dev/null; then
+            log_error "ngrok process (PID $NGROK_PID) has died unexpectedly!"
             break # Exit loop to trigger cleanup
         fi
         sleep 5

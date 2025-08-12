@@ -28,10 +28,6 @@ const SubjectiveFatigueCard: React.FC<SubjectiveFatigueCardProps> = ({
               <div className="ml-2">
                 <RPEScoreTooltip />
               </div>
-              <div className="ml-3 flex items-center gap-2">
-                <Badge variant="destructive" className="text-[10px] px-2 py-0.5 opacity-90">c3d:x</Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border-slate-300 opacity-90">Fake data</Badge>
-              </div>
             </CardTitle>
           </div>
           <span className={`text-xl font-bold ${fatigueInfo.text}`}>{normalizedFatigue}/10</span>

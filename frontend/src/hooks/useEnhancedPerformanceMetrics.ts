@@ -11,6 +11,7 @@ import {
   Contraction 
 } from '../types/emg';
 import { useSessionStore } from '@/store/sessionStore';
+import { getEffortScoreFromRPE } from '@/lib/effortScore';
 
 // Presets par défaut - Based on GHOSTLY+ TBM Clinical Trial
 export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
@@ -71,19 +72,9 @@ const normalizeGameScore = (
   return Math.max(0, Math.min(100, normalized));
 };
 
-// Fonction pour calculer le score d'effort subjectif
-const calculateEffortScore = (preRPE?: number | null, postRPE?: number | null): number => {
-  if (!preRPE || !postRPE) return 50; // Score neutre si pas de données
-  
-  const change = postRPE - preRPE;
-  
-  // Optimal: changement de +2 à +4
-  if (change >= 2 && change <= 4) return 100;
-  if (change === 1 || change === 5) return 80;
-  if (change === 0 || change === 6) return 60;
-  if (change < 0 || change > 6) return 40;
-  
-  return 50; // Fallback
+// Subjective effort score per clinical spec (post-session RPE only)
+const calculateEffortScore = (_preRPE?: number | null, postRPE?: number | null): number => {
+  return getEffortScoreFromRPE(postRPE);
 };
 
 // Fonction pour calculer le score de compliance BFR

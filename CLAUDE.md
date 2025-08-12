@@ -220,8 +220,36 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
     cd frontend
     npm start         # Start development server with Vite
 
-    # Full Development Environment
-    ./start_dev.sh    # Start both backend and frontend
+    # Standard development (backend + frontend)
+    ./start_dev.sh    # Start both backend (port 8080) and frontend
+    
+    # Development with webhook testing (includes ngrok tunnel)
+    ./start_dev.sh --webhook   # Start backend + frontend + ngrok tunnel
+    ```
+
+*   **Webhook Testing with Integrated ngrok (Required for Supabase Storage Webhooks)**
+    ```bash
+    # One-time setup: Install and configure ngrok
+    # 1. Download ngrok: https://ngrok.com/download
+    # 2. Sign up for free account: https://dashboard.ngrok.com/signup
+    # 3. Get authtoken from: https://dashboard.ngrok.com/get-started/your-authtoken
+    ./ngrok config add-authtoken YOUR_NGROK_TOKEN
+    
+    # Start development environment with webhook testing
+    ./start_dev.sh --webhook
+    # This automatically:
+    # - Starts backend (port 8080)
+    # - Starts frontend (port 3000) 
+    # - Creates ngrok tunnel
+    # - Displays webhook configuration instructions
+    
+    # The script will show you the webhook URL to configure in Supabase:
+    # https://YOUR_NGROK_URL.ngrok-free.app/webhooks/storage/c3d-upload
+    
+    # Monitor real-time webhook activity
+    tail -f logs/backend.error.log | grep -E "(🚀|📁|🔄|✅|❌|📊)"
+    
+    # Test by uploading C3D files to Supabase Storage bucket "c3d-examples"
     ```
 
 *   **Building and Testing**
@@ -280,7 +308,30 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
 - Comparison tab upgraded to show avg ± std with clinical tooltips (MPF, MDF full names).
 
 
-#### **6.2. Latest Update: Acceptance Metrics SoT & Visualization Alignment ✅ (Aug 9, 2025)**
+#### **6.2. Latest Update: Complete Webhook System with ngrok Testing ✅ (Aug 11, 2025)**
+
+**What was implemented**
+- Automated C3D file processing via Supabase Storage webhooks
+- Background processing with database caching for analysis results  
+- Row Level Security (RLS) policies requiring researcher authentication
+- HMAC-SHA256 signature verification for webhook security
+- Complete data format compatibility with existing `/upload` endpoint
+- ngrok tunnel integration for local webhook testing
+- Service key authentication for bypassing RLS in webhook operations
+
+**Key files**
+- `backend/api/webhooks.py` - webhook endpoints with event validation
+- `backend/services/webhook_service.py` - webhook processing logic
+- `backend/services/metadata_service.py` - C3D metadata extraction and storage
+- `backend/services/cache_service.py` - analysis result caching
+- `backend/database/supabase_client.py` - service key support for admin operations
+
+**Testing setup**
+- ngrok tunnel for public webhook access: `./ngrok http 8080`
+- Real-time webhook monitoring with filtered logs
+- Complete integration with Supabase Dashboard file uploads
+
+#### **6.3. Previous Update: Acceptance Metrics SoT & Visualization Alignment ✅ (Aug 9, 2025)**
 
 **What changed**
 - Acceptance metrics are now strictly SoT with backend flags/thresholds.
@@ -294,8 +345,8 @@ The project adheres to a **2-Layer Documentation Strategy**, with Git providing 
 - `frontend/src/hooks/useContractionAnalysis.ts`
 - `frontend/src/components/tabs/SignalPlotsTab/EMGChart.tsx`
 
-#### **6.3. Previous Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
-#### **6.4. TODO: Duration SoT & Real-Time Recalc Data Flow**
+#### **6.4. Previous Update: Configurable Data Retrieval System ✅ (July 31, 2025)**
+#### **6.5. TODO: Duration SoT & Real-Time Recalc Data Flow**
 - Add debounce + cancel for `/recalc` in `useLiveAnalytics` and show pending UI near chart/stats.
 - Extract `getEffectiveDurationThreshold` util and reuse across hook/stats.
 - Key re-renders off `duration_threshold_actual_value` changes.
@@ -306,7 +357,7 @@ Current URGENT files:
 - `memory-bank/tasks/URGENT-2025-08-09-duration-sot-realtime.md`
 - `memory-bank/tasks/URGENT-2025-08-09-compliance-score-averaging.md`
 
-#### **6.5. TODO: Compliance Score Averaging**
+#### **6.6. TODO: Compliance Score Averaging**
 - Left/Right Compliance score should be the arithmetic mean of three subscores (Completion, Intensity, Duration).
 - Update computation and UI labels to ensure the main percentage equals the average of the three displayed sub-metrics.
 
