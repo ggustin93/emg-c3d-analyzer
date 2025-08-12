@@ -40,6 +40,7 @@ from ..config import (
 )
 from ..services.mvc_service import mvc_service, MVCEstimation
 from ..services.export_service import EMGDataExporter
+from .webhooks import router as webhook_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -56,6 +57,9 @@ app.add_middleware(
     allow_methods=CORS_METHODS,
     allow_headers=CORS_HEADERS,
 )
+
+# Include webhook router
+app.include_router(webhook_router)
 
 
 @app.get("/")
@@ -134,12 +138,19 @@ async def upload_file(file: UploadFile = File(...),
             for k, v in result_data['analytics'].items()
         }
 
-        # Extract C3D parameters using the export utility
+        # Extract C3D parameters from processing result
         try:
-            exporter = EMGDataExporter(processor)
-            c3d_params = exporter._extract_c3d_parameters()
+            c3d_params = result_data.get('c3d_parameters', {})
+            if not c3d_params:
+                # Fallback: extract basic parameters from file metadata
+                c3d_params = {
+                    "sampling_rate": result_data.get('sampling_rate'),
+                    "duration": result_data.get('duration'),
+                    "frame_count": result_data.get('frame_count'),
+                    "channel_count": len(result_data.get('analytics', {}))
+                }
         except Exception as e:
-            print(f"Warning: Failed to extract C3D parameters: {str(e)}")
+            logger.warning(f"Failed to extract C3D parameters: {str(e)}")
             c3d_params = {"error": f"Parameter extraction failed: {str(e)}"}
         
         response_model = EMGAnalysisResult(

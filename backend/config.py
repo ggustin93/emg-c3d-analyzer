@@ -101,6 +101,15 @@ DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8080
 LOG_LEVEL = "info"
 
+# --- Database Configuration ---
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+# --- Webhook Configuration ---
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", None)
+PROCESSING_VERSION = "v2.1.0"
+
 # --- Environment Variables ---
 def get_host():
     """Get server host from environment or default."""
@@ -113,6 +122,17 @@ def get_port():
 def get_log_level():
     """Get log level from environment or default."""
     return os.environ.get("LOG_LEVEL", LOG_LEVEL)
+
+def get_settings():
+    """Get application settings as a simple object"""
+    class Settings:
+        SUPABASE_URL = SUPABASE_URL
+        SUPABASE_ANON_KEY = SUPABASE_ANON_KEY
+        SUPABASE_SERVICE_KEY = SUPABASE_SERVICE_KEY
+        WEBHOOK_SECRET = WEBHOOK_SECRET
+        PROCESSING_VERSION = PROCESSING_VERSION
+        
+    return Settings()
 
 # --- Ensure temp directory exists ---
 def ensure_temp_dir():

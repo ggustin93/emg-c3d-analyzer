@@ -1,5 +1,5 @@
 import numpy as np
-from backend.domain.analysis import analyze_contractions
+from backend.emg.emg_analysis import analyze_contractions
 
 
 def synth_signal(with_contraction=True, length=5000, noise=0.001):

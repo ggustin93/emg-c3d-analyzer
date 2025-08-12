@@ -51,11 +51,12 @@ def test_numpy_serialization():
         deserialized = json.loads(json_str)
         print("✅ JSON deserialization successful!")
         
-        return True
+        assert len(json_str) > 0, "JSON string should not be empty"
+        assert deserialized is not None, "Deserialized data should not be None"
         
     except TypeError as e:
         print(f"❌ JSON serialization failed: {e}")
-        return False
+        assert False, f"JSON serialization failed: {e}"
 
 def test_problematic_numpy_types():
     """Test numpy types that would cause serialization issues."""
@@ -71,10 +72,10 @@ def test_problematic_numpy_types():
     try:
         json_str = json.dumps(problematic_data)
         print("✅ No problematic types found!")
-        return True
+        assert len(json_str) >= 2, "JSON string should at least contain '{}'"
     except TypeError as e:
         print(f"❌ Found problematic numpy type: {e}")
-        return False
+        assert False, f"Found problematic numpy type: {e}"
 
 if __name__ == "__main__":
     print("Testing numpy serialization fixes...")
