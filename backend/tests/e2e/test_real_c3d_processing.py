@@ -15,8 +15,11 @@ if str(project_root) not in sys.path:
 
 import asyncio
 import uuid
-from services.enhanced_webhook_service import EnhancedWebhookService
-from services.enhanced_webhook_service import ProcessingParametersData, FutureC3DData
+from backend.services.enhanced_webhook_service import (
+    EnhancedWebhookService,
+    ProcessingParametersData,
+    FutureC3DData,
+)
 from datetime import datetime
 
 async def test_real_c3d_processing():
@@ -25,8 +28,9 @@ async def test_real_c3d_processing():
     # Initialize service
     webhook_service = EnhancedWebhookService()
     
-    # Real C3D file path
-    c3d_file_path = "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+    # Real C3D file path (resolve relative to repo root)
+    repo_root = Path(__file__).resolve().parents[3]
+    c3d_file_path = str(repo_root / "backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d")
     
     if not os.path.exists(c3d_file_path):
         print(f"❌ C3D file not found: {c3d_file_path}")
