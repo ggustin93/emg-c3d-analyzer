@@ -142,3 +142,9 @@ logs/**/*.log
 
 # Local debug tools
 frontend/src/components/debug/
+# Temporary files
+*.pid
+dump.rdb
+.serena/memories/
+logs/
+data/
