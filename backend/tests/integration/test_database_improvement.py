@@ -5,10 +5,12 @@ Tests the KISS two-phase creation pattern with new schema
 """
 import asyncio
 import sys
-import os
+from pathlib import Path
 
-# Add backend to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+# Ensure backend is on sys.path when running directly
+backend_dir = Path(__file__).resolve().parents[2]
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 from backend.services.metadata_service import MetadataService
 

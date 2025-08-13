@@ -2,6 +2,7 @@
 """
 Test webhook with real C3D file by simulating Supabase Storage webhook
 """
+from pathlib import Path
 
 import requests
 import hashlib
@@ -30,8 +31,9 @@ def create_webhook_signature(payload, secret):
 def test_webhook_with_real_file():
     """Test webhook endpoint with real C3D file"""
     
-    # Real C3D file path
-    c3d_file_path = "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+    # Real C3D file path (resolve relative to repo root)
+    repo_root = Path(__file__).resolve().parents[3]
+    c3d_file_path = str(repo_root / "backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d")
     
     if not os.path.exists(c3d_file_path):
         print(f"❌ C3D file not found: {c3d_file_path}")
