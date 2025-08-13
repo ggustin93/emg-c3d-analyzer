@@ -12,7 +12,7 @@ backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from backend.services.metadata_service import MetadataService
+from services.metadata_service import MetadataService
 
 async def test_two_phase_creation():
     """Test the new two-phase creation pattern (metadata → technical data)"""
@@ -70,7 +70,7 @@ async def test_two_phase_creation():
         # Test the view that combines both tables
         print(f"\n📊 Testing combined view...")
         try:
-            from backend.database.supabase_client import get_supabase_client
+            from database.supabase_client import get_supabase_client
             supabase = get_supabase_client(use_service_key=True)
             
             # Test the therapy_sessions_with_technical view

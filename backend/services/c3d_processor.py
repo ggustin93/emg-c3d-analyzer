@@ -36,12 +36,12 @@ import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
-from ..emg.emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms, calculate_temporal_stats
-from ..models.models import GameSessionParameters
-from ..emg.signal_processing import preprocess_emg_signal, get_processing_metadata, ProcessingParameters
+from emg.emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms, calculate_temporal_stats
+from models.models import GameSessionParameters
+from emg.signal_processing import preprocess_emg_signal, get_processing_metadata, ProcessingParameters
 
 # Import configuration
-from ..config import (
+from config import (
     DEFAULT_SAMPLING_RATE,
     DEFAULT_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
@@ -452,7 +452,7 @@ class GHOSTLYC3DProcessor:
                     time_axis = self.emg_data[raw_channel_name]['time_axis']
                     
                     # Import signal processing metadata to include in each processed signal
-                    from ..emg.signal_processing import get_processing_metadata
+                    from emg.signal_processing import get_processing_metadata
                     
                     self.emg_data[processed_channel_name] = {
                         'data': processing_result['processed_signal'].tolist(),

@@ -106,6 +106,12 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
+# --- Redis Cache Configuration ---
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+REDIS_CACHE_TTL_SECONDS = int(os.environ.get("REDIS_CACHE_TTL_SECONDS", "3600"))  # 1 hour
+REDIS_MAX_CACHE_SIZE_MB = int(os.environ.get("REDIS_MAX_CACHE_SIZE_MB", "100"))  # 100MB per entry
+REDIS_KEY_PREFIX = os.environ.get("REDIS_KEY_PREFIX", "emg_analysis")
+
 # --- Webhook Configuration ---
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", None)
 PROCESSING_VERSION = "v2.1.0"
@@ -131,6 +137,12 @@ def get_settings():
         SUPABASE_SERVICE_KEY = SUPABASE_SERVICE_KEY
         WEBHOOK_SECRET = WEBHOOK_SECRET
         PROCESSING_VERSION = PROCESSING_VERSION
+        
+        # Redis Cache Settings
+        REDIS_URL = REDIS_URL
+        REDIS_CACHE_TTL_SECONDS = REDIS_CACHE_TTL_SECONDS
+        REDIS_MAX_CACHE_SIZE_MB = REDIS_MAX_CACHE_SIZE_MB
+        REDIS_KEY_PREFIX = REDIS_KEY_PREFIX
         
     return Settings()
 

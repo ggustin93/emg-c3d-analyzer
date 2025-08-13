@@ -27,19 +27,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ..services.c3d_processor import GHOSTLYC3DProcessor
-from ..models.models import (
+from services.c3d_processor import GHOSTLYC3DProcessor
+from models.models import (
     EMGAnalysisResult, EMGChannelSignalData, ProcessingOptions, GameMetadata, ChannelAnalytics,
     GameSessionParameters, DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW, DEFAULT_MVC_THRESHOLD_PERCENTAGE
 )
-from ..config import (
+from config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
     CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS,
     ensure_temp_dir
 )
-from ..services.mvc_service import mvc_service, MVCEstimation
-from ..services.export_service import EMGDataExporter
+from services.mvc_service import mvc_service, MVCEstimation
+from services.export_service import EMGDataExporter
+from services.performance_scoring_service import PerformanceScoringService, SessionMetrics, ScoringWeights
 from .webhooks import router as webhook_router
 
 # Initialize FastAPI app
@@ -58,8 +59,24 @@ app.add_middleware(
     allow_headers=CORS_HEADERS,
 )
 
-# Include webhook router
+# Include routers
 app.include_router(webhook_router)
+
+# Import and include cache monitoring router
+try:
+    from .cache_monitoring import router as cache_router
+    app.include_router(cache_router)
+    print("✅ Cache monitoring endpoints enabled")
+except ImportError as e:
+    print(f"⚠️ Cache monitoring endpoints disabled: {e}")
+except Exception as e:
+    print(f"⚠️ Error loading cache monitoring: {e}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for container health monitoring."""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
 @app.get("/")
@@ -70,9 +87,17 @@ async def root():
         "version": "1.0.0",
         "description": "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game",
         "endpoints": {
+            "health": "GET /health - Health check endpoint",
             "upload": "POST /upload - Upload and process a C3D file",
             "export": "POST /export - Export comprehensive analysis data as JSON",
             "mvc_estimate": "POST /mvc/estimate - Estimate MVC values for EMG signals",
+            "scores": {
+                "calculate": "POST /scores/calculate - Calculate GHOSTLY+ performance scores",
+                "update_rpe": "POST /scores/update-rpe - Update RPE for a session",
+                "update_game": "POST /scores/update-game - Update game scores for a session",
+                "adherence": "GET /scores/adherence - Get adherence score for a patient",
+                "synthetic": "POST /scores/synthetic - Generate synthetic scoring data"
+            }
         }
     })
 

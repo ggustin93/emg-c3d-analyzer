@@ -39,7 +39,7 @@ Detailed hypotheses for each parameter are documented within the relevant functi
 import numpy as np
 from scipy.signal import welch
 from typing import Dict, Optional, List
-from ..config import (
+from config import (
     DEFAULT_TEMPORAL_WINDOW_SIZE_MS,
     DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE,
     MIN_TEMPORAL_WINDOWS_REQUIRED,

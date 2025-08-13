@@ -1,25 +1,25 @@
 #!/bin/bash
 
-# GHOSTLY+ EMG C3D Analyzer Development Startup Script
+# GHOSTLY+ EMG C3D Analyzer - Containerized Development Startup Script
 #
-# v2.1 - Added ngrok Integration for Webhook Testing
+# v3.0 - Full Docker Container Implementation
 #
-# This script automates the setup and running of the development environment
-# for the EMG C3D Analyzer, including both the backend API server and the
-# frontend development server. It also handles logging and process management.
-# Optional ngrok integration enables webhook testing for Supabase Storage events.
+# This script manages the complete containerized development environment using Docker Compose.
+# All services (backend, frontend, Redis, nginx) run in Docker containers for consistent 
+# development and production parity. Includes automatic cleanup, image management, 
+# and Coolify deployment preparation.
 
 # --- Script Configuration ---
-# Exit immediately if a command exits with a non-zero status.
-set -e
-# Treat unset variables as an error when substituting.
-set -u
-# Pipelines fail if any command in the pipeline fails, not just the last one.
-set -o pipefail
+set -e  # Exit immediately if a command exits with a non-zero status
+set -u  # Treat unset variables as an error when substituting
+set -o pipefail  # Pipelines fail if any command in the pipeline fails
 
 # --- Configuration Variables ---
+readonly PROJECT_NAME="emg-c3d-analyzer"
+readonly COMPOSE_FILE="docker-compose.yml"
+readonly COMPOSE_PROD_FILE="docker-compose.prod.yml"
+readonly COMPOSE_DEV_FILE="docker-compose.dev.yml"
 readonly LOG_DIR_NAME="logs"
-readonly PID_FILE_NAME=".dev_pids"
 readonly DATA_DIR_NAME="data"
 
 # --- ANSI Color Codes ---
@@ -27,22 +27,17 @@ readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[0;33m'
 readonly BLUE='\033[0;34m'
+readonly PURPLE='\033[0;35m'
+readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m' # No Color
 
 # --- Script Globals ---
-# Set base directory to the script's location
 readonly BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 readonly LOG_DIR="$BASE_DIR/$LOG_DIR_NAME"
-readonly PID_FILE="$BASE_DIR/$PID_FILE_NAME"
-BACKEND_PID=""
-FRONTEND_PID=""
-NGROK_PID=""
-FRONTEND_URL=""
-NGROK_URL=""
+readonly DATA_DIR="$BASE_DIR/$DATA_DIR_NAME"
 
 # --- Logging Functions ---
-# (These are already excellent, no major changes needed)
 log_info() {
     echo -e "${BLUE}[$(date +"%H:%M:%S")] ${BOLD}INFO${NC}: $1"
 }
@@ -57,373 +52,586 @@ log_error() {
 }
 log_header() {
     local title="$1"
-    echo -e "\n${YELLOW}${BOLD}--- ${title} ---${NC}"
-    # A simpler way to create the underline
-    echo -e "${YELLOW}${BOLD}$(printf '=%.0s' $(seq 1 ${#title}))===${NC}\n"
+    echo -e "\n${PURPLE}${BOLD}🐳 ${title} 🐳${NC}"
+    echo -e "${PURPLE}${BOLD}$(printf '=%.0s' $(seq 1 $((${#title} + 6))))${NC}\n"
 }
 
 # --- Utility Functions ---
 
+get_compose_file() {
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    elif [[ "${USE_DEV:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_DEV_FILE"
+    fi
+    echo "$compose_file"
+}
+
 usage() {
     cat <<EOF
-GHOSTLY+ EMG C3D Analyzer Development Startup Script
+${BOLD}GHOSTLY+ EMG C3D Analyzer - Containerized Development Environment${NC}
 
-This script automates the setup and running of the development environment.
+This script manages a complete Docker-based development environment with automatic
+container lifecycle management, image cleanup, and production deployment preparation.
 
-Usage:
+${BOLD}Usage:${NC}
   ./start_dev.sh [OPTIONS]
 
-Options:
-  -c, --clean         Forces a clean reinstall of frontend dependencies (removes node_modules).
-  -k, --kill          Tries to kill processes on ports 8080 and 3000 before starting.
-  -d, --clear-cache   Clears data cache directories (uploads, results, cache).
-  -l, --keep-logs     Prevents clearing logs on startup.
-  -w, --webhook       Starts ngrok tunnel for webhook testing (requires ngrok installation).
-  -h, --help          Show this help message.
+${BOLD}Service Management:${NC}
+  ${GREEN}--up${NC}                 Start all development services (default)
+  ${GREEN}--down${NC}               Stop and remove all containers
+  ${GREEN}--restart${NC}            Restart all services  
+  ${GREEN}--rebuild${NC}            Rebuild images and restart services
+  ${GREEN}--status${NC}             Show status of all services
+  ${GREEN}--dev${NC}                Start with hot reload (no rebuild needed for code changes)
+
+${BOLD}Container Management:${NC}
+  ${GREEN}--clean${NC}              Remove all containers, volumes, and networks
+  ${GREEN}--prune${NC}              Remove unused Docker resources (images, containers, networks)
+  ${GREEN}--reset${NC}              Complete reset: stop, clean, rebuild, start
+
+${BOLD}Service Profiles:${NC}
+  ${GREEN}--redis-gui${NC}          Include Redis Insight GUI
+  ${GREEN}--reverse-proxy${NC}      Include Nginx reverse proxy
+  ${GREEN}--full${NC}               Enable all optional services
+
+${BOLD}Production & Deployment:${NC}
+  ${GREEN}--prod${NC}               Use production configuration
+  ${GREEN}--coolify${NC}            Generate Coolify deployment configuration
+  ${GREEN}--build-prod${NC}         Build production images
+
+${BOLD}Development Utilities:${NC}
+  ${GREEN}--logs [service]${NC}     Show logs for service (or all services)
+  ${GREEN}--shell [service]${NC}    Open shell in running container
+  ${GREEN}--test${NC}               Run tests in containers
+
+${BOLD}Data Management:${NC}
+  ${GREEN}--backup-data${NC}        Backup application data
+  ${GREEN}--restore-data${NC}       Restore application data
+  ${GREEN}--clear-data${NC}         Clear application data directories
+
+${BOLD}Examples:${NC}
+  ./start_dev.sh                    # Start basic development environment
+  ./start_dev.sh --full             # Start with all optional services
+  ./start_dev.sh --rebuild --logs   # Rebuild and show logs
+  ./start_dev.sh --prod             # Start production configuration
+  ./start_dev.sh --clean --reset    # Complete environment reset
+
 EOF
 }
 
-cleanup() {
-    log_info "Initiating shutdown..."
-    if [[ -f "$PID_FILE" ]]; then
-        # Read all PIDs into an array
-        mapfile -t pids_to_kill < "$PID_FILE"
-        if (( ${#pids_to_kill[@]} > 0 )); then
-            log_info "Stopping processes with PIDs: ${pids_to_kill[*]}"
-            # Use kill with the list of PIDs. Sends SIGTERM by default.
-            kill "${pids_to_kill[@]}" 2>/dev/null || true
-
-            # Wait a moment for graceful shutdown
-            sleep 1
-
-            # Force kill any that are still running
-            for pid in "${pids_to_kill[@]}"; do
-                if kill -0 "$pid" 2>/dev/null; then
-                    log_warning "Process $pid did not terminate gracefully, sending SIGKILL."
-                    kill -9 "$pid" 2>/dev/null || true
-                fi
-            done
-            log_success "Processes stopped."
-        else
-            log_info "PID file was empty."
-        fi
-        rm -f "$PID_FILE"
-    else
-        log_info "No PID file found. Cleanup complete."
+check_docker() {
+    log_info "Checking Docker installation..."
+    
+    if ! command -v docker >/dev/null 2>&1; then
+        log_error "Docker is not installed. Please install Docker Desktop first:"
+        log_error "  macOS: https://docs.docker.com/desktop/mac/"
+        log_error "  Linux: https://docs.docker.com/engine/install/"
+        log_error "  Windows: https://docs.docker.com/desktop/windows/"
+        exit 1
     fi
-    log_success "Development environment shutdown complete."
-    exit 0
+    
+    if ! command -v docker-compose >/dev/null 2>&1 && ! docker compose version >/dev/null 2>&1; then
+        log_error "Docker Compose is not available. Please ensure Docker Desktop is running."
+        exit 1
+    fi
+    
+    if ! docker info >/dev/null 2>&1; then
+        log_error "Docker daemon is not running. Please start Docker Desktop."
+        exit 1
+    fi
+    
+    log_success "Docker is ready"
 }
 
-clear_data_cache() {
-    log_header "Clearing Data Cache"
-    local data_base_dir="$BASE_DIR/$DATA_DIR_NAME"
-    local dirs_to_clear=("uploads" "results" "cache" "plots" "temp_uploads")
-
-    for dir in "${dirs_to_clear[@]}"; do
-        local full_path="$data_base_dir/$dir"
-        if [[ -d "$full_path" ]]; then
-            log_info "Clearing '$dir' directory..."
-            # Use a glob to remove contents, safer than `rm -rf path/*`
-            rm -rf "$full_path"/{*,.*} 2>/dev/null || true
-            log_success "'$dir' directory cleared."
-        else
-            log_info "'$dir' directory does not exist, skipping."
-        fi
-    done
-    mkdir -p "$data_base_dir"
-    log_success "Data cache clearing completed."
-}
-
-clear_logs() {
-    log_header "Clearing Log Files"
-    if [[ -d "$LOG_DIR" ]]; then
-        log_info "Clearing log files in '$LOG_DIR'..."
-        find "$LOG_DIR" -name "*.log" -type f -delete
-        log_success "Log files cleared."
-    fi
-    # Also clear backend.log in the root directory if it exists
-    if [[ -f "$BASE_DIR/backend.log" ]]; then
-        log_info "Clearing legacy backend.log in project root..."
-        rm -f "$BASE_DIR/backend.log"
-    fi
-    mkdir -p "$LOG_DIR"
-    log_success "Log clearing completed."
-}
-
-check_and_kill_port() {
-    local port="$1"
-    local name="$2"
-    local force_kill="${3:-false}"
-
-    log_info "Checking if port $port ($name) is in use..."
-    # Use -P and -n to speed up lsof
-    local pids
-    pids=$(lsof -t -i:"$port" -P -n) || true # `|| true` prevents exit on no-match from `set -e`
-
-    if [[ -n "$pids" ]]; then
-        if [[ "$force_kill" == true ]]; then
-            log_warning "Port $port ($name) is in use by PID(s): $pids. Attempting to kill..."
-            # Kill all PIDs at once
-            kill -9 $pids 2>/dev/null || true
-            sleep 0.5 # Give OS time to release port
-            log_success "Port $port ($name) is now free."
-        else
-            log_error "Port $port ($name) is already in use by PID(s): $pids."
-            log_error "Please free it up or run script with '--kill' (-k) to force termination."
+check_environment() {
+    log_header "Environment Validation"
+    
+    # Check required files
+    local required_files=("$COMPOSE_FILE" "backend/Dockerfile" "frontend/Dockerfile")
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$BASE_DIR/$file" ]]; then
+            log_error "Required file missing: $file"
             exit 1
         fi
-    else
-        log_success "Port $port ($name) is available."
-    fi
-}
-
-start_backend() {
-    log_header "Starting Backend API Server"
-    check_and_kill_port 8080 "Backend" "$KILL_PORTS"
-
-    log_info "Ensuring backend dependencies are installed..."
-    # Use `if ! command` for cleaner logic with `set -e`
-    if ! poetry check >/dev/null 2>&1; then
-        log_warning "Poetry check failed or dependencies missing. Running 'poetry install'."
-        poetry install
-    fi
-
-    log_info "Starting Uvicorn server for the backend..."
-    local backend_log="$LOG_DIR/backend.log"
-    local backend_err_log="$LOG_DIR/backend.error.log"
-
-    # Start in background, redirecting output
-    poetry run python -m uvicorn backend.api.api:app --host 0.0.0.0 --port 8080 --reload --reload-dir backend \
-        >"$backend_log" 2>"$backend_err_log" &
-    BACKEND_PID=$!
-    echo "$BACKEND_PID" > "$PID_FILE" # Overwrite PID file with the first PID
-
-    log_success "Backend server started with PID $BACKEND_PID."
-    log_info "Logs: $backend_log (out), $backend_err_log (err)"
-}
-
-start_frontend() {
-    log_header "Starting Frontend Development Server"
-    local frontend_dir="$BASE_DIR/frontend"
-
-    if [[ ! -d "$frontend_dir" ]]; then
-        log_warning "Frontend directory not found, skipping frontend server startup."
-        return
-    fi
-
-    # Always kill the frontend port, as dev servers can get stuck
-    check_and_kill_port 3000 "Frontend" true
-
-    cd "$frontend_dir"
-
-    local frontend_log="$LOG_DIR/frontend.log"
-    local frontend_err_log="$LOG_DIR/frontend.error.log"
-
-    if [[ "$CLEAN_INSTALL" == true ]]; then
-        log_warning "Performing a clean install of frontend dependencies (--clean)..."
-        rm -rf node_modules package-lock.json
-    fi
-
-    log_info "Ensuring frontend dependencies are installed..."
-    # npm ci is faster and more reliable if a lockfile exists
-    if [[ -f "package-lock.json" ]]; then
-        log_info "Using 'npm ci' for fast, clean installation from lockfile."
-        npm ci --silent >"$frontend_log" 2>"$frontend_err_log"
-    else
-        log_warning "No package-lock.json found. Using 'npm install'."
-        npm install --silent >"$frontend_log" 2>"$frontend_err_log"
-    fi
-    log_success "Frontend dependencies are up to date."
-
-    # Determine start script
-    local start_script
-    if grep -q '"dev"' package.json; then
-        start_script="dev"
-    elif grep -q '"start"' package.json; then
-        start_script="start"
-    else
-        log_error "No 'start' or 'dev' script found in frontend/package.json"
-        exit 1
-    fi
-
-    log_info "Starting frontend server with 'npm run $start_script'..."
-    npm run "$start_script" >>"$frontend_log" 2>>"$frontend_err_log" &
-    FRONTEND_PID=$!
-    echo "$FRONTEND_PID" >> "$PID_FILE" # Append second PID
-
-    # Wait for frontend to be ready by polling the log file, instead of a fixed sleep
-    log_info "Waiting for frontend server to be ready... (PID: $FRONTEND_PID)"
-    local ready=false
-    for _ in $(seq 1 30); do # Timeout after 30 seconds
-        # Most dev servers (Vite, Next, CRA) print a URL with "localhost" or the local IP
-        FRONTEND_URL=$(grep -o 'http://[0-9a-zA-Z.:-]*[0-9]\{4\}' "$frontend_log" | grep -E 'localhost|127.0.0.1' | head -n 1)
-        if [[ -n "$FRONTEND_URL" ]]; then
-            log_success "Frontend server is ready!"
-            ready=true
-            break
-        fi
-        sleep 1
-    done
-
-    if [[ "$ready" == false ]]; then
-        log_error "Frontend server failed to start or is taking too long."
-        log_error "Check logs for details: $frontend_err_log"
-        log_error "Last 10 lines of error log:"
-        tail -n 10 "$frontend_err_log" | sed "s/^/    ${RED}| ${NC}/"
-        cleanup
-    fi
-
-    cd "$BASE_DIR"
-}
-
-start_ngrok() {
-    log_header "Starting ngrok Tunnel for Webhook Testing"
-    
-    # Check if ngrok is installed
-    if ! command -v ngrok >/dev/null 2>&1; then
-        log_error "ngrok is not installed. Please install ngrok first:"
-        log_error "  1. Sign up at https://ngrok.com/"
-        log_error "  2. Download and install ngrok"
-        log_error "  3. Run: ngrok config add-authtoken YOUR_TOKEN"
-        exit 1
-    fi
-    
-    log_info "Starting ngrok tunnel for port 8080..."
-    local ngrok_log="$LOG_DIR/ngrok.log"
-    local ngrok_err_log="$LOG_DIR/ngrok.error.log"
-    
-    # Start ngrok in background
-    ngrok http 8080 >"$ngrok_log" 2>"$ngrok_err_log" &
-    NGROK_PID=$!
-    echo "$NGROK_PID" >> "$PID_FILE" # Append ngrok PID
-    
-    log_info "Waiting for ngrok tunnel to be ready... (PID: $NGROK_PID)"
-    local ready=false
-    for _ in $(seq 1 15); do # Timeout after 15 seconds
-        # Extract ngrok public URL from log file
-        NGROK_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.ngrok-free\.app' "$ngrok_log" | head -n 1)
-        if [[ -n "$NGROK_URL" ]]; then
-            log_success "ngrok tunnel is ready!"
-            ready=true
-            break
-        fi
-        sleep 1
     done
     
-    if [[ "$ready" == false ]]; then
-        log_error "ngrok tunnel failed to start or is taking too long."
-        log_error "Check logs for details: $ngrok_err_log"
-        log_error "Last 10 lines of error log:"
-        tail -n 10 "$ngrok_err_log" | sed "s/^/    ${RED}| ${NC}/"
-        cleanup
+    # Check for .env file
+    if [[ ! -f "$BASE_DIR/.env" ]]; then
+        log_warning "No .env file found. Creating template..."
+        create_env_template
     fi
     
-    # Display webhook configuration instructions
+    # Create necessary directories
+    mkdir -p "$LOG_DIR" "$DATA_DIR"/{uploads,results,cache,plots,temp_uploads}
+    
+    log_success "Environment validation complete"
+}
+
+create_env_template() {
+    cat > "$BASE_DIR/.env.example" <<EOF
+# EMG C3D Analyzer Environment Configuration
+# Copy to .env and configure for your environment
+
+# Supabase Configuration
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_KEY=your_supabase_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Application Settings
+ENVIRONMENT=development
+DEBUG=true
+LOG_LEVEL=INFO
+SECRET_KEY=your_secret_key_here
+WEBHOOK_SECRET=your_webhook_secret_here
+
+# Frontend Configuration
+FRONTEND_URL=http://localhost:3000
+FRONTEND_PORT=3000
+BACKEND_URL=http://localhost:8080
+BACKEND_PORT=8080
+
+# Redis Configuration
+REDIS_CACHE_TTL_SECONDS=3600
+REDIS_MAX_CACHE_SIZE_MB=100
+REDIS_MAX_MEMORY=256mb
+
+# Production Settings (for --prod mode)
+VERSION=latest
+BACKEND_WORKERS=2
+SENTRY_DSN=
+EOF
+    
+    if [[ ! -f "$BASE_DIR/.env" ]]; then
+        cp "$BASE_DIR/.env.example" "$BASE_DIR/.env"
+        log_warning "Created .env file. Please configure your environment variables."
+    fi
+}
+
+cleanup_containers() {
+    log_header "Container Cleanup"
+    
+    local compose_file="$(get_compose_file)"
+    
+    # Stop and remove containers
+    if docker-compose -f "$compose_file" ps -q >/dev/null 2>&1; then
+        log_info "Stopping containers..."
+        docker-compose -f "$compose_file" down --remove-orphans 2>/dev/null || true
+    fi
+    
+    # Remove project-specific containers
+    local containers=$(docker ps -aq --filter "label=com.docker.compose.project=$PROJECT_NAME" 2>/dev/null)
+    if [[ -n "$containers" ]]; then
+        log_info "Removing remaining project containers..."
+        docker rm -f $containers 2>/dev/null || true
+    fi
+    
+    log_success "Container cleanup complete"
+}
+
+prune_docker_resources() {
+    log_header "Docker Resource Cleanup"
+    
+    log_info "Removing unused Docker resources..."
+    
+    # Prune containers
+    docker container prune -f >/dev/null 2>&1 || true
+    
+    # Prune images (keep base images)
+    docker image prune -f >/dev/null 2>&1 || true
+    
+    # Prune networks
+    docker network prune -f >/dev/null 2>&1 || true
+    
+    # Show disk space saved
+    log_success "Docker resource cleanup complete"
+    docker system df
+}
+
+clean_all() {
+    log_header "Complete Environment Cleanup"
+    
+    cleanup_containers
+    
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    
+    # Remove volumes
+    log_info "Removing Docker volumes..."
+    docker-compose -f "$compose_file" down -v 2>/dev/null || true
+    
+    # Remove project images
+    local images=$(docker images --filter "reference=*$PROJECT_NAME*" -q 2>/dev/null)
+    if [[ -n "$images" ]]; then
+        log_info "Removing project images..."
+        docker rmi -f $images 2>/dev/null || true
+    fi
+    
+    # Remove networks
+    local networks=$(docker network ls --filter "name=$PROJECT_NAME" -q 2>/dev/null)
+    if [[ -n "$networks" ]]; then
+        log_info "Removing project networks..."
+        docker network rm $networks 2>/dev/null || true
+    fi
+    
+    prune_docker_resources
+    log_success "Complete cleanup finished"
+}
+
+build_services() {
+    log_header "Building Services"
+    
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    local build_args=""
+    
+    # Add profiles if requested
+    if [[ "${REDIS_GUI:-false}" == "true" ]]; then
+        build_args="$build_args --profile redis-gui"
+    fi
+    
+    if [[ "${REVERSE_PROXY:-false}" == "true" ]]; then
+        build_args="$build_args --profile reverse-proxy"
+    fi
+    
+    log_info "Building Docker images..."
+    docker-compose -f "$compose_file" $build_args build --no-cache
+    
+    log_success "Build complete"
+}
+
+start_services() {
+    log_header "Starting Development Environment"
+    
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    local up_args="-d"
+    
+    # Add profiles if requested
+    if [[ "${REDIS_GUI:-false}" == "true" ]]; then
+        up_args="$up_args --profile redis-gui"
+    fi
+    
+    if [[ "${REVERSE_PROXY:-false}" == "true" ]]; then
+        up_args="$up_args --profile reverse-proxy"
+    fi
+    
+    log_info "Starting containers..."
+    docker-compose -f "$compose_file" up $up_args
+    
+    # Wait for services to be healthy
+    log_info "Waiting for services to become healthy..."
+    local max_attempts=30
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        if check_services_health; then
+            break
+        fi
+        ((attempt++))
+        sleep 2
+    done
+    
+    if [[ $attempt -ge $max_attempts ]]; then
+        log_warning "Some services may not be fully ready. Check logs if needed."
+    fi
+    
+    show_service_status
+    log_success "Development environment started"
+}
+
+check_services_health() {
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    local unhealthy_services=()
+    
+    # Check if services are running and healthy
+    local services=$(docker-compose -f "$compose_file" ps --services 2>/dev/null)
+    for service in $services; do
+        local status=$(docker-compose -f "$compose_file" ps -q "$service" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null)
+        if [[ "$status" != "healthy" && "$status" != "" ]]; then
+            unhealthy_services+=("$service")
+        fi
+    done
+    
+    return ${#unhealthy_services[@]}
+}
+
+show_service_status() {
+    log_header "Service Status"
+    
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    
+    # Show container status
+    docker-compose -f "$compose_file" ps
+    
     echo ""
-    log_header "Webhook Configuration"
-    echo -e "${BOLD}ngrok Tunnel URL:${NC} $NGROK_URL"
-    echo -e "${BOLD}Webhook Endpoint:${NC} $NGROK_URL/webhooks/storage/c3d-upload"
+    log_info "${BOLD}Service URLs:${NC}"
+    
+    if [[ "${REVERSE_PROXY:-false}" == "true" ]]; then
+        echo -e "  ${CYAN}🌐 Application:${NC}     http://localhost"
+        echo -e "  ${CYAN}🔗 Backend API:${NC}     http://localhost/api"
+    else
+        echo -e "  ${CYAN}🌐 Frontend:${NC}        http://localhost:3000"
+        echo -e "  ${CYAN}🔗 Backend API:${NC}     http://localhost:8080"
+    fi
+    
+    echo -e "  ${CYAN}📊 Redis Cache:${NC}     redis://localhost:6379"
+    
+    if [[ "${REDIS_GUI:-false}" == "true" ]]; then
+        echo -e "  ${CYAN}🖥️  Redis Insight:${NC}   http://localhost:5540"
+    fi
+    
     echo ""
-    log_info "Configure this webhook URL in your Supabase Dashboard:"
-    echo -e "  ${YELLOW}1.${NC} Go to your Supabase project dashboard"
-    echo -e "  ${YELLOW}2.${NC} Navigate to Database > Webhooks"
-    echo -e "  ${YELLOW}3.${NC} Set URL to: ${BOLD}$NGROK_URL/webhooks/storage/c3d-upload${NC}"
-    echo -e "  ${YELLOW}4.${NC} Set HTTP method to: ${BOLD}POST${NC}"
-    echo -e "  ${YELLOW}5.${NC} Enable the webhook and test by uploading a C3D file"
-    echo ""
+    log_info "Use ${BOLD}Ctrl+C${NC} to stop, or run ${BOLD}./start_dev.sh --down${NC}"
+}
+
+show_logs() {
+    local service="${1:-}"
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    
+    if [[ -n "$service" ]]; then
+        log_info "Showing logs for service: $service"
+        docker-compose -f "$compose_file" logs -f "$service"
+    else
+        log_info "Showing logs for all services (use Ctrl+C to exit)"
+        docker-compose -f "$compose_file" logs -f
+    fi
+}
+
+open_shell() {
+    local service="${1:-backend}"
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    
+    log_info "Opening shell in $service container..."
+    
+    if docker-compose -f "$compose_file" ps -q "$service" >/dev/null 2>&1; then
+        docker-compose -f "$compose_file" exec "$service" /bin/bash || \
+        docker-compose -f "$compose_file" exec "$service" /bin/sh
+    else
+        log_error "Service $service is not running"
+        exit 1
+    fi
+}
+
+run_tests() {
+    log_header "Running Tests"
+    
+    local compose_file="$COMPOSE_FILE"
+    if [[ "${USE_PROD:-false}" == "true" ]]; then
+        compose_file="$COMPOSE_PROD_FILE"
+    fi
+    
+    # Backend tests
+    log_info "Running backend tests..."
+    docker-compose -f "$compose_file" exec backend python -m pytest tests/ -v || true
+    
+    # Frontend tests  
+    log_info "Running frontend tests..."
+    docker-compose -f "$compose_file" exec frontend npm test -- --run || true
+    
+    log_success "Test execution complete"
+}
+
+generate_coolify_config() {
+    log_header "Generating Coolify Configuration"
+    
+    cat > "$BASE_DIR/coolify.yaml" <<EOF
+# Coolify Deployment Configuration
+# EMG C3D Analyzer - Production Ready
+
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      - SUPABASE_URL=\${SUPABASE_URL}
+      - SUPABASE_KEY=\${SUPABASE_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=\${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379/0
+    labels:
+      - "coolify.managed=true"
+      - "coolify.name=emg-backend"
+      - "coolify.type=application"
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      - REACT_APP_SUPABASE_URL=\${SUPABASE_URL}
+      - REACT_APP_SUPABASE_ANON_KEY=\${SUPABASE_ANON_KEY}
+    labels:
+      - "coolify.managed=true"
+      - "coolify.name=emg-frontend"
+      - "coolify.type=application"
+      - "coolify.port=8080"
+
+  redis:
+    image: redis:7.2-alpine
+    labels:
+      - "coolify.managed=true"
+      - "coolify.name=emg-redis"
+      - "coolify.type=database"
+EOF
+    
+    log_success "Coolify configuration generated: coolify.yaml"
+    log_info "Upload this configuration to your Coolify instance"
 }
 
 # --- Main Execution ---
 main() {
-    # Trap SIGINT (Ctrl+C) and SIGTERM to call cleanup
-    trap cleanup SIGINT SIGTERM
-
     # Default options
-    local CLEAN_INSTALL=false
-    local KILL_PORTS=false
-    local CLEAR_CACHE=false
-    local CLEAR_LOGS_ON_START=true
-    local ENABLE_WEBHOOK=false
-
-    # Parse arguments with getopts
-    while getopts ":ckdlwh-:" opt; do
-        case "${opt}" in
-            -) # For long options --foo
-                case "${OPTARG}" in
-                    clean) CLEAN_INSTALL=true ;;
-                    kill) KILL_PORTS=true ;;
-                    clear-cache) CLEAR_CACHE=true ;;
-                    keep-logs) CLEAR_LOGS_ON_START=false ;;
-                    webhook) ENABLE_WEBHOOK=true ;;
-                    help) usage; exit 0 ;;
-                    *) echo "Invalid option: --${OPTARG}" >&2; usage; exit 1 ;;
-                esac;;
-            c) CLEAN_INSTALL=true ;;
-            k) KILL_PORTS=true ;;
-            d) CLEAR_CACHE=true ;;
-            l) CLEAR_LOGS_ON_START=false ;;
-            w) ENABLE_WEBHOOK=true ;;
-            h) usage; exit 0 ;;
-            \?) echo "Invalid option: -${OPTARG}" >&2; usage; exit 1 ;;
-            :) echo "Option -${OPTARG} requires an argument." >&2; usage; exit 1 ;;
-        esac
-    done
-
-    # Prepare environment
-    if [[ "$CLEAR_CACHE" == true ]]; then clear_data_cache; fi
-    if [[ "$CLEAR_LOGS_ON_START" == true ]]; then
-        clear_logs
-    else
-        log_info "Log clearing disabled (--keep-logs)."
-        mkdir -p "$LOG_DIR"
-    fi
-
-    # Clear previous PID file
-    rm -f "$PID_FILE"
-
-    # Start services
-    start_backend
-    start_frontend
+    local ACTION="up"
+    local REDIS_GUI=false
+    local REVERSE_PROXY=false
+    local USE_PROD=false
+    local USE_DEV=false
+    local REBUILD=false
+    local CLEAN=false
+    local PRUNE=false
+    local RESET=false
+    local SHOW_LOGS=false
+    local LOGS_SERVICE=""
+    local OPEN_SHELL=false
+    local SHELL_SERVICE="backend"
+    local RUN_TESTS=false
+    local GENERATE_COOLIFY=false
     
-    # Start ngrok tunnel if webhook testing is enabled
-    if [[ "$ENABLE_WEBHOOK" == true ]]; then
-        start_ngrok
-    fi
-
-    # --- Keep Alive and Monitor ---
-    log_header "Development Environment is Running"
-    echo -e "${BOLD}Backend API:${NC}  http://localhost:8080"
-    echo -e "${BOLD}Frontend App:${NC} ${FRONTEND_URL:-http://localhost:3000 (assumed)}"
-    if [[ "$ENABLE_WEBHOOK" == true ]]; then
-        echo -e "${BOLD}Webhook URL:${NC}  $NGROK_URL/webhooks/storage/c3d-upload"
-    fi
-    echo ""
-    log_info "Monitoring server health. Press ${BOLD}Ctrl+C${NC} to stop all services."
-
-    # Robust monitoring loop
-    while true; do
-        # Check if backend is still running
-        if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
-            log_error "Backend process (PID $BACKEND_PID) has died unexpectedly!"
-            break # Exit loop to trigger cleanup
-        fi
-        # Check if frontend is still running (if it was started)
-        if [[ -n "$FRONTEND_PID" ]] && ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
-            log_error "Frontend process (PID $FRONTEND_PID) has died unexpectedly!"
-            break # Exit loop to trigger cleanup
-        fi
-        # Check if ngrok is still running (if it was started)
-        if [[ -n "$NGROK_PID" ]] && ! kill -0 "$NGROK_PID" 2>/dev/null; then
-            log_error "ngrok process (PID $NGROK_PID) has died unexpectedly!"
-            break # Exit loop to trigger cleanup
-        fi
-        sleep 5
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --up) ACTION="up" ;;
+            --down) ACTION="down" ;;
+            --restart) ACTION="restart" ;;
+            --rebuild) REBUILD=true ;;
+            --status) ACTION="status" ;;
+            --clean) CLEAN=true ;;
+            --prune) PRUNE=true ;;
+            --reset) RESET=true ;;
+            --dev) USE_DEV=true ;;
+            --redis-gui) REDIS_GUI=true ;;
+            --reverse-proxy) REVERSE_PROXY=true ;;
+            --full) REDIS_GUI=true; REVERSE_PROXY=true ;;
+            --prod) USE_PROD=true ;;
+            --coolify) GENERATE_COOLIFY=true ;;
+            --build-prod) USE_PROD=true; REBUILD=true ;;
+            --logs) 
+                SHOW_LOGS=true
+                if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
+                    LOGS_SERVICE="$2"
+                    shift
+                fi
+                ;;
+            --shell)
+                OPEN_SHELL=true
+                if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
+                    SHELL_SERVICE="$2"
+                    shift
+                fi
+                ;;
+            --test) RUN_TESTS=true ;;
+            --clear-data) 
+                rm -rf "$DATA_DIR"/{uploads,results,cache,plots,temp_uploads}/* 2>/dev/null || true
+                log_success "Application data cleared"
+                exit 0
+                ;;
+            -h|--help) usage; exit 0 ;;
+            *) log_error "Unknown option: $1"; usage; exit 1 ;;
+        esac
+        shift
     done
-
-    log_warning "One or more services stopped. Shutting down the environment."
-    cleanup
+    
+    # Trap signals for cleanup
+    trap cleanup_containers SIGINT SIGTERM
+    
+    # Pre-flight checks
+    check_docker
+    check_environment
+    
+    # Handle special actions first
+    if [[ "$GENERATE_COOLIFY" == "true" ]]; then
+        generate_coolify_config
+        exit 0
+    fi
+    
+    if [[ "$RESET" == "true" ]]; then
+        log_warning "This will completely reset your Docker environment. Continue? [y/N]"
+        read -r response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            clean_all
+            build_services
+            start_services
+        fi
+        exit 0
+    fi
+    
+    if [[ "$CLEAN" == "true" ]]; then
+        clean_all
+        exit 0
+    fi
+    
+    if [[ "$PRUNE" == "true" ]]; then
+        prune_docker_resources
+        exit 0
+    fi
+    
+    if [[ "$SHOW_LOGS" == "true" ]]; then
+        show_logs "$LOGS_SERVICE"
+        exit 0
+    fi
+    
+    if [[ "$OPEN_SHELL" == "true" ]]; then
+        open_shell "$SHELL_SERVICE"
+        exit 0
+    fi
+    
+    if [[ "$RUN_TESTS" == "true" ]]; then
+        run_tests
+        exit 0
+    fi
+    
+    # Handle main actions
+    case "$ACTION" in
+        up)
+            if [[ "$REBUILD" == "true" ]]; then
+                build_services
+            fi
+            start_services
+            ;;
+        down)
+            cleanup_containers
+            ;;
+        restart)
+            cleanup_containers
+            sleep 2
+            start_services
+            ;;
+        status)
+            show_service_status
+            ;;
+    esac
 }
 
-# Run the main function with all script arguments
+# Run main function with all script arguments
 main "$@"

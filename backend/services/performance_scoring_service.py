@@ -23,7 +23,7 @@ from typing import Dict, Optional, List, Tuple
 from dataclasses import dataclass
 import numpy as np
 
-from ..database.supabase_client import get_supabase_client
+from database.supabase_client import get_supabase_client
 
 logger = logging.getLogger(__name__)
 

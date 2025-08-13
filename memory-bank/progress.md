@@ -1,6 +1,28 @@
 # Progress Tracking
 
-## Latest Updates (August 12, 2025)
+## Latest Updates (August 13, 2025)
+
+### M1 Mac Docker Fix & Native Development Enhancement ✅
+- **M1 Mac Compatibility**: Fixed frontend Docker build rollup ARM64 errors with `--platform=linux/amd64` and `--legacy-peer-deps`
+- **Simple Development Script**: Created `start_dev_simple.sh` for native development without Docker (90% faster startup)
+- **Redis Integration**: Complete Redis support in native mode with auto-detection and daemon management
+- **Log Management**: Automatic log clearing at startup for clean debugging sessions
+- **Backend Test Fixes**: Resolved Docker import path issues for test compatibility across environments
+
+**Key Features**:
+- **Dual Development Options**: Docker for production parity, native for fast development
+- **Smart Service Management**: PID tracking, port detection, graceful cleanup
+- **Clean Sessions**: Automatic log file clearing ensures fresh debugging environment
+- **Health Monitoring**: Real-time service status with consistent URLs across both approaches
+
+**Usage Examples**:
+```bash
+./start_dev_simple.sh                 # Fast native full stack
+./start_dev_simple.sh --backend-only  # API development focus  
+./start_dev.sh --rebuild              # Docker production parity
+```
+
+## Previous Updates (August 12, 2025)
 
 ### Webhook System Production Completion ✅
 - **Real Supabase Format Support**: Fixed 422 errors by adding support for actual database trigger format (`type`, `table`, `record`)

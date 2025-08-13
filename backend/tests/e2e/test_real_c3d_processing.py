@@ -15,7 +15,7 @@ if str(project_root) not in sys.path:
 
 import asyncio
 import uuid
-from backend.services.enhanced_webhook_service import (
+from services.enhanced_webhook_service import (
     EnhancedWebhookService,
     ProcessingParametersData,
     FutureC3DData,

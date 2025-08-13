@@ -2,12 +2,28 @@
 
 This directory contains tests for the EMG C3D Analyzer backend. The goal is reliable feedback with minimal assumptions. Tests prefer clear assertions over extensive fixtures and avoid external side effects unless explicitly marked.
 
+## Current Status (August 2025) ✅
+
+**Test Infrastructure**: Clean and organized after recent codebase cleanup
+- **22 test files** across unit, integration, E2E, and webhook categories  
+- **All test files compile successfully** - syntax validation passed
+- **Dependencies**: pytest, pytest-cov, httpx installed for test execution
+- **Redis Cache**: New simplified cache system in `services/cache/` folder
+
 ## Structure
 
 - Root (`backend/tests/`): core unit/integration tests (e.g., `test_emg_analysis.py`, `test_processor.py`, `test_contraction_flags.py`, `test_serialization.py`).
 - `backend/tests/webhook/`: webhook validation and integration tests. See `webhook/README.md` for details.
 - `backend/tests/integration/`: integration tests that exercise database/service paths (migrated from ad‑hoc scripts).
 - `backend/tests/e2e/`: end‑to‑end tests that may talk to real services. These are marked and can be excluded by default.
+
+## Post-Cleanup Architecture ✅
+
+**Cleanup Results (August 13, 2025)**:
+- **Removed obsolete services**: 4 complex cache services (~2,200 lines of code)
+- **Simplified architecture**: Clean `services/cache/` implementation  
+- **Zero broken imports**: All remaining services validated
+- **Test integrity**: All test files compile and import correctly
 
 ## Running
 

@@ -8,15 +8,15 @@ from typing import Dict, List, Optional, Any
 from uuid import UUID, uuid4
 import json
 
-from ..database.supabase_client import get_supabase_client
-from ..config import get_settings
+from database.supabase_client import get_supabase_client
+from config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
 class CacheService:
-    """Service for caching and retrieving EMG analysis results"""
+    """Service for caching EMG analysis results in therapy_sessions (KISS: single table)"""
     
     def __init__(self):
         self.supabase = get_supabase_client(use_service_key=True)  # Use service key for admin operations
@@ -24,51 +24,46 @@ class CacheService:
     
     async def cache_analysis_results(
         self,
-        c3d_metadata_id: UUID,
+        session_id: UUID,
         file_hash: str,
         analysis_result: Dict[str, Any],
         processing_params: Optional[Dict[str, Any]] = None,
         processing_time_ms: Optional[int] = None
     ) -> UUID:
         """
-        Cache processed analysis results
+        Cache processed analysis results in therapy_sessions (KISS: single table)
         
         Args:
-            c3d_metadata_id: UUID of C3D metadata entry
+            session_id: UUID of therapy session
             file_hash: SHA-256 hash of source file
             analysis_result: Complete EMG analysis results
             processing_params: Parameters used for processing (MVC values, thresholds)
             processing_time_ms: Time taken to process in milliseconds
             
         Returns:
-            UUID of cached entry
+            UUID of session with cached data
         """
-        cache_id = uuid4()
-        
         try:
-            # Extract clinical metrics for quick queries
-            clinical_metrics = self._extract_clinical_metrics(analysis_result)
-            
-            # Prepare cache entry
-            cache_entry = {
-                "id": str(cache_id),
-                "c3d_metadata_id": str(c3d_metadata_id),
-                "file_hash": file_hash,
-                "processing_version": settings.PROCESSING_VERSION,
+            # Prepare cached data for therapy_sessions
+            cache_data = {
+                "analytics": analysis_result,
                 "processing_params": processing_params or {},
-                "analytics_data": analysis_result,
-                "processing_time_ms": processing_time_ms,
-                "expires_at": (datetime.utcnow() + timedelta(days=self.default_expiry_days)).isoformat()
+                "processing_version": settings.PROCESSING_VERSION,
+                "cached_at": datetime.utcnow().isoformat()
             }
             
-            # Add clinical metrics
-            cache_entry.update(clinical_metrics)
+            update_data = {
+                "analytics_cache": cache_data,
+                "processing_time_ms": processing_time_ms,
+                "cache_hits": 0,
+                "last_accessed_at": datetime.utcnow().isoformat()
+            }
             
-            # Insert into database
-            result = self.supabase.table("analysis_results").insert(cache_entry).execute()
+            # Update therapy session with cached data (KISS: single table)
+            result = self.supabase.table("therapy_sessions").update(update_data).eq("id", str(session_id)).execute()
             
-            logger.info(f"Cached analysis results for file hash: {file_hash[:16]}...")
-            return cache_id
+            logger.info(f"Cached analysis results in session for file hash: {file_hash[:16]}...")
+            return session_id
             
         except Exception as e:
             logger.error(f"Failed to cache analysis results: {str(e)}")
@@ -81,7 +76,7 @@ class CacheService:
         processing_params: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Retrieve cached analysis results
+        Retrieve cached analysis results from therapy_sessions (KISS: single table)
         
         Args:
             file_hash: SHA-256 hash of source file
@@ -92,80 +87,88 @@ class CacheService:
             Cached analysis results or None if not found
         """
         try:
-            query = (
-                self.supabase.table("analysis_results")
-                .select("*")
-                .eq("file_hash", file_hash)
-                .eq("processing_version", processing_version)
-                .gt("expires_at", datetime.utcnow().isoformat())
-                .order("created_at", desc=True)
-                .limit(1)
-            )
-            
-            result = query.execute()
+            # Query therapy_sessions for cached data
+            result = self.supabase.table("therapy_sessions").select("*").eq(
+                "file_hash", file_hash
+            ).execute()
             
             if not result.data:
-                logger.debug(f"No cached results found for file hash: {file_hash[:16]}...")
+                logger.debug(f"No session found for file hash: {file_hash[:16]}...")
                 return None
             
-            cached_data = result.data[0]
+            session = result.data[0]
+            
+            # Check if we have cached analytics and version matches
+            analytics_cache = session.get("analytics_cache")
+            if not analytics_cache or analytics_cache.get("processing_version") != processing_version:
+                logger.debug(f"No compatible cache version for file hash: {file_hash[:16]}... (need: {processing_version})")
+                return None
             
             # If specific processing params provided, validate they match
-            if processing_params and cached_data.get("processing_params"):
-                if not self._params_match(processing_params, cached_data["processing_params"]):
+            if processing_params and analytics_cache.get("processing_params"):
+                if not self._params_match(processing_params, analytics_cache["processing_params"]):
                     logger.debug(f"Processing params mismatch for file hash: {file_hash[:16]}...")
                     return None
             
             logger.info(f"Retrieved cached results for file hash: {file_hash[:16]}...")
-            return cached_data
+            
+            # Return in expected format
+            return {
+                "id": session["id"],
+                "analytics_data": analytics_cache.get("analytics", {}),
+                "processing_time_ms": session.get("processing_time_ms", 0),
+                "cache_hits": session.get("cache_hits", 0)
+            }
             
         except Exception as e:
             logger.error(f"Failed to retrieve cached analysis: {str(e)}")
             return None
     
-    async def increment_cache_hits(self, cache_id: str) -> None:
+    async def increment_cache_hits(self, session_id: str) -> None:
         """
-        Increment cache hit counter and update last accessed time
+        Increment cache hit counter in therapy_sessions (KISS: single table)
         
         Args:
-            cache_id: UUID of cache entry
+            session_id: UUID of session
         """
         try:
             # Get current hit count
-            result = self.supabase.table("analysis_results").select("cache_hits").eq("id", cache_id).execute()
+            result = self.supabase.table("therapy_sessions").select("cache_hits").eq("id", session_id).execute()
             
             if result.data:
                 current_hits = result.data[0].get("cache_hits", 0)
                 
-                # Update hit count and last accessed time
+                # Update hit count and last accessed time (trigger will update last_accessed_at)
                 update_data = {
-                    "cache_hits": current_hits + 1,
-                    "last_accessed_at": datetime.utcnow().isoformat()
+                    "cache_hits": current_hits + 1
                 }
                 
-                self.supabase.table("analysis_results").update(update_data).eq("id", cache_id).execute()
+                self.supabase.table("therapy_sessions").update(update_data).eq("id", session_id).execute()
                 
-                logger.debug(f"Incremented cache hits for entry: {cache_id}")
+                logger.debug(f"Incremented cache hits for session: {session_id}")
             
         except Exception as e:
             logger.warning(f"Failed to increment cache hits: {str(e)}")
     
     async def invalidate_cache_by_hash(self, file_hash: str) -> int:
         """
-        Invalidate (delete) cached entries for a specific file hash
+        Invalidate cached data for a specific file hash (KISS: clear analytics_cache in session)
         
         Args:
             file_hash: SHA-256 hash of source file
             
         Returns:
-            Number of entries invalidated
+            Number of sessions invalidated
         """
         try:
-            # Delete all cache entries for this file hash
-            result = self.supabase.table("analysis_results").delete().eq("file_hash", file_hash).execute()
+            # Clear analytics_cache for sessions with this file hash
+            result = self.supabase.table("therapy_sessions").update({
+                "analytics_cache": {},
+                "cache_hits": 0
+            }).eq("file_hash", file_hash).execute()
             
             count = len(result.data) if result.data else 0
-            logger.info(f"Invalidated {count} cache entries for file hash: {file_hash[:16]}...")
+            logger.info(f"Invalidated cache for {count} sessions with file hash: {file_hash[:16]}...")
             
             return count
             
@@ -175,22 +178,23 @@ class CacheService:
     
     async def cleanup_expired_cache(self) -> int:
         """
-        Remove expired cache entries
+        Remove expired cache data (KISS: clear old analytics_cache in sessions)
         
         Returns:
-            Number of entries removed
+            Number of sessions cleaned
         """
         try:
-            # Delete expired entries
-            result = (
-                self.supabase.table("analysis_results")
-                .delete()
-                .lt("expires_at", datetime.utcnow().isoformat())
-                .execute()
-            )
+            # Find sessions with old cached data (> 30 days)
+            cutoff_date = (datetime.utcnow() - timedelta(days=self.default_expiry_days)).isoformat()
+            
+            # Clear analytics_cache for old sessions
+            result = self.supabase.table("therapy_sessions").update({
+                "analytics_cache": {},
+                "cache_hits": 0
+            }).lt("last_accessed_at", cutoff_date).execute()
             
             count = len(result.data) if result.data else 0
-            logger.info(f"Cleaned up {count} expired cache entries")
+            logger.info(f"Cleaned up cache for {count} old sessions")
             
             return count
             
@@ -200,98 +204,46 @@ class CacheService:
     
     async def get_cache_statistics(self) -> Dict[str, Any]:
         """
-        Get cache usage statistics
+        Get cache usage statistics from therapy_sessions (KISS: single table)
         
         Returns:
             Dict with cache statistics
         """
         try:
-            # Get total entries
-            total_result = self.supabase.table("analysis_results").select("id", count="exact").execute()
-            total_count = total_result.count or 0
+            # Get sessions with cached data
+            result = self.supabase.table("therapy_sessions").select(
+                "id,cache_hits,analytics_cache,last_accessed_at"
+            ).execute()
             
-            # Get expired entries
-            expired_result = (
-                self.supabase.table("analysis_results")
-                .select("id", count="exact")
-                .lt("expires_at", datetime.utcnow().isoformat())
-                .execute()
-            )
-            expired_count = expired_result.count or 0
+            sessions_with_cache = [s for s in result.data if s.get("analytics_cache") and s["analytics_cache"] != {}]
+            total_sessions_with_cache = len(sessions_with_cache)
             
-            # Get cache hits statistics
-            hits_result = (
-                self.supabase.table("analysis_results")
-                .select("cache_hits")
-                .gt("expires_at", datetime.utcnow().isoformat())
-                .execute()
-            )
+            # Calculate statistics
+            total_hits = sum(s.get("cache_hits", 0) for s in sessions_with_cache)
+            avg_hits = total_hits / max(1, total_sessions_with_cache) if total_sessions_with_cache > 0 else 0
             
-            total_hits = sum(entry.get("cache_hits", 0) for entry in hits_result.data) if hits_result.data else 0
-            avg_hits = total_hits / max(1, total_count - expired_count) if total_count > expired_count else 0
+            # Recent activity (last 7 days)
+            recent_cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
+            recent_sessions = [s for s in sessions_with_cache if s.get("last_accessed_at", "") > recent_cutoff]
             
             return {
-                "total_entries": total_count,
-                "active_entries": total_count - expired_count,
-                "expired_entries": expired_count,
+                "total_sessions": len(result.data),
+                "sessions_with_cache": total_sessions_with_cache,
                 "total_hits": total_hits,
-                "average_hits_per_entry": round(avg_hits, 2)
+                "average_hits_per_session": round(avg_hits, 2),
+                "recent_activity_7d": len(recent_sessions)
             }
             
         except Exception as e:
             logger.error(f"Failed to get cache statistics: {str(e)}")
             return {
-                "total_entries": 0,
-                "active_entries": 0,
-                "expired_entries": 0,
+                "total_sessions": 0,
+                "sessions_with_cache": 0,
                 "total_hits": 0,
-                "average_hits_per_entry": 0
+                "average_hits_per_session": 0,
+                "recent_activity_7d": 0
             }
     
-    def _extract_clinical_metrics(self, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract clinical metrics from analysis result for denormalized storage
-        
-        Args:
-            analysis_result: Complete analysis results
-            
-        Returns:
-            Dict with extracted clinical metrics
-        """
-        clinical_metrics = {}
-        
-        try:
-            # Extract MVC values
-            if "mvc_analysis" in analysis_result:
-                mvc_data = analysis_result["mvc_analysis"]
-                clinical_metrics["mvc_values"] = mvc_data.get("mvc_values", {})
-            
-            # Extract contraction counts
-            if "contractions" in analysis_result:
-                contractions = analysis_result["contractions"]
-                total_contractions = len(contractions)
-                good_contractions = len([c for c in contractions if c.get("quality_flags", {}).get("is_good", False)])
-                
-                clinical_metrics["total_contractions_count"] = total_contractions
-                clinical_metrics["good_contractions_count"] = good_contractions
-                clinical_metrics["contractions_data"] = contractions
-            
-            # Extract compliance scores
-            if "compliance_scores" in analysis_result:
-                clinical_metrics["compliance_scores"] = analysis_result["compliance_scores"]
-            
-            # Extract temporal statistics
-            if "temporal_stats" in analysis_result:
-                clinical_metrics["temporal_stats"] = analysis_result["temporal_stats"]
-                
-            # Store EMG signals if present (for quick retrieval)
-            if "emg_signals" in analysis_result:
-                clinical_metrics["emg_signals"] = analysis_result["emg_signals"]
-            
-        except Exception as e:
-            logger.warning(f"Failed to extract clinical metrics: {str(e)}")
-        
-        return clinical_metrics
     
     def _params_match(self, params1: Dict[str, Any], params2: Dict[str, Any]) -> bool:
         """
@@ -313,53 +265,4 @@ class CacheService:
             logger.warning(f"Error comparing parameters: {str(e)}")
             return False
     
-    async def get_cached_results_by_metadata_id(self, c3d_metadata_id: UUID) -> List[Dict[str, Any]]:
-        """
-        Get all cached results for a specific C3D metadata entry
-        
-        Args:
-            c3d_metadata_id: UUID of C3D metadata entry
-            
-        Returns:
-            List of cached analysis results
-        """
-        try:
-            result = (
-                self.supabase.table("analysis_results")
-                .select("*")
-                .eq("c3d_metadata_id", str(c3d_metadata_id))
-                .gt("expires_at", datetime.utcnow().isoformat())
-                .order("created_at", desc=True)
-                .execute()
-            )
-            
-            return result.data if result.data else []
-            
-        except Exception as e:
-            logger.error(f"Failed to get cached results by metadata ID: {str(e)}")
-            return []
     
-    async def update_cache_expiry(self, cache_id: str, new_expiry_days: int) -> bool:
-        """
-        Update cache expiry for a specific entry
-        
-        Args:
-            cache_id: UUID of cache entry
-            new_expiry_days: New expiry in days from now
-            
-        Returns:
-            True if successful
-        """
-        try:
-            new_expiry = (datetime.utcnow() + timedelta(days=new_expiry_days)).isoformat()
-            
-            self.supabase.table("analysis_results").update({
-                "expires_at": new_expiry
-            }).eq("id", cache_id).execute()
-            
-            logger.info(f"Updated cache expiry for entry: {cache_id}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to update cache expiry: {str(e)}")
-            return False

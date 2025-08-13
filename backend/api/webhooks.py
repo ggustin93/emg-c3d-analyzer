@@ -14,10 +14,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import logging
 
-from ..services.webhook_service import WebhookService
-from ..services.metadata_service import MetadataService
-from ..services.cache_service import CacheService
-from ..config import get_settings
+from services.webhook_service import WebhookService
+from services.enhanced_webhook_service import EnhancedWebhookService
+from services.metadata_service import MetadataService
+from services.cache_service import CacheService
+from config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -181,6 +182,7 @@ async def handle_c3d_upload(
     try:
         # Initialize services
         webhook_service = WebhookService()
+        enhanced_webhook_service = EnhancedWebhookService()
         metadata_service = MetadataService()
         cache_service = CacheService()
         
@@ -238,13 +240,14 @@ async def handle_c3d_upload(
             metadata=raw_payload.get("metadata", {})
         )
         
-        # Trigger background processing
+        # Trigger enhanced background processing
         background_tasks.add_task(
-            process_c3d_file,
+            process_c3d_file_enhanced,
             metadata_id=metadata_id,
             bucket=bucket,
             object_path=object_name,
-            file_hash=file_hash
+            file_hash=file_hash,
+            session_id=session_id
         )
         
         logger.info(f"🚀 PROCESSING STARTED: Background task initiated for '{object_name}' (processing_id: {metadata_id})")
@@ -334,6 +337,161 @@ async def process_c3d_file(
             status="failed",
             error_message=str(e)
         )
+
+
+async def process_c3d_file_enhanced(
+    metadata_id: UUID,
+    bucket: str,
+    object_path: str,
+    file_hash: str,
+    session_id: Optional[str] = None
+) -> None:
+    """
+    Enhanced background task to process C3D file with complete database population
+    
+    Uses the enhanced webhook service to populate:
+    - processing_parameters table
+    - Enhanced schema fields for performance scoring
+    - Future C3D data extraction (RPE, BFR, game data)
+    
+    Args:
+        metadata_id: Database ID for metadata entry
+        bucket: Storage bucket name
+        object_path: Path to file in bucket
+        file_hash: SHA-256 hash of file content
+        session_id: Optional session ID for therapy session
+    """
+    try:
+        # Initialize enhanced services
+        enhanced_webhook_service = EnhancedWebhookService()
+        metadata_service = MetadataService()
+        cache_service = CacheService()
+        
+        logger.info(f"🎯 Enhanced C3D processing started: {object_path}")
+        
+        # Update status to processing
+        await metadata_service.update_processing_status(
+            metadata_id=metadata_id,
+            status="processing"
+        )
+        
+        # Process with enhanced webhook service (populates all database tables)
+        enhanced_result = await enhanced_webhook_service.process_c3d_upload_event(
+            bucket=bucket,
+            object_path=object_path,
+            session_id=session_id
+        )
+        
+        if "error" in enhanced_result:
+            raise Exception(f"Enhanced processing failed: {enhanced_result['error']}")
+        
+        # Extract results
+        processing_result = enhanced_result["processing_result"]
+        database_ids = enhanced_result["database_ids"]
+        scoring_result = enhanced_result["scoring_result"]
+        
+        # Extract C3D metadata for legacy compatibility
+        c3d_metadata = await metadata_service.extract_c3d_metadata(
+            file_data=processing_result["file_data"]
+        )
+        
+        # Update metadata service with extracted information (legacy compatibility)
+        await metadata_service.update_metadata(
+            metadata_id=metadata_id,
+            channel_names=c3d_metadata["channel_names"],
+            channel_count=c3d_metadata["channel_count"],
+            sampling_rate=c3d_metadata["sampling_rate"],
+            duration_seconds=c3d_metadata["duration_seconds"],
+            frame_count=c3d_metadata["frame_count"]
+        )
+        
+        # Cache the enhanced analysis results
+        await cache_service.cache_analysis_results(
+            c3d_metadata_id=metadata_id,
+            file_hash=file_hash,
+            analysis_result=processing_result.get("analytics", {}),
+            processing_params=processing_result.get("params", {}),
+            processing_time_ms=processing_result.get("processing_time_ms", 0)
+        )
+        
+        # Update status to completed with enhanced data
+        await metadata_service.update_processing_status(
+            metadata_id=metadata_id,
+            status="completed",
+            enhanced_session_id=database_ids.get("session_id")
+        )
+        
+        logger.info(f"✅ Enhanced C3D processing completed successfully: {object_path}")
+        logger.info(f"📊 Database populated - Session: {database_ids['session_id']}")
+        logger.info(f"⭐ Performance scores calculated - Overall: {scoring_result.get('overall_score', 'pending RPE/game data')}%")
+        
+    except Exception as e:
+        logger.error(f"❌ Error in enhanced background processing: {str(e)}", exc_info=True)
+        
+        # Update status to failed
+        await metadata_service.update_processing_status(
+            metadata_id=metadata_id,
+            status="failed",
+            error_message=f"Enhanced processing failed: {str(e)}"
+        )
+
+
+@router.post("/session/{session_id}/update-future-data")
+async def update_future_data(
+    session_id: str,
+    rpe: Optional[int] = None,
+    bfr_pressure_aop: Optional[float] = None,
+    game_points_achieved: Optional[int] = None,
+    game_points_max: Optional[int] = None
+) -> JSONResponse:
+    """
+    Update session with future C3D data (RPE, BFR measurements, game scores)
+    
+    This endpoint allows manual updates of data that will be extracted from
+    future enhanced C3D files or provided by therapists/patients.
+    
+    Args:
+        session_id: Therapy session UUID
+        rpe: Rating of Perceived Exertion (0-10 Borg CR10 scale)
+        bfr_pressure_aop: BFR pressure as percentage of AOP (45-55% safe range)
+        game_points_achieved: Points achieved in GHOSTLY game
+        game_points_max: Maximum possible points for game session
+    """
+    try:
+        enhanced_webhook_service = EnhancedWebhookService()
+        
+        # Prepare data dictionaries
+        bfr_data = {"pressure_aop": bfr_pressure_aop} if bfr_pressure_aop is not None else None
+        game_data = {
+            "points_achieved": game_points_achieved,
+            "points_max": game_points_max
+        } if game_points_achieved is not None or game_points_max is not None else None
+        
+        # Update future data and recalculate scores
+        result = await enhanced_webhook_service.update_future_data(
+            session_id=session_id,
+            rpe=rpe,
+            bfr_data=bfr_data,
+            game_data=game_data
+        )
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": "Future data updated and scores recalculated",
+                "session_id": session_id,
+                "updated_fields": result["updated_fields"],
+                "new_scores": result["scoring_result"]
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error updating future data: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Update failed: {str(e)}")
 
 
 @router.get("/storage/status/{processing_id}")

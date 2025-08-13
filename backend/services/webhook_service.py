@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Dict, Any, Tuple
 from io import BytesIO
 
-from ..database.supabase_client import get_supabase_client
-from ..services.c3d_processor import GHOSTLYC3DProcessor
-from ..config import get_settings
+from database.supabase_client import get_supabase_client
+from services.c3d_processor import GHOSTLYC3DProcessor
+from config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -91,8 +91,8 @@ class WebhookService:
                 processor = GHOSTLYC3DProcessor(tmp_file_path)
                 
                 # Import required models for processing options
-                from ..models.models import ProcessingOptions, GameSessionParameters
-                from ..config import (
+                from models.models import ProcessingOptions, GameSessionParameters
+                from config import (
                     DEFAULT_THRESHOLD_FACTOR,
                     DEFAULT_MIN_DURATION_MS, 
                     DEFAULT_SMOOTHING_WINDOW,
