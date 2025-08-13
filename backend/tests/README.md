@@ -25,6 +25,29 @@ pytest backend/tests/webhook -v
 pytest backend/tests --cov=backend --cov-report=term-missing
 ```
 
+## Running in Docker
+
+Using the provided `docker-compose.yml`:
+
+```bash
+# Start dependencies (Redis) and backend container
+docker compose up -d redis backend
+
+# Option A: install dev deps in the running backend container and run tests
+docker compose exec backend sh -lc "pip install -r backend/requirements-dev.txt && pytest backend/tests -m 'not e2e' -v"
+
+# Option B: run one-off container for tests
+docker compose run --rm backend sh -lc "pip install -r backend/requirements-dev.txt && pytest backend/tests -m 'not e2e' -v"
+
+# Run e2e tests when services and env are configured
+docker compose exec backend sh -lc "pytest backend/tests/e2e -m e2e -v"
+```
+
+Notes:
+- The compose file sets `REDIS_URL=redis://redis:6379/0`; bring `redis` up first.
+- Ensure required env vars (e.g., `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`) are available to the backend service.
+- The default backend image target is production; installing `backend/requirements-dev.txt` adds pytest at runtime.
+
 Pytest markers are declared in `pytest.ini`:
 
 ```ini
