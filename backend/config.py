@@ -91,9 +91,15 @@ API_VERSION = "1.0.0"
 API_DESCRIPTION = "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game"
 
 # --- CORS Configuration ---
-CORS_ORIGINS = ["*"]  # In production, restrict this to specific origins
+# Development CORS settings - more restrictive than wildcard
+CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000", 
+    "http://localhost:8080",
+    "http://127.0.0.1:8080"
+]
 CORS_CREDENTIALS = True
-CORS_METHODS = ["*"]
+CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 CORS_HEADERS = ["*"]
 
 # --- Server Configuration ---

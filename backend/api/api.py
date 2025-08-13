@@ -16,6 +16,7 @@ import json
 import uuid
 import shutil
 import hashlib
+import logging
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -42,6 +43,9 @@ from services.mvc_service import mvc_service, MVCEstimation
 from services.export_service import EMGDataExporter
 from services.performance_scoring_service import PerformanceScoringService, SessionMetrics, ScoringWeights
 from .webhooks import router as webhook_router
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -119,9 +123,19 @@ async def upload_file(file: UploadFile = File(...),
                       session_expected_contractions_ch2: Optional[int] = Form(None),
                       contraction_duration_threshold: Optional[int] = Form(2000)):
     """Upload and process a C3D file."""
+    # Validate file
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="File must have a filename")
     if not file.filename.lower().endswith('.c3d'):
-        raise HTTPException(status_code=400, detail="File must be a C3D file")
-
+        raise HTTPException(status_code=400, detail="File must be a C3D file (.c3d extension required)")
+    
+    # Check file size (basic validation)
+    if hasattr(file, 'size') and file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {MAX_FILE_SIZE/1024/1024:.1f}MB")
+    
+    logger.info(f"Processing upload request for file: {file.filename}")
     tmp_path = ""
     try:
         # Use a temporary file to handle the upload to be able to pass a path to the processor
@@ -197,10 +211,16 @@ async def upload_file(file: UploadFile = File(...),
         return response_model
 
     except Exception as e:
-        import traceback
-        print(f"ERROR in /upload: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+        logger.error(f"Upload processing error: {str(e)}", exc_info=True)
+        # Provide more specific error messages based on error type
+        if "C3D" in str(e):
+            raise HTTPException(status_code=400, detail=f"C3D file processing error: {str(e)}")
+        elif "permission" in str(e).lower() or "access" in str(e).lower():
+            raise HTTPException(status_code=403, detail=f"File access error: {str(e)}")
+        elif "size" in str(e).lower() or "memory" in str(e).lower():
+            raise HTTPException(status_code=413, detail=f"File too large or memory error: {str(e)}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Server error processing file: {str(e)}")
     finally:
         if file:
             await file.close()
