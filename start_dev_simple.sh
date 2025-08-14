@@ -9,6 +9,7 @@
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Treat unset variables as an error when substituting
+set -o pipefail  # Pipelines fail if any command fails, not just the last one
 
 # --- Configuration ---
 readonly PROJECT_NAME="emg-c3d-analyzer"
@@ -17,6 +18,16 @@ readonly FRONTEND_DIR="frontend"
 readonly BACKEND_PORT=8080
 readonly FRONTEND_PORT=3000
 readonly REDIS_PORT=6379
+readonly PID_FILE_NAME=".dev_pids"
+readonly BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+readonly PID_FILE="$BASE_DIR/$PID_FILE_NAME"
+
+# Global variables for process tracking
+BACKEND_PID=""
+FRONTEND_PID=""
+FRONTEND_URL=""
+NGROK_PID=""
+NGROK_PUBLIC_URL=""
 
 # --- ANSI Color Codes ---
 readonly RED='\033[0;31m'
@@ -62,6 +73,7 @@ ${BOLD}Usage:${NC}
 ${BOLD}Options:${NC}
   ${GREEN}--backend-only${NC}       Start only the backend server
   ${GREEN}--frontend-only${NC}      Start only the frontend server
+  ${GREEN}--webhook${NC}            Start with ngrok tunnel for webhook testing
   ${GREEN}--redis${NC}              Start Redis server (recommended for caching)
   ${GREEN}--no-redis${NC}           Skip Redis server startup
   ${GREEN}--install${NC}            Install dependencies first
@@ -73,11 +85,13 @@ ${BOLD}Requirements:${NC}
   - Python 3.11+ with pip/poetry
   - Node.js 18+ with npm
   - Redis (optional, for caching)
+  - ngrok (for webhook testing - install with: brew install ngrok)
 
 ${BOLD}Examples:${NC}
   ./start_dev_simple.sh                  # Start both backend and frontend
   ./start_dev_simple.sh --install        # Install deps and start services
   ./start_dev_simple.sh --backend-only   # Start only backend API
+  ./start_dev_simple.sh --webhook        # Start with ngrok webhook tunnel
   ./start_dev_simple.sh --test           # Run tests
   ./start_dev_simple.sh --kill           # Kill running servers
 
@@ -121,6 +135,13 @@ check_requirements() {
         log_warning "Redis not found. Install Redis for caching support."
     fi
     
+    # Check for ngrok (optional)
+    if command -v ngrok >/dev/null 2>&1; then
+        log_info "ngrok available: $(ngrok version | head -n1)"
+    else
+        log_warning "ngrok not found. Install with 'brew install ngrok' for webhook testing."
+    fi
+    
     # Check for uvicorn
     if ! python3 -c "import uvicorn" 2>/dev/null; then
         log_warning "uvicorn not found. Will try to install with backend dependencies."
@@ -136,17 +157,33 @@ install_dependencies() {
     log_info "Installing backend dependencies..."
     cd "$BACKEND_DIR"
     
+    # Create venv if it doesn't exist
+    if [ ! -d "venv" ]; then
+        log_info "Creating Python virtual environment..."
+        python3 -m venv venv
+    fi
+    
+    # Activate venv
+    log_info "Activating virtual environment..."
+    source venv/bin/activate
+    
+    # Upgrade pip first
+    log_info "Upgrading pip..."
+    python -m pip install --upgrade pip
+    
     if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
         log_info "Using Poetry for backend dependencies"
         poetry install
     elif [ -f "requirements.txt" ]; then
-        log_info "Using pip for backend dependencies"
-        python3 -m pip install -r requirements.txt
+        log_info "Using pip for backend dependencies in venv"
+        python -m pip install -r requirements.txt --upgrade
     else
         log_error "No requirements.txt or pyproject.toml found in backend/"
         exit 1
     fi
     
+    # Deactivate venv
+    deactivate
     cd ..
     
     # Frontend dependencies
@@ -188,6 +225,16 @@ kill_servers() {
         log_info "Killing Redis server on port $REDIS_PORT (PID: $redis_pid)"
         kill -TERM $redis_pid || kill -KILL $redis_pid 2>/dev/null || true
         sleep 2
+    fi
+    
+    # Kill ngrok processes
+    if command -v ngrok >/dev/null 2>&1; then
+        local ngrok_pids=$(pgrep -f "ngrok.*http.*$BACKEND_PORT" 2>/dev/null || echo "")
+        if [ -n "$ngrok_pids" ]; then
+            log_info "Killing ngrok processes: $ngrok_pids"
+            echo "$ngrok_pids" | xargs kill -TERM 2>/dev/null || true
+            sleep 2
+        fi
     fi
     
     log_success "Servers stopped"
@@ -244,39 +291,208 @@ start_redis() {
     return 1
 }
 
-start_backend() {
-    log_info "Starting backend server on port $BACKEND_PORT..."
-    cd "$BACKEND_DIR"
-    
-    # Check if we should use poetry
-    if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
-        log_info "Using Poetry to start backend"
-        poetry run uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload &
-    else
-        log_info "Using direct uvicorn"
-        python3 -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload &
+start_ngrok() {
+    if ! command -v ngrok >/dev/null 2>&1; then
+        log_error "ngrok not installed. Please install with: brew install ngrok"
+        log_error "Then configure with: ngrok config add-authtoken YOUR_TOKEN"
+        return 1
     fi
     
-    local backend_pid=$!
-    echo $backend_pid > ../backend.pid
+    # Check if ngrok is already running for our port
+    if pgrep -f "ngrok.*http.*$BACKEND_PORT" >/dev/null 2>&1; then
+        log_info "ngrok is already running for port $BACKEND_PORT"
+        # Try to get the existing public URL
+        NGROK_PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for tunnel in data['tunnels']:
+        if tunnel['config']['addr'] == 'http://localhost:$BACKEND_PORT':
+            print(tunnel['public_url'])
+            break
+except:
+    pass
+" 2>/dev/null || echo "")
+        return 0
+    fi
+    
+    log_info "Starting ngrok tunnel for port $BACKEND_PORT..."
+    
+    # Ensure logs directory exists
+    mkdir -p "logs"
+    local ngrok_log="logs/ngrok.log"
+    
+    # Start ngrok in background with fixed domain if available
+    # Try to use a reserved domain first, fallback to random
+    if ngrok config check | grep -q "authtoken" 2>/dev/null; then
+        # Try with reserved domain (modify this to your reserved domain)
+        ngrok http $BACKEND_PORT --domain=emg-webhook.ngrok-free.app --log=stdout >"$ngrok_log" 2>&1 &
+        local ngrok_domain_used="emg-webhook.ngrok-free.app"
+    else
+        ngrok http $BACKEND_PORT --log=stdout >"$ngrok_log" 2>&1 &
+        local ngrok_domain_used="random"
+    fi
+    NGROK_PID=$!
+    echo "$NGROK_PID" >> "$PID_FILE"
+    
+    log_info "ngrok started with PID: $NGROK_PID"
+    
+    # Wait for ngrok to start and get the public URL
+    local attempts=0
+    local max_attempts=30
+    while [ $attempts -lt $max_attempts ]; do
+        # Try to get public URL from ngrok API
+        NGROK_PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for tunnel in data['tunnels']:
+        if tunnel['config']['addr'] == 'http://localhost:$BACKEND_PORT':
+            print(tunnel['public_url'])
+            break
+except:
+    pass
+" 2>/dev/null || echo "")
+        
+        if [[ -n "$NGROK_PUBLIC_URL" ]]; then
+            log_success "ngrok tunnel established: $NGROK_PUBLIC_URL"
+            return 0
+        fi
+        
+        # Check if ngrok process is still alive
+        if ! kill -0 "$NGROK_PID" 2>/dev/null; then
+            log_error "ngrok process died during startup!"
+            log_error "Check ngrok configuration and auth token"
+            log_error "Run: ngrok config add-authtoken YOUR_TOKEN"
+            return 1
+        fi
+        
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+    
+    log_error "Failed to get ngrok public URL"
+    log_error "Check logs: $ngrok_log"
+    return 1
+}
+
+start_backend() {
+    log_header "Starting Backend API Server"
+    cd "$BACKEND_DIR"
+    
+    # Ensure logs directory exists
+    mkdir -p "../logs"
+    local backend_log="../logs/backend.log"
+    local backend_err_log="../logs/backend.error.log"
+    
+    # Check for venv and activate it
+    if [ -d "venv" ]; then
+        log_info "Activating Python virtual environment"
+        source venv/bin/activate
+        log_info "Using venv Python: $(which python)"
+        
+        # Verify key dependencies are installed
+        if ! python -c "import fastapi, ezc3d" 2>/dev/null; then
+            log_warning "Missing dependencies detected. Installing from requirements.txt..."
+            python -m pip install -r requirements.txt --upgrade
+        fi
+    else
+        log_error "No virtual environment found. Please run with --install first."
+        exit 1
+    fi
+    
+    log_info "Starting Uvicorn server for the backend..."
+    # Start backend with proper logging
+    if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
+        log_info "Using Poetry to start backend"
+        poetry run python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload \
+            >"$backend_log" 2>"$backend_err_log" &
+    else
+        log_info "Using uvicorn with activated venv"
+        python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload \
+            >"$backend_log" 2>"$backend_err_log" &
+    fi
+    
+    BACKEND_PID=$!
+    echo "$BACKEND_PID" > "$PID_FILE"  # Start PID file
     cd ..
     
-    log_info "Backend started with PID: $backend_pid"
+    log_success "Backend server started with PID: $BACKEND_PID"
+    log_info "Logs: $backend_log (out), $backend_err_log (err)"
 }
 
 start_frontend() {
-    log_info "Starting frontend server on port $FRONTEND_PORT..."
-    cd "$FRONTEND_DIR"
+    log_header "Starting Frontend Development Server"
+    local frontend_dir="$FRONTEND_DIR"
+    
+    if [[ ! -d "$frontend_dir" ]]; then
+        log_warning "Frontend directory not found, skipping frontend server startup."
+        return
+    fi
+    
+    cd "$frontend_dir"
+    
+    # Ensure logs directory exists
+    mkdir -p "../logs"
+    local frontend_log="../logs/frontend.log"
+    local frontend_err_log="../logs/frontend.error.log"
     
     # Set environment variables
     export REACT_APP_API_URL="http://localhost:$BACKEND_PORT"
     
-    npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT &
-    local frontend_pid=$!
-    echo $frontend_pid > ../frontend.pid
-    cd ..
+    log_info "Ensuring frontend dependencies are installed..."
+    # Use npm ci if lockfile exists, otherwise npm install
+    if [[ -f "package-lock.json" ]]; then
+        log_info "Using 'npm ci' for fast, clean installation from lockfile."
+        npm ci --silent >"$frontend_log" 2>"$frontend_err_log"
+    else
+        log_warning "No package-lock.json found. Using 'npm install'."
+        npm install --silent >"$frontend_log" 2>"$frontend_err_log"
+    fi
+    log_success "Frontend dependencies are up to date."
     
-    log_info "Frontend started with PID: $frontend_pid"
+    # Determine start script (dev preferred over start)
+    local start_script
+    if grep -q '"dev"' package.json; then
+        start_script="dev"
+    elif grep -q '"start"' package.json; then
+        start_script="start"
+    else
+        log_error "No 'start' or 'dev' script found in frontend/package.json"
+        exit 1
+    fi
+    
+    log_info "Starting frontend server with 'npm run $start_script'..."
+    npm run "$start_script" -- --host 0.0.0.0 --port $FRONTEND_PORT \
+        >>"$frontend_log" 2>>"$frontend_err_log" &
+    FRONTEND_PID=$!
+    echo "$FRONTEND_PID" >> "$PID_FILE"  # Append to PID file
+    
+    # Wait for frontend to be ready by polling the log file
+    log_info "Waiting for frontend server to be ready... (PID: $FRONTEND_PID)"
+    local ready=false
+    for _ in $(seq 1 30); do # Timeout after 30 seconds
+        # Look for URL patterns in the log
+        FRONTEND_URL=$(grep -o 'http://[0-9a-zA-Z.:-]*[0-9]\{4\}' "$frontend_log" | head -n 1 2>/dev/null || true)
+        if [[ -n "$FRONTEND_URL" ]]; then
+            log_success "Frontend server is ready!"
+            ready=true
+            break
+        fi
+        sleep 1
+    done
+    
+    if [[ "$ready" == false ]]; then
+        log_error "Frontend server failed to start or is taking too long."
+        log_error "Check logs for details: $frontend_err_log"
+        log_error "Last 10 lines of error log:"
+        tail -n 10 "$frontend_err_log" | sed "s/^/    ${RED}| ${NC}/"
+        cleanup
+    fi
+    
+    cd ..
+    log_success "Frontend started with PID: $FRONTEND_PID"
+    log_info "Logs: $frontend_log (out), $frontend_err_log (err)"
 }
 
 run_tests() {
@@ -285,10 +501,22 @@ run_tests() {
     # Backend tests
     log_info "Running backend tests..."
     cd "$BACKEND_DIR"
+    
+    # Activate venv if it exists
+    if [ -d "venv" ]; then
+        log_info "Activating virtual environment for tests"
+        source venv/bin/activate
+    fi
+    
     if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
         poetry run python -m pytest tests/ -v || true
     else
-        python3 -m pytest tests/ -v || true
+        python -m pytest tests/ -v || true
+    fi
+    
+    # Deactivate venv if it was activated
+    if [ -d "venv" ]; then
+        deactivate
     fi
     cd ..
     
@@ -304,68 +532,115 @@ run_tests() {
 wait_for_services() {
     log_info "Waiting for services to start..."
     
-    # Wait for backend
-    local attempts=0
-    local max_attempts=30
-    while [ $attempts -lt $max_attempts ]; do
-        if curl -s http://localhost:$BACKEND_PORT/health >/dev/null 2>&1; then
-            log_success "Backend is ready at http://localhost:$BACKEND_PORT"
-            break
+    # Wait for backend health check
+    if [[ -n "$BACKEND_PID" ]]; then
+        local attempts=0
+        local max_attempts=30
+        while [ $attempts -lt $max_attempts ]; do
+            if curl -s http://localhost:$BACKEND_PORT/health >/dev/null 2>&1; then
+                log_success "Backend is ready and healthy at http://localhost:$BACKEND_PORT"
+                break
+            fi
+            
+            # Check if backend process is still alive
+            if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+                log_error "Backend process died during startup!"
+                log_error "Check logs for details: logs/backend.error.log"
+                log_error "Last 10 lines of backend error log:"
+                tail -n 10 "logs/backend.error.log" | sed "s/^/    ${RED}| ${NC}/"
+                cleanup
+            fi
+            
+            sleep 1
+            attempts=$((attempts + 1))
+        done
+        
+        if [ $attempts -eq $max_attempts ]; then
+            log_warning "Backend health check timed out, but process is running"
+            log_warning "Check logs if you experience issues: logs/backend.error.log"
         fi
-        sleep 1
-        attempts=$((attempts + 1))
-    done
-    
-    if [ $attempts -eq $max_attempts ]; then
-        log_warning "Backend may not be fully ready"
     fi
     
-    # Wait a bit for frontend
-    sleep 3
-    log_success "Frontend should be ready at http://localhost:$FRONTEND_PORT"
+    # Frontend doesn't need health check - already verified during startup
+    if [[ -n "$FRONTEND_PID" ]]; then
+        log_success "Frontend should be ready at ${FRONTEND_URL:-http://localhost:$FRONTEND_PORT}"
+    fi
 }
 
 show_status() {
-    log_header "Development Environment Status"
+    log_header "Development Environment is Running"
     
-    echo -e "  ${CYAN}🔗 Backend API:${NC}      http://localhost:$BACKEND_PORT"
-    echo -e "  ${CYAN}🔗 Backend Health:${NC}   http://localhost:$BACKEND_PORT/health"
-    echo -e "  ${CYAN}🌐 Frontend:${NC}         http://localhost:$FRONTEND_PORT"
-    echo -e "  ${CYAN}📊 API Docs:${NC}         http://localhost:$BACKEND_PORT/docs"
+    echo -e "${BOLD}Backend API:${NC}      http://localhost:$BACKEND_PORT"
+    echo -e "${BOLD}Backend Health:${NC}   http://localhost:$BACKEND_PORT/health"
+    echo -e "${BOLD}API Docs:${NC}         http://localhost:$BACKEND_PORT/docs"
+    echo -e "${BOLD}Frontend App:${NC}     ${FRONTEND_URL:-http://localhost:$FRONTEND_PORT (assumed)}"
     
     if check_redis_running; then
-        echo -e "  ${CYAN}📦 Redis Cache:${NC}      redis://localhost:$REDIS_PORT"
+        echo -e "${BOLD}Redis Cache:${NC}      redis://localhost:$REDIS_PORT"
     else
-        echo -e "  ${YELLOW}📦 Redis Cache:${NC}      ${RED}Not Running${NC}"
+        echo -e "${BOLD}Redis Cache:${NC}      ${RED}Not Running${NC}"
+    fi
+    
+    if [[ -n "$NGROK_PUBLIC_URL" ]]; then
+        echo ""
+        echo -e "${PURPLE}${BOLD}🌐 WEBHOOK CONFIGURATION${NC}"
+        echo -e "${PURPLE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BOLD}Public URL:${NC}       $NGROK_PUBLIC_URL"
+        echo -e "${BOLD}Webhook URL:${NC}      $NGROK_PUBLIC_URL/webhooks/storage/c3d-upload"
+        echo ""
+        echo -e "${YELLOW}${BOLD}📋 CONFIGURE IN SUPABASE DASHBOARD:${NC}"
+        echo -e "  1. Go to Storage → Settings → Webhooks"
+        echo -e "  2. Create new webhook:"
+        echo -e "     - URL: ${GREEN}$NGROK_PUBLIC_URL/webhooks/storage/c3d-upload${NC}"
+        echo -e "     - Events: ${GREEN}INSERT${NC} on storage.objects"
+        echo -e "     - Bucket: ${GREEN}c3d-examples${NC} (optional filter)"
+        echo ""
+        echo -e "${CYAN}🎯 Ready to test! Upload a C3D file to Supabase Storage bucket 'c3d-examples'${NC}"
     fi
     
     echo ""
-    log_info "Press ${BOLD}Ctrl+C${NC} to stop all services"
-    log_info "Or run ${BOLD}./start_dev_simple.sh --kill${NC} to stop services"
+    log_info "Monitoring server health. Press ${BOLD}Ctrl+C${NC} to stop all services."
+    log_info "Or run ${BOLD}./start_dev_simple.sh --kill${NC} from another terminal."
 }
 
 cleanup() {
     echo ""
-    log_info "Shutting down services..."
+    log_info "Initiating shutdown..."
     
-    # Kill backend
-    if [ -f backend.pid ]; then
-        local backend_pid=$(cat backend.pid)
-        kill $backend_pid 2>/dev/null || true
-        rm -f backend.pid
+    if [[ -f "$PID_FILE" ]]; then
+        # Read all PIDs into an array (compatible with older bash)
+        pids_to_kill=()
+        while IFS= read -r pid; do
+            [[ -n "$pid" ]] && pids_to_kill+=("$pid")
+        done < "$PID_FILE"
+        if (( ${#pids_to_kill[@]} > 0 )); then
+            log_info "Stopping processes with PIDs: ${pids_to_kill[*]}"
+            # Send SIGTERM first for graceful shutdown
+            kill "${pids_to_kill[@]}" 2>/dev/null || true
+            
+            # Wait a moment for graceful shutdown
+            sleep 2
+            
+            # Force kill any that are still running
+            for pid in "${pids_to_kill[@]}"; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    log_warning "Process $pid did not terminate gracefully, sending SIGKILL."
+                    kill -9 "$pid" 2>/dev/null || true
+                fi
+            done
+            log_success "Processes stopped."
+        else
+            log_info "PID file was empty."
+        fi
+        rm -f "$PID_FILE"
+    else
+        log_info "No PID file found. Cleanup complete."
     fi
     
-    # Kill frontend  
-    if [ -f frontend.pid ]; then
-        local frontend_pid=$(cat frontend.pid)
-        kill $frontend_pid 2>/dev/null || true
-        rm -f frontend.pid
-    fi
+    # Clean up legacy pid files
+    rm -f backend.pid frontend.pid 2>/dev/null || true
     
-    # Clean up any remaining processes
-    kill_servers
-    
-    log_success "Development environment stopped"
+    log_success "Development environment shutdown complete."
     exit 0
 }
 
@@ -373,6 +648,7 @@ main() {
     local BACKEND_ONLY=false
     local FRONTEND_ONLY=false
     local START_REDIS=true  # Default to starting Redis
+    local WEBHOOK_MODE=false
     local INSTALL_DEPS=false
     local RUN_TESTS=false
     local KILL_ONLY=false
@@ -382,6 +658,7 @@ main() {
         case $1 in
             --backend-only) BACKEND_ONLY=true ;;
             --frontend-only) FRONTEND_ONLY=true ;;
+            --webhook) WEBHOOK_MODE=true ;;
             --redis) START_REDIS=true ;;
             --no-redis) START_REDIS=false ;;
             --install) INSTALL_DEPS=true ;;
@@ -393,8 +670,8 @@ main() {
         shift
     done
     
-    # Set up cleanup trap
-    trap cleanup SIGINT SIGTERM
+    # Set up cleanup trap for graceful shutdown
+    trap cleanup SIGINT SIGTERM EXIT
     
     # Handle kill-only mode
     if [ "$KILL_ONLY" = true ]; then
@@ -433,7 +710,12 @@ main() {
         start_backend
     fi
     
-    if [ "$BACKEND_ONLY" != true ]; then
+    # Start ngrok if webhook mode is enabled
+    if [ "$WEBHOOK_MODE" = true ] && [ "$FRONTEND_ONLY" != true ]; then
+        start_ngrok || log_warning "Continuing without ngrok (webhook testing disabled)"
+    fi
+    
+    if [ "$BACKEND_ONLY" != true ] && [ "$WEBHOOK_MODE" != true ]; then
         start_frontend
     fi
     
@@ -444,10 +726,34 @@ main() {
     
     show_status
     
-    # Wait for user interrupt
+    # Robust monitoring loop - check if processes are still alive
     while true; do
-        sleep 1
+        # Check if backend is still running
+        if [[ -n "$BACKEND_PID" ]] && ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+            log_error "Backend process (PID $BACKEND_PID) has died unexpectedly!"
+            log_error "Check logs for details: logs/backend.error.log"
+            break # Exit loop to trigger cleanup
+        fi
+        
+        # Check if frontend is still running (if it was started)
+        if [[ -n "$FRONTEND_PID" ]] && ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+            log_error "Frontend process (PID $FRONTEND_PID) has died unexpectedly!"
+            log_error "Check logs for details: logs/frontend.error.log"
+            break # Exit loop to trigger cleanup
+        fi
+        
+        # Check if ngrok is still running (if it was started)
+        if [[ -n "$NGROK_PID" ]] && ! kill -0 "$NGROK_PID" 2>/dev/null; then
+            log_warning "ngrok process (PID $NGROK_PID) has died unexpectedly!"
+            log_warning "Webhook testing may not work properly"
+            # Don't break for ngrok - continue running other services
+        fi
+        
+        sleep 5
     done
+    
+    log_warning "One or more services stopped. Shutting down the environment."
+    cleanup
 }
 
 # Run main function with all arguments
