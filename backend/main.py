@@ -12,13 +12,18 @@ backend_dir = Path(__file__).parent
 env_path = backend_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 
+# Ensure logs directory exists
+logs_dir = Path(__file__).parent.parent / "logs"
+logs_dir.mkdir(exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("backend.log"),
+        logging.FileHandler("backend.log"),  # Keep local backend.log
+        logging.FileHandler(logs_dir / "backend.log"),  # Also write to logs/ folder
     ]
 )
 logger = logging.getLogger("backend")

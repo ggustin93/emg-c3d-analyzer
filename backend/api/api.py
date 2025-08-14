@@ -37,12 +37,13 @@ from models.models import (
 from config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
     CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS,
-    ensure_temp_dir
+    ensure_temp_dir, MAX_FILE_SIZE
 )
 from services.mvc_service import mvc_service, MVCEstimation
 from services.export_service import EMGDataExporter
 from services.performance_scoring_service import PerformanceScoringService, SessionMetrics, ScoringWeights
 from .webhooks import router as webhook_router
+from .routes.signals import router as signals_router
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(webhook_router)
+app.include_router(signals_router)  # JIT signal generation for 99% storage optimization
 
 # Import and include cache monitoring router
 try:

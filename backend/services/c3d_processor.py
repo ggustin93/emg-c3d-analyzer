@@ -31,11 +31,15 @@ ASSUMPTIONS & PARAMETERS:
 """
 
 import os
+import logging
 import numpy as np
 import ezc3d
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import json
+
+# Configure logger
+logger = logging.getLogger(__name__)
 from emg.emg_analysis import ANALYSIS_FUNCTIONS, analyze_contractions, moving_rms, calculate_temporal_stats
 from models.models import GameSessionParameters
 from emg.signal_processing import preprocess_emg_signal, get_processing_metadata, ProcessingParameters
@@ -187,16 +191,18 @@ class GHOSTLYC3DProcessor:
                     
                     # ALSO store with "Raw" suffix for analysis pipeline compatibility
                     # This ensures the analysis pipeline can find "{base_name} Raw" channels
-                    raw_channel_name = f"{channel_name} Raw"
-                    emg_data[raw_channel_name] = channel_data.copy()
-                    print(f"✅ Created raw channel entries: '{channel_name}' and '{raw_channel_name}'")
+                    # But avoid creating duplicate "Raw Raw" entries
+                    if not channel_name.endswith(" Raw"):
+                        raw_channel_name = f"{channel_name} Raw"
+                        emg_data[raw_channel_name] = channel_data.copy()
+                        logger.info(f"✅ Created raw channel entries: '{channel_name}' and '{raw_channel_name}'")
                 except IndexError:
                     errors.append(f"Data index out of range for channel {channel_name}")
                 except Exception as e:
                     errors.append(f"Failed to load data for {channel_name}: {str(e)}")
 
             if errors:
-                print(f"Completed EMG data extraction with errors: {'; '.join(errors)}")
+                logger.warning(f"Completed EMG data extraction with errors: {'; '.join(errors)}")
 
             self.emg_data = emg_data
             return emg_data
@@ -387,25 +393,25 @@ class GHOSTLYC3DProcessor:
                 raw_signal = np.array(self.emg_data[raw_channel_name]['data'])
                 sampling_rate = self.emg_data[raw_channel_name]['sampling_rate']
                 signal_source = "RAW"
-                print(f"✅ Found RAW signal for {base_name}: {len(raw_signal)} samples at {sampling_rate}Hz")
+                logger.info(f"✅ Found RAW signal for {base_name}: {len(raw_signal)} samples at {sampling_rate}Hz")
             else:
                 # Try base channel name as fallback for different naming conventions
                 if base_name in self.emg_data:
                     raw_signal = np.array(self.emg_data[base_name]['data'])
                     sampling_rate = self.emg_data[base_name]['sampling_rate']
                     signal_source = f"BASE ({base_name})"
-                    print(f"⚠️ RAW signal not found, using base channel {base_name}")
+                    logger.warning(f"⚠️ RAW signal not found, using base channel {base_name}")
                 else:
                     # Critical error: No raw signal available
                     channel_errors['signal_processing'] = f"No RAW signal available for {base_name} - cannot perform rigorous analysis"
-                    print(f"❌ CRITICAL: No RAW signal available for {base_name}")
+                    logger.error(f"❌ CRITICAL: No RAW signal available for {base_name}")
                     continue  # Skip this channel
             
             # Step 2: Apply our rigorous processing pipeline
             if raw_signal is not None:
-                print(f"\n{'='*60}")
-                print(f"🔬 RIGOROUS SIGNAL PROCESSING for {base_name}")
-                print(f"{'='*60}")
+                logger.info(f"\n{'='*60}")
+                logger.info(f"🔬 RIGOROUS SIGNAL PROCESSING for {base_name}")
+                logger.info(f"{'='*60}")
                 
                 processing_result = preprocess_emg_signal(
                     raw_signal=raw_signal,
@@ -418,20 +424,20 @@ class GHOSTLYC3DProcessor:
                 if processing_result['processed_signal'] is None:
                     # Processing failed
                     channel_errors['signal_processing'] = f"Signal processing failed: {processing_result.get('error', 'Unknown error')}"
-                    print(f"❌ Signal processing failed for {base_name}: {processing_result.get('error')}")
+                    logger.error(f"❌ Signal processing failed for {base_name}: {processing_result.get('error')}")
                     continue  # Skip this channel
                 
                 # Log processing details
-                print(f"📊 Processing Results:")
-                print(f"  - Source: {signal_source}")
-                print(f"  - Steps applied: {len(processing_result['processing_steps'])}")
+                logger.debug(f"📊 Processing Results:")
+                logger.debug(f"  - Source: {signal_source}")
+                logger.debug(f"  - Steps applied: {len(processing_result['processing_steps'])}")
                 for step in processing_result['processing_steps']:
-                    print(f"    • {step}")
+                    logger.debug(f"    • {step}")
                 
                 quality = processing_result['quality_metrics']
-                print(f"  - Quality: {'✅ Valid' if quality['valid'] else '❌ Invalid'}")
-                print(f"  - Original signal: mean={quality['original_signal_stats']['mean']:.6e}V, std={quality['original_signal_stats']['std']:.6e}V")
-                print(f"  - Processed signal: mean={quality['processed_signal_stats']['mean']:.6e}V, std={quality['processed_signal_stats']['std']:.6e}V")
+                logger.debug(f"  - Quality: {'✅ Valid' if quality['valid'] else '❌ Invalid'}")
+                logger.debug(f"  - Original signal: mean={quality['original_signal_stats']['mean']:.6e}V, std={quality['original_signal_stats']['std']:.6e}V")
+                logger.debug(f"  - Processed signal: mean={quality['processed_signal_stats']['mean']:.6e}V, std={quality['processed_signal_stats']['std']:.6e}V")
                 
                 # Store processing metadata for transparency
                 channel_analytics['signal_processing'] = {
@@ -475,9 +481,9 @@ class GHOSTLYC3DProcessor:
                             'signal_info': f"RMS envelope (processed) from rigorous clinical pipeline - {len(processing_result['processing_steps'])} steps applied"
                         }
                     }
-                    print(f"✅ Stored processed signal as '{processed_channel_name}'")
+                    logger.info(f"✅ Stored processed signal as '{processed_channel_name}'")
                 
-                print(f"{'='*60}\n")
+                logger.info(f"{'='*60}\n")
             
             # Step 3: Use processed signal for ALL analysis
             signal_for_analysis = processing_result['processed_signal'] if processing_result else None
@@ -488,9 +494,9 @@ class GHOSTLYC3DProcessor:
                     # Priority: per-muscle threshold (seconds) > global threshold (milliseconds)
                     duration_threshold_ms = None
                     
-                    print(f"🔍 Backend Duration Threshold Debug for {base_name}:")
-                    print(f"  - session_duration_thresholds_per_muscle: {getattr(session_params, 'session_duration_thresholds_per_muscle', None)}")
-                    print(f"  - contraction_duration_threshold: {getattr(session_params, 'contraction_duration_threshold', None)}")
+                    logger.debug(f"🔍 Backend Duration Threshold Debug for {base_name}:")
+                    logger.debug(f"  - session_duration_thresholds_per_muscle: {getattr(session_params, 'session_duration_thresholds_per_muscle', None)}")
+                    logger.debug(f"  - contraction_duration_threshold: {getattr(session_params, 'contraction_duration_threshold', None)}")
                     
                     # First check for per-muscle duration threshold (in seconds)
                     if (hasattr(session_params, 'session_duration_thresholds_per_muscle') and 
@@ -500,15 +506,15 @@ class GHOSTLYC3DProcessor:
                         muscle_duration_seconds = session_params.session_duration_thresholds_per_muscle.get(base_name)
                         if muscle_duration_seconds is not None:
                             duration_threshold_ms = float(muscle_duration_seconds) * 1000.0  # Convert seconds to milliseconds
-                            print(f"  ✅ Using per-muscle threshold: {muscle_duration_seconds}s -> {duration_threshold_ms}ms")
+                            logger.debug(f"  ✅ Using per-muscle threshold: {muscle_duration_seconds}s -> {duration_threshold_ms}ms")
                     
                     # Fall back to global duration threshold (already in milliseconds)
                     elif (hasattr(session_params, 'contraction_duration_threshold') and 
                           session_params.contraction_duration_threshold is not None):
                         duration_threshold_ms = float(session_params.contraction_duration_threshold)
-                        print(f"  ✅ Using global threshold: {duration_threshold_ms}ms")
+                        logger.debug(f"  ✅ Using global threshold: {duration_threshold_ms}ms")
                     else:
-                        print(f"  ❌ No duration threshold found - will use default")
+                        logger.debug(f"  ❌ No duration threshold found - will use default")
                     
                     # Backend MVC estimation if no threshold provided
                     if mvc_estimation_method == "backend_estimation":
@@ -519,10 +525,10 @@ class GHOSTLYC3DProcessor:
                         threshold_percentage = session_params.session_mvc_threshold_percentage or 75.0
                         actual_mvc_threshold = estimated_mvc * (threshold_percentage / 100.0)
                         
-                        print(f"🤖 Backend MVC Estimation for {base_name}:")
-                        print(f"  - Signal 95th percentile: {estimated_mvc:.6e}V")
-                        print(f"  - Estimated MVC threshold ({threshold_percentage}%): {actual_mvc_threshold:.6e}V")
-                        print(f"  - Method: Clinical estimation from signal statistics")
+                        logger.debug(f"🤖 Backend MVC Estimation for {base_name}:")
+                        logger.debug(f"  - Signal 95th percentile: {estimated_mvc:.6e}V")
+                        logger.debug(f"  - Estimated MVC threshold ({threshold_percentage}%): {actual_mvc_threshold:.6e}V")
+                        logger.debug(f"  - Method: Clinical estimation from signal statistics")
                         
                         # Store the estimated MVC value for frontend use
                         if not hasattr(session_params, 'session_mvc_values') or not session_params.session_mvc_values:
@@ -556,20 +562,20 @@ class GHOSTLYC3DProcessor:
                     channel_analytics['mvc_threshold_actual_value'] = actual_mvc_threshold
                     
                     # Enhanced debug logging for contraction analysis
-                    print(f"\n{'='*60}")
-                    print(f"🎯 CONTRACTION ANALYSIS DEBUG for {base_name}")
-                    print(f"{'='*60}")
-                    print(f"📊 Signal Information:")
-                    print(f"  - Signal source: {signal_source}")
-                    print(f"  - Signal min/max: {np.min(signal_for_analysis):.6e}V / {np.max(signal_for_analysis):.6e}V")
-                    print(f"  - Signal mean: {np.mean(np.abs(signal_for_analysis)):.6e}V")
-                    print(f"  - Max amplitude from contractions: {max_amplitude:.6e}V")
+                    logger.debug(f"\n{'='*60}")
+                    logger.debug(f"🎯 CONTRACTION ANALYSIS DEBUG for {base_name}")
+                    logger.debug(f"{'='*60}")
+                    logger.debug(f"📊 Signal Information:")
+                    logger.debug(f"  - Signal source: {signal_source}")
+                    logger.debug(f"  - Signal min/max: {np.min(signal_for_analysis):.6e}V / {np.max(signal_for_analysis):.6e}V")
+                    logger.debug(f"  - Signal mean: {np.mean(np.abs(signal_for_analysis)):.6e}V")
+                    logger.debug(f"  - Max amplitude from contractions: {max_amplitude:.6e}V")
                     
-                    print(f"\n⚙️ Thresholds:")
-                    print(f"  - MVC base value: {session_params.session_mvc_values.get(base_name) if session_params.session_mvc_values else None}")
-                    print(f"  - MVC threshold percentage: {session_params.session_mvc_threshold_percentages.get(base_name) if session_params.session_mvc_threshold_percentages else session_params.session_mvc_threshold_percentage}%")
-                    print(f"  - Actual MVC threshold: {actual_mvc_threshold:.6e}V" if actual_mvc_threshold else "  - Actual MVC threshold: None")
-                    print(f"  - Duration threshold: {duration_threshold_ms}ms")
+                    logger.debug(f"\n⚙️ Thresholds:")
+                    logger.debug(f"  - MVC base value: {session_params.session_mvc_values.get(base_name) if session_params.session_mvc_values else None}")
+                    logger.debug(f"  - MVC threshold percentage: {session_params.session_mvc_threshold_percentages.get(base_name) if session_params.session_mvc_threshold_percentages else session_params.session_mvc_threshold_percentage}%")
+                    logger.debug(f"  - Actual MVC threshold: {actual_mvc_threshold:.6e}V" if actual_mvc_threshold else "  - Actual MVC threshold: None")
+                    logger.debug(f"  - Duration threshold: {duration_threshold_ms}ms")
                     
                     # PhD-Level Comprehensive Contraction Analysis
                     contractions = contraction_stats.get('contractions', [])
@@ -702,15 +708,15 @@ class GHOSTLYC3DProcessor:
                         print(f"  - Detection threshold: {np.max(signal_for_analysis) * threshold_factor:.6e}V")
                         print(f"  - Consider adjusting detection parameters or signal quality")
                     
-                    print(f"\n{'='*80}\n")
-                    print(f"  - Threshold percentage: {session_params.session_mvc_threshold_percentage}%")
+                    logger.debug(f"\n{'='*80}\n")
+                    logger.debug(f"  - Threshold percentage: {session_params.session_mvc_threshold_percentage}%")
                     
                     # Initialize MVC threshold percentage if not provided
                     if (not session_params.session_mvc_threshold_percentages or 
                         base_name not in session_params.session_mvc_threshold_percentages or 
                         session_params.session_mvc_threshold_percentages[base_name] is None):
                         default_threshold = session_params.session_mvc_threshold_percentage or 70
-                        print(f"Initializing MVC threshold percentage for {base_name} to default: {default_threshold}%")
+                        logger.info(f"Initializing MVC threshold percentage for {base_name} to default: {default_threshold}%")
                         if not session_params.session_mvc_threshold_percentages:
                             session_params.session_mvc_threshold_percentages = {}
                         session_params.session_mvc_threshold_percentages[base_name] = default_threshold

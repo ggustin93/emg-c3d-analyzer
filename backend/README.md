@@ -21,7 +21,8 @@ backend/
 ├── models/models.py              # Pydantic models
 ├── services/
 │   ├── c3d_processor.py         # High-level C3D processing workflow
-│   ├── webhook_service.py       # Webhook processing logic
+│   ├── therapy_session_processor.py # Clean webhook business logic
+│   ├── webhook_security.py     # Webhook security service
 │   ├── export_service.py        # Data export functionality
 │   └── mvc_service.py           # MVC estimation service
 ├── emg/
@@ -34,9 +35,10 @@ backend/
 ### Component Roles
 
 - **api.py**: 🌐 FastAPI endpoints for C3D upload, processing, and MVC estimation
-- **webhooks.py**: 🔗 Webhook endpoints for automated Supabase Storage processing
+- **webhooks.py**: 🔗 Clean webhook endpoints following SOLID principles
 - **c3d_processor.py**: 🏗️ High-level business logic service orchestrating the complete C3D workflow
-- **webhook_service.py**: ⚙️ Background processing logic for webhook-triggered analysis
+- **therapy_session_processor.py**: ⚙️ Clean webhook business logic with actual database schema
+- **webhook_security.py**: 🔒 Secure webhook signature verification service
 - **signal_processing.py**: ⚡ Low-level EMG signal operations (filtering, smoothing, envelope calculation)
 - **emg_analysis.py**: 📊 EMG metrics calculation and contraction detection algorithms
 - **models.py**: 📋 Pydantic models for data validation and serialization
@@ -61,7 +63,8 @@ The backend supports two complementary processing modes:
 - **API**: `from backend.api.api import app`
 - **Webhooks**: `from backend.api.webhooks import router as webhook_router`
 - **Processing**: `from backend.services.c3d_processor import GHOSTLYC3DProcessor`
-- **Webhook Service**: `from backend.services.webhook_service import process_c3d_webhook`
+- **Therapy Session**: `from backend.services.therapy_session_processor import TherapySessionProcessor`
+- **Webhook Security**: `from backend.services.webhook_security import WebhookSecurity`
 - **Analysis**: `from backend.emg.emg_analysis import analyze_contractions`
 - **Signal Processing**: `from backend.emg.signal_processing import preprocess_emg_signal`
 - **Models**: `from backend.models.models import EMGAnalysisResult, GameSessionParameters`
