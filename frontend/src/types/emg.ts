@@ -25,14 +25,16 @@ export interface GameScoreNormalization {
   custom_parameters?: Record<string, any>;
 }
 
+// Used for the enhanced performance scoring model
 export interface ScoringWeights {
-  completion: number;         // 0.20
-  mvcQuality: number;        // 0.30
-  qualityThreshold: number;  // 0.15 - Seuil adaptatif de qualité
-  symmetry: number;          // 0.20
-  effort: number;            // 0.15
-  compliance: number;        // 0.10 - BFR compliance
-  gameScore: number;         // 0.00 (expérimental)
+  compliance: number;
+  symmetry: number;
+  effort: number;
+  gameScore: number;
+  // Sub-weights for the compliance score, must sum to 1 if used
+  compliance_completion: number;
+  compliance_intensity: number;
+  compliance_duration: number;
 }
 
 export interface ComponentScore {
