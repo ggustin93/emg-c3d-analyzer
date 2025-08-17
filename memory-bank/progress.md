@@ -1,5 +1,21 @@
 # Progress Tracking
 
+## Latest Updates (August 17, 2025)
+
+### Clinical UX Polish & Data Enrichment ✅
+- **Subjective Effort Card Improved**: Reworked the color logic for the RPE score to be clinically meaningful. The optimal effort range (4-6) is now highlighted in green, with other colors indicating acceptable or suboptimal effort levels.
+- **Added Average Contraction Time**: The "Duration Quality" card for each muscle now includes the average contraction time, giving therapists a key quantitative metric for endurance at a glance.
+- **Data Consistency Ensured**: The RPE value is now consistent between the `OverallPerformanceCard` and the `SubjectiveFatigueCard`, including for demo purposes.
+
+### Performance Score UX & Clinical Simplification ✅
+- **UX Overhaul**: Refactored the `OverallPerformanceCard` to enhance clinical utility and readability.
+  - **Removed Complex Formulas**: Replaced the mathematical formula display with an intuitive, visual "Performance Breakdown".
+  - **Visual Contribution Bar**: The bar showing how each component contributes to the total score is now the primary focus.
+  - **Simplified Legend**: A clear legend now shows the point contribution of each metric (e.g., `Compliance = +30 pts`).
+- **Effort Score Calculation Fixed**: The subjective effort score (`S_e`) is now correctly calculated based on the non-linear GHOSTLY+ TBM clinical trial specifications, using the centralized `getEffortScoreFromRPE` function.
+- **Demo Experience Improved**: Added a fallback RPE value to ensure the Effort score is properly visualized in demonstration sessions where no data is present.
+- **Code Quality**: All changes were validated against the full test suite, ensuring no regressions were introduced.
+
 ## Latest Updates (August 14, 2025)
 
 ### Comprehensive Testing Infrastructure Complete ✅

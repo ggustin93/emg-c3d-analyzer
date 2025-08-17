@@ -1,5 +1,34 @@
 # Active Context
 
+## Latest Implementation: Clinical UX Polish ✅ (August 17, 2025)
+
+### Subjective Fatigue Card Enhancements
+- **Clinically-Relevant Color Coding**: Updated `useFatigueColors.ts` to reflect the non-linear nature of the Borg CR10 RPE scale. The colors now correctly highlight the optimal effort zone (4-6 RPE) in green, acceptable zones in yellow, and suboptimal zones (both too low and too high) in orange/red.
+- **Data Consistency**: Ensured the `SubjectiveFatigueCard` uses the exact same RPE value (including the demo fallback) as the overall performance calculation, guaranteeing data consistency across the UI.
+
+### Duration Quality Card Enhancement
+- **Added Key Metric**: The `MusclePerformanceCard` now displays the "Average Contraction Time" directly within the "Duration Quality" section. This provides clinicians with immediate, crucial context about muscle endurance alongside the quality score.
+
+### Overall Impact
+- These changes further refine the UI, making it more intuitive and clinically relevant for therapists. Key data points are now easier to find and interpret, improving the overall user experience.
+
+## Latest Implementation: Performance Card UX Simplification & Demo Data ✅ (August 17, 2025)
+
+### UX Overhaul for Clinical Clarity
+- **Problem**: The `OverallPerformanceCard` displayed a complex mathematical formula, which was considered "noise" for the primary user (therapists).
+- **Solution**: Replaced the entire formula section with an intuitive "Performance Breakdown" visualization.
+  - **Removed**: The literal formula (`P = w_c * S_c + ...`) and the numeric substitution line.
+  - **Enhanced**: The contribution bar is now more prominent.
+  - **Simplified Legend**: A clean, two-column layout now shows each component's name and its point contribution (e.g., `Compliance = +30 pts`), making it instantly readable.
+- **Improved Language**: Changed "Strongest driver" to the more professional "Key Factor".
+
+### Demo Data Enhancement
+- **Problem**: In demo sessions without a patient-reported RPE value, the Effort score was correctly calculated as 0, but this provided a poor user experience.
+- **Solution**: Implemented a fallback in `usePerformanceMetrics.ts`. If `rpe_level` is `null` or `undefined`, it now defaults to `5` for demonstration purposes, ensuring the Effort component is visualized correctly. This change is commented to clarify it's for demo purposes only.
+
+### Final Result
+- The performance card is now significantly easier for a clinician to interpret at a glance, focusing on the *impact* of each metric rather than the underlying mathematics, while still providing detailed tooltips for expert users. The component is also more engaging for demonstrations.
+
 ## Current Implementation Status
 
 ### Core Features
@@ -190,10 +219,11 @@
 ## Next Steps
 
 ### Immediate Tasks
-1.  **Merge `feature/backend-streamlining` into `main`**: The feature branch is now complete and stable. All frontend enhancements and the new reactive architecture should be merged.
-2.  Review and remove any remaining unused code or feature flags related to the old, static architecture.
-3.  Begin Phase 2 of the backend refactoring with the integration of the new `emg_analysis.py` module.
-4.  Update backend models to support the enhanced analysis capabilities.
+1.  **Investigate MVC Calculation & Acceptance Rate Inconsistencies**: Verify that the MVC-related calculations are consistent across all components and hooks (`usePerformanceMetrics`, `useContractionAnalysis`, `StatsPanel`) and align perfectly with the Single Source of Truth from the backend.
+2.  **Merge `feature/backend-streamlining` into `main`**: The feature branch is now complete and stable. All frontend enhancements and the new reactive architecture should be merged.
+3.  Review and remove any remaining unused code or feature flags related to the old, static architecture.
+4.  Begin Phase 2 of the backend refactoring with the integration of the new `emg_analysis.py` module.
+5.  Update backend models to support the enhanced analysis capabilities.
 
 ### Future Considerations
 1.  Database integration for more complex querying and data management.
