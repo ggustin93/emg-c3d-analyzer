@@ -444,10 +444,10 @@ start_frontend() {
     # Use npm ci if lockfile exists, otherwise npm install
     if [[ -f "package-lock.json" ]]; then
         log_info "Using 'npm ci' for fast, clean installation from lockfile."
-        npm ci --silent >"$frontend_log" 2>"$frontend_err_log"
+        npm ci
     else
         log_warning "No package-lock.json found. Using 'npm install'."
-        npm install --silent >"$frontend_log" 2>"$frontend_err_log"
+        npm install
     fi
     log_success "Frontend dependencies are up to date."
     
@@ -464,7 +464,7 @@ start_frontend() {
     
     log_info "Starting frontend server with 'npm run $start_script'..."
     npm run "$start_script" -- --host 0.0.0.0 --port $FRONTEND_PORT \
-        >>"$frontend_log" 2>>"$frontend_err_log" &
+        >"$frontend_log" 2>"$frontend_err_log" &
     FRONTEND_PID=$!
     echo "$FRONTEND_PID" >> "$PID_FILE"  # Append to PID file
     
