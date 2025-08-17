@@ -24,39 +24,27 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   
   const { 
     muscleData, 
-    overallScore, 
+    overallPerformance,
     overallScoreLabel, 
     symmetryScore, 
-    durationThreshold,
-    averageContractionTime,
-    totalContractions,
-    totalGoodContractions,
-    totalExpectedContractions
+    therapeuticComplianceScore
   } = usePerformanceMetrics(analysisResult, contractionDurationThreshold);
-
-  // Calculate therapeutic compliance from muscle data
-  const therapeuticComplianceScore = muscleData.length > 0 
-    ? (muscleData as any[]).reduce((sum: number, muscle: any) => sum + (muscle.totalScore || 0), 0) / muscleData.length
-    : undefined;
-  
-  const leftMuscleScore = muscleData.length > 0 ? muscleData[0]?.totalScore : undefined;
-  const rightMuscleScore = muscleData.length > 1 ? muscleData[1]?.totalScore : undefined;
 
   // Extract game data
   const gameScore = analysisResult?.metadata?.score ?? undefined;
   const gameLevel = analysisResult?.metadata?.level ? Number(analysisResult.metadata.level) : undefined;
   
-  // Debug: Log game metadata
-  console.log('Performance Card Game Metadata:', {
-    score: analysisResult?.metadata?.score,
-    level: analysisResult?.metadata?.level,
-    gameScore,
-    gameLevel,
-    fullMetadata: analysisResult?.metadata
-  });
-
   // Extract RPE data - use post-exercise RPE (Borg CR10 scale 0-10)
-  const rpeLevel = sessionParams?.post_session_rpe ?? undefined;
+  const rpeLevel = sessionParams?.post_session_rpe ?? storeSessionParams?.rpe_level ?? 5; // Default to 5 for demo
+
+  // Render a loading state or placeholder if data isn't ready
+  if (!overallPerformance) {
+    return (
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm border border-slate-200 text-center">
+        <p className="text-slate-500">Calculating performance metrics...</p>
+      </div>
+    );
+  }
 
   // Unified Grid Layout: Everything in a single, cohesive grid system
   return (
@@ -87,7 +75,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
               expectedShortContractions={muscleData[0].expectedShortContractions}
               expectedLongContractions={muscleData[0].expectedLongContractions}
               sessionParams={sessionParams}
-              contractionDurationThreshold={durationThreshold}
+              contractionDurationThreshold={overallPerformance.durationThreshold}
               averageContractionTime={muscleData[0].averageContractionTime}
               mvcValue={muscleData[0].mvcValue}
               mvcThreshold={muscleData[0].mvcThreshold}
@@ -103,23 +91,14 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
           style={{ borderColor: overallScoreLabel?.hex || '#e5e7eb' }}
         >
           <OverallPerformanceCard
-            totalScore={overallScore}
-            scoreLabel={overallScoreLabel?.label}
-            scoreTextColor={overallScoreLabel?.text}
-            scoreBgColor={overallScoreLabel?.bg}
-            scoreHexColor={overallScoreLabel?.hex}
-            muscleCount={muscleData.length}
-            symmetryScore={symmetryScore}
-            subjectiveFatigueLevel={rpeLevel as number | undefined}
-            averageContractionTime={averageContractionTime}
-            totalContractions={totalContractions}
-            goodContractions={totalGoodContractions}
-            expectedContractions={totalExpectedContractions}
-            gameScore={gameScore}
-            gameLevel={gameLevel}
+            performanceData={overallPerformance}
+            scoreLabel={overallScoreLabel?.label || 'N/A'}
+            scoreTextColor={overallScoreLabel?.text || 'text-slate-800'}
+            scoreBgColor={overallScoreLabel?.bg || 'bg-slate-200'}
+            scoreHexColor={overallScoreLabel?.hex || '#e5e7eb'}
             therapeuticComplianceScore={therapeuticComplianceScore}
-            leftMuscleScore={leftMuscleScore}
-            rightMuscleScore={rightMuscleScore}
+            symmetryScore={symmetryScore}
+            gameScore={gameScore}
           />
         </div>
 
@@ -145,7 +124,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
               expectedShortContractions={muscleData[1].expectedShortContractions}
               expectedLongContractions={muscleData[1].expectedLongContractions}
               sessionParams={sessionParams}
-              contractionDurationThreshold={durationThreshold}
+              contractionDurationThreshold={overallPerformance.durationThreshold}
               averageContractionTime={muscleData[1].averageContractionTime}
               mvcValue={muscleData[1].mvcValue}
               mvcThreshold={muscleData[1].mvcThreshold}
@@ -169,14 +148,13 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         {rpeLevel !== undefined && (
           <div className="lg:col-span-4 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <SubjectiveFatigueCard 
-              fatigueLevel={rpeLevel} 
-              showBadge={true}
+              fatigueLevel={rpeLevel}
             />
           </div>
         )}
         
         {/* GHOSTLY Game Score */}
-        {(gameScore !== undefined || gameLevel !== undefined) && (
+        {(gameScore !== undefined) && (
           <div className="lg:col-span-4 transform hover:scale-[1.02] transition-transform duration-200 hover:z-10 relative">
             <GHOSTLYGameCard 
               gameScore={gameScore}
