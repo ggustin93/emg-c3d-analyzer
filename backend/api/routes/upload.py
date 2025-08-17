@@ -2,7 +2,8 @@
 Upload Routes
 ============
 
-Handles C3D file upload and processing endpoints.
+C3D file upload and processing endpoints.
+Single responsibility: File upload and EMG analysis.
 """
 
 import os
@@ -13,43 +14,46 @@ import tempfile
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 
-from services.c3d_processor import GHOSTLYC3DProcessor
 from models.models import (
-    EMGAnalysisResult, GameMetadata, ChannelAnalytics,
-    ProcessingOptions, GameSessionParameters,
-    DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS,
-    DEFAULT_SMOOTHING_WINDOW, DEFAULT_MVC_THRESHOLD_PERCENTAGE
+    EMGAnalysisResult, ProcessingOptions, 
+    GameMetadata, ChannelAnalytics, GameSessionParameters
 )
 from config import MAX_FILE_SIZE
-from services.export_service import EMGDataExporter
+from services.c3d_processor import GHOSTLYC3DProcessor
+from api.dependencies.validation import (
+    get_processing_options, get_session_parameters, get_file_metadata
+)
 
-# Initialize router and logger
-router = APIRouter(prefix="/upload", tags=["upload"])
 logger = logging.getLogger(__name__)
 
+router = APIRouter(prefix="/upload", tags=["upload"])
 
-@router.post("", response_model=EMGAnalysisResult)
+
+@router.post("/", response_model=EMGAnalysisResult)
 async def upload_file(
     file: UploadFile = File(...),
-    user_id: Optional[str] = Form(None),
-    patient_id: Optional[str] = Form(None),
-    session_id: Optional[str] = Form(None),
-    # Standard processing options
-    threshold_factor: float = Form(DEFAULT_THRESHOLD_FACTOR),
-    min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
-    smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
-    # Game-specific session parameters
-    session_mvc_value: Optional[float] = Form(None),
-    session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
-    session_expected_contractions: Optional[int] = Form(None),
-    session_expected_contractions_ch1: Optional[int] = Form(None),
-    session_expected_contractions_ch2: Optional[int] = Form(None),
-    contraction_duration_threshold: Optional[int] = Form(2000)
+    processing_opts: ProcessingOptions = Depends(get_processing_options),
+    session_params: GameSessionParameters = Depends(get_session_parameters),
+    file_metadata: dict = Depends(get_file_metadata)
 ):
-    """Upload and process a C3D file."""
+    """
+    Upload and process a C3D file.
+    
+    Args:
+        file: C3D file upload
+        processing_opts: EMG processing configuration
+        session_params: Game session parameters
+        file_metadata: File metadata (user_id, patient_id, session_id)
+        
+    Returns:
+        EMGAnalysisResult: Complete analysis results
+        
+    Raises:
+        HTTPException: 400 for invalid files, 413 for too large, 500 for processing errors
+    """
     # Validate file
     if not file:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -64,36 +68,21 @@ async def upload_file(
     
     logger.info(f"Processing upload request for file: {file.filename}")
     tmp_path = ""
+    
     try:
-        # Use a temporary file to handle the upload
+        # Use a temporary file to handle the upload to be able to pass a path to the processor
         with tempfile.NamedTemporaryFile(delete=False, suffix=".c3d") as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = tmp.name
 
-        # Process the file
+        # Process the file from the temporary path
         processor = GHOSTLYC3DProcessor(tmp_path)
-        
-        # Create processing options and session parameters objects
-        processing_opts = ProcessingOptions(
-            threshold_factor=threshold_factor,
-            min_duration_ms=min_duration_ms,
-            smoothing_window=smoothing_window
-        )
-        
-        session_game_params = GameSessionParameters(
-            session_mvc_value=session_mvc_value,
-            session_mvc_threshold_percentage=session_mvc_threshold_percentage,
-            session_expected_contractions=session_expected_contractions,
-            session_expected_contractions_ch1=session_expected_contractions_ch1,
-            session_expected_contractions_ch2=session_expected_contractions_ch2,
-            contraction_duration_threshold=contraction_duration_threshold
-        )
 
-        # Wrap CPU-bound processing in threadpool
+        # Wrap the CPU-bound processing in run_in_threadpool
         result_data = await run_in_threadpool(
             processor.process_file,
             processing_opts=processing_opts,
-            session_game_params=session_game_params
+            session_game_params=session_params
         )
 
         # Create result object
@@ -120,23 +109,21 @@ async def upload_file(
             c3d_params = {"error": f"Parameter extraction failed: {str(e)}"}
         
         response_model = EMGAnalysisResult(
-            file_id=str(uuid.uuid4()),
+            file_id=str(uuid.uuid4()), # Generate a new UUID for this stateless request
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
             source_filename=file.filename,
             metadata=GameMetadata(**{
                 **game_metadata.model_dump(),
-                'session_parameters_used': session_game_params
+                'session_parameters_used': session_params
             }),
             analytics=analytics,
             available_channels=result_data['available_channels'],
-            emg_signals=processor.emg_data,
-            c3d_parameters=c3d_params,
-            user_id=user_id,
-            patient_id=patient_id,
-            session_id=session_id
+            emg_signals=processor.emg_data, # Directly assign if structure matches EMGChannelSignalData
+            c3d_parameters=c3d_params,  # Include comprehensive C3D parameters
+            user_id=file_metadata["user_id"],
+            patient_id=file_metadata["patient_id"],
+            session_id=file_metadata["session_id"]
         )
-        
-        logger.info(f"Successfully processed file: {file.filename}")
         return response_model
 
     except Exception as e:
@@ -150,91 +137,6 @@ async def upload_file(
             raise HTTPException(status_code=413, detail=f"File too large or memory error: {str(e)}")
         else:
             raise HTTPException(status_code=500, detail=f"Server error processing file: {str(e)}")
-    finally:
-        if file:
-            await file.close()
-        if tmp_path and os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-
-
-@router.post("/export")
-async def export_analysis_data(
-    file: UploadFile = File(...),
-    user_id: Optional[str] = Form(None),
-    patient_id: Optional[str] = Form(None),
-    session_id: Optional[str] = Form(None),
-    # Standard processing options
-    threshold_factor: float = Form(DEFAULT_THRESHOLD_FACTOR),
-    min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
-    smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW),
-    # Session parameters
-    session_mvc_value: Optional[float] = Form(None),
-    session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
-    session_expected_contractions: Optional[int] = Form(None),
-    session_expected_contractions_ch1: Optional[int] = Form(None),
-    session_expected_contractions_ch2: Optional[int] = Form(None),
-    contraction_duration_threshold: Optional[int] = Form(2000),
-    # Export options
-    include_raw_signals: bool = Form(True),
-    include_debug_info: bool = Form(True)
-):
-    """Export comprehensive C3D analysis data as JSON."""
-    if not file.filename.lower().endswith('.c3d'):
-        raise HTTPException(status_code=400, detail="File must be a C3D file")
-
-    tmp_path = ""
-    try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".c3d") as tmp:
-            shutil.copyfileobj(file.file, tmp)
-            tmp_path = tmp.name
-
-        # Process the file
-        processor = GHOSTLYC3DProcessor(tmp_path)
-        
-        # Create processing options and session parameters
-        processing_opts = ProcessingOptions(
-            threshold_factor=threshold_factor,
-            min_duration_ms=min_duration_ms,
-            smoothing_window=smoothing_window
-        )
-        
-        session_game_params = GameSessionParameters(
-            session_mvc_value=session_mvc_value,
-            session_mvc_threshold_percentage=session_mvc_threshold_percentage,
-            session_expected_contractions=session_expected_contractions,
-            session_expected_contractions_ch1=session_expected_contractions_ch1,
-            session_expected_contractions_ch2=session_expected_contractions_ch2,
-            contraction_duration_threshold=contraction_duration_threshold
-        )
-
-        # Process the file completely
-        result = processor.process_file(processing_opts, session_game_params)
-        
-        # Create comprehensive export
-        exporter = EMGDataExporter(processor)
-        comprehensive_export = exporter.create_comprehensive_export(
-            session_params=session_game_params,
-            processing_opts=processing_opts,
-            include_raw_signals=include_raw_signals,
-            include_debug_info=include_debug_info
-        )
-        
-        # Add request metadata
-        comprehensive_export["request_metadata"] = {
-            "user_id": user_id,
-            "patient_id": patient_id,
-            "session_id": session_id,
-            "filename": file.filename,
-            "export_timestamp": datetime.now().isoformat()
-        }
-        
-        from fastapi.responses import JSONResponse
-        return JSONResponse(content=comprehensive_export)
-
-    except Exception as e:
-        logger.error(f"Export error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
     finally:
         if file:
             await file.close()

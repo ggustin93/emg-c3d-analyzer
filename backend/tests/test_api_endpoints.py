@@ -11,7 +11,7 @@ import tempfile
 import os
 
 # Import the main FastAPI app
-from main import app
+from api.main import app
 
 client = TestClient(app)
 
@@ -255,7 +255,7 @@ class TestCORS:
 @pytest.mark.asyncio
 async def test_background_task_processing():
     """Test that background tasks are scheduled correctly"""
-    with patch('api.webhooks.BackgroundTasks') as mock_bg_tasks:
+    with patch('api.routes.webhooks.BackgroundTasks') as mock_bg_tasks:
         mock_bg_tasks.return_value.add_task = MagicMock()
         
         payload = {

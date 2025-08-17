@@ -112,19 +112,41 @@ The system implements Single Source of Truth (SoT) for analytics data across the
 src/
 ├── backend/
 │   ├── api/
-│   │   └── api.py                     # FastAPI endpoints and routing
+│   │   ├── dependencies/              # Service injection and validation
+│   │   │   ├── services.py            # Service dependency injection
+│   │   │   └── validation.py          # Request validation utilities
+│   │   ├── routes/                    # Modular API endpoints
+│   │   │   ├── analysis.py            # EMG analysis endpoints
+│   │   │   ├── cache_monitoring.py    # Cache performance monitoring
+│   │   │   ├── export.py              # Data export endpoints
+│   │   │   ├── health.py              # Health check endpoints
+│   │   │   ├── mvc.py                 # MVC threshold management
+│   │   │   ├── signals.py             # Signal processing endpoints
+│   │   │   ├── upload.py              # File upload handling
+│   │   │   └── webhooks.py            # Webhook endpoints
+│   │   └── main.py                    # FastAPI application and routing
+│   ├── database/
+│   │   └── supabase_client.py         # Database connection and operations
 │   ├── services/
-│   │   ├── cache/                     # Redis cache system (simplified)
+│   │   ├── cache/                     # Redis cache system
 │   │   │   ├── redis_cache.py         # Core cache operations
 │   │   │   └── cache_patterns.py      # Advanced cache patterns
 │   │   ├── c3d_processor.py           # High-level C3D processing orchestration
+│   │   ├── c3d_reader.py              # C3D file reading and parsing
+│   │   ├── cache_service.py           # Cache service abstraction
 │   │   ├── export_service.py          # Data export and formatting
-│   │   └── mvc_service.py             # MVC threshold estimation service
+│   │   ├── metadata_service.py        # Metadata extraction and management
+│   │   ├── mvc_service.py             # MVC threshold estimation service
+│   │   ├── performance_scoring_service.py # Performance analytics
+│   │   ├── therapy_session_processor.py   # Session processing workflows
+│   │   └── webhook_security.py        # Webhook security and validation
 │   ├── emg/
 │   │   ├── emg_analysis.py            # Core EMG metrics calculation
 │   │   └── signal_processing.py      # Low-level signal operations
 │   ├── models/
 │   │   └── models.py                  # Pydantic data models and validation
+│   ├── scripts/
+│   │   └── example_export_usage.py    # Usage examples and utilities
 │   └── tests/                         # Comprehensive test suite
 ├── frontend/src/
 │   ├── components/
