@@ -50,14 +50,14 @@ const getVariableName = (key: string): React.ReactNode => {
 interface ScoringWeightsSettingsProps {
   muscleChannels?: string[];
   disabled?: boolean;
-  isDebugMode?: boolean;
+  isTherapistMode?: boolean;
   analysisResult?: EMGAnalysisResult | null;
 }
 
 const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({ 
   muscleChannels = [], 
   disabled = false,
-  isDebugMode = false,
+  isTherapistMode = false,
   analysisResult = null
 }) => {
   const { authState } = useAuth();
@@ -81,7 +81,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
     return role === 'clinical_specialist' || role === 'admin';
   }, [authState?.profile?.role]);
 
-  const canEdit = (isDebugMode || canTherapistEdit) && !disabled;
+  const canEdit = (isTherapistMode || canTherapistEdit) && !disabled;
   
   // Compliance Score sub-component weights (default: equal weighting)
   const complianceWeights = (sessionParams.enhanced_scoring as any)?.compliance_weights || {
@@ -265,12 +265,10 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
           muted={!canEdit}
           badge={
             <div className="flex items-center gap-2">
-              {isDebugMode && (
-                <Badge variant="warning" className="text-xs">Debug Mode</Badge>
-              )}
               <TherapistBadge />
-              {!canEdit && (
-                <LockedBadge />
+              {!canEdit && !isTherapistMode && <LockedBadge />}
+              {isTherapistMode && (
+                <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
               )}
             </div>
           }
@@ -479,7 +477,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
             muted={!canEdit || isGameWeightZero}
             badge={
               <div className="flex items-center gap-2">
-                {(!canEdit || isGameWeightZero) && (
+                {(!canEdit || isGameWeightZero) && !isTherapistMode && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge variant="outline" className="bg-slate-100 text-slate-800 flex items-center gap-1">
@@ -487,9 +485,12 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs max-w-xs">{isGameWeightZero ? 'Increase S_game weight to enable normalization editing.' : 'Therapist-only. Enable Debug Mode to edit temporarily.'}</p>
+                      <p className="text-xs max-w-xs">{isGameWeightZero ? 'Increase S_game weight to enable normalization editing.' : 'Therapist-only. Enable Demo Mode to edit temporarily.'}</p>
                     </TooltipContent>
                   </Tooltip>
+                )}
+                {isTherapistMode && (
+                  <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
                 )}
               </div>
             }
