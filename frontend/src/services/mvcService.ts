@@ -12,7 +12,7 @@ export interface MVCEstimationResult {
   mvc_value: number;
   threshold_value: number;
   threshold_percentage: number;
-  estimation_method: 'database' | 'user_provided' | 'clinical_estimation' | 'signal_analysis';
+  estimation_method: 'database' | 'user_provided' | 'clinical_estimation' | 'signal_analysis' | 'backend_estimation';
   confidence_score: number;
   metadata: Record<string, any>;
   timestamp: string;
@@ -30,33 +30,12 @@ export interface MVCEstimationResponse {
 }
 
 export class MVCService {
-  private static readonly BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  private static readonly BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
   /**
-   * Recalculate analytics on the backend using existing analysis and updated session params
+   * Calibrate MVC values from uploaded file (initial calibration)
    */
-  static async recalc(
-    existing: EMGAnalysisResult,
-    session_params: any,
-    signal?: AbortSignal
-  ): Promise<EMGAnalysisResult> {
-    const response = await fetch(`${this.BASE_URL}/recalc`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ existing, session_params }),
-      signal
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  }
-
-  /**
-   * Estimate MVC values from uploaded file
-   */
-  static async estimateMVC(
+  static async calibrate(
     file: File,
     options: {
       user_id?: string;
@@ -64,6 +43,8 @@ export class MVCService {
       threshold_percentage?: number;
     } = {}
   ): Promise<MVCEstimationResponse> {
+    console.log('🔄 Starting initial MVC calibration for file:', file.name);
+    
     const formData = new FormData();
     formData.append('file', file);
     
@@ -72,32 +53,99 @@ export class MVCService {
     if (options.threshold_percentage) formData.append('threshold_percentage', options.threshold_percentage.toString());
 
     try {
-      const response = await fetch(`${this.BASE_URL}/mvc/estimate`, {
+      const response = await fetch(`${this.BASE_URL}/mvc/calibrate`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ MVC calibration failed: ${response.status}`, errorData);
+        
+        // Enhanced error messages based on status
+        let userMessage = errorData.detail || `HTTP error! status: ${response.status}`;
+        if (response.status === 400) {
+          userMessage = 'Invalid C3D file or missing EMG data. Please check your file format.';
+        } else if (response.status === 500) {
+          userMessage = 'Server error during MVC calibration. Please try again or contact support.';
+        } else if (response.status === 413) {
+          userMessage = 'File too large. Please use a smaller C3D file.';
+        }
+        
+        throw new Error(userMessage);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Initial MVC calibration completed successfully');
+      return result;
     } catch (error) {
-      console.error('MVC estimation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('❌ MVC calibration error:', errorMessage);
       throw error;
     }
+  }
+
+  /**
+   * Recalibrate MVC values from existing analysis with updated session parameters
+   */
+  static async recalibrate(
+    existing: EMGAnalysisResult,
+    session_params: any,
+    signal?: AbortSignal
+  ): Promise<MVCEstimationResponse> {
+    console.log('🔄 Starting MVC recalibration from existing analysis');
+    
+    const response = await fetch(`${this.BASE_URL}/mvc/calibrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ existing, session_params }),
+      signal
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`MVC recalibration failed: ${response.status}`, errorData);
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ MVC recalibration successful');
+    return result;
+  }
+
+  // Backward compatibility aliases
+  static async estimateMVC(file: File, options = {}) {
+    console.warn('⚠️ estimateMVC is deprecated, use calibrate() instead');
+    return this.calibrate(file, options);
+  }
+
+  static async recalc(existing: EMGAnalysisResult, session_params: any, signal?: AbortSignal) {
+    console.warn('⚠️ recalc is deprecated, use recalibrate() instead');
+    return this.recalibrate(existing, session_params, signal);
   }
 
   /**
    * Extract MVC values from existing analysis result
    */
   static extractMVCFromAnalysis(analysisResult: EMGAnalysisResult): Record<string, MVCEstimationResult> | null {
-    if (!analysisResult.analytics) return null;
+    console.log('🔍 Starting MVC extraction from analysis result');
+    
+    if (!analysisResult.analytics) {
+      console.warn('⚠️ No analytics data available in analysis result');
+      return null;
+    }
 
     const mvcResults: Record<string, MVCEstimationResult> = {};
 
     for (const [channel, analytics] of Object.entries(analysisResult.analytics)) {
+      console.log(`🔍 Checking ${channel} for MVC data:`, {
+        mvc_threshold_actual_value: analytics.mvc_threshold_actual_value,
+        mvc_estimation_method: analytics.mvc_estimation_method,
+        hasThreshold: analytics.mvc_threshold_actual_value !== null && analytics.mvc_threshold_actual_value !== undefined,
+        hasMethod: !!analytics.mvc_estimation_method
+      });
+
+      // Check for MVC threshold data with method
       if (analytics.mvc_threshold_actual_value !== null && 
           analytics.mvc_threshold_actual_value !== undefined &&
           analytics.mvc_estimation_method) {
@@ -120,10 +168,47 @@ export class MVCService {
           },
           timestamp: new Date().toISOString()
         };
+        
+        console.log(`✅ Successfully extracted MVC for ${channel}:`, mvcResults[channel]);
+      } else {
+        // Try fallback estimation from signal characteristics
+        if (analytics.max_amplitude && analytics.max_amplitude > 0) {
+          console.log(`🔄 Attempting fallback MVC estimation for ${channel} using max_amplitude: ${analytics.max_amplitude}`);
+          
+          // Use max amplitude as MVC estimate (conservative approach)
+          const mvcValue = analytics.max_amplitude;
+          const thresholdPercentage = 75;
+          const thresholdValue = mvcValue * (thresholdPercentage / 100);
+
+          mvcResults[channel] = {
+            mvc_value: mvcValue,
+            threshold_value: thresholdValue,
+            threshold_percentage: thresholdPercentage,
+            estimation_method: 'signal_analysis',
+            confidence_score: 0.6, // Lower confidence for fallback method
+            metadata: {
+              extracted_from_analysis: true,
+              fallback_method: 'max_amplitude',
+              total_contractions: analytics.contraction_count || 0,
+              analysis_timestamp: analysisResult.timestamp
+            },
+            timestamp: new Date().toISOString()
+          };
+          
+          console.log(`⚡ Fallback MVC estimation for ${channel}:`, mvcResults[channel]);
+        } else {
+          console.log(`❌ No MVC data or suitable fallback available for ${channel}`);
+        }
       }
     }
 
-    return Object.keys(mvcResults).length > 0 ? mvcResults : null;
+    if (Object.keys(mvcResults).length > 0) {
+      console.log(`✅ Successfully extracted MVC data for ${Object.keys(mvcResults).length} channels`);
+      return mvcResults;
+    } else {
+      console.log('⚠️ No MVC data could be extracted from any channel');
+      return null;
+    }
   }
 
   /**
