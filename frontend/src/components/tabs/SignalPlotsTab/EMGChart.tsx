@@ -21,7 +21,9 @@ import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
 import { useMVCCalculations } from '@/hooks/useMVCCalculations';
 import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
+import { useUnifiedThresholds } from '@/hooks/useUnifiedThresholds';
 import EMGChartLegend from './EMGChartLegend';
+import MVCThresholdDisplay from './MVCThresholdDisplay';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Legend } from 'recharts';
@@ -261,6 +263,93 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     showGoodContractions,
     showPoorContractions
   });
+  
+  // Create unified thresholds from working useMVCCalculations data
+  const unifiedThresholds = useMemo(() => {
+    if (!sessionParams || !getChannelMVCThreshold) return [];
+    
+    // Extract base channels from available data keys
+    const baseChannels = finalDisplayDataKeys
+      .map(key => key.split(' ')[0]) // "CH1 Raw" -> "CH1"
+      .filter((channel, index, arr) => arr.indexOf(channel) === index) // Remove duplicates
+      .sort();
+    
+    const thresholds = baseChannels
+      .map(baseChannel => {
+        const mvcThreshold = getChannelMVCThreshold(baseChannel);
+        if (!mvcThreshold || mvcThreshold <= 0) return null;
+        
+        // Get muscle name and color
+        const muscleName = getMuscleName(baseChannel);
+        const colorResult = getColorForChannel(baseChannel, channel_muscle_mapping, muscle_color_mapping);
+        
+        // Determine source and confidence based on available data
+        let source = 'session_global';
+        let confidence = 0.4;
+        let mvcBaseValue = mvcThreshold / 0.75; // Assume 75% threshold
+        let mvcPercentage = 75;
+        
+        // 🥇 PRIORITY 1: Backend Clinical Estimation (analytics.mvc_threshold_actual_value)
+        // This is the gold standard - backend's sophisticated clinical algorithm
+        if (analytics?.[baseChannel]?.mvc_threshold_actual_value && analytics[baseChannel].mvc_threshold_actual_value > 0.01) {
+          source = 'analytics';
+          confidence = 0.75; // Good confidence - clinical algorithm
+          mvcPercentage = sessionParams.session_mvc_threshold_percentages?.[baseChannel] || 
+                         sessionParams.session_mvc_threshold_percentage || 75;
+          mvcBaseValue = analytics[baseChannel].mvc_threshold_actual_value / (mvcPercentage / 100);
+        }
+        // 🥈 PRIORITY 2: User-Configured Per-Muscle Values  
+        // Respects user expertise and manual adjustments
+        else if (sessionParams.session_mvc_values?.[baseChannel] && sessionParams.session_mvc_values[baseChannel] > 0.01) {
+          source = 'session_per_muscle';
+          confidence = 0.9; // Very high confidence - user verified
+          mvcPercentage = sessionParams.session_mvc_threshold_percentages?.[baseChannel] || 
+                         sessionParams.session_mvc_threshold_percentage || 75;
+          mvcBaseValue = sessionParams.session_mvc_values[baseChannel];
+        }
+        // 🥉 PRIORITY 3: Global Session MVC (fallback)
+        else if (sessionParams.session_mvc_value && sessionParams.session_mvc_value > 0.01) {
+          source = 'session_global';
+          confidence = 0.4;
+          mvcPercentage = sessionParams.session_mvc_threshold_percentage || 75;
+          mvcBaseValue = sessionParams.session_mvc_value;
+        }
+        
+        return {
+          channel: baseChannel,
+          muscleName,
+          mvcThreshold,
+          mvcBaseValue,
+          mvcPercentage,
+          durationThreshold: sessionParams.contraction_duration_threshold || 2000,
+          color: colorResult.stroke,
+          confidence,
+          source
+        };
+      })
+      .filter((threshold): threshold is NonNullable<typeof threshold> => threshold !== null);
+    
+    logger.debug(LogCategory.MVC_CALCULATION, 'EMGChart: Created unified thresholds from useMVCCalculations', {
+      baseChannels,
+      thresholdCount: thresholds.length,
+      thresholds: thresholds.map(t => ({
+        channel: t.channel,
+        threshold: t.mvcThreshold,
+        source: t.source
+      }))
+    });
+    
+    return thresholds;
+  }, [
+    sessionParams,
+    getChannelMVCThreshold,
+    getMuscleName,
+    getColorForChannel,
+    finalDisplayDataKeys,
+    channel_muscle_mapping,
+    muscle_color_mapping,
+    analytics
+  ]);
 
   // For overlay mode, we need both Raw and RMS data keys
   const overlayDataKeys = useMemo(() => {
@@ -385,9 +474,16 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-0">
+      {/* MVC Threshold Display - Professional transparency */}
+      <MVCThresholdDisplay 
+        unifiedThresholds={unifiedThresholds}
+        className="rounded-t-lg"
+        compact={false}
+      />
+      
       {/* Chart Container */}
-      <div className="w-full h-[500px] border border-gray-200 rounded-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
+      <div className="w-full h-[500px] border border-gray-200 border-t-0 rounded-b-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={chartMargins}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -417,7 +513,18 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             )}
             <Tooltip formatter={(value: number, name: string) => {
               try {
-                return [`${value.toExponential(3)} mV`, getMuscleName(name)];
+                // Handle zero or near-zero values with better formatting
+                let formattedValue: string;
+                if (Math.abs(value) < 1e-6) {
+                  formattedValue = '0.000 mV';
+                } else if (Math.abs(value) >= 0.001) {
+                  // For values >= 1mV, use fixed notation with 3 decimals
+                  formattedValue = `${value.toFixed(3)} mV`;
+                } else {
+                  // For small values, use scientific notation with 3 decimals
+                  formattedValue = `${value.toExponential(3)} mV`;
+                }
+                return [formattedValue, getMuscleName(name)];
               } catch (error) {
                 return [`${value.toExponential(3)} mV`, name];
               }
@@ -428,9 +535,14 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               wrapperStyle={{ top: -5, right: 0, backgroundColor: 'transparent' }} 
               content={() => (
                 <EMGChartLegend 
-                  thresholds={getThresholdData()}
-                  qualitySummary={qualitySummary}
                   sessionParams={sessionParams}
+                  analytics={analytics}
+                  availableDataKeys={finalDisplayDataKeys}
+                  channelMuscleMapping={channel_muscle_mapping}
+                  muscleColorMapping={muscle_color_mapping}
+                  globalMvcThreshold={mvcThresholdForPlot}
+                  getColorForChannel={getColorForChannel}
+                  qualitySummary={qualitySummary}
                 />
               )}
             />

@@ -15,7 +15,11 @@ DEFAULT_FILTER_ORDER = 4
 DEFAULT_RMS_WINDOW_MS = 50  # milliseconds
 
 # Optimized Contraction Detection Parameters (Research-Based 2024)
-DEFAULT_THRESHOLD_FACTOR = 0.20  # 20% of max amplitude
+DEFAULT_THRESHOLD_FACTOR = 0.10  # 10% of max amplitude
+# Clinical rationale: 2024-2025 research supports 5-20% range for EMG detection
+# 10% provides optimal balance between sensitivity and specificity for rehabilitation therapy
+# Lower than previous 20% to detect physiologically relevant submaximal contractions
+# Range: 5-8% (high sensitivity), 10-12% (balanced), 15-20% (high selectivity)
 DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms
 DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage

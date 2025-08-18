@@ -478,6 +478,7 @@ export default function GameSessionTabs({
           plotChannel1Data={mainPlotChannel1Data}
           analysisResult={analysisResult}
           plotChannel2Data={mainPlotChannel2Data}
+          uploadedFileName={uploadedFileName}
           
           // Legacy contraction props
           showGoodContractions={showGoodContractions && showContractionHighlights}

@@ -193,8 +193,8 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     try {
       console.log('🚀 Starting MVC calibration from C3D file:', fileName);
 
-      // Call the backend /mvc/estimate endpoint with the selected file
-      const response = await MVCService.estimateMVC(fileToUse, {
+      // Call the backend /mvc/calibrate endpoint with the selected file
+      const response = await MVCService.calibrate(fileToUse, {
         user_id: authState.user?.id,
         session_id: 'current-session',
         threshold_percentage: 75 // Default threshold percentage

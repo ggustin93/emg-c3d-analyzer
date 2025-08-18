@@ -38,9 +38,9 @@ const ThreeChannelSignalSelector: React.FC<ThreeChannelSignalSelectorProps> = ({
       case 'activated':
         return 'Activated (C3D)';
       case 'processed':
-        return 'RMS (Backend)';
+        return 'RMS Envelope';
       case 'raw_with_rms':
-        return 'Raw + RMS (Backend)';
+        return 'Raw + RMS Envelope';
       default:
         return 'Raw';
     }
@@ -55,13 +55,13 @@ const ThreeChannelSignalSelector: React.FC<ThreeChannelSignalSelectorProps> = ({
       case 'processed':
         return 'Backend-computed RMS envelope (filtered, rectified, ~50ms window)';
       case 'raw_with_rms':
-        return 'Overlay of Raw (C3D) and RMS (Backend) for clinical comparison';
+        return 'Overlay of Raw (C3D) and RMS Envelope for clinical comparison';
       default:
         return '';
     }
   };
 
-  const signalTypes: SignalDisplayType[] = ['raw', 'activated', 'processed', 'raw_with_rms'];
+  const signalTypes: SignalDisplayType[] = ['processed', 'activated', 'raw', 'raw_with_rms'];
 
   return (
     <div className={`flex items-center ${compact ? 'space-x-2' : 'space-x-3'}`}>

@@ -1,6 +1,17 @@
 # Progress Tracking
 
-## Latest Updates (August 17, 2025)
+## Latest Updates (August 18, 2025)
+
+### MVC Routing Consolidation & Single Source of Truth ✅
+- **Unified Endpoint Implementation**: Consolidated dual MVC routing from `/estimate` + `/recalc` to single `/mvc/calibrate` endpoint
+- **Smart Input Detection**: FormData → file upload workflow, JSON → recalibration from existing analysis
+- **Clinical Terminology Migration**: `estimateMVC()` → `calibrate()`, `recalc()` → `recalibrate()` for user-friendly interface
+- **Architectural Fix**: Resolved `useLiveAnalytics` hook calling wrong endpoint (needed full EMG analysis, not just MVC)
+- **Complete Cleanup**: 11 files modified across backend/frontend/tests, all passing validation
+- **SOLID Compliance**: Applied Single Responsibility principle, eliminated DRY violations
+- **Backward Compatibility**: Maintained deprecated methods with warnings for smooth transition
+
+## Previous Updates (August 17, 2025)
 
 ### Clinical UX Polish & Data Enrichment ✅
 - **Subjective Effort Card Improved**: Reworked the color logic for the RPE score to be clinically meaningful. The optimal effort range (4-6) is now highlighted in green, with other colors indicating acceptable or suboptimal effort levels.

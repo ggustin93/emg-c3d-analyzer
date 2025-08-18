@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { EMGAnalysisResult, GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 import { MVCService } from '@/services/mvcService';
-import { useRecalcStore } from '@/store/recalcStore';
+import { useCalibrationStore } from '@/store/calibrationStore';
 
 const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
   if (!params) return null;
@@ -18,7 +18,7 @@ const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: s
 export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
   const { sessionParams } = useSessionStore();
   const [serverResult, setServerResult] = useState<EMGAnalysisResult | null>(analysisResult);
-  const { setRecalcPending, markRecalcComplete } = useRecalcStore();
+  const { setCalibrationPending, markCalibrationComplete } = useCalibrationStore();
   const debounceTimerRef = useRef<number | null>(null);
   const inFlightAbortRef = useRef<AbortController | null>(null);
 
@@ -38,14 +38,26 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
     }
 
     // Set pending immediately
-    setRecalcPending(true);
+    setCalibrationPending(true);
 
     // Debounce 300ms before firing
     debounceTimerRef.current = window.setTimeout(async () => {
       const controller = new AbortController();
       inFlightAbortRef.current = controller;
       try {
-        const updated = await MVCService.recalc(analysisResult, sessionParams, controller.signal);
+        // Call the analysis recalc endpoint for full EMG analysis update
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'}/analysis/recalc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ existing: analysisResult, session_params: sessionParams }),
+          signal: controller.signal
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Analysis recalc failed: ${response.status}`);
+        }
+        
+        const updated = await response.json() as EMGAnalysisResult;
         if (!controller.signal.aborted) {
           setServerResult(updated);
         }
@@ -57,7 +69,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
           if (!controller.signal.aborted) setServerResult(analysisResult);
         }
       } finally {
-        if (!controller.signal.aborted) markRecalcComplete();
+        if (!controller.signal.aborted) markCalibrationComplete();
         inFlightAbortRef.current = null;
       }
     }, 300);
@@ -72,7 +84,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
         inFlightAbortRef.current = null;
       }
     };
-  }, [analysisResult, sessionParams, setRecalcPending, markRecalcComplete]);
+  }, [analysisResult, sessionParams, setCalibrationPending, markCalibrationComplete]);
 
   const liveAnalytics = useMemo(() => {
     const base = serverResult ?? analysisResult;

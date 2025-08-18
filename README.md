@@ -120,7 +120,7 @@ src/
 │   │   │   ├── cache_monitoring.py    # Cache performance monitoring
 │   │   │   ├── export.py              # Data export endpoints
 │   │   │   ├── health.py              # Health check endpoints
-│   │   │   ├── mvc.py                 # MVC threshold management
+│   │   │   ├── mvc.py                 # MVC calibration endpoints (unified)
 │   │   │   ├── signals.py             # Signal processing endpoints
 │   │   │   ├── upload.py              # File upload handling
 │   │   │   └── webhooks.py            # Webhook endpoints

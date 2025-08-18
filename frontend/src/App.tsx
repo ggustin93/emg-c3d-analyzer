@@ -26,7 +26,7 @@ function AppContent() {
   const [appError, setAppError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
-  const [signalType, setSignalType] = useState<SignalDisplayType>('activated');
+  const [signalType, setSignalType] = useState<SignalDisplayType>('processed');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   
   // Authentication state

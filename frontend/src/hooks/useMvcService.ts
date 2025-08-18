@@ -64,7 +64,7 @@ export const useMvcService = (): UseMvcServiceReturn => {
     try {
       console.log('🔄 Starting MVC estimation from file:', file.name);
       
-      const response = await MVCService.estimateMVC(file, {
+      const response = await MVCService.calibrate(file, {
         user_id: sessionParams.user_id,
         session_id: sessionParams.session_id,
         threshold_percentage: options.threshold_percentage || sessionParams.session_mvc_threshold_percentage || 75
