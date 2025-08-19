@@ -399,7 +399,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
             <div className="grid grid-cols-2 gap-4 p-4">
               {muscleChannels2.map((channel) => {
                 // Get channel-specific MVC value or fallback to global MVC value
-                const mvcValue = sessionParams.session_mvc_values?.[channel] || sessionParams.session_mvc_value || null;
+                const mvcValue = sessionParams.session_mvc_values?.[channel] || sessionParams.session_mvc_value;
                 const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 
                                       sessionParams.session_mvc_threshold_percentage ?? 75;
                 
@@ -564,19 +564,14 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
           </div>
 
           {/* MVC Recalculation Section - Simplified UX */}
-          {/* Show if MVC values are hardcoded OR if analytics exist (regardless of MVC content) */}
-          {(sessionParams.session_mvc_values?.['CH1'] === 0.00015 || 
-            sessionParams.session_mvc_values?.['CH2'] === 0.00015 ||
-            sessionParams.session_mvc_value === 0.00015 ||
-            (analytics && Object.keys(analytics).length > 0)) && (
+          {/* Show if MVC values are not yet calculated OR if analytics exist */}
+          {(sessionParams.session_mvc_value === null || (analytics && Object.keys(analytics).length > 0)) && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ActivityLogIcon className="h-4 w-4 text-amber-600" />
                 <h5 className="text-sm font-semibold text-gray-800">MVC Calibration</h5>
-                {(sessionParams.session_mvc_values?.['CH1'] === 0.00015 || 
-                  sessionParams.session_mvc_values?.['CH2'] === 0.00015 ||
-                  sessionParams.session_mvc_value === 0.00015) && (
+                {sessionParams.session_mvc_value === null && (
                   <Badge variant="destructive" className="text-xs">Action Required</Badge>
                 )}
               </div>
@@ -597,10 +592,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
               <div className="space-y-3">
                 {/* Show simplified status based on what's available */}
                 {(() => {
-                  const hasHardcodedValues = muscleChannels2.some(channel => 
-                    sessionParams.session_mvc_values?.[channel] === 0.00015 || 
-                    sessionParams.session_mvc_value === 0.00015
-                  );
+                  const hasMvcBeenCalculated = sessionParams.session_mvc_value !== null;
 
                   const hasMvcAnalytics = analytics && Object.entries(analytics).some(([_, channelData]) => 
                     channelData.mvc_threshold_actual_value != null && channelData.mvc_estimation_method
@@ -608,7 +600,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
 
                   const hasAnalyticsButNoMvc = analytics && Object.keys(analytics).length > 0 && !hasMvcAnalytics;
 
-                  if (hasHardcodedValues) {
+                  if (!hasMvcBeenCalculated) {
                     return (
                       <div className="flex items-start gap-2">
                         <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 mt-0.5" />

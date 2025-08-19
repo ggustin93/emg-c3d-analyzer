@@ -19,7 +19,6 @@ import { SignalDisplayType } from './ThreeChannelSignalSelector';
 import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
 import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
-import { useMVCCalculations } from '@/hooks/useMVCCalculations';
 import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
 import { useUnifiedThresholds } from '@/hooks/useUnifiedThresholds';
 import EMGChartLegend from './EMGChartLegend';
@@ -243,113 +242,33 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     }
   }, [viewMode, availableChannels, selectedChannel, availableDataKeys, effectivePlotMode]);
 
-  // Initialize hooks for MVC calculations and contraction analysis
-  const { getChannelMVCThreshold, getMuscleName, getThresholdData } = useMVCCalculations({
-    sessionParams,
-    mvcThresholdForPlot,
-    analytics,
-    channel_muscle_mapping,
-    muscle_color_mapping,
-    finalDisplayDataKeys,
-    effectivePlotMode,
-    getColorForChannel
-  });
-
-  const { contractionAreas, qualitySummary } = useContractionAnalysis({
-    analytics,
-    sessionParams,
-    finalDisplayDataKeys,
-    chartData,
-    showGoodContractions,
-    showPoorContractions
-  });
-  
-  // Create unified thresholds from working useMVCCalculations data
-  const unifiedThresholds = useMemo(() => {
-    if (!sessionParams || !getChannelMVCThreshold) return [];
-    
-    // Extract base channels from available data keys
-    const baseChannels = finalDisplayDataKeys
-      .map(key => key.split(' ')[0]) // "CH1 Raw" -> "CH1"
-      .filter((channel, index, arr) => arr.indexOf(channel) === index) // Remove duplicates
-      .sort();
-    
-    const thresholds = baseChannels
-      .map(baseChannel => {
-        const mvcThreshold = getChannelMVCThreshold(baseChannel);
-        if (!mvcThreshold || mvcThreshold <= 0) return null;
-        
-        // Get muscle name and color
-        const muscleName = getMuscleName(baseChannel);
-        const colorResult = getColorForChannel(baseChannel, channel_muscle_mapping, muscle_color_mapping);
-        
-        // Determine source and confidence based on available data
-        let source = 'session_global';
-        let confidence = 0.4;
-        let mvcBaseValue = mvcThreshold / 0.75; // Assume 75% threshold
-        let mvcPercentage = 75;
-        
-        // 🥇 PRIORITY 1: Backend Clinical Estimation (analytics.mvc_threshold_actual_value)
-        // This is the gold standard - backend's sophisticated clinical algorithm
-        if (analytics?.[baseChannel]?.mvc_threshold_actual_value && analytics[baseChannel].mvc_threshold_actual_value > 0.01) {
-          source = 'analytics';
-          confidence = 0.75; // Good confidence - clinical algorithm
-          mvcPercentage = sessionParams.session_mvc_threshold_percentages?.[baseChannel] || 
-                         sessionParams.session_mvc_threshold_percentage || 75;
-          mvcBaseValue = analytics[baseChannel].mvc_threshold_actual_value / (mvcPercentage / 100);
-        }
-        // 🥈 PRIORITY 2: User-Configured Per-Muscle Values  
-        // Respects user expertise and manual adjustments
-        else if (sessionParams.session_mvc_values?.[baseChannel] && sessionParams.session_mvc_values[baseChannel] > 0.01) {
-          source = 'session_per_muscle';
-          confidence = 0.9; // Very high confidence - user verified
-          mvcPercentage = sessionParams.session_mvc_threshold_percentages?.[baseChannel] || 
-                         sessionParams.session_mvc_threshold_percentage || 75;
-          mvcBaseValue = sessionParams.session_mvc_values[baseChannel];
-        }
-        // 🥉 PRIORITY 3: Global Session MVC (fallback)
-        else if (sessionParams.session_mvc_value && sessionParams.session_mvc_value > 0.01) {
-          source = 'session_global';
-          confidence = 0.4;
-          mvcPercentage = sessionParams.session_mvc_threshold_percentage || 75;
-          mvcBaseValue = sessionParams.session_mvc_value;
-        }
-        
-        return {
-          channel: baseChannel,
-          muscleName,
-          mvcThreshold,
-          mvcBaseValue,
-          mvcPercentage,
-          durationThreshold: sessionParams.contraction_duration_threshold || 2000,
-          color: colorResult.stroke,
-          confidence,
-          source
-        };
-      })
-      .filter((threshold): threshold is NonNullable<typeof threshold> => threshold !== null);
-    
-    logger.debug(LogCategory.MVC_CALCULATION, 'EMGChart: Created unified thresholds from useMVCCalculations', {
-      baseChannels,
-      thresholdCount: thresholds.length,
-      thresholds: thresholds.map(t => ({
-        channel: t.channel,
-        threshold: t.mvcThreshold,
-        source: t.source
-      }))
+    const { getMvcThreshold, getMuscleName, unifiedThresholds } = useUnifiedThresholds({
+        sessionParams: sessionParams || {
+            session_mvc_value: null,
+            session_mvc_threshold_percentage: 75,
+            contraction_duration_threshold: 2000,
+            channel_muscle_mapping: {},
+            muscle_color_mapping: {},
+            session_mvc_values: {},
+            session_mvc_threshold_percentages: {}
+        },
+        analytics,
+        availableDataKeys: finalDisplayDataKeys,
+        isLoading,
+        channelMuscleMapping: channel_muscle_mapping,
+        muscleColorMapping: muscle_color_mapping,
+        globalMvcThreshold: mvcThresholdForPlot,
+        getColorForChannel
     });
-    
-    return thresholds;
-  }, [
-    sessionParams,
-    getChannelMVCThreshold,
-    getMuscleName,
-    getColorForChannel,
-    finalDisplayDataKeys,
-    channel_muscle_mapping,
-    muscle_color_mapping,
-    analytics
-  ]);
+
+    const { contractionAreas, qualitySummary } = useContractionAnalysis({
+        analytics,
+        sessionParams,
+        finalDisplayDataKeys,
+        chartData,
+        showGoodContractions,
+        showPoorContractions
+    });
 
   // For overlay mode, we need both Raw and RMS data keys
   const overlayDataKeys = useMemo(() => {
@@ -424,7 +343,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
 
     let maxThreshold = -Infinity;
     finalDisplayDataKeys.forEach(key => {
-      const threshold = getChannelMVCThreshold(key);
+      const threshold = getMvcThreshold(key);
       if (threshold !== null) {
         maxThreshold = Math.max(maxThreshold, threshold);
       }
@@ -447,7 +366,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
       domain = [dataMin - padding, dataMax + padding];
     }
     return domain;
-  }, [chartData, finalDisplayDataKeys, getChannelMVCThreshold, mvcThresholdForPlot]);
+  }, [chartData, finalDisplayDataKeys, getMvcThreshold, mvcThresholdForPlot]);
 
 
 
@@ -538,6 +457,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   sessionParams={sessionParams}
                   analytics={analytics}
                   availableDataKeys={finalDisplayDataKeys}
+                  isLoading={isLoading}
                   channelMuscleMapping={channel_muscle_mapping}
                   muscleColorMapping={muscle_color_mapping}
                   globalMvcThreshold={mvcThresholdForPlot}
@@ -651,7 +571,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Find a data key for this base channel to get the threshold
                   const dataKey = keysForThresholds.find(key => key.split(' ')[0] === baseChannelName);
                   if (dataKey) {
-                    const threshold = getChannelMVCThreshold(dataKey);
+                    const threshold = getMvcThreshold(dataKey);
                     if (threshold !== null) {
                       const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
                       thresholdLines.push({ threshold, baseChannelName, colorStyle });
@@ -678,7 +598,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               } else {
                 // Single mode - original logic
                 return keysForThresholds.map((dataKey) => {
-                  const threshold = getChannelMVCThreshold(dataKey);
+                  const threshold = getMvcThreshold(dataKey);
                   if (threshold !== null) {
                     const baseChannelName = dataKey.split(' ')[0];
                     const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
@@ -700,7 +620,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             })()}
 
             {/* Global MVC threshold fallback */}
-            {(plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys).every(dataKey => getChannelMVCThreshold(dataKey) === null) && 
+            {(plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys).every(dataKey => getMvcThreshold(dataKey) === null) && 
              mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
               <ReferenceLine 
                 yAxisId={plotMode === 'raw_with_rms' ? 'right' : 'left'}

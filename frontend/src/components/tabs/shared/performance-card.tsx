@@ -30,6 +30,8 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     therapeuticComplianceScore
   } = usePerformanceMetrics(analysisResult, contractionDurationThreshold);
 
+  const gameScoreWeight = storeSessionParams?.enhanced_scoring?.weights?.gameScore ?? 0;
+
   // Extract game data
   const gameScore = analysisResult?.metadata?.score ?? undefined;
   const gameLevel = analysisResult?.metadata?.level ? Number(analysisResult.metadata.level) : undefined;
@@ -160,7 +162,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
               gameScore={gameScore}
               gameLevel={gameLevel}
               normalizedScore={gameScore !== undefined ? Math.min(100, (gameScore / Math.max(gameScore || 1, 100)) * 100) : 0}
-              showExperimental={true}
+              gameScoreWeight={gameScoreWeight}
             />
           </div>
         )}

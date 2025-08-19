@@ -34,6 +34,7 @@ interface StatsPanelComponentProps extends ExternalStatsPanelProps {
   viewMode: FilterMode;
   onFilterChange: (mode: FilterMode, channel?: string) => void;
   isInitializingComparison?: boolean;
+  isLoading: boolean;
   plotMode: 'raw' | 'activated';
   setPlotMode: (mode: 'raw' | 'activated') => void;
 }
@@ -139,6 +140,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   viewMode,
   onFilterChange,
   isInitializingComparison = false,
+  isLoading,
   plotMode,
   setPlotMode
 }) => {
@@ -199,13 +201,15 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
     availableChannels.length > 0 &&
     availableChannels.every(channel => displayAllChannelsData[channel] !== undefined);
 
-  if (isInitializingComparison || (viewMode === 'comparison' && !hasEnoughDataForComparison)) {
+  if (isInitializingComparison || isLoading || (viewMode === 'comparison' && !hasEnoughDataForComparison)) {
     return (
       <div className="my-4 p-4 border rounded-lg shadow-sm bg-slate-50">
         <p className="text-center text-muted-foreground">
-          {isInitializingComparison || !hasEnoughDataForComparison
-            ? "Initializing comparison data..."
-            : "Select channels to compare their analytics."}
+          {isLoading
+            ? "Loading analytics data..."
+            : isInitializingComparison || !hasEnoughDataForComparison
+              ? "Initializing comparison data..."
+              : "Select channels to compare their analytics."}
         </p>
         <div className="flex justify-center my-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>

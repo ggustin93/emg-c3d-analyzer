@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
-import ClinicalTooltip from '@/components/ui/clinical-tooltip';
+import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useScoreColors } from '@/hooks/useScoreColors';
@@ -138,70 +138,15 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                     <StarIcon className="h-3 w-3 text-white" />
                   </div>
                   Overall Performance
-                  <ClinicalTooltip
-                    title="GHOSTLY+ Overall Performance Score"
-                    description="Composite score (0–100). Higher is better. Weights are configurable by therapists."
-                    sections={[
-                      {
-                        title: "Formula",
-                        type: "formula" as const,
-                        items: [
-                          {
-                            label: "P<sub>overall</sub> =",
-                            value: `w<sub>c</sub>·S<sub>compliance</sub> + w<sub>s</sub>·S<sub>symmetry</sub> + w<sub>e</sub>·S<sub>effort</sub>${weights.gameScore > 0 ? ' + w<sub>g</sub>·S<sub>game</sub>' : ''}`,
-                            color: "text-slate-800"
-                          }
-                        ]
-                      },
-                      {
-                        title: "Components",
-                        type: "list" as const,
-                        items: [
-                          ...(weights.compliance > 0 ? [{ label: "Compliance (C)", description: "Exercise execution quality — completion, intensity (≥75% MVC), and duration (≥2.0s)", color: "text-green-700" }] : []),
-                          ...(weights.symmetry > 0 ? [{ label: "Symmetry (S)", description: "Bilateral activation balance — higher = more balanced", color: "text-purple-700" }] : []),
-                          ...(weights.effort > 0 ? [{ label: "Effort (E)", description: "Patient-reported exertion (Borg CR10) — target: 4–6", color: "text-orange-700" }] : []),
-                          ...(weights.gameScore > 0 ? [{ label: "Game (G)", description: "Experimental engagement signal — use only if clinically relevant", color: "text-cyan-700" }] : [])
-                        ]
-                      },
-                      {
-                        title: "Weights",
-                        type: "table" as const,
-                        items: [
-                          ...(weights.compliance > 0 ? [{ label: "Compliance (C)", value: `${Math.round(weights.compliance * 100)}%`, color: "text-green-700" }] : []),
-                          ...(weights.symmetry > 0 ? [{ label: "Symmetry (S)", value: `${Math.round(weights.symmetry * 100)}%`, color: "text-purple-700" }] : []),
-                          ...(weights.effort > 0 ? [{ label: "Effort (E)", value: `${Math.round(weights.effort * 100)}%`, color: "text-orange-700" }] : []),
-                          ...(weights.gameScore > 0 ? [{ label: "Game (G)", value: `${Math.round(weights.gameScore * 100)}%`, color: "text-cyan-700" }] : [])
-                        ]
-                      },
-                      {
-                        title: "Notes",
-                        type: "list" as const,
-                        items: [
-                          { label: "Interpretation", description: "Aggregates weighted components. 100 = optimal performance." },
-                          { label: "Configuration", description: "Adjust weights in Settings → Performance." }
-                        ]
-                      }
-                    ]}
-                    triggerClassName="ml-1"
+                  <OverallPerformanceScoreTooltip 
+                    muscleComplianceWeight={weights.compliance}
+                    effortScoreWeight={weights.effort}
+                    gameScoreWeight={weights.gameScore}
                   />
                   </CardTitle>
                   <p className={`text-sm font-bold ${scoreTextColor} mb-2`}>{scoreLabel}</p>
                   
-                  <ClinicalTooltip
-                    title="Weighted Score Calculation"
-                    sections={[
-                      {
-                        type: "table",
-                        items: [
-                          ...(weights.compliance > 0 ? [{ label: "Therapeutic Compliance", percentage: `${Math.round(weights.compliance * 100)}`, color: "text-green-600" }] : []),
-                          ...(weights.symmetry > 0 ? [{ label: "Muscle Symmetry", percentage: `${Math.round(weights.symmetry * 100)}`, color: "text-purple-600" }] : []),
-                          ...(weights.effort > 0 ? [{ label: "Subjective Effort", percentage: `${Math.round(weights.effort * 100)}`, color: "text-orange-600" }] : []),
-                          ...(weights.gameScore > 0 ? [{ label: "Game Performance", percentage: `${Math.round(weights.gameScore * 100)}`, color: "text-cyan-600" }] : [])
-                        ]
-                      }
-                    ]}
-                    variant="compact"
-                  >
+                  <WeightedScoreTooltip weights={weights}>
                     <div>
                       <CircleDisplay 
                         value={totalScore} 
@@ -211,7 +156,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         showPercentage={true}
                       />
                     </div>
-                  </ClinicalTooltip>
+                  </WeightedScoreTooltip>
                   <ChevronDownIcon className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                 </CardHeader>
             </div>

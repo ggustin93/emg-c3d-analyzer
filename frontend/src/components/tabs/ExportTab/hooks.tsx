@@ -143,7 +143,24 @@ export function useExportData(
 
     // Include analytics if selected
     if (exportOptions.includeAnalytics && analysisResult.analytics) {
-      exportData.analytics = analysisResult.analytics;
+      const analyticsWithMvc = { ...analysisResult.analytics };
+      
+      // Enrich analytics with MVC estimation details from session parameters
+      if (sessionParams?.session_mvc_values) {
+        Object.keys(analyticsWithMvc).forEach(channel => {
+          if (sessionParams.session_mvc_values[channel] && analyticsWithMvc[channel]) {
+            // Ensure mvc_estimation property exists
+            if (!analyticsWithMvc[channel].mvc_estimation) {
+              analyticsWithMvc[channel].mvc_estimation = {};
+            }
+            
+            analyticsWithMvc[channel].mvc_estimation.estimated_mvc_95th_percentile = sessionParams.session_mvc_values[channel];
+            analyticsWithMvc[channel].mvc_estimation.method = analyticsWithMvc[channel].mvc_estimation_method || 'unknown';
+          }
+        });
+      }
+      
+      exportData.analytics = analyticsWithMvc;
     }
 
     // Include session parameters if selected

@@ -25,6 +25,7 @@ interface EMGChartLegendProps {
   sessionParams?: GameSessionParameters;
   analytics?: Record<string, ChannelAnalyticsData> | null;
   availableDataKeys: string[];
+  isLoading: boolean;
   channelMuscleMapping?: Record<string, string>;
   muscleColorMapping?: Record<string, string>;
   globalMvcThreshold?: number | null;
@@ -48,15 +49,16 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
   muscleColorMapping = {},
   globalMvcThreshold,
   getColorForChannel,
-  qualitySummary
+  qualitySummary,
+  isLoading
 }) => {
   // Use the professional unified thresholds hook
   const {
     unifiedThresholds,
-    hasValidThresholds
+    thresholdsReady
   } = useUnifiedThresholds({
     sessionParams: sessionParams || {
-      session_mvc_value: 0.00015,
+      session_mvc_value: null, // Use null to indicate "not yet calculated"
       session_mvc_threshold_percentage: 75,
       contraction_duration_threshold: 2000,
       channel_muscle_mapping: {},
@@ -66,6 +68,7 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
     },
     analytics,
     availableDataKeys,
+    isLoading,
     channelMuscleMapping,
     muscleColorMapping,
     globalMvcThreshold,
@@ -79,9 +82,17 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
     return muscleName.substring(0, 1).toUpperCase();
   };
 
+  // Renders a placeholder when thresholds are not yet available
+  const renderLoadingThresholds = () => (
+    <div className="flex items-center justify-center gap-2 text-gray-500">
+      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
+      <span>Calculating thresholds...</span>
+    </div>
+  );
+
   logger.debug(LogCategory.DATA_PROCESSING, 'EMGChartLegend unified thresholds', {
     unifiedCount: unifiedThresholds.length,
-    hasValid: hasValidThresholds,
+    thresholdsReady: thresholdsReady,
     channels: unifiedThresholds.map(t => t.channel)
   });
 
@@ -92,54 +103,58 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
         <div className="flex flex-wrap items-center justify-center gap-4 py-1.5 text-xs"
              style={{ maxWidth: '100%', overflow: 'hidden' }}>
           
-          {/* Unified MVC Thresholds (Single Entry Per Channel) */}
-          {hasValidThresholds && (
-            <div className="flex items-center gap-1">
-              <span className="text-gray-600 font-medium">
-                MVC {sessionParams?.session_mvc_threshold_percentage || EMG_CHART_CONFIG.MVC_THRESHOLD_PERCENTAGE}% Thresholds:
-              </span>
-              <div className="flex items-center gap-2">
-                {unifiedThresholds.map((threshold) => {
-                  const shortLabel = getShortLabel(threshold.muscleName);
-                  
-                  return (
-                    <div key={`mvc-unified-${threshold.channel}`} className="flex items-center gap-1">
-                      <span 
-                        className="inline-block w-3 h-0 border-t-2 border-dashed" 
-                        style={{ borderColor: threshold.color }}
-                      />
-                      <span style={{ color: threshold.color, fontWeight: 500 }}>
-                        {shortLabel}:{threshold.mvcThreshold.toExponential(3)}V
-                      </span>
-                    </div>
-                  );
-                })}
+          {!thresholdsReady ? (
+            renderLoadingThresholds()
+          ) : unifiedThresholds.length > 0 ? (
+            <>
+              {/* Unified MVC Thresholds (Single Entry Per Channel) */}
+              <div className="flex items-center gap-1">
+                <span className="text-gray-600 font-medium">
+                  MVC {sessionParams?.session_mvc_threshold_percentage || EMG_CHART_CONFIG.MVC_THRESHOLD_PERCENTAGE}% Thresholds:
+                </span>
+                <div className="flex items-center gap-2">
+                  {unifiedThresholds.map((threshold) => {
+                    const shortLabel = getShortLabel(threshold.muscleName);
+                    
+                    return (
+                      <div key={`mvc-unified-${threshold.channel}`} className="flex items-center gap-1">
+                        <span 
+                          className="inline-block w-3 h-0 border-t-2 border-dashed" 
+                          style={{ borderColor: threshold.color }}
+                        />
+                        <span style={{ color: threshold.color, fontWeight: 500 }}>
+                          {shortLabel}:{threshold.mvcThreshold.toExponential(3)}V
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* Unified Duration Thresholds (Single Entry Per Channel) */}
-          {hasValidThresholds && (
-            <div className="flex items-center gap-1">
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-600 font-medium">Duration Thresholds:</span>
-              <div className="flex items-center gap-2">
-                {unifiedThresholds.map((threshold) => {
-                  const shortLabel = getShortLabel(threshold.muscleName);
-                  
-                  return (
-                    <div key={`duration-unified-${threshold.channel}`} className="flex items-center gap-1">
-                      <span 
-                        className="inline-block w-2 h-1 border border-gray-400 rounded-sm bg-gray-100" 
-                      />
-                      <span className="text-gray-700 font-medium">
-                        {shortLabel}:{threshold.durationThreshold}ms
-                      </span>
-                    </div>
-                  );
-                })}
+              
+              {/* Unified Duration Thresholds (Single Entry Per Channel) */}
+              <div className="flex items-center gap-1">
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-600 font-medium">Duration Thresholds:</span>
+                <div className="flex items-center gap-2">
+                  {unifiedThresholds.map((threshold) => {
+                    const shortLabel = getShortLabel(threshold.muscleName);
+                    
+                    return (
+                      <div key={`duration-unified-${threshold.channel}`} className="flex items-center gap-1">
+                        <span 
+                          className="inline-block w-2 h-1 border border-gray-400 rounded-sm bg-gray-100" 
+                        />
+                        <span className="text-gray-700 font-medium">
+                          {shortLabel}:{threshold.durationThreshold}ms
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            </>
+          ) : (
+            <div className="text-gray-500">No valid MVC thresholds to display.</div>
           )}
         </div>
         

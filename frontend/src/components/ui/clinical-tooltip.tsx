@@ -12,7 +12,9 @@ import {
   getGhostlyScoreTooltipData,
   getAppliedPressureTooltipData,
   getAOPTooltipData,
-  type TooltipData
+  type TooltipData,
+  getOverallPerformanceScoreTooltipData,
+  getWeightedScoreTooltipData
 } from '@/data/tooltipData';
 
 interface ClinicalTooltipProps {
@@ -36,8 +38,6 @@ interface ClinicalTooltipProps {
   className?: string;
   triggerClassName?: string;
   variant?: 'default' | 'compact';
-  /** When true, force tooltip content to appear centered in the viewport */
-  centered?: boolean;
 }
 
 export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
@@ -50,7 +50,6 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   className,
   triggerClassName,
   variant = 'default',
-  centered = false
 }) => {
   return (
     <TooltipProvider>
@@ -66,118 +65,59 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
           )}
         </TooltipTrigger>
         <TooltipContent 
-          side={centered ? undefined : side}
-          sideOffset={centered ? 0 : 8}
-          align={centered ? undefined : align}
-          avoidCollisions={!centered}
-          collisionPadding={12}
+          side={side}
+          align={align}
           className={cn(
-            "z-[10000] bg-amber-50",
-            "border-2 border-amber-300 shadow-2xl p-0 rounded-lg",
-            // Responsive sizing: never overflow viewport
-            "max-w-[95vw] sm:max-w-[36rem] w-[min(95vw,36rem)] max-h-[80vh] overflow-auto overscroll-contain",
-            centered && "!fixed !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2",
+            "max-w-sm w-auto p-4", // Simplified sizing
             className
           )}
-          style={centered ? { position: 'fixed' } : undefined}
         >
           <div>
-            {/* Elegant Header */}
-            <div className="bg-amber-500 px-4 py-3">
+            <p className={cn(
+              "font-bold mb-2",
+              variant === 'compact' ? "text-sm" : "text-base"
+            )}>{title}</p>
+
+            {description && (
               <p className={cn(
-                "font-bold tracking-tight text-white drop-shadow-sm",
-                variant === 'compact' ? "text-sm" : "text-base"
-              )}>{title}</p>
-            </div>
+                "text-muted-foreground mb-3",
+                variant === 'compact' ? "text-xs" : "text-sm"
+              )}>{description}</p>
+            )}
 
-            {/* Content */}
-            <div className={cn(
-              "px-4 py-3 space-y-3",
-              variant === 'compact' && "px-3 py-2 space-y-2"
-            )}>
-              {/* Description */}
-              {description && (
-                <p className={cn(
-                  "text-slate-700 leading-relaxed font-medium",
-                  variant === 'compact' ? "text-xs" : "text-sm"
-                )}>{description}</p>
-              )}
-
-              {/* Sections */}
+            <div className="space-y-3">
               {sections.map((section, idx) => (
-                <div 
-                  key={idx} 
-                  className="bg-white rounded-lg p-3 border border-amber-200 shadow-sm"
-                >
+                <div key={idx} className="border-t pt-3 first:border-t-0 first:pt-0">
                   {section.title && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-                      <h4 className={cn(
-                        "font-bold text-slate-800",
-                        variant === 'compact' ? "text-xs" : "text-sm"
-                      )}>{section.title}</h4>
-                    </div>
+                    <h4 className={cn(
+                      "font-semibold text-foreground mb-2",
+                      variant === 'compact' ? "text-xs" : "text-sm"
+                    )}>{section.title}</h4>
                   )}
 
-                  {/* Enhanced List Type */}
                   {section.type === 'list' && (
-                    <div className={cn(
-                      "space-y-2 text-slate-700",
+                    <ul className={cn(
+                      "space-y-2 text-muted-foreground list-disc pl-4",
                       variant === 'compact' ? "text-xs space-y-1" : "text-sm"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex items-start gap-2 text-left">
-                          {item.percentage ? (
-                            <div className="flex items-start gap-2 w-full">
-                              <span 
-                                className={cn(
-                                  "font-bold text-xs px-2 py-0.5 rounded-full bg-opacity-20 border flex-shrink-0",
-                                  item.color === "text-emerald-600" && "text-emerald-700 bg-emerald-100 border-emerald-300",
-                                  item.color === "text-green-600" && "text-green-700 bg-green-100 border-green-300",
-                                  item.color === "text-yellow-600" && "text-yellow-700 bg-yellow-100 border-yellow-300",
-                                  item.color === "text-red-600" && "text-red-700 bg-red-100 border-red-300",
-                                  !item.color && "text-slate-700 bg-slate-100 border-slate-300"
-                                )}
-                              >
-                                {item.percentage}
-                              </span>
-                              <div className="flex-1">
-                                <span className="font-medium">{item.label}</span>
-                                <span className="text-slate-600 leading-relaxed ml-1">{item.description}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                              <div className="flex-1">
-                                {item.label && <span className="font-medium">{item.label}: </span>}
-                                <span className="text-slate-600 leading-relaxed">
-                                  {item.description}
-                                  {item.value && !item.percentage && ` ${item.value}`}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                        <li key={itemIdx}>
+                          {item.label && <span className="font-medium text-foreground">{item.label}: </span>}
+                          <span>{item.description}</span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
-
-                  {/* Enhanced Table Type */}
+                  
                   {(section.type === 'table' || !section.type) && (
                     <div className={cn(
-                      "space-y-1.5 text-slate-700",
+                      "space-y-1.5 text-foreground",
                       variant === 'compact' ? "text-xs" : "text-sm"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex items-center justify-between py-1 border-b border-amber-100 last:border-b-0">
-                          <span className="font-semibold text-slate-800">{item.label}</span>
-                          <span 
-                            className={cn(
-                              "font-bold tabular-nums px-2 py-0.5 rounded text-xs",
-                              item.color || "text-slate-800 bg-slate-100"
-                            )}
-                          >
+                        <div key={itemIdx} className="flex items-center justify-between">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className={cn("font-semibold", item.color)}>
                             {item.value || item.percentage}
                             {item.percentage && '%'}
                           </span>
@@ -186,22 +126,21 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
                     </div>
                   )}
 
-                  {/* Enhanced Formula Type */}
                   {section.type === 'formula' && (
-                    <div className={cn(
-                      "bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg p-3 text-center",
+                     <div className={cn(
+                      "bg-white rounded-md p-3 text-center border border-amber-200",
                       variant === 'compact' ? "text-sm p-2" : "text-base"
                     )}>
                       {section.items.map((item, itemIdx) => (
-                        <div key={itemIdx} className="font-serif italic">
-                          {item.label && (
+                        <div key={itemIdx} className="font-serif italic text-muted-foreground">
+                           {item.label && (
                             <span 
-                              className={cn("font-bold text-xl mr-2", item.color || "text-slate-800")}
+                              className={cn("font-bold text-lg mr-2 text-foreground", item.color)}
                               dangerouslySetInnerHTML={{ __html: String(item.label) }}
                             />
                           )}
                           <span 
-                            className="text-slate-700 font-medium" 
+                            className="font-medium" 
                             dangerouslySetInnerHTML={{ __html: String(item.value || '') }} 
                           />
                         </div>
@@ -388,11 +327,11 @@ export const GHOSTLYScoreTooltip: React.FC<{
   gameScore?: number;
   gameLevel?: number;
   normalizedScore?: number;
-  showExperimental?: boolean;
+  gameScoreWeight?: number; // Changed from showExperimental
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-}> = ({ gameScore = 0, gameLevel, normalizedScore = 0, showExperimental = false, side = 'top', children }) => {
-  const data = getGhostlyScoreTooltipData(gameScore, gameLevel, normalizedScore, showExperimental);
+}> = ({ gameScore = 0, gameLevel, normalizedScore = 0, gameScoreWeight = 0, side = 'top', children }) => {
+  const data = getGhostlyScoreTooltipData(gameScore, gameLevel, normalizedScore, gameScoreWeight);
   
   return (
     <DataDrivenTooltip
@@ -441,6 +380,45 @@ export const AOPTooltip: React.FC<{
     </DataDrivenTooltip>
   );
 };
+
+
+// NEW: Preset for the overall performance score
+export const OverallPerformanceScoreTooltip: React.FC<{
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  children?: React.ReactNode;
+  muscleComplianceWeight?: number;
+  effortScoreWeight?: number;
+  gameScoreWeight?: number;
+}> = ({ 
+  side = 'top', 
+  children,
+  muscleComplianceWeight,
+  effortScoreWeight,
+  gameScoreWeight
+}) => {
+  const data = getOverallPerformanceScoreTooltipData(
+    muscleComplianceWeight,
+    effortScoreWeight,
+    gameScoreWeight
+  );
+  return <DataDrivenTooltip data={data} side={side} children={children} />;
+};
+
+// NEW: Preset for the weighted score breakdown
+export const WeightedScoreTooltip: React.FC<{
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  children?: React.ReactNode;
+  weights: {
+    compliance: number;
+    symmetry: number;
+    effort: number;
+    gameScore: number;
+  };
+}> = ({ side = 'top', children, weights }) => {
+  const data = getWeightedScoreTooltipData(weights);
+  return <DataDrivenTooltip data={data} side={side} children={children} variant="compact" />;
+};
+
 
 // Export other preset tooltips as needed
 export default ClinicalTooltip;

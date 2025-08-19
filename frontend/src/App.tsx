@@ -8,7 +8,7 @@ import { useDataDownsampling } from "./hooks/useDataDownsampling";
 import { useChannelManagement } from "./hooks/useChannelManagement";
 import { usePlotDataProcessor } from "./hooks/useEmgDataFetching";
 import { useGameSessionData } from "./hooks/useGameSessionData";
-import { useMvcInitialization } from "./hooks/useMvcInitialization";
+import { initializeMvcValuesFromAnalysis } from "@/lib/mvcUtils";
 import { useMuscleDefaults } from "./hooks/useMuscleDefaults";
 import { CombinedChartDataPoint } from "./components/tabs/SignalPlotsTab/EMGChart";
 import { SignalDisplayType } from "./components/tabs/SignalPlotsTab/ThreeChannelSignalSelector";
@@ -42,7 +42,6 @@ function AppContent() {
   
   // Initialize hooks
   const downsamplingControls = useDataDownsampling(2500);
-  const { initializeMvcValues } = useMvcInitialization();
   const { ensureDefaultMuscleGroups } = useMuscleDefaults();
   const {
     plotChannel1Name,
@@ -178,19 +177,15 @@ function AppContent() {
     
     // Update sessionParams from the response if available
     if (data && data.metadata && data.metadata.session_parameters_used) {
-      // Get the available channels from the data
       const availableChannels = data.analytics ? Object.keys(data.analytics) : [];
       
-      // Step 1: Initialize session parameters with default muscle groups (Quadriceps)
       let updatedSessionParams = ensureDefaultMuscleGroups(
         availableChannels, 
         data.metadata.session_parameters_used || sessionParams
       );
       
-      // Step 2: Initialize MVC values and thresholds
-      updatedSessionParams = initializeMvcValues(data, updatedSessionParams);
+      updatedSessionParams = initializeMvcValuesFromAnalysis(data, updatedSessionParams);
       
-      // Step 3: Store game metadata if available
       if (data.metadata.score !== undefined) {
         updatedSessionParams.game_score = data.metadata.score;
       }
@@ -211,7 +206,7 @@ function AppContent() {
       // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
-  }, [resetStatePreservingUploadDate, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, initializeMvcValues, ensureDefaultMuscleGroups, setSessionParams, uploadDate]);
+  }, [resetStatePreservingUploadDate, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, ensureDefaultMuscleGroups, initializeMvcValuesFromAnalysis, setSessionParams, uploadDate]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();

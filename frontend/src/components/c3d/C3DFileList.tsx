@@ -335,7 +335,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <div key={file.id} 
                   className={`flex flex-col md:flex-row gap-2 md:gap-4 items-start md:items-center py-2 px-4 rounded-lg transition-all duration-200 border ${
                     loadingFileId === file.id 
-                      ? 'bg-green-50 border-green-200 shadow-sm' 
+                      ? 'bg-primary/10 border-primary/30 shadow-sm' 
                       : 'border-slate-100 hover:bg-slate-50 hover:border-slate-200 hover:shadow-sm'
                   }`}
                 >
@@ -345,10 +345,10 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       <div className="flex items-center">
                         {loadingFileId === file.id ? (
                           <div className="relative mr-3 flex-shrink-0">
-                            <FileIcon className="w-4 h-4 text-blue-500" />
+                            <FileIcon className="w-4 h-4 text-primary" />
                             <div className="absolute -top-1 -right-1">
                               <svg 
-                                className="animate-spin w-2 h-2 text-green-600" 
+                                className="animate-spin w-2 h-2 text-primary" 
                                 xmlns="http://www.w3.org/2000/svg" 
                                 fill="none" 
                                 viewBox="0 0 24 24"
@@ -373,7 +373,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
                         )}
                         <span className={`text-sm font-semibold truncate ${
-                          loadingFileId === file.id ? 'text-green-700' : 'text-slate-900'
+                          loadingFileId === file.id ? 'text-primary' : 'text-slate-900'
                         }`}>
                           {file.name}
                         </span>
@@ -526,10 +526,10 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <div className="flex items-center cursor-help">
                             {loadingFileId === file.id ? (
                               <div className="relative mr-3 flex-shrink-0">
-                                <FileIcon className="w-4 h-4 text-blue-500" />
+                                <FileIcon className="w-4 h-4 text-primary" />
                                 <div className="absolute -top-1 -right-1">
                                   <svg 
-                                    className="animate-spin w-2 h-2 text-green-600" 
+                                    className="animate-spin w-2 h-2 text-primary" 
                                     xmlns="http://www.w3.org/2000/svg" 
                                     fill="none" 
                                     viewBox="0 0 24 24"
@@ -554,7 +554,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                               <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
                             )}
                             <span className={`text-sm font-semibold truncate ${
-                              loadingFileId === file.id ? 'text-green-700' : 'text-slate-900'
+                              loadingFileId === file.id ? 'text-primary' : 'text-slate-900'
                             }`}>
                               {file.name}
                             </span>

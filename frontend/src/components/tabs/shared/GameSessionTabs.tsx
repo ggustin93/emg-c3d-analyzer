@@ -441,6 +441,7 @@ export default function GameSessionTabs({
                 viewMode={viewMode}
                 onFilterChange={handleFilterChange}
                 isInitializingComparison={isInitializingComparison}
+                isLoading={appIsLoading}
                 plotMode={signalType === 'raw' ? 'raw' : 'activated'}
                 setPlotMode={(mode: 'raw' | 'activated') => setSignalType(mode)}
               />
