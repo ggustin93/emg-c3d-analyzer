@@ -62,18 +62,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   const patientBadgeProps = getPatientIdBadgeProps(resolvedPatientId);
   const therapistBadgeProps = getTherapistIdBadgeProps(resolvedTherapistId);
   
-  // 🔍 DEBUG: Upload Date Troubleshooting
-  console.group('🔍 FileMetadataBar Debug - Upload Date');
-  console.log('🎯 FILEMETADATABAR - Props received:', {
-    hasAnalysisResult: !!analysisResult,
-    uploadDate,
-    uploadDateType: typeof uploadDate,
-    uploadDateValue: uploadDate,
-    analysisResultTimestamp: analysisResult?.timestamp,
-    metadataTime: metadata?.time,
-    metadataSessionDate: metadata?.session_date
-  });
-  console.groupEnd();
+  // Debug info removed for test compatibility
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
@@ -96,44 +85,22 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   };
 
   const formatUploadDate = (dateString: string | undefined): string => {
-    console.log('🕒 formatUploadDate called with:', {
-      input: dateString,
-      inputType: typeof dateString,
-      inputLength: dateString?.length,
-      isEmpty: !dateString,
-      isNull: dateString === null,
-      isUndefined: dateString === undefined
-    });
-
     if (!dateString) {
-      console.log('❌ Upload date is falsy, returning N/A');
       return 'N/A';
     }
     
     try {
       const date = new Date(dateString);
-      console.log('📅 Date parsing:', {
-        originalString: dateString,
-        parsedDate: date,
-        isValid: !isNaN(date.getTime()),
-        timestamp: date.getTime()
-      });
-      
       if (isNaN(date.getTime())) {
-        console.log('❌ Date is invalid, returning N/A');
         return 'N/A';
       }
       
-      const formatted = date.toLocaleDateString('en-GB', {
+      return date.toLocaleDateString('en-GB', {
         year: '2-digit',
         month: '2-digit',
         day: '2-digit'
       });
-      
-      console.log('✅ Upload date formatted successfully:', formatted);
-      return formatted;
-    } catch (error) {
-      console.log('❌ Error formatting upload date:', error);
+    } catch {
       return 'N/A';
     }
   };
@@ -147,7 +114,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             {/* Filename */}
             <div className="flex items-center space-x-2">
               <File className="h-4 w-4 text-slate-400" />
-              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded">
+              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded" data-testid="filename">
                 {source_filename}
               </span>
             </div>
@@ -164,10 +131,10 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             )}
 
             {/* Therapist ID - Now using centralized resolver */}
-            {resolvedTherapistId !== 'Unknown' && (
-              <div className="flex items-center space-x-2">
+            {resolvedTherapistId && resolvedTherapistId !== 'Unknown' && (
+              <div className="flex items-center space-x-2" data-testid="therapist-section">
                 <User className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-600 text-xs">Therapist:</span>
+                <span className="text-slate-600 text-xs" data-testid="therapist-label">Therapist:</span>
                 <Badge {...therapistBadgeProps}>
                   {resolvedTherapistId}
                 </Badge>
