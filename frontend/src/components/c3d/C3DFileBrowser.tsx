@@ -2,7 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Spinner from '@/components/ui/Spinner';
-import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
+import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, EyeOpenIcon, PersonIcon, ArchiveIcon, CalendarIcon } from '@radix-ui/react-icons';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import SupabaseStorageService from '@/services/supabaseStorage';
 import SupabaseSetup from '@/lib/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +19,17 @@ import {
   resolveSessionDate,
   getSizeCategory
 } from '@/services/C3DFileDataResolver';
+
+type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
+type SortDirection = 'asc' | 'desc';
+
+interface ColumnVisibility {
+  patient_id: boolean;
+  therapist_id: boolean;
+  size: boolean;
+  session_date: boolean;
+  upload_date: boolean;
+}
 import C3DFileUpload from '@/components/c3d/C3DFileUpload';
 import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
 import C3DFileList from '@/components/c3d/C3DFileList';
@@ -51,6 +68,22 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [filesPerPage] = useState(10);
+  
+  // Sort states
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
+  // Column visibility states  
+  const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
+    const saved = localStorage.getItem('c3d-visible-columns');
+    return saved ? JSON.parse(saved) : {
+      patient_id: true,
+      therapist_id: true,
+      size: true,
+      session_date: true,
+      upload_date: false  // Default to false as requested
+    };
+  });
   
   // 🔍 DEBUG: Log files when they change
   console.log('🗂️ C3DFileBrowser - Files loaded:', {
@@ -185,7 +218,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     loadFiles();
   }, [authState.loading, authState.user]); // Depend on auth state changes
 
-  // Filtered and sorted files
+  // Filtered files
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
       const matchesSearch = file.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
@@ -221,17 +254,85 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
   }, [files, filters]);
 
-  // Pagination calculations
-  const totalFiles = filteredFiles.length;
+  // Sorted files (apply sorting to ALL filtered results)
+  const sortedFiles = useMemo(() => {
+    const sorted = [...filteredFiles].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      // Handle special cases - use resolved values for sorting
+      if (sortField === 'patient_id') {
+        aValue = resolvePatientId(a);
+        bValue = resolvePatientId(b);
+      } else if (sortField === 'therapist_id') {
+        aValue = resolveTherapistId(a);
+        bValue = resolveTherapistId(b);
+      } else if (sortField === 'session_date') {
+        aValue = resolveSessionDate(a);
+        bValue = resolveSessionDate(b);
+        // Handle null values - put them at the end
+        if (!aValue && !bValue) return 0;
+        if (!aValue) return sortDirection === 'asc' ? 1 : -1;
+        if (!bValue) return sortDirection === 'asc' ? -1 : 1;
+      } else {
+        // For other fields, use direct property access
+        aValue = a[sortField as keyof C3DFile];
+        bValue = b[sortField as keyof C3DFile];
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        const comparison = aValue - bValue;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      // For dates
+      if (sortField === 'created_at' || sortField === 'session_date') {
+        const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      return 0;
+    });
+
+    return sorted;
+  }, [filteredFiles, sortField, sortDirection]);
+
+  // Pagination calculations (now applied to sorted data)
+  const totalFiles = sortedFiles.length;
   const totalPages = Math.ceil(totalFiles / filesPerPage);
   const startIndex = (currentPage - 1) * filesPerPage;
   const endIndex = startIndex + filesPerPage;
-  const paginatedFiles = filteredFiles.slice(startIndex, endIndex);
+  const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
 
-  // Reset to first page when filters change
+  // Reset to first page when filters or sorting change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters]);
+  }, [filters, sortField, sortDirection]);
+
+  // Handle sorting
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Handle column visibility
+  const toggleColumnVisibility = (column: keyof ColumnVisibility) => {
+    const newVisibility = {
+      ...visibleColumns,
+      [column]: !visibleColumns[column]
+    };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('c3d-visible-columns', JSON.stringify(newVisibility));
+  };
 
   // Handle filter changes
   const handleFiltersChange = (newFilters: Partial<FilterState>) => {
@@ -476,6 +577,54 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               Filters
               {showFilters ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <EyeOpenIcon className="w-4 h-4" />
+                  Columns
+                  <ChevronDownIcon className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="end">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Toggle Columns</h4>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'patient_id', label: 'Patient ID', icon: PersonIcon },
+                      { key: 'therapist_id', label: 'Therapist ID', icon: PersonIcon },
+                      { key: 'size', label: 'File Size', icon: ArchiveIcon },
+                      { key: 'session_date', label: 'Session Date', icon: CalendarIcon },
+                      { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon }
+                    ].map(({ key, label, icon: Icon }) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={key}
+                          checked={visibleColumns[key as keyof ColumnVisibility]}
+                          onCheckedChange={() => toggleColumnVisibility(key as keyof ColumnVisibility)}
+                        />
+                        <label
+                          htmlFor={key}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                        >
+                          <Icon className="w-3 h-3" />
+                          {label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-2 border-t text-xs text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <EyeOpenIcon className="w-3 h-3" />
+                      {Object.values(visibleColumns).filter(Boolean).length} of 5 columns visible
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>
@@ -497,6 +646,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           files={paginatedFiles}
           onFileSelect={onFileSelect}
           isLoading={isLoading}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          visibleColumns={visibleColumns}
         />
 
         {/* Pagination Controls */}

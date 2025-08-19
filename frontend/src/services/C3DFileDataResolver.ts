@@ -254,7 +254,7 @@ export const isShortSession = (bytes: number): boolean => {
 };
 
 export const getSizeCategory = (bytes: number): 'small' | 'medium' | 'large' => {
-  if (bytes < 2000000) return 'small'; // < 2MB
-  if (bytes < 3000000) return 'medium'; // < 3MB
-  return 'large';
+  if (bytes < 1000000) return 'small'; // < 1MB
+  if (bytes < 2000000) return 'medium'; // 1-2MB
+  return 'large'; // > 2MB
 };

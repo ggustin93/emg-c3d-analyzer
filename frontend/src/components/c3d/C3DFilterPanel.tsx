@@ -149,9 +149,9 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sizes</SelectItem>
-              <SelectItem value="small">Small (&lt; 2MB)</SelectItem>
-              <SelectItem value="medium">Medium (2-10MB)</SelectItem>
-              <SelectItem value="large">Large (&gt; 10MB)</SelectItem>
+              <SelectItem value="small">&lt; 1 MB</SelectItem>
+              <SelectItem value="medium">Between 1-2 MB</SelectItem>
+              <SelectItem value="large">&gt; 2 MB</SelectItem>
             </SelectContent>
           </Select>
         </div>

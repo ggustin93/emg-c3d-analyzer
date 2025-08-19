@@ -10,9 +10,7 @@ import {
   ChevronUpIcon,
   PlayIcon,
   DownloadIcon,
-  ExclamationTriangleIcon,
-  EyeOpenIcon,
-  GearIcon
+  ExclamationTriangleIcon
 } from '@radix-ui/react-icons';
 import {
   Tooltip,
@@ -20,12 +18,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
 import SupabaseStorageService from '@/services/supabaseStorage';
 import {
   C3DFile,
@@ -56,32 +48,24 @@ interface C3DFileListProps {
   onFileSelect: (filename: string, uploadDate?: string) => void;
   isLoading?: boolean;
   className?: string;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (field: SortField) => void;
+  visibleColumns: ColumnVisibility;
 }
 
 const C3DFileList: React.FC<C3DFileListProps> = ({
   files,
   onFileSelect,
   isLoading = false,
-  className = ''
+  className = '',
+  sortField,
+  sortDirection,
+  onSort,
+  visibleColumns
 }) => {
-  // Sort states
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  
   // UI states
   const [loadingFileId, setLoadingFileId] = useState<string | null>(null);
-  
-  // Column visibility states
-  const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
-    const saved = localStorage.getItem('c3d-visible-columns');
-    return saved ? JSON.parse(saved) : {
-      patient_id: true,
-      therapist_id: true,
-      size: true,
-      session_date: true,
-      upload_date: true
-    };
-  });
   
   // Column resize states
   const [filenameColumnWidth, setFilenameColumnWidth] = useState(() => {
@@ -92,71 +76,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
-  // Sort files
-  const sortedFiles = React.useMemo(() => {
-    const sorted = [...files].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      // Handle special cases - use resolved values for sorting
-      if (sortField === 'patient_id') {
-        aValue = resolvePatientId(a);
-        bValue = resolvePatientId(b);
-      } else if (sortField === 'therapist_id') {
-        aValue = resolveTherapistId(a);
-        bValue = resolveTherapistId(b);
-      } else if (sortField === 'session_date') {
-        aValue = resolveSessionDate(a);
-        bValue = resolveSessionDate(b);
-        // Handle null values - put them at the end
-        if (!aValue && !bValue) return 0;
-        if (!aValue) return sortDirection === 'asc' ? 1 : -1;
-        if (!bValue) return sortDirection === 'asc' ? -1 : 1;
-      } else {
-        // For other fields, use direct property access
-        aValue = a[sortField as keyof C3DFile];
-        bValue = b[sortField as keyof C3DFile];
-      }
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        const comparison = aValue.localeCompare(bValue);
-        return sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        const comparison = aValue - bValue;
-        return sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      // For dates
-      if (sortField === 'created_at' || sortField === 'session_date') {
-        const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
-        return sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      return 0;
-    });
-
-    return sorted;
-  }, [files, sortField, sortDirection]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const toggleColumnVisibility = (column: keyof ColumnVisibility) => {
-    const newVisibility = {
-      ...visibleColumns,
-      [column]: !visibleColumns[column]
-    };
-    setVisibleColumns(newVisibility);
-    localStorage.setItem('c3d-visible-columns', JSON.stringify(newVisibility));
-  };
+  // Files are already sorted and paginated by parent component
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -255,7 +175,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     }
   }, [isLoading]);
 
-  if (sortedFiles.length === 0) {
+  if (files.length === 0) {
     return (
       <div className={`text-center py-8 text-slate-500 ${className}`}>
         <FileIcon className="w-12 h-12 mx-auto mb-4 text-slate-300" />
@@ -268,57 +188,6 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   return (
     <TooltipProvider>
       <div className={className}>
-        {/* Column Visibility Controls */}
-        <div className="flex justify-end mb-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <GearIcon className="w-4 h-4" />
-                Columns
-                <ChevronDownIcon className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56" align="end">
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Toggle Columns</h4>
-                <div className="space-y-2">
-                  {[
-                    { key: 'patient_id', label: 'Patient ID', icon: PersonIcon },
-                    { key: 'therapist_id', label: 'Therapist ID', icon: PersonIcon },
-                    { key: 'size', label: 'File Size', icon: ArchiveIcon },
-                    { key: 'session_date', label: 'Session Date', icon: CalendarIcon },
-                    { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon }
-                  ].map(({ key, label, icon: Icon }) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={key}
-                        checked={visibleColumns[key as keyof ColumnVisibility]}
-                        onCheckedChange={() => toggleColumnVisibility(key as keyof ColumnVisibility)}
-                      />
-                      <label
-                        htmlFor={key}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                      >
-                        <Icon className="w-3 h-3" />
-                        {label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <div className="pt-2 border-t text-xs text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <EyeOpenIcon className="w-3 h-3" />
-                    {Object.values(visibleColumns).filter(Boolean).length} of 5 columns visible
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
 
         {/* Table Header */}
         <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-2">
@@ -326,7 +195,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => handleSort('name')}
+                  onClick={() => onSort('name')}
                   className="flex items-center hover:text-slate-800 transition-colors"
                 >
                   <FileIcon className="w-4 h-4 mr-2" />
@@ -354,7 +223,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => handleSort('patient_id')}
+                    onClick={() => onSort('patient_id')}
                     className="flex items-center hover:text-slate-800 transition-colors text-xs"
                   >
                     <PersonIcon className="w-4 h-4 mr-1" />
@@ -376,7 +245,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => handleSort('therapist_id')}
+                    onClick={() => onSort('therapist_id')}
                     className="flex items-center hover:text-slate-800 transition-colors text-xs"
                   >
                     <PersonIcon className="w-4 h-4 mr-1" />
@@ -398,7 +267,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => handleSort('size')}
+                    onClick={() => onSort('size')}
                     className="flex items-center hover:text-slate-800 transition-colors text-xs"
                   >
                     <ArchiveIcon className="w-4 h-4 mr-1" />
@@ -417,7 +286,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => handleSort('session_date')}
+                    onClick={() => onSort('session_date')}
                     className="flex items-center hover:text-slate-800 transition-colors text-xs"
                   >
                     <CalendarIcon className="w-4 h-4 mr-1" />
@@ -439,7 +308,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => handleSort('created_at')}
+                    onClick={() => onSort('created_at')}
                     className="flex items-center hover:text-slate-800 transition-colors text-xs"
                   >
                     <CalendarIcon className="w-4 h-4 mr-1" />
@@ -460,7 +329,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
 
         {/* File List */}
         <div className="space-y-2">
-          {sortedFiles.map((file) => {
+          {files.map((file) => {
             const shortSession = isShortSession(file.size);
             return (
               <div key={file.id} 
