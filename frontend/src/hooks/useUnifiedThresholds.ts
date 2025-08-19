@@ -63,6 +63,9 @@ interface UseUnifiedThresholdsParams {
   /** Available data keys from chart data */
   availableDataKeys: string[];
   
+  /** Whether the app is in a loading state */
+  isLoading: boolean;
+
   /** Channel to muscle name mapping */
   channelMuscleMapping?: Record<string, string>;
   
@@ -96,8 +99,8 @@ export interface UseUnifiedThresholdsResult {
   /** Get muscle name for any channel */
   getMuscleName: (channel: string) => string;
   
-  /** Check if thresholds are available */
-  hasValidThresholds: boolean;
+  /** Check if thresholds are available and loading is complete */
+  thresholdsReady: boolean;
   
   /** Get threshold data for specific base channel */
   getThresholdForChannel: (baseChannel: string) => UnifiedThresholdData | null;
@@ -119,6 +122,7 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
     sessionParams,
     analytics,
     availableDataKeys,
+    isLoading,
     channelMuscleMapping = {},
     muscleColorMapping = {},
     globalMvcThreshold,
@@ -358,12 +362,18 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
   }, [unifiedThresholds, channelMuscleMapping]);
 
   /**
-   * Check if valid thresholds are available.
+   * Check if valid thresholds are available and the app is not loading.
+   * This prevents the UI from being stuck in a "calculating" state.
    */
-  const hasValidThresholds = useMemo(() => {
-    return unifiedThresholds.length > 0 && 
-           unifiedThresholds.some(t => t.mvcThreshold > 0);
-  }, [unifiedThresholds]);
+  const thresholdsReady = useMemo(() => {
+    // If loading, thresholds are not ready.
+    if (isLoading) return false;
+    
+    // If not loading, and we have analytics data, we consider them "ready",
+    // even if there are no valid thresholds to display. This means processing is complete.
+    return !!analytics;
+
+  }, [isLoading, analytics]);
 
   /**
    * Get threshold data for specific base channel.
@@ -377,7 +387,7 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
     getMvcThreshold,
     getDurationThreshold,
     getMuscleName,
-    hasValidThresholds,
+    thresholdsReady,
     getThresholdForChannel
   };
 }

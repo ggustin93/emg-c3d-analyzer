@@ -1,4 +1,6 @@
 import { C3DFileInfo } from '@/services/supabaseStorage';
+import { getMockTherapistName } from '@/lib/devUtils';
+import { getPatientColorClasses, getTherapistColorClasses } from '@/lib/colorUtils';
 
 /**
  * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
@@ -90,10 +92,17 @@ export const resolvePatientId = (file: C3DFile): string => {
  * 3. Default to 'Unknown'
  */
 export const resolveTherapistId = (file: C3DFile): string => {
-  // Consistent with FileMetadataBar: metadata?.therapist_id
-  // Priority: 1) metadata.therapist_id (from C3D analysis)
-  //          2) therapist_id (from storage metadata)
-  //          3) 'Unknown'  
+  // DEV MODE: Assign random therapist for demo purposes
+  if (import.meta.env.DEV) {
+    const realId = file.metadata?.therapist_id || file.therapist_id;
+    if (realId) {
+      return realId;
+    }
+    // Use a stable mock name based on file ID
+    return getMockTherapistName(file.id);
+  }
+
+  // PRODUCTION MODE: Standard resolution
   return file.metadata?.therapist_id || 
          file.therapist_id || 
          'Unknown';
@@ -182,32 +191,18 @@ export const resolveSessionDate = (file: C3DFile): string | null => {
  * Differentiates between known IDs (blue) and unknown IDs (grey)
  */
 export const getPatientIdBadgeProps = (patientId: string): BadgeProps => {
-  if (patientId === 'Unknown') {
-    return {
-      variant: 'outline' as const,
-      className: 'text-slate-600 border-slate-300 text-xs'
-    };
-  }
-  
-  // Use consistent blue styling like FileMetadataBar
+  const color = getPatientColorClasses(patientId);
   return {
     variant: 'secondary' as const,
-    className: 'bg-blue-50 text-blue-700 border-blue-200 text-xs'
+    className: `${color.background} ${color.text} ${color.border} text-xs`
   };
 };
 
 export const getTherapistIdBadgeProps = (therapistId: string): BadgeProps => {
-  if (therapistId === 'Unknown') {
-    return {
-      variant: 'outline' as const,
-      className: 'text-slate-600 border-slate-300 text-xs'
-    };
-  }
-  
-  // Use consistent blue styling for known therapists
+  const color = getTherapistColorClasses(therapistId);
   return {
-    variant: 'secondary' as const,
-    className: 'bg-blue-50 text-blue-700 border-blue-200 text-xs'
+    variant: 'outline' as const,
+    className: `${color.text} ${color.border} text-xs`
   };
 };
 

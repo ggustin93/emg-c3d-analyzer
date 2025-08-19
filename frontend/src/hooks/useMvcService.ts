@@ -23,12 +23,6 @@ export interface UseMvcServiceReturn {
   applyToSession: (mvcResults: Record<string, MVCEstimationResult>) => void;
   clearResults: () => void;
   validateEstimation: (channel: string) => { isValid: boolean; warnings: string[] } | null;
-  
-  // Utilities
-  formatMVCValue: (value: number) => string;
-  formatThresholdValue: (value: number) => string;
-  getEstimationMethodName: (method: string) => string;
-  getConfidenceLevelName: (score: number) => string;
 }
 
 export const useMvcService = (): UseMvcServiceReturn => {
@@ -200,11 +194,5 @@ export const useMvcService = (): UseMvcServiceReturn => {
     applyToSession,
     clearResults,
     validateEstimation,
-    
-    // Utilities - Direct references to service methods
-    formatMVCValue: MVCService.formatMVCValue,
-    formatThresholdValue: MVCService.formatThresholdValue,
-    getEstimationMethodName: MVCService.getEstimationMethodName,
-    getConfidenceLevelName: MVCService.getConfidenceLevelName,
   };
 };
