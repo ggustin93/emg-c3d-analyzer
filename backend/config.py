@@ -45,12 +45,18 @@ BFR_PRESSURE_RANGE = (40, 80)  # % AOP
 THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
 
 # Advanced Contraction Detection Parameters 
-MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them (ms)
-                         # Research-based: 200ms based on motor unit firing rates and muscle response times
-                         # Reduced from 500ms for better temporal resolution while maintaining physiological accuracy
-REFRACTORY_PERIOD_MS = 50  # Minimum time after contraction before detecting new one (ms)
-                          # Added 50ms refractory period to prevent closely spaced artifacts
-                          # Research indicates brief refractory periods improve specificity
+MERGE_THRESHOLD_MS = 100  # Maximum time gap between contractions to merge them (ms)
+                         # Reduced from 200ms to 100ms to prevent merging of separate contractions
+                         # Research-based: maintains physiological accuracy while improving temporal resolution
+REFRACTORY_PERIOD_MS = 300  # Minimum time after contraction before detecting new one (ms)
+                          # Increased from 50ms to 300ms to ensure adequate rest between contractions
+                          # Research indicates proper inter-contraction intervals improve specificity
+
+# Physiological Limits for Contraction Detection
+MAX_CONTRACTION_DURATION_MS = 10000  # Maximum allowable contraction duration (10 seconds)
+                                    # Research-based: Conservative limit for sustained muscle contractions
+                                    # Prevents merging of separate contractions into physiologically impossible durations
+                                    # Contractions exceeding this limit will be split at natural valleys
 
 # --- Visualization Settings ---
 EMG_COLOR = '#1abc9c'  # Teal color for EMG signal

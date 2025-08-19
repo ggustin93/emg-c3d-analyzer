@@ -90,42 +90,47 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
   }, [jsonData]);
 
   // Download original C3D file
-  const downloadOriginalFile = useCallback(async () => {
-    if (!analysisResult?.source_filename) return;
-    
-    try {
-      const success = await SupabaseStorageService.downloadFile(
-        analysisResult.source_filename
-      );
-      if (!success) {
-        console.error('Failed to download original file');
-      }
-    } catch (error) {
-      console.error('Error downloading original file:', error);
+  const downloadOriginalFile = useCallback(async (): Promise<void> => {
+    if (!analysisResult?.source_filename) {
+      throw new Error('No source filename available');
     }
+    
+    const blob = await SupabaseStorageService.downloadFile(
+      analysisResult.source_filename
+    );
+    
+    // Create download URL and trigger browser download
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = analysisResult.source_filename.split('/').pop() || 'download.c3d';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up the object URL
+    URL.revokeObjectURL(url);
   }, [analysisResult?.source_filename]);
 
   // Download export data as JSON (complete data)
-  const downloadExportData = useCallback(async () => {
+  const downloadExportData = useCallback(async (): Promise<void> => {
     const exportData = generateExportData(false); // isPreview = false for complete data
-    if (!exportData) return;
-
-    try {
-      const jsonString = JSON.stringify(exportData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${originalFilename.replace('.c3d', '')}_export.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading export data:', error);
+    if (!exportData) {
+      throw new Error('No export data available');
     }
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${originalFilename.replace('.c3d', '')}_export.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
   }, [generateExportData, originalFilename]);
 
   // Auto-generate preview when selection changes

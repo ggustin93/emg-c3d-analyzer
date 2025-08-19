@@ -535,9 +535,18 @@ class GHOSTLYC3DProcessor:
                         if not hasattr(session_params, 'session_mvc_values') or not session_params.session_mvc_values:
                             session_params.session_mvc_values = {}
                         session_params.session_mvc_values[base_name] = estimated_mvc
+                    
+                    # Extract Activated signal for dual signal detection (MVP implementation)
+                    activated_signal = None
+                    activated_channel_name = f"{base_name} activated"
+                    if activated_channel_name in self.emg_data:
+                        activated_signal = np.array(self.emg_data[activated_channel_name]['data'])
+                        logger.info(f"🎯 Using dual signal detection: Activated signal for timing, RMS envelope for amplitude")
+                    else:
+                        logger.info(f"ℹ️  Using single signal detection: RMS envelope for both timing and amplitude")
                         
                     contraction_stats = analyze_contractions(
-                        signal=signal_for_analysis,
+                        signal=signal_for_analysis,  # RMS envelope for amplitude assessment
                         sampling_rate=sampling_rate,
                         threshold_factor=threshold_factor,
                         min_duration_ms=min_duration_ms,
@@ -545,7 +554,8 @@ class GHOSTLYC3DProcessor:
                         mvc_amplitude_threshold=actual_mvc_threshold,
                         contraction_duration_threshold_ms=duration_threshold_ms,
                         merge_threshold_ms=MERGE_THRESHOLD_MS,
-                        refractory_period_ms=REFRACTORY_PERIOD_MS
+                        refractory_period_ms=REFRACTORY_PERIOD_MS,
+                        temporal_signal=activated_signal  # Activated signal for timing detection
                     )
                     channel_analytics.update(contraction_stats)
                     
