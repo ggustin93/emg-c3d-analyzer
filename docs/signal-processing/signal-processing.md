@@ -1,4 +1,4 @@
-### Signal Processing (EMG) — Pipeline and Parameters
+### Signal Processing (EMG) — Pipeline and Parameters (TO BE UPDATED OR DELETED?)
 
 - Pipeline: High‑pass 20 Hz (order 4) → Full‑wave rectification → Low‑pass 10 Hz (order 4) → Moving average smoothing (50 ms)
 - Defaults (ProcessingParameters):

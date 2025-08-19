@@ -145,6 +145,6 @@ frontend/src/components/debug/
 # Temporary files
 *.pid
 dump.rdb
-.serena/memories/
+.serena/
 logs/
 data/
