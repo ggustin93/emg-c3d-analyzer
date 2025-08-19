@@ -448,7 +448,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                 </Tooltip>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {`${acceptanceRates.mvcThreshold != null ? `MVC ≥${acceptanceRates.mvcThreshold.toFixed(3)} mV` : 'MVC threshold: TBD'} • Duration ≥${Math.round(durationThresholdMs)} ms`}
+                                {acceptanceRates.mvcThreshold != null ? `≥${(acceptanceRates.mvcThreshold * 1000).toFixed(3)}mV` : 'Threshold: TBD'}
                               </div>
                             </CardHeader>
                             <CardContent className="flex items-center justify-center py-5">
