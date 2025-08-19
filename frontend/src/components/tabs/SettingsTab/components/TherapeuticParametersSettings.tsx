@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LockedBadge, SourceStatusBadge, TherapistBadge } from "@/components/ui/StatusBadges";
 import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
-import { useMvcService } from '@/hooks/useMvcService';
 import { useAuth } from '@/contexts/AuthContext';
 import { MVCService } from '@/services/mvcService';
 import SupabaseStorageService from '@/services/supabaseStorage';
@@ -36,9 +35,6 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
   // Editing unlocks only via Therapist Mode (demo access)
   const canEdit = isTherapistMode && !disabled;
   
-  // MVC Service Integration
-  const mvcService = useMvcService();
-  
   const muscleChannels2 = muscleChannels.filter(ch => !ch.includes(' ')).slice(0, 2);
 
   // MVC Quality Validation Helper
@@ -48,7 +44,10 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     }
 
     const channelData = analytics[channel];
-    const hasMvcData = channelData.mvc_threshold_actual_value && channelData.mvc_estimation_method;
+    // Primary check: mvc_threshold_actual_value is the key indicator of MVC data availability
+    // mvc_estimation_method is optional and might be undefined in some backend responses
+    const hasMvcData = channelData.mvc_threshold_actual_value && 
+                      channelData.mvc_threshold_actual_value > 0.00001; // Clinical minimum check (10μV)
     
     if (!hasMvcData) {
       return { hasData: false, quality: 'missing', message: 'MVC threshold not available' };
@@ -59,7 +58,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       mvc_value: channelData.mvc_threshold_actual_value / 0.75, // Assume 75% threshold
       threshold_value: channelData.mvc_threshold_actual_value,
       threshold_percentage: 75,
-      estimation_method: channelData.mvc_estimation_method,
+      estimation_method: channelData.mvc_estimation_method || 'backend_analysis', // Default if not provided
       confidence_score: 0.8, // Default confidence
       metadata: {
         total_contractions: channelData.contraction_count || 0,
@@ -113,17 +112,20 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
         });
       });
       
-      // Create mock EMGAnalysisResult to extract from
-      const mockAnalysisResult = {
+      // Extract MVC values from analytics and apply to session
+      const extractedResults = MVCService.extractMVCFromAnalysis({
         analytics: analytics,
         timestamp: new Date().toISOString()
-      } as any;
-      
-      mvcService.extractFromAnalysis(mockAnalysisResult);
+      } as any);
       
       // If extraction successful, apply to session
-      if (mvcService.estimationResults) {
-        mvcService.applyToSession(mvcService.estimationResults);
+      if (extractedResults) {
+        const sessionUpdate = MVCService.convertToSessionParameters(extractedResults);
+        setSessionParams({
+          ...sessionParams,
+          ...sessionUpdate
+        });
+        console.log('✅ Applied MVC values from analytics to session');
       }
     }
   };
@@ -213,33 +215,6 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
         });
 
         // Update MVC service state for display
-        const extractedResults = Object.entries(response.mvc_estimations).reduce((acc, [channel, estimation]) => {
-          acc[channel] = {
-            mvc_value: estimation.mvc_value,
-            threshold_value: estimation.threshold_value,
-            threshold_percentage: estimation.threshold_percentage,
-            estimation_method: estimation.estimation_method,
-            confidence_score: estimation.confidence_score,
-            metadata: estimation.metadata,
-            timestamp: estimation.timestamp
-          };
-          return acc;
-        }, {} as Record<string, any>);
-
-        // Trigger UI update by calling mvcService methods
-        mvcService.extractFromAnalysis({ 
-          analytics: Object.fromEntries(
-            Object.entries(extractedResults).map(([channel, result]) => [
-              channel, 
-              { 
-                mvc_threshold_actual_value: result.threshold_value,
-                mvc_estimation_method: result.estimation_method 
-              }
-            ])
-          ),
-          timestamp: new Date().toISOString()
-        } as any);
-
         console.log('🎯 Applied new MVC values from full recalculation');
         
       } else {
@@ -473,87 +448,49 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                       </div>
                     </div>
                     
-                    {/* Backend Validation Display */}
+                    {/* Backend threshold - simplified inline display */}
                     {(backendThreshold !== null && backendThreshold !== undefined) && (
-                      <div className="mt-3 p-3 bg-slate-50 rounded-lg text-xs space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-600">Backend Threshold:</span>
-                          <span className="font-mono text-slate-800">{backendThreshold.toExponential(3)} mV</span>
-                        </div>
-                        {estimationMethod && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-600">Method:</span>
-                            <Badge variant={estimationMethod === 'backend_estimation' ? 'default' : 'outline'} className="text-xs">
-                              {estimationMethod === 'backend_estimation' ? '🤖 Auto-estimated' : 
-                               estimationMethod === 'user_provided' ? '👤 User-provided' : 
-                               estimationMethod === 'global_provided' ? '🌐 Global' : 'Unknown'}
-                            </Badge>
-                          </div>
-                        )}
-                        {!isConsistent && frontendThreshold !== null && (
-                          <div className="text-amber-600 text-xs">
-                            ⚠️ Threshold mismatch: Frontend calculates {frontendThreshold.toExponential(3)} mV
-                          </div>
-                        )}
+                      <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                        <span>Backend Threshold:</span>
+                        <span className="font-mono text-slate-800">{backendThreshold.toExponential(3)} mV</span>
                       </div>
                     )}
 
-                    {/* MVC Quality Validation */}
+                    {/* Simplified MVC Status Badge */}
                     {(() => {
                       const qualityInfo = getMVCQualityInfo(channel);
                       if (!qualityInfo.hasData) {
-                        return (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
-                            <div className="flex items-center gap-2">
-                              <ExclamationTriangleIcon className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm text-gray-600">{qualityInfo.message}</span>
-                            </div>
-                          </div>
-                        );
+                        return null; // Hide if no MVC data - don't clutter UI
                       }
 
                       const qualityColors = {
-                        excellent: 'border-green-400 bg-green-50',
-                        good: 'border-blue-400 bg-blue-50',
-                        poor: 'border-red-400 bg-red-50'
+                        excellent: 'bg-green-100 text-green-800 border-green-200',
+                        good: 'bg-blue-100 text-blue-800 border-blue-200', 
+                        poor: 'bg-amber-100 text-amber-800 border-amber-200'
                       };
 
                       const qualityIcons = {
-                        excellent: '🟢',
-                        good: '🟡',
-                        poor: '🔴'
+                        excellent: '✓',
+                        good: '✓',
+                        poor: '⚠'
                       };
 
                       return (
-                        <div className={`mt-3 p-3 rounded-lg border-l-4 ${qualityColors[qualityInfo.quality as keyof typeof qualityColors]}`}>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{qualityIcons[qualityInfo.quality as keyof typeof qualityIcons]}</span>
-                                <span className="text-sm font-medium">
-                                  MVC Quality: {qualityInfo.quality.charAt(0).toUpperCase() + qualityInfo.quality.slice(1)}
-                                </span>
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {MVCService.getConfidenceLevelName(qualityInfo.confidenceScore || 0.8)}
+                        <div className="mt-2 flex items-center gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className={`text-xs font-medium px-2 py-1 border ${qualityColors[qualityInfo.quality as keyof typeof qualityColors]}`}>
+                                {qualityIcons[qualityInfo.quality as keyof typeof qualityIcons]} Backend Computed
                               </Badge>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {qualityInfo.message}
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-500">Method:</span>
-                              <span className="font-mono">
-                                {MVCService.getEstimationMethodName(qualityInfo.estimationMethod || 'unknown')}
-                              </span>
-                            </div>
-                            {qualityInfo.formattedValue && (
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-500">Threshold:</span>
-                                <span className="font-mono">{qualityInfo.formattedValue}</span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-sm">
+                              <div className="text-sm space-y-1">
+                                <p><strong>Quality:</strong> {qualityInfo.quality.charAt(0).toUpperCase() + qualityInfo.quality.slice(1)}</p>
+                                <p><strong>Status:</strong> {qualityInfo.message}</p>
+                                <p><strong>Source:</strong> Computed from EMG analysis</p>
                               </div>
-                            )}
-                          </div>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       );
                     })()}
