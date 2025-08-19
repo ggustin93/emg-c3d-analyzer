@@ -441,6 +441,7 @@ export default function GameSessionTabs({
                 viewMode={viewMode}
                 onFilterChange={handleFilterChange}
                 isInitializingComparison={isInitializingComparison}
+                isLoading={appIsLoading}
                 plotMode={signalType === 'raw' ? 'raw' : 'activated'}
                 setPlotMode={(mode: 'raw' | 'activated') => setSignalType(mode)}
               />
@@ -478,6 +479,7 @@ export default function GameSessionTabs({
           plotChannel1Data={mainPlotChannel1Data}
           analysisResult={analysisResult}
           plotChannel2Data={mainPlotChannel2Data}
+          uploadedFileName={uploadedFileName}
           
           // Legacy contraction props
           showGoodContractions={showGoodContractions && showContractionHighlights}

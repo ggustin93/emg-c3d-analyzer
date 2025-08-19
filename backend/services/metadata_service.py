@@ -9,8 +9,8 @@ from uuid import UUID, uuid4
 import re
 from pathlib import Path
 
-from ..database.supabase_client import get_supabase_client
-from ..services.c3d_reader import C3DReader
+from database.supabase_client import get_supabase_client
+from services.c3d_reader import C3DReader
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,11 @@ class MetadataService:
         metadata: Optional[Dict] = None
     ) -> UUID:
         """
-        Create initial metadata entry with basic file information
+        Create therapy session entry with basic file information (KISS: Phase 1 - Metadata Only)
+        
+        Following the DATABASE_IMPROVEMENT_PROPOSAL.md two-phase pattern:
+        Phase 1: Create session with metadata only (this method)
+        Phase 2: Add technical data via update_technical_metadata() after C3D processing
         
         Args:
             file_path: Path to C3D file in storage
@@ -43,34 +47,32 @@ class MetadataService:
             metadata: Optional additional metadata from webhook
             
         Returns:
-            UUID: ID of created metadata entry
+            UUID: ID of created therapy session
         """
-        metadata_id = uuid4()
+        session_id = uuid4()
         
-        # Calculate size category using frontend logic
-        size_category = self._get_size_category(file_size_bytes)
+        from pathlib import Path
         
-        # Prepare metadata entry
+        # KISS: Phase 1 - Create session with metadata ONLY (no technical fields)
         entry = {
-            "id": str(metadata_id),
+            "id": str(session_id),
             "file_path": file_path,
             "file_hash": file_hash,
             "file_size_bytes": file_size_bytes,
             "patient_id": patient_id,
-            "session_id": session_id,
-            "size_category": size_category,
-            "bucket_name": "c3d-examples",
-            "object_metadata": metadata or {},
-            "processing_status": "pending"
+            "processing_status": "pending", 
+            "original_filename": Path(file_path).name,
+            "game_metadata": metadata or {}
         }
         
         try:
-            result = self.supabase.table("c3d_metadata").insert(entry).execute()
-            logger.info(f"Created metadata entry for file: {file_path}")
-            return metadata_id
+            result = self.supabase.table("therapy_sessions").insert(entry).execute()
+            logger.info(f"✅ Created therapy session (Phase 1 - Metadata): {file_path} (session_id: {session_id})")
+            return session_id
             
         except Exception as e:
-            logger.error(f"Failed to create metadata entry: {str(e)}")
+            logger.error(f"❌ Failed to create therapy session: {str(e)}")
+            logger.error(f"Entry data: {entry}")
             raise
     
     async def extract_c3d_metadata(self, file_data: bytes) -> Dict[str, Any]:
@@ -104,6 +106,77 @@ class MetadataService:
             logger.error(f"Failed to extract C3D metadata: {str(e)}")
             raise
     
+    async def update_technical_metadata(
+        self,
+        session_id: UUID,
+        file_data: bytes
+    ) -> None:
+        """
+        Phase 2: Add technical C3D data to existing therapy session
+        
+        Creates entry in c3d_technical_data table with extracted technical metadata.
+        This implements the two-phase pattern from DATABASE_IMPROVEMENT_PROPOSAL.md
+        
+        Args:
+            session_id: UUID of existing therapy session
+            file_data: Raw C3D file bytes for metadata extraction
+        """
+        try:
+            # Extract technical metadata from C3D file
+            c3d_metadata = await self.extract_c3d_metadata(file_data)
+            
+            # Prepare technical data entry (nullable by design)
+            technical_entry = {
+                "session_id": str(session_id),
+                "original_sampling_rate": c3d_metadata.get("sampling_rate"),
+                "original_duration_seconds": c3d_metadata.get("duration_seconds"),
+                "original_sample_count": c3d_metadata.get("frame_count"),
+                "channel_count": len(c3d_metadata.get("channel_names", [])),
+                "channel_names": c3d_metadata.get("channel_names", []),
+                "sampling_rate": c3d_metadata.get("sampling_rate"),
+                "duration_seconds": c3d_metadata.get("duration_seconds"),
+                "frame_count": c3d_metadata.get("frame_count")
+            }
+            
+            # Insert technical data into separate table
+            result = self.supabase.table("c3d_technical_data").insert(technical_entry).execute()
+            
+            # Update session metadata with resolved information
+            resolved_fields = self._resolve_metadata_fields(
+                file_path="",  # Will be fetched from session if needed
+                file_size_bytes=0,  # Will be fetched from session if needed
+                c3d_metadata=c3d_metadata,
+                storage_metadata={}
+            )
+            
+            # Update therapy session with resolved fields and game metadata
+            session_update = {
+                "processing_status": "completed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "processed_at": datetime.utcnow().isoformat()
+            }
+            
+            # Add game metadata if available
+            if c3d_metadata.get("game_metadata"):
+                session_update["game_metadata"] = c3d_metadata["game_metadata"]
+            
+            # Add resolved fields
+            session_update.update(resolved_fields)
+            
+            self.supabase.table("therapy_sessions").update(session_update).eq("id", str(session_id)).execute()
+            
+            logger.info(f"✅ Updated technical metadata (Phase 2): {session_id}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to update technical metadata: {str(e)}")
+            # Update session status to failed
+            self.supabase.table("therapy_sessions").update({
+                "processing_status": "failed",
+                "processing_error_message": str(e),
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", str(session_id)).execute()
+            raise
+    
     async def update_metadata(
         self,
         metadata_id: UUID,
@@ -127,11 +200,11 @@ class MetadataService:
             **kwargs: Additional metadata fields
         """
         try:
-            # Get current metadata for resolution
-            current = self.supabase.table("c3d_metadata").select("*").eq("id", str(metadata_id)).execute()
+            # Get current session data for resolution (KISS: single table)
+            current = self.supabase.table("therapy_sessions").select("*").eq("id", str(metadata_id)).execute()
             
             if not current.data:
-                raise ValueError(f"Metadata entry not found: {metadata_id}")
+                raise ValueError(f"Therapy session not found: {metadata_id}")
                 
             current_data = current.data[0]
             
@@ -163,13 +236,13 @@ class MetadataService:
             
             update_data.update(resolved_fields)
             
-            # Update the database
-            result = self.supabase.table("c3d_metadata").update(update_data).eq("id", str(metadata_id)).execute()
+            # Update therapy session (KISS: single table)
+            result = self.supabase.table("therapy_sessions").update(update_data).eq("id", str(metadata_id)).execute()
             
-            logger.info(f"Updated metadata for entry: {metadata_id}")
+            logger.info(f"Updated therapy session: {metadata_id}")
             
         except Exception as e:
-            logger.error(f"Failed to update metadata: {str(e)}")
+            logger.error(f"Failed to update therapy session: {str(e)}")
             raise
     
     def _resolve_metadata_fields(
@@ -312,42 +385,33 @@ class MetadataService:
         
         return None
     
-    def _get_size_category(self, bytes_size: int) -> str:
-        """
-        Get size category using frontend logic (from getSizeCategory)
-        """
-        if bytes_size < 2000000:  # < 2MB
-            return "small"
-        elif bytes_size < 3000000:  # < 3MB
-            return "medium"
-        else:
-            return "large"
     
     async def get_by_file_hash(self, file_hash: str) -> Optional[Dict]:
-        """Get metadata by file hash"""
+        """Get therapy session by file hash (KISS: single table)"""
         try:
-            result = self.supabase.table("c3d_metadata").select("*").eq("file_hash", file_hash).execute()
+            result = self.supabase.table("therapy_sessions").select("*").eq("file_hash", file_hash).execute()
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.error(f"Failed to get metadata by hash: {str(e)}")
+            logger.error(f"Failed to get session by hash: {str(e)}")
             return None
     
-    async def get_by_id(self, metadata_id: UUID) -> Optional[Dict]:
-        """Get metadata by ID"""
+    async def get_by_id(self, session_id: UUID) -> Optional[Dict]:
+        """Get therapy session by ID (KISS: single table)"""
         try:
-            result = self.supabase.table("c3d_metadata").select("*").eq("id", str(metadata_id)).execute()
+            result = self.supabase.table("therapy_sessions").select("*").eq("id", str(session_id)).execute()
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.error(f"Failed to get metadata by ID: {str(e)}")
+            logger.error(f"Failed to get session by ID: {str(e)}")
             return None
     
     async def update_processing_status(
         self,
-        metadata_id: UUID,
+        session_id: UUID,
         status: str,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
+        enhanced_session_id: Optional[str] = None
     ) -> None:
-        """Update processing status"""
+        """Update processing status (KISS: single table)"""
         try:
             update_data = {
                 "processing_status": status,
@@ -357,11 +421,14 @@ class MetadataService:
             if status == "completed":
                 update_data["processed_at"] = datetime.utcnow().isoformat()
             elif status == "failed" and error_message:
-                update_data["error_message"] = error_message
+                update_data["processing_error_message"] = error_message
             
-            self.supabase.table("c3d_metadata").update(update_data).eq("id", str(metadata_id)).execute()
+            if enhanced_session_id:
+                update_data["enhanced_session_id"] = enhanced_session_id
             
-            logger.info(f"Updated processing status to {status} for metadata: {metadata_id}")
+            self.supabase.table("therapy_sessions").update(update_data).eq("id", str(session_id)).execute()
+            
+            logger.info(f"Updated processing status to {status} for session: {session_id}")
             
         except Exception as e:
             logger.error(f"Failed to update processing status: {str(e)}")

@@ -11,7 +11,7 @@ PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from backend.emg.emg_analysis import (
+from emg.emg_analysis import (
     calculate_rms,
     calculate_mav,
     calculate_mpf,

@@ -3,6 +3,14 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { File, User, Calendar, Clock, Activity } from 'lucide-react';
 import { EMGAnalysisResult } from '../../types/emg';
+import { 
+  resolvePatientId, 
+  resolveSessionDate, 
+  getPatientIdBadgeProps,
+  getTherapistIdBadgeProps,
+  resolveTherapistId,
+  C3DFile
+} from '../../services/C3DFileDataResolver';
 
 /**
  * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
@@ -31,107 +39,30 @@ interface FileMetadataBarProps {
  * Provides clinical context including patient info, therapist, and session details
  */
 const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onReset, uploadDate }) => {
-  const { source_filename, metadata, patient_id } = analysisResult;
+  const { source_filename, metadata, patient_id, file_id } = analysisResult;
   
-  // 🔧 CONFIGURABLE DATA RETRIEVAL SYSTEM
-  // Consistent with C3DFileBrowser implementation
-  
-  // 👥 PATIENT ID RESOLUTION STRATEGY (User-Configured Priority)
-  const resolvePatientId = useCallback((filename: string, metadata: any, fallbackPatientId?: string | null): string => {
-    console.log('🔍 FileMetadataBar - Resolving Patient ID for:', filename);
-    
-    // ⭐ PRIORITY 1: Storage Subfolder (HIGHEST PRIORITY - User Request)
-    const subfolderMatch = filename.match(/^(P\d{3})\//); 
-    if (subfolderMatch) {
-      const patientId = subfolderMatch[1];
-      console.log('✅ Patient ID from subfolder:', patientId);
-      return patientId;
-    }
-    
-    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
-    if (metadata?.player_name) {
-      console.log('✅ Patient ID from C3D metadata:', metadata.player_name);
-      return metadata.player_name;
-    }
-    
-    // 🔄 Legacy Support (Lower Priority)
-    if (fallbackPatientId) {
-      console.log('✅ Patient ID from fallback:', fallbackPatientId);
-      return fallbackPatientId;
-    }
-    
-    console.log('❌ No Patient ID found');
-    return 'Unknown';
-  }, []);
-  
-  // 📅 SESSION DATE RESOLUTION STRATEGY (User-Configured Priority)
-  const resolveSessionDate = useCallback((filename: string, metadata: any): string | null => {
-    console.log('🔍 FileMetadataBar - Resolving Session Date for:', filename);
-    
-    // Helper function for filename extraction (consistent with C3DFileBrowser)
-    const extractDateFromFilename = (filename: string): string | null => {
-      // Pattern 1 & 2: YYYYMMDD format
-      const yyyymmdd = filename.match(/(\d{4})(\d{2})(\d{2})/);
-      if (yyyymmdd) {
-        const [, year, month, day] = yyyymmdd;
-        const yearNum = parseInt(year);
-        if (yearNum >= 2020 && yearNum <= 2030) {
-          return `${year}-${month}-${day}`;
-        }
-      }
-      
-      // Pattern 3: YYYY-MM-DD format
-      const isoDate = filename.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (isoDate) {
-        const [, year, month, day] = isoDate;
-        const yearNum = parseInt(year);
-        if (yearNum >= 2020 && yearNum <= 2030) {
-          return `${year}-${month}-${day}`;
-        }
-      }
-      
-      return null;
-    };
-    
-    // ⭐ PRIORITY 1: Filename Extraction (HIGHEST PRIORITY - User Request)
-    const extractedDate = extractDateFromFilename(filename);
-    if (extractedDate) {
-      console.log('✅ Session Date from filename:', extractedDate);
-      return extractedDate;
-    }
-    
-    // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
-    if (metadata?.session_date) {
-      console.log('✅ Session Date from C3D metadata:', metadata.session_date);
-      return metadata.session_date;
-    }
-    
-    // 🔄 Alternative C3D Field (Additional Fallback)
-    if (metadata?.time) {
-      console.log('✅ Session Date from C3D time field:', metadata.time);
-      return metadata.time;
-    }
-    
-    console.log('❌ No Session Date found');
-    return null;
-  }, []);
-  
-  // Apply consistent data resolution
-  const resolvedPatientId = resolvePatientId(source_filename, metadata, patient_id);
-  const resolvedSessionDate = resolveSessionDate(source_filename, metadata);
+  // Create a mock C3DFile object to pass to the resolvers
+  // This ensures that we can reuse the centralized logic
+  const mockFile: C3DFile = {
+    id: file_id || source_filename, // Use a stable ID
+    name: source_filename,
+    metadata: metadata,
+    patient_id: patient_id ?? undefined,
+    therapist_id: metadata?.therapist_id ?? undefined,
+    size: 0, // Mock value, not used in resolvers here
+    created_at: new Date().toISOString(), // Mock value
+    updated_at: new Date().toISOString(), // Mock value
+  };
 
-  // 🔍 DEBUG: Upload Date Troubleshooting
-  console.group('🔍 FileMetadataBar Debug - Upload Date');
-  console.log('🎯 FILEMETADATABAR - Props received:', {
-    hasAnalysisResult: !!analysisResult,
-    uploadDate,
-    uploadDateType: typeof uploadDate,
-    uploadDateValue: uploadDate,
-    analysisResultTimestamp: analysisResult?.timestamp,
-    metadataTime: metadata?.time,
-    metadataSessionDate: metadata?.session_date
-  });
-  console.groupEnd();
+  // Apply consistent data resolution from the centralized resolver
+  const resolvedPatientId = resolvePatientId(mockFile);
+  const resolvedSessionDate = resolveSessionDate(mockFile);
+  const resolvedTherapistId = resolveTherapistId(mockFile);
+  
+  const patientBadgeProps = getPatientIdBadgeProps(resolvedPatientId);
+  const therapistBadgeProps = getTherapistIdBadgeProps(resolvedTherapistId);
+  
+  // Debug info removed for test compatibility
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
@@ -154,44 +85,22 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   };
 
   const formatUploadDate = (dateString: string | undefined): string => {
-    console.log('🕒 formatUploadDate called with:', {
-      input: dateString,
-      inputType: typeof dateString,
-      inputLength: dateString?.length,
-      isEmpty: !dateString,
-      isNull: dateString === null,
-      isUndefined: dateString === undefined
-    });
-
     if (!dateString) {
-      console.log('❌ Upload date is falsy, returning N/A');
       return 'N/A';
     }
     
     try {
       const date = new Date(dateString);
-      console.log('📅 Date parsing:', {
-        originalString: dateString,
-        parsedDate: date,
-        isValid: !isNaN(date.getTime()),
-        timestamp: date.getTime()
-      });
-      
       if (isNaN(date.getTime())) {
-        console.log('❌ Date is invalid, returning N/A');
         return 'N/A';
       }
       
-      const formatted = date.toLocaleDateString('en-GB', {
+      return date.toLocaleDateString('en-GB', {
         year: '2-digit',
         month: '2-digit',
         day: '2-digit'
       });
-      
-      console.log('✅ Upload date formatted successfully:', formatted);
-      return formatted;
-    } catch (error) {
-      console.log('❌ Error formatting upload date:', error);
+    } catch {
       return 'N/A';
     }
   };
@@ -205,7 +114,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             {/* Filename */}
             <div className="flex items-center space-x-2">
               <File className="h-4 w-4 text-slate-400" />
-              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded">
+              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded" data-testid="filename">
                 {source_filename}
               </span>
             </div>
@@ -215,19 +124,19 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
               <div className="flex items-center space-x-2">
                 <Activity className="h-4 w-4 text-slate-400" />
                 <span className="text-slate-600 text-xs">Patient:</span>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                <Badge {...patientBadgeProps}>
                   {resolvedPatientId}
                 </Badge>
               </div>
             )}
 
-            {/* Therapist ID */}
-            {metadata?.therapist_id && (
-              <div className="flex items-center space-x-2">
+            {/* Therapist ID - Now using centralized resolver */}
+            {resolvedTherapistId && resolvedTherapistId !== 'Unknown' && (
+              <div className="flex items-center space-x-2" data-testid="therapist-section">
                 <User className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-600 text-xs">Therapist:</span>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                  {metadata.therapist_id}
+                <span className="text-slate-600 text-xs" data-testid="therapist-label">Therapist:</span>
+                <Badge {...therapistBadgeProps}>
+                  {resolvedTherapistId}
                 </Badge>
               </div>
             )}

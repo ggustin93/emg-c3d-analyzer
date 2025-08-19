@@ -1,0 +1,3 @@
+# Redis cache dependencies
+redis[hiredis]==5.0.1
+# hiredis provides faster parsing performance for Redis operations

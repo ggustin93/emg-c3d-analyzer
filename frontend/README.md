@@ -135,9 +135,9 @@ src/
 ```
 
 ### Test Framework
-- **Vitest**: Fast unit testing with TypeScript support
-- **Testing Library**: Component testing with user interaction focus
-- **Coverage**: Test coverage for critical business logic (20 tests currently passing)
+- **Vitest**: Fast unit testing with TypeScript support and jest-dom matchers
+- **Testing Library**: Component testing with user interaction focus and React.StrictMode compatibility
+- **Coverage**: Test coverage for critical business logic (78 tests passing - 100% success rate)
 
 ## Available Scripts
 
@@ -151,11 +151,11 @@ npm run build      # Production build
 
 ### Testing
 ```bash
-npm test hooks                      # Run hook tests only (7 tests)
-npm test components                 # Run component tests (12 tests) 
+npm test hooks                      # Run hook tests (comprehensive coverage)
+npm test components                 # Run component tests (React.StrictMode compatible) 
 npm test -- --coverage             # Run tests with coverage report
 npm test usePerformanceMetrics     # Run specific test suite
-npm test -- --run                  # Run all tests once (20 total)
+npm test -- --run                  # Run all tests once (78 total, 100% passing)
 ```
 
 ### Code Quality

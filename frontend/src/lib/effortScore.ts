@@ -1,18 +1,51 @@
-// Mapping from post-session RPE (Borg CR10, 0-10) to S_e (effort score in %)
-// Based on memory-bank/metricsDefinitions.md §3.3
-//  - 4–6  -> 100%
-//  - {3,7} -> 80%
-//  - {2,8} -> 60%
-//  - {0,1,9,10} -> 20%
+/**
+ * This utility provides a centralized function to convert a subjective effort rating 
+ * from the Borg CR10 scale (0-10) into a clinical performance score (0-100).
+ * The mapping is based on the GHOSTLY+ TBM clinical trial specifications.
+ * 
+ * @file This file is the Single Source of Truth for effort score calculation.
+ */
 
-export function getEffortScoreFromRPE(postSessionRpe?: number | null): number {
-  if (postSessionRpe === null || postSessionRpe === undefined) return 0;
-  const rpe = Math.max(0, Math.min(10, Number(postSessionRpe)));
-  if (rpe >= 4 && rpe <= 6) return 100;
-  if (rpe === 3 || rpe === 7) return 80;
-  if (rpe === 2 || rpe === 8) return 60;
-  // 0,1,9,10
-  return 20;
-}
+/**
+ * Converts a post-session RPE (Rating of Perceived Exertion) value from the Borg CR10 scale 
+ * into a performance score percentage.
+ * 
+ * @param rpe - The subjective effort level reported by the user (typically 0-10).
+ * @returns The calculated performance score (0-100). Returns 0 if RPE is null/undefined.
+ */
+export const getEffortScoreFromRPE = (rpe: number | null | undefined): number => {
+  if (rpe === null || rpe === undefined) {
+    return 0; // No effort reported translates to 0 score.
+  }
+
+  switch (rpe) {
+    // Optimal zone
+    case 4:
+    case 5:
+    case 6:
+      return 100;
+    
+    // Acceptable zone
+    case 3:
+    case 7:
+      return 80;
+      
+    // Suboptimal zone
+    case 2:
+    case 8:
+      return 60;
+      
+    // Poor zone (too low or too high)
+    case 0:
+    case 1:
+    case 9:
+    case 10:
+      return 20;
+      
+    // Default for any unexpected values
+    default:
+      return 0;
+  }
+};
 
 

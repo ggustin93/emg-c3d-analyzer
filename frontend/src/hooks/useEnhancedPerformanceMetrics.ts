@@ -15,33 +15,36 @@ import { getEffortScoreFromRPE } from '@/lib/effortScore';
 
 // Presets par défaut - Based on GHOSTLY+ TBM Clinical Trial
 export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  completion: 0.00,  // Not used in P_overall
-  mvcQuality: 0.00,  // Part of compliance score
-  qualityThreshold: 0.00,  // Part of compliance score
+  compliance: 0.45,  // Therapeutic Compliance (composite) (increased from 0.40)
   symmetry: 0.30,  // Muscle Symmetry (increased from 0.25)
   effort: 0.25,    // Subjective Effort (RPE) (increased from 0.20)
-  compliance: 0.45,  // Therapeutic Compliance (composite) (increased from 0.40)
-  gameScore: 0.00   // Game Performance (default to 0 as requested)
+  gameScore: 0.00,   // Game Performance (default to 0 as requested)
+  // Sub-weights for compliance (should sum to 1)
+  compliance_completion: 1/3,
+  compliance_intensity: 1/3,
+  compliance_duration: 1/3,
 };
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
-  completion: 0.00,
-  mvcQuality: 0.00,
-  qualityThreshold: 0.00,
+  compliance: 0.55,  // Much higher emphasis on execution quality
   symmetry: 0.30,  // Higher emphasis on bilateral balance
   effort: 0.15,    // Lower emphasis on subjective effort
-  compliance: 0.55,  // Much higher emphasis on execution quality
-  gameScore: 0.00   // No game score
+  gameScore: 0.00,   // No game score
+  // Sub-weights for compliance
+  compliance_completion: 0.2, // Less focus on just doing them
+  compliance_intensity: 0.4,  // More focus on quality
+  compliance_duration: 0.4,   // More focus on endurance
 };
 
 export const EXPERIMENTAL_WITH_GAME_WEIGHTS: ScoringWeights = {
-  completion: 0.00,
-  mvcQuality: 0.00,
-  qualityThreshold: 0.00,
+  compliance: 0.35,  // Lower compliance weight
   symmetry: 0.20,  // Slightly lower symmetry
   effort: 0.15,    // Lower effort weight
-  compliance: 0.35,  // Lower compliance weight
-  gameScore: 0.30   // Higher game score weight
+  gameScore: 0.30,   // Higher game score weight
+  // Sub-weights for compliance
+  compliance_completion: 1/3,
+  compliance_intensity: 1/3,
+  compliance_duration: 1/3,
 };
 
 // Research-Optimized Contraction Detection Parameters (2024)
@@ -210,13 +213,13 @@ export const useEnhancedPerformanceMetrics = (
     
     // Calcul des scores totaux par muscle (sans symétrie ni effort)
     const calculateMuscleScore = (muscle: MusclePerformanceData): number => {
-      const componentSum = weights.completion + weights.mvcQuality + weights.qualityThreshold;
+      const componentSum = weights.compliance_completion + weights.compliance_intensity + weights.compliance_duration;
       if (componentSum === 0) return 0;
       
       return (
-        muscle.components.completion.value * weights.completion +
-        muscle.components.mvcQuality.value * weights.mvcQuality +
-        muscle.components.qualityThreshold.value * weights.qualityThreshold
+        muscle.components.completion.value * weights.compliance_completion +
+        muscle.components.mvcQuality.value * weights.compliance_intensity +
+        muscle.components.qualityThreshold.value * weights.compliance_duration
       ) / componentSum;
     };
     
@@ -249,7 +252,7 @@ export const useEnhancedPerformanceMetrics = (
     const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
     
     const overallScore = totalWeight > 0 ? Math.round(
-      (muscleAverage * (weights.completion + weights.mvcQuality + weights.qualityThreshold) +
+      (muscleAverage * (weights.compliance_completion + weights.compliance_intensity + weights.compliance_duration) +
        symmetryScore * weights.symmetry +
        effortScore * weights.effort +
        gameScoreNormalized * weights.gameScore) / totalWeight

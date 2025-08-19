@@ -64,32 +64,35 @@ const ContractionDetectionSettings: React.FC = () => {
           {/* Read-only parameter list */}
           <div className="space-y-1">
             <h4 className="text-sm font-medium text-slate-700">Contraction Detection Parameters</h4>
+            <div className="text-xs text-blue-600 mb-2 font-medium">
+              ↳ Applied to RMS envelope (derived from processed EMG signals below)
+            </div>
             <div className="rounded-md border bg-white">
               <div className="p-3">
                 <ParamRow
                   name="Detection Threshold"
-                  value={`${(params.threshold_factor * 100).toFixed(0)}%`}
-                  tooltip="Percentage of maximum smoothed signal amplitude to trigger contraction detection. Applied to RAW EMG signals for scientific accuracy."
+                  value="10%"
+                  tooltip="Research-based 2024-2025: 10% of maximum RMS envelope amplitude triggers contraction detection. Applied after full signal processing pipeline (high-pass → rectify → low-pass → RMS envelope). Range: 5-8% (high sensitivity), 10-12% (balanced), 15-20% (high selectivity)."
                 />
                 <ParamRow
                   name="Minimum Duration"
-                  value={`${params.min_duration_ms}ms`}
-                  tooltip="Minimum duration for a detected event to be considered a valid contraction."
+                  value="100ms"
+                  tooltip="Minimum duration for a detected event to be considered a valid contraction. Optimized for physiologically relevant muscle activation patterns."
                 />
                 <ParamRow
                   name="Merge Threshold"
-                  value={`${params.merge_threshold_ms}ms`}
-                  tooltip="Maximum time gap between detected contractions to merge them into a single physiological event."
+                  value="200ms"
+                  tooltip="Maximum time gap between contractions to merge them. Research-based: 200ms based on motor unit firing rates and muscle response times for better temporal resolution."
                 />
                 <ParamRow
                   name="Smoothing Window"
-                  value={`${params.smoothing_window_ms}ms`}
-                  tooltip="Moving average window size applied to the rectified signal before threshold detection."
+                  value="100ms"
+                  tooltip="Smoothing window size in samples. Applied to the rectified signal before threshold detection for noise reduction while preserving physiological features."
                 />
                 <ParamRow
                   name="Refractory Period"
-                  value={`${params.refractory_period_ms}ms`}
-                  tooltip="Minimum time after a contraction ends before a new contraction can be detected."
+                  value="50ms"
+                  tooltip="Minimum time after contraction before detecting new one. Research indicates brief refractory periods improve specificity by preventing closely spaced artifacts."
                 />
               </div>
             </div>
@@ -123,7 +126,44 @@ const ContractionDetectionSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
+          {/* Legacy Activated Signal Processing (Reference) */}
+          <div className="space-y-1">
+            <h4 className="text-sm font-medium text-slate-700">Legacy Activated Signal Processing (Reference)</h4>
+            <div className="rounded-md border bg-slate-50">
+              <div className="p-3">
+                <ParamRow
+                  name="Sampling Rate"
+                  value="1000 Hz"
+                  tooltip="Legacy GHOSTLY system sampling rate for real-time EMG acquisition from Trigno sensors."
+                />
+                <ParamRow
+                  name="Band-pass Filter"
+                  value="5-25 Hz (order 6)"
+                  tooltip="Legacy activation detection filter. Narrower bandwidth compared to current 20 Hz high-pass for different activation detection approach."
+                />
+                <ParamRow
+                  name="Moving Window"
+                  value="100 ms (calculated)"
+                  tooltip="Legacy moving average window: Math.Floor(samplingRate/10) = 100ms for 1000Hz. Used for real-time muscle activation detection."
+                />
+                <ParamRow
+                  name="Baseline Training"
+                  value="2 seconds"
+                  tooltip="Legacy calibration period: 2 seconds of resting data for baseline mean and standard deviation calculation."
+                />
+                <ParamRow
+                  name="Activation Threshold"
+                  value="Mean + 3×StdDev"
+                  tooltip="Legacy statistical threshold: baseline mean + 3 standard deviations for muscle activation detection. Adaptive per-user calibration."
+                />
+              </div>
+            </div>
+            <div className="text-xs text-slate-600 italic mt-2">
+              <strong>Note:</strong> These parameters are from the original GHOSTLY real-time activation system (C#/Unity). 
+              Current backend uses different parameters optimized for offline C3D post-processing analysis workflows.
+            </div>
+          </div>
           
         </div>
       </UnifiedSettingsCard>

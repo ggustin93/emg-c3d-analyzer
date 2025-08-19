@@ -7,13 +7,14 @@ interface GHOSTLYGameCardProps {
   gameScore?: number;
   gameLevel?: number;
   normalizedScore?: number;
-  showExperimental?: boolean;
+  gameScoreWeight?: number;
 }
 
 const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
   gameScore = 0,
   gameLevel,
   normalizedScore = 0,
+  gameScoreWeight = 0,
 }) => {
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300">
@@ -28,6 +29,7 @@ const GHOSTLYGameCard: React.FC<GHOSTLYGameCardProps> = ({
                 gameScore={gameScore}
                 gameLevel={gameLevel}
                 normalizedScore={normalizedScore}
+                gameScoreWeight={gameScoreWeight}
               />
             </div>
           </CardTitle>

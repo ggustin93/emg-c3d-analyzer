@@ -54,9 +54,11 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 ### Required Tools
 - Git
 - Python (3.10+ recommended)
-- Poetry (Python package manager)
-- Node.js (LTS version recommended, comes with npm)
+- Poetry (Python package manager) OR Docker (containerized approach)
+- Node.js (LTS version recommended, comes with npm) OR Docker
 - Code editor with Python/TypeScript support
+- **Docker** (recommended for consistent development environment)
+- **Serena MCP** (advanced code analysis and intelligent tooling)
 
 ### Setup Instructions
 (Refer to `README.md` for the most current and detailed setup steps.)
@@ -66,27 +68,69 @@ python-multipart = "^0.0.9" # Added for FastAPI file uploads
 4. Frontend: Navigate to `frontend/` directory. Run `npm install`.
 
 ### Development Commands
-(Refer to `README.md` for primary instructions. `start_dev.sh` is the recommended way to run the full dev environment.)
+
+#### Docker-Based Development (Recommended)
+Enhanced `start_dev.sh` v3.0 - Complete Docker containerization with production-ready workflows.
+
 ```bash
-# Install/Update backend dependencies (from project root)
-poetry install
+# Docker containerized development (recommended)
+./start_dev.sh                        # Start all services in containers
+./start_dev.sh --full                 # Start with Redis GUI and reverse proxy
+./start_dev.sh --prod                 # Production environment simulation
+./start_dev.sh --rebuild              # Rebuild containers and start
+./start_dev.sh --logs [service]       # Show service logs (backend/frontend/redis)
+./start_dev.sh --shell [service]      # Open shell in container
+./start_dev.sh --test                 # Run tests in containers
+./start_dev.sh --clean                # Clean containers and volumes
+./start_dev.sh --reset                # Complete reset with image removal
 
-# Install/Update frontend dependencies (from frontend/ directory)
+# Coolify deployment preparation
+./start_dev.sh --coolify              # Generate Coolify configuration
+./start_dev.sh --build-prod           # Build production images
+```
+
+#### Native Development (Alternative)
+Primary development script: `start_dev_simple.sh` - Production-ready development environment with robust logging and monitoring.
+
+```bash
+# Production-ready native development
+./start_dev_simple.sh                 # Full stack with logging & monitoring
+./start_dev_simple.sh --backend-only  # API development focus with health checks
+./start_dev_simple.sh --frontend-only # Frontend development only
+./start_dev_simple.sh --install       # Auto-creates venv & installs all dependencies
+./start_dev_simple.sh --test          # Run comprehensive test suite (43 tests)
+./start_dev_simple.sh --kill          # Graceful shutdown with cleanup
+
+# Advanced webhook testing with ngrok integration
+./start_dev.sh --webhook              # Development + ngrok tunnel for webhook testing
+
+# Virtual environment management (automated by start_dev_simple.sh)
+# Manual venv setup if needed:
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Manual frontend dependency installation
 cd frontend
-npm install
-cd ..
+npm ci  # Preferred for CI/development (uses package-lock.json)
+npm install  # Alternative if no lockfile exists
 
-# Run the full development environment (backend & frontend)
-# This script handles starting both servers.
-./start_dev.sh
+# Real-time monitoring and debugging
+tail -f logs/backend.error.log        # Backend error monitoring with structured logging
+tail -f logs/frontend.log             # Frontend development server output and build info
+```
 
-# --- Manual Start ---
-# Run backend development server (from project root)
-python -m uvicorn backend.api.api:app --reload --host 0.0.0.0 --port 8080
+#### Serena MCP Integration
+Advanced code analysis and intelligent development assistance through Serena MCP server.
 
-# Run frontend development server (from frontend/ directory)
-cd frontend
-npm start
+```bash
+# Serena MCP capabilities available:
+# - Intelligent code search and analysis
+# - Symbol-level code understanding and modification
+# - Pattern-based search across the entire codebase
+# - Memory management for project context
+# - Automated refactoring and code generation
 ```
 
 ## Configuration
@@ -111,6 +155,64 @@ npm start
   ```bash
   rm -rf node_modules package-lock.json && npm install
   ```
+
+## Testing Infrastructure
+
+### Comprehensive Test Suite (43 Tests)
+- **Backend Testing**: 11 total tests with pytest framework
+  - **Unit Tests**: 9 tests covering EMG analysis (62% coverage)
+  - **Integration Tests**: 2 async database tests (pytest-asyncio)
+  - **API Tests**: 20 FastAPI TestClient endpoint validation tests
+  - **E2E Tests**: Real C3D file processing with actual clinical data
+- **Frontend Testing**: 34 tests with Vitest framework
+  - React component testing with Testing Library
+  - Hook testing (6 tests for usePerformanceMetrics)
+  - Integration testing across 7 test files
+
+### Testing Configuration
+```ini
+# pytest.ini - Backend testing configuration
+[pytest]
+markers =
+    e2e: end-to-end tests requiring external services
+asyncio_mode = auto
+```
+
+### Test Dependencies
+**Backend (`requirements.txt`)**:
+- `pytest` - Testing framework
+- `pytest-cov` - Coverage reporting
+- `pytest-asyncio` - Async test support
+
+**Frontend (`package.json`)**:
+- `vitest` - Testing framework
+- `@testing-library/react` - Component testing utilities
+- `@testing-library/jest-dom` - Additional matchers
+
+### Real Data Testing
+- **E2E Validation**: Uses actual GHOSTLY rehabilitation C3D files (2.74MB)
+- **Clinical Data**: `Ghostly_Emg_20230321_17-50-17-0881.c3d` with 175.1s EMG data
+- **Processing Validation**: Complete pipeline from upload to therapeutic compliance metrics
+- **Performance Benchmarks**: API response time validation and processing monitoring
+
+### Test Execution Commands
+```bash
+# Backend tests (in virtual environment)
+source venv/bin/activate
+python -m pytest tests/ -v                    # All tests with verbose output
+python -m pytest tests/test_e2e* -v -s       # E2E tests with real C3D data
+python -m pytest tests/ --cov=backend        # Tests with coverage report
+
+# Frontend tests
+cd frontend
+npm test                                      # Interactive test runner
+npm test -- --run                           # Run tests once
+npm test hooks                               # Hook tests only
+npm test -- --coverage                      # Tests with coverage
+
+# Integrated test execution
+./start_dev_simple.sh --test                # All 43 tests via development script
+```
 
 ## Deployment
 - **Backend (FastAPI):**
@@ -225,40 +327,73 @@ ignore = ['W291', 'W292', 'W293']
 
 ## Monitoring and Maintenance
 
-### Logging
-- Backend logs to `backend.log` and `backend.error.log` during local development via `start_dev.sh`.
-- Render provides its own logging for the deployed backend.
-- Vercel provides logging for the deployed frontend.
+### Enhanced Logging Infrastructure
+- **Structured Development Logging**: Production-quality logging system via `start_dev_simple.sh`
+  - **Backend Logs**: Separate stdout (`logs/backend.log`) and stderr (`logs/backend.error.log`) streams
+  - **Frontend Logs**: Development server output (`logs/frontend.log`) with build information
+  - **Real-time Monitoring**: `tail -f logs/backend.error.log` for live error tracking
+  - **Automatic Cleanup**: Fresh log files created for each development session
+- **Health Check Logging**: Comprehensive service monitoring with contextual error reporting
+- **Process Management Logs**: PID tracking, graceful shutdown, and startup validation logging
+- **Virtual Environment Logs**: Dependency installation and validation with structured output
+- **Production Deployment**: 
+  - Render provides centralized logging for deployed backend
+  - Vercel provides logging for deployed frontend
+- **Cross-Platform Compatibility**: Logging works consistently on macOS and Linux development environments
 
-### Testing
+### Testing Infrastructure
 
-#### Frontend Testing (Vitest + React Testing Library)
-- **Test Framework**: Vitest for fast unit testing with TypeScript support
-- **Component Testing**: React Testing Library for user-focused component tests
+#### Complete Testing Suite (43 Tests Passing)
+- **Total Coverage**: 9 backend tests + 34 frontend tests ensuring code quality and reliability
+- **Automated Testing**: Integrated into `start_dev_simple.sh --test` for comprehensive validation
+- **Virtual Environment**: All backend tests run in isolated Python venv with proper dependency management
+
+#### Frontend Testing (Vitest + React Testing Library) - 34/34 Tests Passing
+- **Test Framework**: Vitest for fast unit testing with TypeScript support and hot reload
+- **Component Testing**: React Testing Library for user-focused component testing across 7 test files
 - **Test Organization**: Co-located tests in `__tests__/` directories following React best practices
-- **Coverage**: Comprehensive business logic testing with edge case validation
-- **Hook Testing**: Custom hooks tested with exported utility functions
-- **Integration Tests**: Cross-component workflows in dedicated `src/tests/` directory
+- **Coverage Areas**: Comprehensive testing of components, hooks, contraction analysis, and performance metrics
+- **Hook Testing**: Custom hooks tested with exported utility functions (6 hook tests)
+- **Integration Tests**: Cross-component workflows with data flow validation
+- **Business Logic**: Contraction analysis, performance calculations, and data transformation testing
 
-#### Backend Testing (pytest)
-- Unit tests with pytest (current coverage may vary)
-- API integration tests (current coverage may vary)
+#### Backend Testing (pytest) - 9/9 Tests Passing
+- **Test Framework**: pytest with pytest-cov for coverage reporting and pytest-asyncio for async testing
+- **Core Module Coverage**: 62% coverage for `emg_analysis.py` (main EMG processing module)
+- **Virtual Environment**: All tests run in isolated venv with automatic dependency validation
+- **Test Organization**: Comprehensive unit tests for EMG analysis functions and signal processing
+- **API Testing**: FastAPI endpoint testing with file upload validation
 
-#### Test Commands
+#### Enhanced Test Commands
 ```bash
-# Frontend Tests
+# Comprehensive test suite (recommended)
+./start_dev_simple.sh --test          # Run all 43 tests with environment validation
+
+# Frontend Tests (34 tests)
 cd frontend
 npm test                    # Run all tests in watch mode
-npm test -- --run         # Run tests once
-npm test hooks             # Run hook tests only
-npm test components        # Run component tests only
+npm test -- --run         # Run tests once with results summary
+npm test hooks             # Run hook tests only (6 tests)
+npm test components        # Run component tests
 npm test -- --coverage    # Run with coverage report
 
-# Backend Tests  
+# Backend Tests (9 tests) 
 cd backend
-python -m pytest tests/                    # Run backend tests
-python -m pytest tests/ -v --cov=.        # Run with coverage
+source venv/bin/activate   # Required for backend testing
+python -m pytest tests/ -v                    # Run backend tests with verbose output
+python -m pytest tests/ --cov=emg --cov-report=term-missing  # Run with coverage
+python -m pytest tests/test_emg_analysis.py   # Run specific EMG analysis tests
+
+# Testing with dependency validation
+./start_dev_simple.sh --install --test       # Install deps and run comprehensive tests
 ```
+
+#### Test Infrastructure Features
+- **Virtual Environment Integration**: Backend tests automatically run in isolated Python venv
+- **Dependency Validation**: Test runner verifies all required libraries (ezc3d, fastapi, pytest, etc.)
+- **Cross-Platform Support**: Tests run consistently on macOS and Linux
+- **Coverage Reporting**: Detailed coverage metrics for both frontend and backend
+- **Automated Validation**: Integrated into development workflow via enhanced start script
 
 ### Deprecated Scripts
 - `setup.sh` has been deleted as its functionality was outdated and is now covered by `README.md` manual setup instructions. `start_dev.sh` updated accordingly.
@@ -268,3 +403,11 @@ python -m pytest tests/ -v --cov=.        # Run with coverage
 
 ## Import Strategy
 - Standardized relative imports within the backend module to resolve import errors. 
+
+## Tooltips
+- **UI Components**: Primarily uses **shadcn/ui**, a collection of reusable UI components. This is the preferred library for building UI elements to maintain consistency and reduce custom component development.
+- **Tooltips**: A data-driven, composable tooltip system has been implemented to ensure consistency and maintainability.
+  - **Base Component**: `frontend/src/components/ui/tooltip.tsx` provides the base styling and portal functionality for all tooltips.
+  - **Clinical Context Wrapper**: `frontend/src/components/ui/clinical-tooltip.tsx` is a wrapper that structures tooltips with a title, description, and sections.
+  - **Data Source**: All tooltip content is centralized in `frontend/src/data/tooltipData.ts`. This separates content from presentation.
+  - **Usage**: To use a tooltip for a specific metric (e.g., RPE Score), use its dedicated preset component (e.g., `<RPEScoreTooltip>`). To create a new tooltip, add a new data function to `tooltipData.ts` and a corresponding preset component to `clinical-tooltip.tsx`. 

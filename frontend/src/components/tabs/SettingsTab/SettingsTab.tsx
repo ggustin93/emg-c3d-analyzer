@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { EMGChannelSignalData, EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import DebugModeSwitch from './components/DebugModeSwitch';
+import TherapistModeSwitch from './components/TherapistModeSwitch';
 import { Button } from '@/components/ui/button';
 import DisplaySettings from './components/DisplaySettings';
 import TherapeuticParametersSettings from './components/TherapeuticParametersSettings';
-import PerMuscleDurationThresholds from './components/PerMuscleDurationThresholds';
 import PatientOutcomesSettings from './components/PatientOutcomesSettings';
 import BFRParametersSettings from './components/BFRParametersSettings';
 import ScoringWeightsSettings from './components/ScoringWeightsSettings';
@@ -46,6 +46,7 @@ interface SettingsPanelProps {
   useEnhancedQuality?: boolean;
   
   analysisResult?: EMGAnalysisResult | null;
+  uploadedFileName?: string | null;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -82,9 +83,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   useEnhancedQuality = false,
   
   analysisResult,
+  uploadedFileName,
 }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isDebugMode, setIsDebugMode] = useState(false);
+  const [isTherapistMode, setIsTherapistMode] = useState(false);
 
   const handleRecalculate = () => {
     // Force a backend recalc by changing the sessionParams object identity
@@ -127,7 +130,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Debug Mode Control - Always at top for easy access */}
+      {/* Dual Mode Controls - Clinical and Development separated */}
+      <TherapistModeSwitch
+        isTherapistMode={isTherapistMode}
+        setIsTherapistMode={setIsTherapistMode}
+        disabled={disabled}
+      />
+      
       <DebugModeSwitch
         isDebugMode={isDebugMode}
         setIsDebugMode={setIsDebugMode}
@@ -181,7 +190,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <ScoringWeightsSettings 
           muscleChannels={muscleChannels}
           disabled={disabled}
-          isDebugMode={isDebugMode}
+          isTherapistMode={isTherapistMode}
           analysisResult={analysisResult}
         />
         
@@ -189,26 +198,21 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <TherapeuticParametersSettings
           muscleChannels={muscleChannels}
           disabled={disabled}
-          isDebugMode={isDebugMode}
+          isTherapistMode={isTherapistMode}
+          analytics={analysisResult?.analytics}
+          uploadedFileName={uploadedFileName}
         />
-
-        {isDebugMode && (
-          <PerMuscleDurationThresholds
-            muscleChannels={muscleChannels}
-            disabled={disabled}
-          />
-        )}
         
         {/* Patient Reported Outcomes - Always visible */}
         <PatientOutcomesSettings
           disabled={disabled}
-          isDebugMode={isDebugMode}
+          isTherapistMode={isTherapistMode}
         />
         
         {/* BFR Parameters - Always visible */}
         <BFRParametersSettings
           disabled={disabled}
-          isDebugMode={isDebugMode}
+          isTherapistMode={isTherapistMode}
         />
         
         {/* Contraction Detection Settings - Last component */}

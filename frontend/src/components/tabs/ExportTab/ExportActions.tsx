@@ -20,8 +20,8 @@ interface ExportActionsProps {
   exportData: ExportData | null;
   originalFilename: string;
   hasSelectedData: boolean;
-  onDownloadOriginal: () => void;
-  onDownloadExport: () => void;
+  onDownloadOriginal: () => Promise<void>;
+  onDownloadExport: () => Promise<void>;
 }
 
 export const ExportActions: React.FC<ExportActionsProps> = ({
@@ -39,28 +39,30 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
     export: 'idle',
   });
 
-  const handleDownloadOriginal = () => {
+  const handleDownloadOriginal = async () => {
     setDownloadStates(prev => ({ ...prev, original: 'downloading' }));
     try {
-      onDownloadOriginal();
+      await onDownloadOriginal();
       setDownloadStates(prev => ({ ...prev, original: 'success' }));
       setTimeout(() => {
         setDownloadStates(prev => ({ ...prev, original: 'idle' }));
       }, 2000);
     } catch (error) {
+      console.error('Original download failed:', error);
       setDownloadStates(prev => ({ ...prev, original: 'idle' }));
     }
   };
 
-  const handleDownloadExport = () => {
+  const handleDownloadExport = async () => {
     setDownloadStates(prev => ({ ...prev, export: 'downloading' }));
     try {
-      onDownloadExport();
+      await onDownloadExport();
       setDownloadStates(prev => ({ ...prev, export: 'success' }));
       setTimeout(() => {
         setDownloadStates(prev => ({ ...prev, export: 'idle' }));
       }, 2000);
     } catch (error) {
+      console.error('Download failed:', error);
       setDownloadStates(prev => ({ ...prev, export: 'idle' }));
     }
   };

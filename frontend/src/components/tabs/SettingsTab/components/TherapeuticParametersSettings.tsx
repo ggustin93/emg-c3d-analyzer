@@ -6,30 +6,81 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LockedBadge, SourceStatusBadge, TherapistBadge } from "@/components/ui/StatusBadges";
-import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon } from '@radix-ui/react-icons';
+import { ActivityLogIcon, InfoCircledIcon, TargetIcon, GearIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { useMvcService } from '@/hooks/useMvcService';
 import { useAuth } from '@/contexts/AuthContext';
+import { MVCService } from '@/services/mvcService';
+import SupabaseStorageService from '@/services/supabaseStorage';
 
 interface TherapeuticParametersSettingsProps {
   muscleChannels: string[];
   disabled: boolean;
-  isDebugMode: boolean;
+  isTherapistMode: boolean;
   analytics?: Record<string, any> | null; // Backend analytics data for threshold validation
+  uploadedFileName?: string | null; // Current uploaded file name for MVC recalculation
 }
 
-const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps> = ({ muscleChannels, disabled, isDebugMode, analytics }) => {
+const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps> = ({ muscleChannels, disabled, isTherapistMode, analytics, uploadedFileName }) => {
   const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isClinicalParametersOpen, setIsClinicalParametersOpen] = useState(false);
-  // Editing unlocks only via Debug Mode (production locked)
-  const canEdit = isDebugMode && !disabled;
+  const [isFullRecalculating, setIsFullRecalculating] = useState(false);
+  const [fullRecalcError, setFullRecalcError] = useState<string | null>(null);
+  const [showCalibrationModal, setShowCalibrationModal] = useState(false);
+  const [calibrationFile, setCalibrationFile] = useState<File | null>(null);
+  const [calibrationSource, setCalibrationSource] = useState<'current' | 'upload'>('current');
+  // Editing unlocks only via Therapist Mode (demo access)
+  const canEdit = isTherapistMode && !disabled;
   
   // MVC Service Integration
   const mvcService = useMvcService();
   
   const muscleChannels2 = muscleChannels.filter(ch => !ch.includes(' ')).slice(0, 2);
+
+  // MVC Quality Validation Helper
+  const getMVCQualityInfo = (channel: string) => {
+    if (!analytics || !analytics[channel]) {
+      return { hasData: false, quality: 'unknown', message: 'No MVC data available' };
+    }
+
+    const channelData = analytics[channel];
+    const hasMvcData = channelData.mvc_threshold_actual_value && channelData.mvc_estimation_method;
+    
+    if (!hasMvcData) {
+      return { hasData: false, quality: 'missing', message: 'MVC threshold not available' };
+    }
+
+    // Validate MVC estimation using service method
+    const mockResult = {
+      mvc_value: channelData.mvc_threshold_actual_value / 0.75, // Assume 75% threshold
+      threshold_value: channelData.mvc_threshold_actual_value,
+      threshold_percentage: 75,
+      estimation_method: channelData.mvc_estimation_method,
+      confidence_score: 0.8, // Default confidence
+      metadata: {
+        total_contractions: channelData.contraction_count || 0,
+        good_contractions: channelData.good_contraction_count || 0
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const validation = MVCService.validateEstimation(mockResult);
+    const qualityLevel = validation.isValid ? (validation.warnings.length === 0 ? 'excellent' : 'good') : 'poor';
+    const message = validation.warnings.length > 0 ? validation.warnings[0] : 'MVC estimation looks good';
+
+    return {
+      hasData: true,
+      quality: qualityLevel,
+      message,
+      confidenceScore: mockResult.confidence_score,
+      estimationMethod: channelData.mvc_estimation_method,
+      formattedValue: MVCService.formatThresholdValue(channelData.mvc_threshold_actual_value)
+    };
+  };
 
   const handleExpectedContractionsChange = (value: number | null) => {
     const updatedParams = {
@@ -51,6 +102,17 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     if (analytics && Object.keys(analytics).length > 0) {
       console.log('🔄 Applying MVC from current analytics to session parameters');
       
+      // Debug: Log analytics structure to understand what's available
+      console.log('🔍 Analytics data structure:', analytics);
+      Object.entries(analytics).forEach(([channel, channelData]) => {
+        console.log(`📊 ${channel} analytics:`, {
+          mvc_threshold_actual_value: channelData.mvc_threshold_actual_value,
+          mvc_estimation_method: channelData.mvc_estimation_method,
+          contraction_count: channelData.contraction_count,
+          hasAllRequiredFields: !!(channelData.mvc_threshold_actual_value && channelData.mvc_estimation_method)
+        });
+      });
+      
       // Create mock EMGAnalysisResult to extract from
       const mockAnalysisResult = {
         analytics: analytics,
@@ -66,6 +128,132 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     }
   };
 
+  // Handler to show calibration confirmation modal
+  const handleShowCalibrationModal = () => {
+    console.log('🔍 Debug button state:', {
+      uploadedFileName,
+      disabled,
+      isFullRecalculating,
+      hasFile: !!uploadedFileName,
+      canProceed: !disabled && !isFullRecalculating
+    });
+    
+    if (!uploadedFileName) {
+      setFullRecalcError('No C3D file available for calibration');
+      return;
+    }
+    setShowCalibrationModal(true);
+  };
+
+  // Handler for file upload in calibration modal
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.name.toLowerCase().endsWith('.c3d')) {
+      setCalibrationFile(file);
+      setFullRecalcError(null);
+    } else if (file) {
+      setFullRecalcError('Please select a valid C3D file');
+    }
+  };
+
+  // Handler for confirmed full MVC recalculation from C3D file
+  const handleConfirmedFullRecalculation = async () => {
+    let fileToUse: File | null = null;
+    let fileName: string = '';
+
+    // Determine which file to use based on calibration source
+    if (calibrationSource === 'upload') {
+      if (!calibrationFile) {
+        setFullRecalcError('Please select a C3D file for calibration');
+        return;
+      }
+      fileToUse = calibrationFile;
+      fileName = calibrationFile.name;
+    } else {
+      // Use current file
+      if (!uploadedFileName) {
+        setFullRecalcError('No current C3D file available for calibration');
+        return;
+      }
+      try {
+        console.log('📥 Downloading current file from storage:', uploadedFileName);
+        const fileBlob = await SupabaseStorageService.downloadFile(uploadedFileName);
+        fileToUse = new File([fileBlob], uploadedFileName, { type: 'application/octet-stream' });
+        fileName = uploadedFileName;
+      } catch (error) {
+        setFullRecalcError(`Failed to download current file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return;
+      }
+    }
+
+    setShowCalibrationModal(false); // Close modal first
+    setIsFullRecalculating(true);
+    setFullRecalcError(null);
+
+    try {
+      console.log('🚀 Starting MVC calibration from C3D file:', fileName);
+
+      // Call the backend /mvc/calibrate endpoint with the selected file
+      const response = await MVCService.calibrate(fileToUse, {
+        user_id: authState.user?.id,
+        session_id: 'current-session',
+        threshold_percentage: 75 // Default threshold percentage
+      });
+
+      if (response.status === 'success' && response.mvc_estimations) {
+        console.log('✅ MVC recalculation successful:', response);
+
+        // Convert the response to session parameters format
+        const sessionUpdate = MVCService.convertToSessionParameters(response.mvc_estimations);
+
+        // Apply the new MVC values to session
+        setSessionParams({
+          ...sessionParams,
+          ...sessionUpdate
+        });
+
+        // Update MVC service state for display
+        const extractedResults = Object.entries(response.mvc_estimations).reduce((acc, [channel, estimation]) => {
+          acc[channel] = {
+            mvc_value: estimation.mvc_value,
+            threshold_value: estimation.threshold_value,
+            threshold_percentage: estimation.threshold_percentage,
+            estimation_method: estimation.estimation_method,
+            confidence_score: estimation.confidence_score,
+            metadata: estimation.metadata,
+            timestamp: estimation.timestamp
+          };
+          return acc;
+        }, {} as Record<string, any>);
+
+        // Trigger UI update by calling mvcService methods
+        mvcService.extractFromAnalysis({ 
+          analytics: Object.fromEntries(
+            Object.entries(extractedResults).map(([channel, result]) => [
+              channel, 
+              { 
+                mvc_threshold_actual_value: result.threshold_value,
+                mvc_estimation_method: result.estimation_method 
+              }
+            ])
+          ),
+          timestamp: new Date().toISOString()
+        } as any);
+
+        console.log('🎯 Applied new MVC values from full recalculation');
+        
+      } else {
+        throw new Error(response.error || 'Unknown error in MVC estimation');
+      }
+
+    } catch (error) {
+      console.error('❌ Full MVC recalculation failed:', error);
+      setFullRecalcError(error instanceof Error ? error.message : 'Failed to recalculate MVC values');
+    } finally {
+      setIsFullRecalculating(false);
+    }
+  };
+
   return (
     <UnifiedSettingsCard
       title="Therapeutic Parameters"
@@ -78,10 +266,9 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       badge={
         <div className="flex items-center gap-2">
           <TherapistBadge />
-          {isDebugMode ? (
-            <Badge variant="warning" className="text-xs">Debug Unlocked</Badge>
-          ) : (
-            <LockedBadge />
+          {!isTherapistMode && <LockedBadge />}
+          {isTherapistMode && (
+            <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
           )}
         </div>
       }
@@ -203,7 +390,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                 <TooltipContent className="max-w-md">
                   <div className="text-sm space-y-2">
                     <p>MVC values are computed from initial assessment sessions or imported from mobile app. These values represent the maximum voluntary contraction capacity for each muscle and are used to assess contraction quality.</p>
-                    <p><strong>Note:</strong> MVC values are initialized from baseline game sessions and adapt via Dynamic Difficulty Algorithm (DDA) to maintain optimal therapeutic challenge. {isDebugMode && 'Values can be manually adjusted in debug mode for testing purposes.'}</p>
+                    <p><strong>Note:</strong> MVC values are initialized from baseline game sessions and adapt via Dynamic Difficulty Algorithm (DDA) to maintain optimal therapeutic challenge. {isTherapistMode && 'Values can be manually adjusted in therapist mode for demonstration purposes.'}</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -212,7 +399,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
             <div className="grid grid-cols-2 gap-4 p-4">
               {muscleChannels2.map((channel) => {
                 // Get channel-specific MVC value or fallback to global MVC value
-                const mvcValue = sessionParams.session_mvc_values?.[channel] || sessionParams.session_mvc_value || null;
+                const mvcValue = sessionParams.session_mvc_values?.[channel] || sessionParams.session_mvc_value;
                 const thresholdValue = sessionParams.session_mvc_threshold_percentages?.[channel] ?? 
                                       sessionParams.session_mvc_threshold_percentage ?? 75;
                 
@@ -310,77 +497,371 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                         )}
                       </div>
                     )}
+
+                    {/* MVC Quality Validation */}
+                    {(() => {
+                      const qualityInfo = getMVCQualityInfo(channel);
+                      if (!qualityInfo.hasData) {
+                        return (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+                            <div className="flex items-center gap-2">
+                              <ExclamationTriangleIcon className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-gray-600">{qualityInfo.message}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const qualityColors = {
+                        excellent: 'border-green-400 bg-green-50',
+                        good: 'border-blue-400 bg-blue-50',
+                        poor: 'border-red-400 bg-red-50'
+                      };
+
+                      const qualityIcons = {
+                        excellent: '🟢',
+                        good: '🟡',
+                        poor: '🔴'
+                      };
+
+                      return (
+                        <div className={`mt-3 p-3 rounded-lg border-l-4 ${qualityColors[qualityInfo.quality as keyof typeof qualityColors]}`}>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{qualityIcons[qualityInfo.quality as keyof typeof qualityIcons]}</span>
+                                <span className="text-sm font-medium">
+                                  MVC Quality: {qualityInfo.quality.charAt(0).toUpperCase() + qualityInfo.quality.slice(1)}
+                                </span>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {MVCService.getConfidenceLevelName(qualityInfo.confidenceScore || 0.8)}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {qualityInfo.message}
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">Method:</span>
+                              <span className="font-mono">
+                                {MVCService.getEstimationMethodName(qualityInfo.estimationMethod || 'unknown')}
+                              </span>
+                            </div>
+                            {qualityInfo.formattedValue && (
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">Threshold:</span>
+                                <span className="font-mono">{qualityInfo.formattedValue}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* MVC Service Integration Demo (Debug Mode Only) */}
-          {isDebugMode && analytics && Object.keys(analytics).length > 0 && (
-            <div className="space-y-4">
+          {/* MVC Recalculation Section - Simplified UX */}
+          {/* Show if MVC values are not yet calculated OR if analytics exist */}
+          {(sessionParams.session_mvc_value === null || (analytics && Object.keys(analytics).length > 0)) && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <GearIcon className="h-4 w-4 text-blue-600" />
-                <h5 className="text-sm font-semibold text-gray-800">MVC Service Integration</h5>
-                <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">Debug Mode</Badge>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoCircledIcon className="h-4 w-4 text-gray-500" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-md">
-                    <div className="text-sm space-y-2">
-                      <p>MVC Service Integration allows you to apply backend-calculated MVC values directly to session parameters.</p>
-                      <p><strong>This section is only visible in debug mode.</strong> In production, MVC values would be automatically applied from the backend service.</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+                <ActivityLogIcon className="h-4 w-4 text-amber-600" />
+                <h5 className="text-sm font-semibold text-gray-800">MVC Calibration</h5>
+                {sessionParams.session_mvc_value === null && (
+                  <Badge variant="destructive" className="text-xs">Action Required</Badge>
+                )}
               </div>
-              
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Apply Backend MVC Values</p>
-                      <p className="text-xs text-gray-600">Use MVC values calculated by the backend service</p>
-                    </div>
-                    <Button 
-                      onClick={handleApplyAnalyticsMVC}
-                      disabled={disabled || mvcService.isEstimating || !analytics}
-                      variant="outline"
-                      size="sm"
-                      className="text-blue-700 border-blue-300 hover:bg-blue-100"
-                    >
-                      {mvcService.isEstimating ? '⏳ Processing...' : '🤖 Apply MVC Values'}
-                    </Button>
-                  </div>
-                  
-                  {/* Show current MVC service status */}
-                  {mvcService.estimationResults && (
-                    <div className="mt-3 p-3 bg-white rounded-lg text-xs space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default" className="text-xs">✅ MVC Applied</Badge>
-                      </div>
-                      {Object.entries(mvcService.estimationResults).map(([channel, result]) => (
-                        <div key={channel} className="flex items-center justify-between">
-                          <span className="text-gray-600">{channel}:</span>
-                          <div className="text-right">
-                            <div className="font-mono text-gray-800">{mvcService.formatMVCValue(result.mvc_value)}</div>
-                            <div className="text-gray-500">{mvcService.getEstimationMethodName(result.estimation_method)}</div>
-                          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoCircledIcon className="h-4 w-4 text-gray-500" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Maximum Voluntary Contraction values need calibration for accurate therapeutic assessment.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            
+            {/* Simplified Status Display */}
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="space-y-3">
+                {/* Show simplified status based on what's available */}
+                {(() => {
+                  const hasMvcBeenCalculated = sessionParams.session_mvc_value !== null;
+
+                  const hasMvcAnalytics = analytics && Object.entries(analytics).some(([_, channelData]) => 
+                    channelData.mvc_threshold_actual_value != null && channelData.mvc_estimation_method
+                  );
+
+                  const hasAnalyticsButNoMvc = analytics && Object.keys(analytics).length > 0 && !hasMvcAnalytics;
+
+                  if (!hasMvcBeenCalculated) {
+                    return (
+                      <div className="flex items-start gap-2">
+                        <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-amber-900">Default values detected</p>
+                          <p className="text-amber-700 text-xs mt-1">
+                            MVC thresholds are using default values. Recalibrate for personalized therapy.
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {mvcService.error && (
-                    <div className="mt-3 p-3 bg-red-50 rounded-lg text-xs">
-                      <div className="text-red-600">❌ Error: {mvcService.error}</div>
-                    </div>
-                  )}
+                      </div>
+                    );
+                  } else if (hasMvcAnalytics) {
+                    return (
+                      <div className="flex items-start gap-2">
+                        <InfoCircledIcon className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-gray-900">MVC data available</p>
+                          <p className="text-gray-600 text-xs mt-1">
+                            Backend has calculated MVC values. Apply them to update session parameters.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  } else if (hasAnalyticsButNoMvc) {
+                    return (
+                      <div className="flex items-start gap-2">
+                        <InfoCircledIcon className="h-4 w-4 text-orange-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-orange-900">Analytics available, MVC estimation needed</p>
+                          <p className="text-orange-700 text-xs mt-1">
+                            {uploadedFileName 
+                              ? "Backend didn't calculate MVC values. Try full recalculation from your C3D file."
+                              : "Backend didn't calculate MVC values. Upload a C3D file to calculate them."
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return null;
+                  }
+                })()}
+
+                {/* Single action button based on context */}
+                <div className="flex justify-end">
+                  {(() => {
+                    const hasMvcAnalytics = analytics && Object.entries(analytics).some(([_, channelData]) => 
+                      channelData.mvc_threshold_actual_value != null && channelData.mvc_estimation_method
+                    );
+
+                    const hasAnalyticsButNoMvc = analytics && Object.keys(analytics).length > 0 && !hasMvcAnalytics;
+
+                    if (hasMvcAnalytics) {
+                      // Backend has MVC data - show apply button
+                      return (
+                        <Button 
+                          onClick={handleApplyAnalyticsMVC}
+                          disabled={disabled || mvcService.isEstimating}
+                          variant="default"
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {mvcService.isEstimating ? (
+                            <>
+                              <span className="animate-spin mr-2">⏳</span>
+                              Applying...
+                            </>
+                          ) : (
+                            <>
+                              <GearIcon className="w-3 h-3 mr-2" />
+                              Apply MVC Data
+                            </>
+                          )}
+                        </Button>
+                      );
+                    } else if (hasAnalyticsButNoMvc || uploadedFileName) {
+                      // Analytics exist but no MVC data, or file is available - show recalculation
+                      return (
+                        <Button 
+                          onClick={handleShowCalibrationModal}
+                          disabled={disabled || isFullRecalculating}
+                          variant="default"
+                          size="sm"
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                          {isFullRecalculating ? (
+                            <>
+                              <span className="animate-spin mr-2">⏳</span>
+                              Calculating...
+                            </>
+                          ) : (
+                            <>
+                              <ActivityLogIcon className="w-3 h-3 mr-2" />
+                              Calibrate MVC
+                            </>
+                          )}
+                        </Button>
+                      );
+                    } else {
+                      // No file available
+                      return (
+                        <p className="text-xs text-amber-600">Load a C3D file to calibrate MVC</p>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             </div>
+            
+            {/* Success message - shows after successful calibration */}
+            {mvcService.estimationResults && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-start gap-2">
+                  <Badge variant="default" className="text-xs bg-green-100 text-green-800 mt-0.5">✅</Badge>
+                  <div className="text-sm">
+                    <p className="font-medium text-green-900">MVC Successfully Calibrated</p>
+                    <div className="text-xs text-green-700 mt-1">
+                      {Object.entries(mvcService.estimationResults).map(([channel, result]) => (
+                        <div key={channel} className="flex items-center gap-2">
+                          <span><MuscleNameDisplay channelName={channel} sessionParams={sessionParams} />:</span>
+                          <span className="font-mono">{mvcService.formatMVCValue(result.mvc_value)}</span>
+                          <span className="text-green-600">({Math.round(result.confidence_score * 100)}% confidence)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Error display - simplified */}
+            {(mvcService.error || fullRecalcError) && (
+              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-start gap-2">
+                  <ExclamationTriangleIcon className="h-4 w-4 text-red-600 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-red-900">Calibration Error</p>
+                    <p className="text-red-700 text-xs mt-1">
+                      {mvcService.error || fullRecalcError}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           )}
+
+          {/* MVC Calibration Confirmation Modal */}
+          <Dialog open={showCalibrationModal} onOpenChange={setShowCalibrationModal}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ActivityLogIcon className="w-5 h-5 text-amber-600" />
+                  MVC Calibration
+                </DialogTitle>
+                <DialogDescription className="space-y-3 pt-2">
+                  <p className="text-sm text-gray-700">
+                    Choose a C3D file to calibrate MVC thresholds for personalized therapeutic assessment.
+                  </p>
+                  
+                  <Tabs value={calibrationSource} onValueChange={(value) => setCalibrationSource(value as 'current' | 'upload')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="current">Current File</TabsTrigger>
+                      <TabsTrigger value="upload">Upload File</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="current" className="space-y-3">
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-start gap-2">
+                          <InfoCircledIcon className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm">
+                            <p className="font-medium text-blue-900">Current Session File</p>
+                            <p className="text-blue-700 font-mono text-xs mt-1">
+                              {uploadedFileName || 'No file available'}
+                            </p>
+                            <p className="text-blue-600 text-xs mt-2">
+                              This session will be used as baseline to calculate personalized MVC values 
+                              using the clinical algorithm (95th percentile method).
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="upload" className="space-y-3">
+                      <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-start gap-2">
+                          <InfoCircledIcon className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm">
+                            <p className="font-medium text-green-900">Upload Calibration File</p>
+                            <p className="text-green-600 text-xs mt-1">
+                              Upload a different C3D file specifically for MVC calibration. 
+                              This is useful when you have a dedicated baseline session.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label htmlFor="calibration-file-upload" className="text-sm font-medium text-gray-700">
+                          Select C3D File
+                        </label>
+                        <input
+                          id="calibration-file-upload"
+                          type="file"
+                          accept=".c3d"
+                          onChange={handleFileUpload}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        {calibrationFile && (
+                          <p className="text-xs text-green-600">
+                            Selected: {calibrationFile.name}
+                          </p>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                  
+                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-start gap-2">
+                      <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-900">Important</p>
+                        <p className="text-amber-700 text-xs mt-1">
+                          This calibration will replace default values (1.5e-4V) 
+                          with personalized thresholds based on EMG data from the selected file.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCalibrationModal(false)}
+                  disabled={isFullRecalculating}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleConfirmedFullRecalculation}
+                  disabled={isFullRecalculating || (calibrationSource === 'upload' && !calibrationFile)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {isFullRecalculating ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Calibrating...
+                    </>
+                  ) : (
+                    <>
+                      <ActivityLogIcon className="w-4 h-4 mr-2" />
+                      Confirm Calibration
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           
           {/* Duration Thresholds Section */}
           <div className="space-y-4">

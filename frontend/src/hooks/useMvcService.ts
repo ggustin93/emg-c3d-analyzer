@@ -24,7 +24,7 @@ export interface UseMvcServiceReturn {
   clearResults: () => void;
   validateEstimation: (channel: string) => { isValid: boolean; warnings: string[] } | null;
   
-  // Utilities
+  // Formatting utilities
   formatMVCValue: (value: number) => string;
   formatThresholdValue: (value: number) => string;
   getEstimationMethodName: (method: string) => string;
@@ -64,7 +64,7 @@ export const useMvcService = (): UseMvcServiceReturn => {
     try {
       console.log('🔄 Starting MVC estimation from file:', file.name);
       
-      const response = await MVCService.estimateMVC(file, {
+      const response = await MVCService.calibrate(file, {
         user_id: sessionParams.user_id,
         session_id: sessionParams.session_id,
         threshold_percentage: options.threshold_percentage || sessionParams.session_mvc_threshold_percentage || 75
@@ -201,7 +201,7 @@ export const useMvcService = (): UseMvcServiceReturn => {
     clearResults,
     validateEstimation,
     
-    // Utilities - Direct references to service methods
+    // Formatting utilities
     formatMVCValue: MVCService.formatMVCValue,
     formatThresholdValue: MVCService.formatThresholdValue,
     getEstimationMethodName: MVCService.getEstimationMethodName,

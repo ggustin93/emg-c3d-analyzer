@@ -19,9 +19,10 @@ import { SignalDisplayType } from './ThreeChannelSignalSelector';
 import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
 import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
-import { useMVCCalculations } from '@/hooks/useMVCCalculations';
 import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
+import { useUnifiedThresholds } from '@/hooks/useUnifiedThresholds';
 import EMGChartLegend from './EMGChartLegend';
+import MVCThresholdDisplay from './MVCThresholdDisplay';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Legend } from 'recharts';
@@ -241,26 +242,33 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     }
   }, [viewMode, availableChannels, selectedChannel, availableDataKeys, effectivePlotMode]);
 
-  // Initialize hooks for MVC calculations and contraction analysis
-  const { getChannelMVCThreshold, getMuscleName, getThresholdData } = useMVCCalculations({
-    sessionParams,
-    mvcThresholdForPlot,
-    analytics,
-    channel_muscle_mapping,
-    muscle_color_mapping,
-    finalDisplayDataKeys,
-    effectivePlotMode,
-    getColorForChannel
-  });
+    const { getMvcThreshold, getMuscleName, unifiedThresholds } = useUnifiedThresholds({
+        sessionParams: sessionParams || {
+            session_mvc_value: null,
+            session_mvc_threshold_percentage: 75,
+            contraction_duration_threshold: 2000,
+            channel_muscle_mapping: {},
+            muscle_color_mapping: {},
+            session_mvc_values: {},
+            session_mvc_threshold_percentages: {}
+        },
+        analytics,
+        availableDataKeys: finalDisplayDataKeys,
+        isLoading,
+        channelMuscleMapping: channel_muscle_mapping,
+        muscleColorMapping: muscle_color_mapping,
+        globalMvcThreshold: mvcThresholdForPlot,
+        getColorForChannel
+    });
 
-  const { contractionAreas, qualitySummary } = useContractionAnalysis({
-    analytics,
-    sessionParams,
-    finalDisplayDataKeys,
-    chartData,
-    showGoodContractions,
-    showPoorContractions
-  });
+    const { contractionAreas, qualitySummary } = useContractionAnalysis({
+        analytics,
+        sessionParams,
+        finalDisplayDataKeys,
+        chartData,
+        showGoodContractions,
+        showPoorContractions
+    });
 
   // For overlay mode, we need both Raw and RMS data keys
   const overlayDataKeys = useMemo(() => {
@@ -335,7 +343,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
 
     let maxThreshold = -Infinity;
     finalDisplayDataKeys.forEach(key => {
-      const threshold = getChannelMVCThreshold(key);
+      const threshold = getMvcThreshold(key);
       if (threshold !== null) {
         maxThreshold = Math.max(maxThreshold, threshold);
       }
@@ -358,7 +366,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
       domain = [dataMin - padding, dataMax + padding];
     }
     return domain;
-  }, [chartData, finalDisplayDataKeys, getChannelMVCThreshold, mvcThresholdForPlot]);
+  }, [chartData, finalDisplayDataKeys, getMvcThreshold, mvcThresholdForPlot]);
 
 
 
@@ -385,9 +393,16 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-0">
+      {/* MVC Threshold Display - Professional transparency */}
+      <MVCThresholdDisplay 
+        unifiedThresholds={unifiedThresholds}
+        className="rounded-t-lg"
+        compact={false}
+      />
+      
       {/* Chart Container */}
-      <div className="w-full h-[500px] border border-gray-200 rounded-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
+      <div className="w-full h-[500px] border border-gray-200 border-t-0 rounded-b-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={chartMargins}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -417,7 +432,18 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             )}
             <Tooltip formatter={(value: number, name: string) => {
               try {
-                return [`${value.toExponential(3)} mV`, getMuscleName(name)];
+                // Handle zero or near-zero values with better formatting
+                let formattedValue: string;
+                if (Math.abs(value) < 1e-6) {
+                  formattedValue = '0.000 mV';
+                } else if (Math.abs(value) >= 0.001) {
+                  // For values >= 1mV, use fixed notation with 3 decimals
+                  formattedValue = `${value.toFixed(3)} mV`;
+                } else {
+                  // For small values, use scientific notation with 3 decimals
+                  formattedValue = `${value.toExponential(3)} mV`;
+                }
+                return [formattedValue, getMuscleName(name)];
               } catch (error) {
                 return [`${value.toExponential(3)} mV`, name];
               }
@@ -428,9 +454,15 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               wrapperStyle={{ top: -5, right: 0, backgroundColor: 'transparent' }} 
               content={() => (
                 <EMGChartLegend 
-                  thresholds={getThresholdData()}
-                  qualitySummary={qualitySummary}
                   sessionParams={sessionParams}
+                  analytics={analytics}
+                  availableDataKeys={finalDisplayDataKeys}
+                  isLoading={isLoading}
+                  channelMuscleMapping={channel_muscle_mapping}
+                  muscleColorMapping={muscle_color_mapping}
+                  globalMvcThreshold={mvcThresholdForPlot}
+                  getColorForChannel={getColorForChannel}
+                  qualitySummary={qualitySummary}
                 />
               )}
             />
@@ -539,7 +571,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Find a data key for this base channel to get the threshold
                   const dataKey = keysForThresholds.find(key => key.split(' ')[0] === baseChannelName);
                   if (dataKey) {
-                    const threshold = getChannelMVCThreshold(dataKey);
+                    const threshold = getMvcThreshold(dataKey);
                     if (threshold !== null) {
                       const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
                       thresholdLines.push({ threshold, baseChannelName, colorStyle });
@@ -566,7 +598,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               } else {
                 // Single mode - original logic
                 return keysForThresholds.map((dataKey) => {
-                  const threshold = getChannelMVCThreshold(dataKey);
+                  const threshold = getMvcThreshold(dataKey);
                   if (threshold !== null) {
                     const baseChannelName = dataKey.split(' ')[0];
                     const colorStyle = getColorForChannel(baseChannelName, channel_muscle_mapping, muscle_color_mapping);
@@ -588,7 +620,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             })()}
 
             {/* Global MVC threshold fallback */}
-            {(plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys).every(dataKey => getChannelMVCThreshold(dataKey) === null) && 
+            {(plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys).every(dataKey => getMvcThreshold(dataKey) === null) && 
              mvcThresholdForPlot !== null && mvcThresholdForPlot !== undefined && (
               <ReferenceLine 
                 yAxisId={plotMode === 'raw_with_rms' ? 'right' : 'left'}

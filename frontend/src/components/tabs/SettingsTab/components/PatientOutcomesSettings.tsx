@@ -10,10 +10,10 @@ import { LockedBadge, SourceStatusBadge } from '@/components/ui/StatusBadges';
 
 interface PatientOutcomesSettingsProps {
   disabled: boolean;
-  isDebugMode: boolean;
+  isTherapistMode: boolean;
 }
 
-const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disabled, isDebugMode }) => {
+const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disabled, isTherapistMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isPatientOutcomesOpen, setIsPatientOutcomesOpen] = useState(false); // Collapsed by default
 
@@ -27,9 +27,9 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
       accentColor="indigo-600"
       badge={
         <div className="flex items-center gap-2">
-          <LockedBadge />
-          {isDebugMode && (
-            <Badge variant="warning" className="text-xs">Debug Mode</Badge>
+          {!isTherapistMode && <LockedBadge />}
+          {isTherapistMode && (
+            <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
           )}
         </div>
       }
@@ -82,11 +82,12 @@ const PatientOutcomesSettings: React.FC<PatientOutcomesSettingsProps> = ({ disab
                 }}
                 placeholder="0-10"
                 min="0" max="10" step="0.5"
-                disabled={true}
+                disabled={!isTherapistMode}
                 className="h-9 text-sm border-indigo-300 focus:border-indigo-500"
               />
               <p className="text-xs text-indigo-700">
                 ✓ Primary input for Subjective Effort Score (20% weight). Target: RPE 4-6 for optimal therapeutic stimulus.
+                {isTherapistMode && <span className="block text-green-600 font-medium mt-1">→ Editable in Therapist Mode for demonstration purposes</span>}
               </p>
             </div>
           </div>

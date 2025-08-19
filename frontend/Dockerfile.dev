@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+
+# =============================================================================
+# Development Dockerfile - Frontend Hot Reload (Vite)
+# =============================================================================
+FROM node:20-alpine AS development
+
+# Set environment variables for development
+ENV NODE_ENV=development \
+    CHOKIDAR_USEPOLLING=true \
+    WATCHPACK_POLLING=true \
+    NODE_OPTIONS="--max-old-space-size=2048"
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S appuser && \
+    adduser -S appuser -u 1001 -G appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+# This layer is cached unless package.json/package-lock.json changes
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/dist /app/node_modules \
+    && chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Health check for development server
+HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Expose port for Vite development server
+EXPOSE 3000
+
+# Default development command with hot reload
+# Can be overridden in docker-compose.dev.yml
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]

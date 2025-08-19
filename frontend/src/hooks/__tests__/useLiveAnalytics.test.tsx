@@ -5,14 +5,9 @@ import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 import { useSessionStore } from '@/store/sessionStore';
 import { MVCService } from '@/services/mvcService';
 
-vi.mock('@/services/mvcService', () => {
-  return {
-    MVCService: {
-      BASE_URL: 'http://localhost:8080',
-      recalc: vi.fn()
-    }
-  };
-});
+// Mock fetch instead of MVCService since useLiveAnalytics calls fetch directly
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 function TestComponent({ analysisResult }: { analysisResult: any }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -30,7 +25,10 @@ describe('useLiveAnalytics - debounce and cancel', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    (MVCService.recalc as any).mockReset().mockResolvedValue(initialAnalysis);
+    mockFetch.mockReset().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(initialAnalysis)
+    });
     // Reset store
     const { resetSessionParams } = useSessionStore.getState();
     resetSessionParams();
@@ -52,14 +50,14 @@ describe('useLiveAnalytics - debounce and cancel', () => {
     });
 
     // No call before debounce window
-    expect(MVCService.recalc).toHaveBeenCalledTimes(0);
+    expect(mockFetch).toHaveBeenCalledTimes(0);
 
     // Advance past debounce window
     await act(async () => {
       vi.advanceTimersByTime(350);
     });
 
-    expect(MVCService.recalc).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
 

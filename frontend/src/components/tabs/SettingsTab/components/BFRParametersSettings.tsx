@@ -13,10 +13,10 @@ import ClinicalTooltip, { AppliedPressureTooltip, AOPTooltip } from '@/component
 
 interface BFRParametersSettingsProps {
   disabled: boolean;
-  isDebugMode: boolean;
+  isTherapistMode: boolean;
 }
 
-const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled, isDebugMode }) => {
+const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled, isTherapistMode }) => {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isBFRParametersOpen, setIsBFRParametersOpen] = useState(false); // Collapsed by default
 
@@ -127,7 +127,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               <div className="flex items-center gap-2">
                 <MixerHorizontalIcon className="h-4 w-4 text-blue-600" />
                 <h5 className="text-sm font-semibold text-gray-800">Measured Values</h5>
-                {isDebugMode && <span className="text-xs font-normal text-gray-500">(Editable in debug mode)</span>}
+                {isTherapistMode && <span className="text-xs font-normal text-gray-500">(Editable in demo mode)</span>}
               </div>
               <div className="flex items-center gap-2">
                 <SourceStatusBadge source="c3d" ok={false} />
@@ -169,7 +169,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                     triggerClassName="h-3 w-3"
                   />
                 </div>
-                {false ? (
+                {isTherapistMode ? (
                   <Input
                     type="number"
                     value={sideParams.aop_measured}
@@ -220,7 +220,7 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
                     triggerClassName="h-3 w-3"
                   />
                 </div>
-                {false ? (
+                {isTherapistMode ? (
                   <Input
                     type="number"
                     value={sideParams.applied_pressure}
@@ -409,7 +409,10 @@ const BFRParametersSettings: React.FC<BFRParametersSettingsProps> = ({ disabled,
               </div>
               <div className="flex items-center gap-2">
                 <TherapistBadge />
-                <LockedBadge />
+                {!isTherapistMode && <LockedBadge />}
+                {isTherapistMode && (
+                  <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
+                )}
               </div>
             </div>
             

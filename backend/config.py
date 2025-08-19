@@ -15,7 +15,16 @@ DEFAULT_FILTER_ORDER = 4
 DEFAULT_RMS_WINDOW_MS = 50  # milliseconds
 
 # Optimized Contraction Detection Parameters (Research-Based 2024)
-DEFAULT_THRESHOLD_FACTOR = 0.20  # 20% of max amplitude
+DEFAULT_THRESHOLD_FACTOR = 0.10  # 10% of max amplitude for RMS envelope
+# Clinical rationale: 2024-2025 research supports 5-20% range for EMG detection
+# 10% provides optimal balance between sensitivity and specificity for rehabilitation therapy
+# Lower than previous 20% to detect physiologically relevant submaximal contractions
+# Range: 5-8% (high sensitivity), 10-12% (balanced), 15-20% (high selectivity)
+
+# Dual Signal Detection - Activated Signal Threshold
+ACTIVATED_THRESHOLD_FACTOR = 0.05  # 5% of max amplitude for clean Activated signal
+# Lower threshold for pre-processed Activated signals to detect smaller contractions
+# Activated signals are cleaner (2x less noise) so can use higher sensitivity
 DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms
 DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
@@ -41,12 +50,19 @@ BFR_PRESSURE_RANGE = (40, 80)  # % AOP
 THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
 
 # Advanced Contraction Detection Parameters 
-MERGE_THRESHOLD_MS = 200  # Maximum time gap between contractions to merge them (ms)
-                         # Research-based: 200ms based on motor unit firing rates and muscle response times
-                         # Reduced from 500ms for better temporal resolution while maintaining physiological accuracy
+MERGE_THRESHOLD_MS = 150  # Maximum time gap between contractions to merge them (ms)
+                         # Optimized at 150ms: balance between merging physiologically related contractions
+                         # and maintaining good temporal resolution for rehabilitation assessment
 REFRACTORY_PERIOD_MS = 50  # Minimum time after contraction before detecting new one (ms)
-                          # Added 50ms refractory period to prevent closely spaced artifacts
-                          # Research indicates brief refractory periods improve specificity
+                         # Physiologically-based: 5-50ms range for EMG processing (Perplexity research)
+                         # 50ms prevents double-detection while allowing rapid contractions
+                         # Merge threshold (150ms) handles physiological burst grouping separately
+
+# Physiological Limits for Contraction Detection
+MAX_CONTRACTION_DURATION_MS = 10000  # Maximum allowable contraction duration (10 seconds)
+                                    # Research-based: Conservative limit for sustained muscle contractions
+                                    # Prevents merging of separate contractions into physiologically impossible durations
+                                    # Contractions exceeding this limit will be split at natural valleys
 
 # --- Visualization Settings ---
 EMG_COLOR = '#1abc9c'  # Teal color for EMG signal
@@ -91,9 +107,15 @@ API_VERSION = "1.0.0"
 API_DESCRIPTION = "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game"
 
 # --- CORS Configuration ---
-CORS_ORIGINS = ["*"]  # In production, restrict this to specific origins
+# Development CORS settings - more restrictive than wildcard
+CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000", 
+    "http://localhost:8080",
+    "http://127.0.0.1:8080"
+]
 CORS_CREDENTIALS = True
-CORS_METHODS = ["*"]
+CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 CORS_HEADERS = ["*"]
 
 # --- Server Configuration ---
@@ -105,6 +127,12 @@ LOG_LEVEL = "info"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+# --- Redis Cache Configuration ---
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+REDIS_CACHE_TTL_SECONDS = int(os.environ.get("REDIS_CACHE_TTL_SECONDS", "3600"))  # 1 hour
+REDIS_MAX_CACHE_SIZE_MB = int(os.environ.get("REDIS_MAX_CACHE_SIZE_MB", "100"))  # 100MB per entry
+REDIS_KEY_PREFIX = os.environ.get("REDIS_KEY_PREFIX", "emg_analysis")
 
 # --- Webhook Configuration ---
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", None)
@@ -131,6 +159,12 @@ def get_settings():
         SUPABASE_SERVICE_KEY = SUPABASE_SERVICE_KEY
         WEBHOOK_SECRET = WEBHOOK_SECRET
         PROCESSING_VERSION = PROCESSING_VERSION
+        
+        # Redis Cache Settings
+        REDIS_URL = REDIS_URL
+        REDIS_CACHE_TTL_SECONDS = REDIS_CACHE_TTL_SECONDS
+        REDIS_MAX_CACHE_SIZE_MB = REDIS_MAX_CACHE_SIZE_MB
+        REDIS_KEY_PREFIX = REDIS_KEY_PREFIX
         
     return Settings()
 

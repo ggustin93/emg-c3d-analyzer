@@ -200,9 +200,9 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
     );
   };
 
-  // Calculate contraction count score
-  const contractionCountScore = expectedContractions ? Math.min(Math.round((totalContractions / expectedContractions) * 100), 100) : 0;
-  const contractionColors = useScoreColors(contractionCountScore);
+  // The `contractionScore` prop is now the source of truth, passed from the hook.
+  // The local calculation below is removed to adhere to DRY principles.
+  const contractionColors = useScoreColors(contractionScore ?? 0);
 
   // When using for good contraction score:
   const goodContractionPercentage = totalContractions > 0 ? Math.round((goodContractionCount / totalContractions) * 100) : 0;
@@ -483,6 +483,11 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
                   <p className="text-xs text-gray-500 text-center mt-1">
                     {durationCompliantCount} of {totalContractions} met duration threshold
                   </p>
+                  {averageContractionTime !== undefined && (
+                    <p className="text-xs text-indigo-600 font-medium text-center">
+                      Avg. Duration: {(averageContractionTime / 1000).toFixed(1)}s
+                    </p>
+                  )}
                 </>
               )}
 

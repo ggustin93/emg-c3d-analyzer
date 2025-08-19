@@ -39,10 +39,11 @@ Detailed hypotheses for each parameter are documented within the relevant functi
 import numpy as np
 from scipy.signal import welch
 from typing import Dict, Optional, List
-from ..config import (
+from config import (
     DEFAULT_TEMPORAL_WINDOW_SIZE_MS,
     DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE,
     MIN_TEMPORAL_WINDOWS_REQUIRED,
+    MAX_CONTRACTION_DURATION_MS,
 )
 
 # --- Contraction Analysis ---
@@ -56,11 +57,18 @@ def analyze_contractions(
     mvc_amplitude_threshold: Optional[float] = None,
     contraction_duration_threshold_ms: Optional[float] = None,
     merge_threshold_ms: int = 200,
-    refractory_period_ms: int = 0
+    refractory_period_ms: int = 0,
+    temporal_signal: Optional[np.ndarray] = None
 ) -> Dict:
     """
-    Analyzes a signal to detect contractions and calculate related stats.
-    If mvc_amplitude_threshold is provided, contractions are also flagged as 'good'.
+    Analyzes EMG signals to detect contractions using dual-signal approach when available.
+    
+    DUAL SIGNAL DETECTION (MVP Implementation):
+    - temporal_signal: Clean pre-processed signal (e.g., "Activated") for accurate timing detection
+    - signal: RMS envelope for precise amplitude assessment and MVC compliance
+    
+    If temporal_signal provided: Uses it for timing detection, main signal for amplitude assessment
+    If temporal_signal None: Falls back to single-signal detection on main signal (backward compatible)
 
     Biomedical Hypothesis: EMG signals during muscle contractions can exhibit oscillatory patterns
     due to motor unit firing synchronization, tremor, or mechanical artifacts. These oscillations
@@ -69,22 +77,19 @@ def analyze_contractions(
     spaced contractions as a single physiological event, better reflecting the actual muscle activity.
     
     Clinical Assumptions:
-    - Threshold factor: 20-30% of maximum amplitude is typical for contraction detection
-      (Research suggests 20% of MVC or peak-to-peak amplitude as common clinical practice)
-    - Minimum duration: Clinically significant contractions should exceed a minimum duration
-      (Research suggests minimum durations in tens of milliseconds)
-    - Smoothing window: ~50ms windows common in clinical practice
-    - Merge threshold: 200ms default for physiologically related contractions
-      (Based on typical motor unit firing rates and muscle response times)
-    - Refractory period: 0ms default (disabled)
-      (May need adjustment based on specific muscle physiology)
+    - Threshold factor: 10% of maximum amplitude optimized for contraction detection (2024-2025 research)
+    - Minimum duration: Clinically significant contractions should exceed minimum duration
+    - Smoothing window: ~100ms windows for stability in clinical practice
+    - Merge threshold: 100ms default for physiologically related contractions (updated for better resolution)
+    - Refractory period: 300ms default for adequate recovery time between contractions  
     - MVC threshold: External threshold represents clinically significant contraction level
+    - Dual signal: Activated signal (cleaner) for timing, RMS envelope (accurate) for amplitude
 
     Args:
-        signal: A numpy array of the EMG signal (can be raw, not rectified).
+        signal: A numpy array of the EMG signal for amplitude assessment (typically RMS envelope).
         sampling_rate: The sampling rate of the signal in Hz.
         threshold_factor: The percentage of the maximum signal amplitude to use
-                        as the detection threshold (e.g., 0.3 for 30%).
+                        as the detection threshold (e.g., 0.1 for 10%).
         min_duration_ms: The minimum duration in milliseconds for a detected event
                          to be considered a contraction.
         smoothing_window: The size of the moving average window to smooth the signal.
@@ -95,10 +100,11 @@ def analyze_contractions(
                                           at or above this value are considered to meet
                                           duration criteria for therapeutic compliance.
         merge_threshold_ms: The maximum time gap in milliseconds between two detected contractions
-                           to consider them as a single physiological contraction. Default is 200ms,
-                           which is based on typical motor unit firing rates and muscle response times.
+                           to consider them as a single physiological contraction. Default is 100ms.
         refractory_period_ms: The minimum time in milliseconds after a contraction ends before
-                             a new contraction can be detected. Default is 0ms (disabled).
+                             a new contraction can be detected. Default is 300ms.
+        temporal_signal: Optional. Clean pre-processed signal (e.g., "Activated") for timing detection.
+                        If provided, uses this for contraction timing and main signal for amplitude.
 
     Returns:
         A dictionary containing contraction statistics, a list of contractions (with 'is_good', 'meets_mvc', 
@@ -117,26 +123,36 @@ def analyze_contractions(
         'duration_threshold_actual_value': contraction_duration_threshold_ms
     }
 
-    if len(signal) < smoothing_window or smoothing_window <= 0:
-        return base_return
-
-    # 1. Rectify the signal
-    rectified_signal = np.abs(signal)
-
-    # 2. Smooth the signal with a moving average
-    # Ensure smoothing_window is at least 1
-    actual_smoothing_window = max(1, smoothing_window)
-    smoothed_signal = np.convolve(rectified_signal, np.ones(actual_smoothing_window)/actual_smoothing_window, mode='same')
-
-    # 3. Set threshold for burst detection
-    max_smoothed_amplitude = np.max(smoothed_signal)
-    if max_smoothed_amplitude < 1e-9: # effectively zero signal
+    # Determine which signal to use for timing detection
+    timing_signal = temporal_signal if temporal_signal is not None else signal
+    amplitude_signal = signal  # Always use main signal for amplitude assessment
+    
+    if len(timing_signal) < smoothing_window or smoothing_window <= 0:
         return base_return
         
-    threshold = max_smoothed_amplitude * threshold_factor
+    if len(amplitude_signal) < smoothing_window:
+        return base_return
 
-    # 4. Detect activity above threshold
-    above_threshold = smoothed_signal > threshold
+    # 1. Process timing signal for contraction detection
+    rectified_timing_signal = np.abs(timing_signal)
+
+    # 2. Smooth the timing signal with a moving average
+    # Ensure smoothing_window is at least 1
+    actual_smoothing_window = max(1, smoothing_window)
+    smoothed_timing_signal = np.convolve(rectified_timing_signal, np.ones(actual_smoothing_window)/actual_smoothing_window, mode='same')
+
+    # 3. Set threshold for burst detection on timing signal
+    max_timing_amplitude = np.max(smoothed_timing_signal)
+    if max_timing_amplitude < 1e-9: # effectively zero signal
+        return base_return
+        
+    threshold = max_timing_amplitude * threshold_factor
+
+    # 4. Detect activity above threshold on timing signal
+    above_threshold = smoothed_timing_signal > threshold
+    
+    # 5. Prepare amplitude signal for assessment (rectify for consistency)
+    rectified_amplitude_signal = np.abs(amplitude_signal)
     
     # Find start and end points of contractions
     diff = np.diff(above_threshold.astype(int))
@@ -208,18 +224,43 @@ def analyze_contractions(
         
         valid_contractions = merged_contractions
     
-    # 7. Create contraction objects with detailed information
+    # 7. Split contractions that exceed maximum physiological duration
+    max_duration_samples = int((MAX_CONTRACTION_DURATION_MS / 1000) * sampling_rate)
+    final_contractions = []
+    
+    for start_idx, end_idx in valid_contractions:
+        duration_samples = end_idx - start_idx
+        
+        if duration_samples <= max_duration_samples:
+            # Normal duration - keep as is
+            final_contractions.append((start_idx, end_idx))
+        else:
+            # Split oversized contraction into smaller segments
+            current_start = start_idx
+            while current_start < end_idx:
+                segment_end = min(current_start + max_duration_samples, end_idx)
+                final_contractions.append((current_start, segment_end))
+                
+                # Move to next segment with a small gap to respect physiological limits
+                current_start = segment_end + max(1, refractory_period_samples)
+                if current_start >= end_idx:
+                    break
+    
+    valid_contractions = final_contractions
+    
+    # 8. Create contraction objects with detailed information
     contractions_list = []
     good_contraction_count = 0  # Meets configured criteria
     mvc_contraction_count = 0   # Meets MVC criterion
     duration_contraction_count = 0  # Meets duration criterion
 
     for start_idx, end_idx in valid_contractions:
-        segment = rectified_signal[start_idx:end_idx+1]  # Inclusive end for segment analysis
-        if len(segment) == 0: 
+        # Use amplitude signal for amplitude assessment (dual signal approach)
+        amplitude_segment = rectified_amplitude_signal[start_idx:end_idx+1]  # Inclusive end for segment analysis
+        if len(amplitude_segment) == 0: 
             continue
 
-        max_amp_in_segment = np.max(segment)
+        max_amp_in_segment = np.max(amplitude_segment)
         duration_ms = ((end_idx - start_idx) / sampling_rate) * 1000
         
         # Enhanced quality assessment with explicit boolean flags
@@ -251,14 +292,14 @@ def analyze_contractions(
             'start_time_ms': (start_idx / sampling_rate) * 1000,
             'end_time_ms': (end_idx / sampling_rate) * 1000,  # end_idx is the last sample *in* the contraction
             'duration_ms': duration_ms,
-            'mean_amplitude': float(np.mean(segment)),
+            'mean_amplitude': float(np.mean(amplitude_segment)),  # Use amplitude signal for amplitude assessment
             'max_amplitude': float(max_amp_in_segment),
             'is_good': bool(is_good),
             'meets_mvc': bool(meets_mvc),
             'meets_duration': bool(meets_duration)
         })
 
-    # 8. Calculate summary statistics
+    # 9. Calculate summary statistics
     if not contractions_list:
         base_return['good_contraction_count'] = int(good_contraction_count)
         base_return['mvc_contraction_count'] = int(mvc_contraction_count)

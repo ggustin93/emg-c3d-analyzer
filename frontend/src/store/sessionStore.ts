@@ -11,7 +11,7 @@ interface SessionState {
 }
 
 const defaultSessionParams: GameSessionParameters = {
-  session_mvc_value: 0.00015,
+  session_mvc_value: null, // Use null to indicate "not yet calculated"
   session_mvc_threshold_percentage: 75,
   session_expected_contractions: 24,
   session_expected_contractions_ch1: 12,
