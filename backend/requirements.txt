@@ -16,5 +16,8 @@ matplotlib>=3.10.0
 requests>=2.32.0
 python-dotenv>=1.0.0
 
+# Database
+supabase>=2.4.0
+
 # Redis cache dependencies
 redis[hiredis]>=5.0.1

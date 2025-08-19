@@ -119,7 +119,7 @@ CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 CORS_HEADERS = ["*"]
 
 # --- Server Configuration ---
-DEFAULT_HOST = "0.0.0.0"
+DEFAULT_HOST = "0.0.0.0"  # nosec B104 - Intentional bind to all interfaces for containerized deployment
 DEFAULT_PORT = 8080
 LOG_LEVEL = "info"
 
