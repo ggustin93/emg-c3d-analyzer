@@ -36,8 +36,8 @@ interface MVCSourceInfo {
 const MVC_SOURCE_INFO: Record<string, MVCSourceInfo> = {
   analytics: {
     icon: ActivityLogIcon,
-    label: 'Clinical Algorithm',
-    description: 'Backend clinical estimation (95th percentile method) from signal analysis - Gold standard for automatic MVC detection',
+    label: 'Backend Calibration',
+    description: 'Automatically calibrated using clinical 95th percentile method from EMG signal analysis. The algorithm identifies peak muscle activity and calculates therapeutic thresholds.',
     confidenceLevel: 'Good',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50 border-blue-200'
@@ -149,9 +149,6 @@ export const MVCThresholdDisplay: React.FC<MVCThresholdDisplayProps> = ({
               <TargetIcon className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-sm font-medium text-foreground">MVC Thresholds</h3>
             </div>
-            <Badge variant="secondary" className="text-xs">
-              Signal-Agnostic
-            </Badge>
           </div>
           
           <div className="flex items-center gap-3">
@@ -228,7 +225,7 @@ const MVCCalculationTooltip: React.FC<{ threshold: UnifiedThresholdData }> = ({ 
               <h5 className="font-medium text-xs text-foreground">Formula</h5>
             </div>
             
-            <div className="font-mono text-xs bg-muted/50 px-3 py-2 rounded text-center">
+            <div className="font-mono text-xs bg-white px-3 py-2 rounded border text-center">
               <span className="text-muted-foreground">Threshold = </span>
               <span className="font-semibold text-foreground">
                 {threshold.mvcBaseValue.toExponential(3)}V
@@ -278,10 +275,6 @@ const MVCCalculationTooltip: React.FC<{ threshold: UnifiedThresholdData }> = ({ 
             </div>
             
             <div className="space-y-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>Duration:</span>
-                <span className="font-medium">{threshold.durationThreshold}ms</span>
-              </div>
               <p className="leading-relaxed">
                 {threshold.mvcPercentage}% MVC threshold for therapeutic muscle activation assessment.
               </p>

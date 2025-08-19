@@ -24,7 +24,10 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
 
   // Recalculate analytics on backend whenever sessionParams change
   useEffect(() => {
-    if (!analysisResult) return;
+    if (!analysisResult) {
+      return;
+    }
+    
     // Clear previous debounce
     if (debounceTimerRef.current) {
       window.clearTimeout(debounceTimerRef.current);
@@ -44,6 +47,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
     debounceTimerRef.current = window.setTimeout(async () => {
       const controller = new AbortController();
       inFlightAbortRef.current = controller;
+      
       try {
         // Call the analysis recalc endpoint for full EMG analysis update
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'}/analysis/recalc`, {
@@ -58,6 +62,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
         }
         
         const updated = await response.json() as EMGAnalysisResult;
+        
         if (!controller.signal.aborted) {
           setServerResult(updated);
         }
@@ -65,11 +70,13 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
         if ((e as any)?.name === 'AbortError') {
           // Swallow aborted fetch
         } else {
-          console.warn('Recalc failed; falling back to original analytics', e);
+          console.warn('Live analytics recalc failed; falling back to original analytics', e);
           if (!controller.signal.aborted) setServerResult(analysisResult);
         }
       } finally {
-        if (!controller.signal.aborted) markCalibrationComplete();
+        if (!controller.signal.aborted) {
+          markCalibrationComplete();
+        }
         inFlightAbortRef.current = null;
       }
     }, 300);
@@ -88,9 +95,15 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
 
   const liveAnalytics = useMemo(() => {
     const base = serverResult ?? analysisResult;
-    if (!base?.analytics) return null;
+    
+    if (!base?.analytics) {
+      return null;
+    }
+    
+    const analytics = base.analytics as { [key: string]: ChannelAnalyticsData };
+    
     // TRUST backend analytics entirely (flags, thresholds, counts)
-    return base.analytics as { [key: string]: ChannelAnalyticsData };
+    return analytics;
   }, [serverResult, analysisResult]);
 
   return liveAnalytics;

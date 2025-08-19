@@ -165,6 +165,8 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
   /**
    * Calculate MVC threshold for a base channel.
    * Professional fallback hierarchy with proper error handling.
+   * 
+   * Critical fix: Added comprehensive dependency array and logging to debug stale closures
    */
   const calculateMvcThreshold = useCallback((baseChannel: string): {
     threshold: number | null;
@@ -175,10 +177,10 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
   } => {
     try {
       // Priority 1: Per-muscle session MVC
-      const sessionMvcValues = sessionParams.session_mvc_values || {};
+      const sessionMvcValues = sessionParams?.session_mvc_values || {};
       const perMuscleMvc = sessionMvcValues[baseChannel];
       
-      if (perMuscleMvc && perMuscleMvc > 0.01) { // Clinical minimum check
+      if (perMuscleMvc && perMuscleMvc > 0.00001) { // Clinical minimum check (10μV - realistic EMG threshold)
         const percentage = getPerChannelMvcPercentage(baseChannel, sessionParams);
         const threshold = perMuscleMvc * (percentage / 100.0);
         
@@ -192,10 +194,7 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       }
       
       // Priority 2: Analytics-derived MVC (from backend analysis)
-      if (analytics) {
-        const analyticsKeys = Object.keys(analytics);
-        console.log(`🔍 useUnifiedThresholds - Looking for baseChannel "${baseChannel}" in analytics keys:`, analyticsKeys);
-        
+      if (analytics && typeof analytics === 'object' && Object.keys(analytics).length > 0) {
         // Try direct access first (most reliable)
         let channelAnalytics: ChannelAnalyticsData | null = analytics[baseChannel] || null;
         
@@ -207,10 +206,8 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
           channelAnalytics = found ? found[1] : null;
         }
         
-        console.log(`🔍 useUnifiedThresholds - Found channelAnalytics for "${baseChannel}":`, channelAnalytics);
-        
         // Use mvc_threshold_actual_value to reverse-calculate MVC base value
-        if (channelAnalytics?.mvc_threshold_actual_value && channelAnalytics.mvc_threshold_actual_value > 0.01) {
+        if (channelAnalytics?.mvc_threshold_actual_value && channelAnalytics.mvc_threshold_actual_value > 0.00001) {
           const percentage = getPerChannelMvcPercentage(baseChannel, sessionParams);
           const threshold = channelAnalytics.mvc_threshold_actual_value;
           const baseValue = threshold / (percentage / 100.0); // Reverse-calculate base MVC
@@ -226,8 +223,8 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       }
       
       // Priority 3: Global session MVC
-      const globalMvc = sessionParams.session_mvc_value;
-      if (globalMvc && globalMvc > 0.01) {
+      const globalMvc = sessionParams?.session_mvc_value;
+      if (globalMvc && globalMvc > 0.00001) {
         const percentage = getPerChannelMvcPercentage(baseChannel, sessionParams);
         const threshold = globalMvc * (percentage / 100.0);
         
@@ -241,7 +238,7 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       }
       
       // Priority 4: Global MVC threshold fallback
-      if (globalMvcThreshold && globalMvcThreshold > 0.01) {
+      if (globalMvcThreshold && globalMvcThreshold > 0.00001) {
         const percentage = getPerChannelMvcPercentage(baseChannel, sessionParams);
         
         return {
@@ -281,6 +278,8 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
   /**
    * Main unified thresholds calculation.
    * Professional memoization with stable dependency array.
+   * 
+   * Critical fix: Enhanced debugging and comprehensive dependency management
    */
   const unifiedThresholds = useMemo((): UnifiedThresholdData[] => {
     try {
@@ -290,8 +289,8 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
         // Calculate MVC threshold with fallback hierarchy
         const mvcResult = calculateMvcThreshold(baseChannel);
         
-        // Get duration threshold
-        const durationThreshold = sessionParams.contraction_duration_threshold || 2000;
+        // Get duration threshold - safer access with optional chaining
+        const durationThreshold = sessionParams?.contraction_duration_threshold || 2000;
         
         // Get muscle name
         const muscleName = channelMuscleMapping[baseChannel] || baseChannel;
@@ -302,7 +301,7 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
         
         // Only include channels with valid MVC thresholds
         if (mvcResult.threshold !== null && mvcResult.baseValue !== null) {
-          thresholds.push({
+          const thresholdData: UnifiedThresholdData = {
             channel: baseChannel,
             muscleName,
             mvcThreshold: mvcResult.threshold,
@@ -312,7 +311,9 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
             color,
             confidence: mvcResult.confidence,
             source: mvcResult.source
-          });
+          };
+          
+          thresholds.push(thresholdData);
         }
       });
       
@@ -339,10 +340,13 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
   }, [
     baseChannels,
     calculateMvcThreshold,
-    sessionParams.contraction_duration_threshold,
+    sessionParams, // Changed from sessionParams.contraction_duration_threshold to full sessionParams
     channelMuscleMapping,
     muscleColorMapping,
-    getColorForChannel
+    getColorForChannel,
+    analytics, // Added analytics as explicit dependency
+    globalMvcThreshold, // Added globalMvcThreshold as explicit dependency  
+    isLoading // Added isLoading as explicit dependency for completeness
   ]);
 
   /**

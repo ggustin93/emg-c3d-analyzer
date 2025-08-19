@@ -94,18 +94,24 @@ export const resolvePatientId = (file: C3DFile): string => {
 export const resolveTherapistId = (file: C3DFile): string => {
   // DEV MODE: Assign random therapist for demo purposes
   if (import.meta.env.DEV) {
+    console.log('🔧 DEV MODE: Resolving Therapist ID for file:', file.name);
     const realId = file.metadata?.therapist_id || file.therapist_id;
     if (realId) {
+      console.log('✅ Found real Therapist ID in DEV_MODE:', realId);
       return realId;
     }
+    const mockName = getMockTherapistName(file.id);
+    console.log(' MOCK Therapist ID generated:', mockName);
     // Use a stable mock name based on file ID
-    return getMockTherapistName(file.id);
+    return mockName;
   }
 
   // PRODUCTION MODE: Standard resolution
-  return file.metadata?.therapist_id || 
+  const prodId = file.metadata?.therapist_id || 
          file.therapist_id || 
          'Unknown';
+  console.log('🏭 PROD MODE: Resolved Therapist ID to:', prodId);
+  return prodId;
 };
 
 /**

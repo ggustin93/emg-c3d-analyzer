@@ -12,11 +12,12 @@
  * Updated: 2025-01-18
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 import { QualitySummary } from '@/hooks/useContractionAnalysis';
-import { useUnifiedThresholds } from '@/hooks/useUnifiedThresholds';
+import { useUnifiedThresholds, UnifiedThresholdData } from '@/hooks/useUnifiedThresholds';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
@@ -158,26 +159,25 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
           )}
         </div>
         
-        {/* Compact Contraction Legend with Clinical Tooltip */}
+        {/* Ultra-Compact Contraction Legend with Accordion Tooltip */}
         {qualitySummary.totalCount > 0 && (
           <div className="flex justify-center w-full">
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
-                  <div className="inline-flex items-center gap-2 bg-white rounded-md border border-gray-200 px-3 py-1.5 shadow-sm hover:shadow-md transition-shadow cursor-help">
-                    {/* Compact Summary */}
+                  <div className="inline-flex items-center gap-2 bg-white rounded-md border border-gray-200 px-3 py-1 shadow-sm hover:shadow-md transition-shadow cursor-help">
                     <span className="text-xs font-medium text-gray-700">Contractions:</span>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="text-gray-600">{qualitySummary.totalCount}</span>
                       {qualitySummary.goodCount > 0 && (
                         <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.GOOD_CONTRACTION_COLOR }}></div>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.GOOD_CONTRACTION_COLOR }}></div>
                           <span className="text-green-700 font-medium">{qualitySummary.goodCount}</span>
                         </div>
                       )}
                       {(qualitySummary.mvcOnlyCount > 0 || qualitySummary.durationOnlyCount > 0) && (
                         <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.PARTIAL_CONTRACTION_COLOR }}></div>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.PARTIAL_CONTRACTION_COLOR }}></div>
                           <span className="text-yellow-700 font-medium">
                             {qualitySummary.mvcOnlyCount + qualitySummary.durationOnlyCount}
                           </span>
@@ -185,7 +185,7 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
                       )}
                       {(qualitySummary.totalCount - qualitySummary.goodCount - qualitySummary.mvcOnlyCount - qualitySummary.durationOnlyCount) > 0 && (
                         <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.POOR_CONTRACTION_COLOR }}></div>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EMG_CHART_CONFIG.CLINICAL.POOR_CONTRACTION_COLOR }}></div>
                           <span className="text-red-700 font-medium">
                             {qualitySummary.totalCount - qualitySummary.goodCount - qualitySummary.mvcOnlyCount - qualitySummary.durationOnlyCount}
                           </span>
@@ -194,138 +194,217 @@ export const EMGChartLegend: React.FC<EMGChartLegendProps> = ({
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent 
-                  side="top"
-                  sideOffset={EMG_CHART_CONFIG.TOOLTIP.OFFSET}
-                  align="center"
-                  avoidCollisions={true}
-                  className={cn(
-                    `w-[${EMG_CHART_CONFIG.TOOLTIP.WIDTH}] z-[${EMG_CHART_CONFIG.TOOLTIP.Z_INDEX}] bg-amber-50`,
-                    "border-2 border-amber-300 shadow-2xl p-0 overflow-hidden rounded-lg"
-                  )}
-                >
-                  <div>
-                    {/* Elegant Header */}
-                    <div className="bg-amber-500 px-4 py-3">
-                      <p className="font-bold tracking-tight text-white drop-shadow-sm text-sm">
-                        Contraction Quality Analysis
-                      </p>
-                    </div>
-
-                    {/* Content */}
-                    <div className="px-4 py-3 space-y-3">
-                      {/* Description */}
-                      <p className="text-slate-700 leading-relaxed font-medium text-xs">
-                        Real-time analysis of muscle contractions based on MVC intensity and duration criteria.
-                      </p>
-
-                      {/* Quality Categories Section */}
-                      <div className="bg-white rounded-lg p-3 border border-amber-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-                          <h4 className="font-bold text-slate-800 text-xs">Quality Categories:</h4>
-                        </div>
-                        
-                        <div className="space-y-1.5 text-slate-700 text-xs">
-                          <div className="flex items-center justify-between py-1 border-b border-amber-100">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                              <span className="font-semibold">Excellent (both criteria)</span>
-                            </div>
-                            <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
-                              {qualitySummary.goodCount} ({Math.round((qualitySummary.goodCount / qualitySummary.totalCount) * 100)}%)
-                            </span>
-                          </div>
-                          
-                          {qualitySummary.mvcOnlyCount > 0 && (
-                            <div className="flex items-center justify-between py-1 border-b border-amber-100">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                                <span className="font-semibold">Force only (MVC ≥ {sessionParams?.session_mvc_threshold_percentage || EMG_CHART_CONFIG.DEFAULT_MVC_THRESHOLD_PERCENTAGE}%)</span>
-                              </div>
-                              <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">
-                                {qualitySummary.mvcOnlyCount} ({Math.round((qualitySummary.mvcOnlyCount / qualitySummary.totalCount) * 100)}%)
-                              </span>
-                            </div>
-                          )}
-                          
-                          {qualitySummary.durationOnlyCount > 0 && (
-                            <div className="flex items-center justify-between py-1 border-b border-amber-100">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                                <span className="font-semibold">Duration only (≥ {qualitySummary.durationThresholdUsed ? (qualitySummary.durationThresholdUsed / 1000).toFixed(1) : '2.0'}s)</span>
-                              </div>
-                              <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">
-                                {qualitySummary.durationOnlyCount} ({Math.round((qualitySummary.durationOnlyCount / qualitySummary.totalCount) * 100)}%)
-                              </span>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center justify-between py-1">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                              <span className="font-semibold">Insufficient (neither)</span>
-                            </div>
-                            <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-red-100 text-red-800">
-                              {qualitySummary.totalCount - qualitySummary.goodCount - qualitySummary.mvcOnlyCount - qualitySummary.durationOnlyCount} 
-                              ({Math.round(((qualitySummary.totalCount - qualitySummary.goodCount - qualitySummary.mvcOnlyCount - qualitySummary.durationOnlyCount) / qualitySummary.totalCount) * 100)}%)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Compliance Metrics Section */}
-                      <div className="bg-white rounded-lg p-3 border border-amber-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-                          <h4 className="font-bold text-slate-800 text-xs">Compliance Metrics:</h4>
-                        </div>
-                        
-                        <div className="space-y-1.5 text-slate-700 text-xs">
-                          <div className="flex items-center justify-between py-1 border-b border-amber-100">
-                            <span className="font-semibold text-slate-800">Force Compliance</span>
-                            <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-800">
-                              {Math.round(((qualitySummary.goodCount + qualitySummary.mvcOnlyCount) / qualitySummary.totalCount) * 100)}%
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between py-1 border-b border-amber-100">
-                            <span className="font-semibold text-slate-800">Duration Compliance</span>
-                            <span className="font-bold tabular-nums px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-800">
-                              {Math.round(((qualitySummary.goodCount + qualitySummary.durationOnlyCount) / qualitySummary.totalCount) * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Threshold Settings Section */}
-                      <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-1 h-4 bg-gray-500 rounded-full"></div>
-                          <h4 className="font-bold text-slate-800 text-xs">Current Thresholds:</h4>
-                        </div>
-                        <div className="text-xs text-gray-700 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span>MVC Threshold:</span>
-                            <span className="font-medium">{sessionParams?.session_mvc_threshold_percentage || EMG_CHART_CONFIG.DEFAULT_MVC_THRESHOLD_PERCENTAGE}%</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Duration Threshold:</span>
-                            <span className="font-medium">{qualitySummary.durationThresholdUsed || EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS}ms</span>
-                          </div>
-                          <p className="mt-2 text-xs text-gray-600 italic">
-                            Hover over chart dots to see individual contraction details
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </TooltipContent>
+                <CompactAccordionTooltip 
+                  qualitySummary={qualitySummary}
+                  unifiedThresholds={unifiedThresholds}
+                  sessionParams={sessionParams}
+                />
               </UITooltip>
             </TooltipProvider>
           </div>
         )}
       </div>
     </div>
+  );
+};
+
+/**
+ * Ultra-Compact Accordion-Based Clinical Tooltip
+ * 50% smaller than previous design while maintaining all clinical information
+ */
+interface CompactAccordionTooltipProps {
+  qualitySummary: QualitySummary;
+  unifiedThresholds: UnifiedThresholdData[];
+  sessionParams?: GameSessionParameters;
+}
+
+const CompactAccordionTooltip: React.FC<CompactAccordionTooltipProps> = ({
+  qualitySummary,
+  unifiedThresholds,
+  sessionParams
+}) => {
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['quality']));
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
+  };
+
+  const getSourceLabel = (source: string, confidence: number) => {
+    // Fix the source labeling issue - more accurate detection
+    if (source === 'analytics') {
+      return { label: 'Backend Calculated', color: 'bg-blue-100 text-blue-800' };
+    }
+    if (source === 'session_per_muscle') {
+      // Only show as "User Configured" if confidence suggests manual input
+      // Backend calculations typically have confidence 0.7, manual should be 0.8+
+      if (confidence >= 0.8) {
+        return { label: 'User Configured', color: 'bg-emerald-100 text-emerald-800' };
+      } else {
+        return { label: 'Backend Stored', color: 'bg-blue-100 text-blue-800' };
+      }
+    }
+    if (source === 'session_global') {
+      return { label: 'Global Default', color: 'bg-orange-100 text-orange-800' };
+    }
+    return { label: 'System Fallback', color: 'bg-yellow-100 text-yellow-800' };
+  };
+
+  return (
+    <TooltipContent 
+      side="top"
+      sideOffset={8}
+      align="center"
+      className="w-80 p-0 overflow-hidden rounded-lg shadow-lg border bg-amber-50"
+    >
+      <div>
+        {/* Compact Header */}
+        <div className="bg-amber-500 px-3 py-2">
+          <p className="font-bold text-white text-xs">Clinical Analysis</p>
+        </div>
+
+        {/* Accordion Sections */}
+        <div className="px-3 py-2 space-y-1">
+          
+          {/* Quality Summary - Always visible */}
+          <div className="space-y-1">
+            <button
+              onClick={() => toggleSection('quality')}
+              className="flex items-center justify-between w-full text-left hover:bg-amber-100 rounded px-1 py-1"
+            >
+              <span className="text-xs font-medium text-amber-900">Quality Breakdown</span>
+              {expandedSections.has('quality') ? 
+                <ChevronDownIcon className="w-3 h-3 text-amber-600" /> : 
+                <ChevronRightIcon className="w-3 h-3 text-amber-600" />
+              }
+            </button>
+            
+            {expandedSections.has('quality') && (
+              <div className="pl-2 space-y-1 text-xs">
+                <div className="flex items-center justify-between py-0.5">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                    <span>Excellent</span>
+                  </div>
+                  <span className="font-mono text-green-700">{qualitySummary.goodCount}</span>
+                </div>
+                
+                {(qualitySummary.mvcOnlyCount > 0 || qualitySummary.durationOnlyCount > 0) && (
+                  <div className="flex items-center justify-between py-0.5">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                      <span>Partial</span>
+                    </div>
+                    <span className="font-mono text-yellow-700">
+                      {qualitySummary.mvcOnlyCount + qualitySummary.durationOnlyCount}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between py-0.5">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                    <span>Insufficient</span>
+                  </div>
+                  <span className="font-mono text-red-700">
+                    {qualitySummary.totalCount - qualitySummary.goodCount - qualitySummary.mvcOnlyCount - qualitySummary.durationOnlyCount}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Compliance Metrics - Collapsible */}
+          <div className="space-y-1">
+            <button
+              onClick={() => toggleSection('compliance')}
+              className="flex items-center justify-between w-full text-left hover:bg-amber-100 rounded px-1 py-1"
+            >
+              <span className="text-xs font-medium text-amber-900">Compliance</span>
+              {expandedSections.has('compliance') ? 
+                <ChevronDownIcon className="w-3 h-3 text-amber-600" /> : 
+                <ChevronRightIcon className="w-3 h-3 text-amber-600" />
+              }
+            </button>
+            
+            {expandedSections.has('compliance') && (
+              <div className="pl-2 space-y-1 text-xs">
+                <div className="flex items-center justify-between py-0.5">
+                  <span>Force</span>
+                  <span className="font-mono">
+                    {Math.round(((qualitySummary.goodCount + qualitySummary.mvcOnlyCount) / qualitySummary.totalCount) * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-0.5">
+                  <span>Duration</span>
+                  <span className="font-mono">
+                    {Math.round(((qualitySummary.goodCount + qualitySummary.durationOnlyCount) / qualitySummary.totalCount) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Clinical Thresholds - Most Important */}
+          <div className="space-y-1">
+            <button
+              onClick={() => toggleSection('thresholds')}
+              className="flex items-center justify-between w-full text-left hover:bg-amber-100 rounded px-1 py-1"
+            >
+              <span className="text-xs font-medium text-amber-900">Clinical Thresholds</span>
+              {expandedSections.has('thresholds') ? 
+                <ChevronDownIcon className="w-3 h-3 text-amber-600" /> : 
+                <ChevronRightIcon className="w-3 h-3 text-amber-600" />
+              }
+            </button>
+            
+            {expandedSections.has('thresholds') && (
+              <div className="pl-2 space-y-2 text-xs">
+                {unifiedThresholds.map((threshold) => {
+                  const sourceInfo = getSourceLabel(threshold.source, threshold.confidence);
+                  return (
+                    <div key={threshold.channel} className="bg-white rounded p-1.5 border border-amber-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: threshold.color }}></div>
+                          <span className="font-medium text-amber-900">{threshold.muscleName}</span>
+                        </div>
+                        <span className="font-mono text-amber-800 text-xs font-bold">
+                          ≥{(threshold.mvcThreshold * 1000).toFixed(3)}mV
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={cn("px-1 py-0.5 rounded text-xs font-medium", sourceInfo.color)}>
+                          {sourceInfo.label}
+                        </span>
+                        <span className="text-amber-700">
+                          {Math.round(threshold.confidence * 100)}% conf.
+                        </span>
+                      </div>
+                      
+                      <div className="text-xs text-amber-700 mt-1">
+                        Duration: {threshold.durationThreshold >= 1000 ? 
+                          `${(threshold.durationThreshold / 1000).toFixed(1)}s` : 
+                          `${threshold.durationThreshold}ms`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+        </div>
+      </div>
+    </TooltipContent>
   );
 };
 

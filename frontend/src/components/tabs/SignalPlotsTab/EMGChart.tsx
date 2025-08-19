@@ -22,7 +22,6 @@ import { logger, LogCategory } from '@/services/logger';
 import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
 import { useUnifiedThresholds } from '@/hooks/useUnifiedThresholds';
 import EMGChartLegend from './EMGChartLegend';
-import MVCThresholdDisplay from './MVCThresholdDisplay';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Legend } from 'recharts';
@@ -406,15 +405,8 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
 
   return (
     <div className="w-full space-y-0">
-      {/* MVC Threshold Display - Professional transparency */}
-      <MVCThresholdDisplay 
-        unifiedThresholds={unifiedThresholds}
-        className="rounded-t-lg"
-        compact={false}
-      />
-      
-      {/* Chart Container */}
-      <div className="w-full h-[500px] border border-gray-200 border-t-0 rounded-b-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
+      {/* Chart Container - Enhanced with comprehensive legend tooltip */}
+      <div className="w-full h-[500px] border border-gray-200 rounded-lg p-4 box-border shadow-sm relative overflow-hidden" ref={chartContainerRef}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={chartMargins}>
             <CartesianGrid strokeDasharray="3 3" />
