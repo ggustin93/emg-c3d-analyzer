@@ -49,6 +49,7 @@ from emg.signal_processing import preprocess_emg_signal, get_processing_metadata
 from config import (
     DEFAULT_SAMPLING_RATE,
     DEFAULT_THRESHOLD_FACTOR,
+    ACTIVATED_THRESHOLD_FACTOR,
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_SMOOTHING_WINDOW,
     MERGE_THRESHOLD_MS,
@@ -538,17 +539,19 @@ class GHOSTLYC3DProcessor:
                     
                     # Extract Activated signal for dual signal detection (MVP implementation)
                     activated_signal = None
+                    detection_threshold_factor = threshold_factor  # Default for single signal
                     activated_channel_name = f"{base_name} activated"
                     if activated_channel_name in self.emg_data:
                         activated_signal = np.array(self.emg_data[activated_channel_name]['data'])
-                        logger.info(f"🎯 Using dual signal detection: Activated signal for timing, RMS envelope for amplitude")
+                        detection_threshold_factor = ACTIVATED_THRESHOLD_FACTOR  # Lower threshold for cleaner Activated signal
+                        logger.info(f"🎯 Using dual signal detection: Activated signal ({ACTIVATED_THRESHOLD_FACTOR*100:.1f}% threshold) for timing, RMS envelope for amplitude")
                     else:
-                        logger.info(f"ℹ️  Using single signal detection: RMS envelope for both timing and amplitude")
+                        logger.info(f"ℹ️  Using single signal detection: RMS envelope ({threshold_factor*100:.1f}% threshold) for both timing and amplitude")
                         
                     contraction_stats = analyze_contractions(
                         signal=signal_for_analysis,  # RMS envelope for amplitude assessment
                         sampling_rate=sampling_rate,
-                        threshold_factor=threshold_factor,
+                        threshold_factor=detection_threshold_factor,  # Use lower threshold for activated signal timing
                         min_duration_ms=min_duration_ms,
                         smoothing_window=smoothing_window,
                         mvc_amplitude_threshold=actual_mvc_threshold,
