@@ -139,7 +139,8 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   </div>
                   Overall Performance
                   <OverallPerformanceScoreTooltip 
-                    muscleComplianceWeight={weights.compliance}
+                    complianceWeight={weights.compliance}
+                    symmetryWeight={weights.symmetry}
                     effortScoreWeight={weights.effort}
                     gameScoreWeight={weights.gameScore}
                   />

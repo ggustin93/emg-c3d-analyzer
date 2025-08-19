@@ -193,9 +193,21 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       
       // Priority 2: Analytics-derived MVC (from backend analysis)
       if (analytics) {
-        const channelAnalytics = Object.entries(analytics).find(([key]) => 
-          key.startsWith(baseChannel)
-        )?.[1];
+        const analyticsKeys = Object.keys(analytics);
+        console.log(`🔍 useUnifiedThresholds - Looking for baseChannel "${baseChannel}" in analytics keys:`, analyticsKeys);
+        
+        // Try direct access first (most reliable)
+        let channelAnalytics: ChannelAnalyticsData | null = analytics[baseChannel] || null;
+        
+        // If not found, try startsWith pattern (fallback)
+        if (!channelAnalytics) {
+          const found = Object.entries(analytics).find(([key]) => 
+            key.startsWith(baseChannel)
+          );
+          channelAnalytics = found ? found[1] : null;
+        }
+        
+        console.log(`🔍 useUnifiedThresholds - Found channelAnalytics for "${baseChannel}":`, channelAnalytics);
         
         // Use mvc_threshold_actual_value to reverse-calculate MVC base value
         if (channelAnalytics?.mvc_threshold_actual_value && channelAnalytics.mvc_threshold_actual_value > 0.01) {

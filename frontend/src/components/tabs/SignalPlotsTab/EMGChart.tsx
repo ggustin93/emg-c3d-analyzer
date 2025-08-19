@@ -261,6 +261,18 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
         getColorForChannel
     });
 
+    // DEBUG: Log the analytics data structure and unified thresholds
+    React.useEffect(() => {
+      console.log('🔍 EMGChart MVC Debug - Analytics Structure:', {
+        analytics: analytics ? Object.keys(analytics) : null,
+        analyticsData: analytics,
+        unifiedThresholds: unifiedThresholds,
+        finalDisplayDataKeys,
+        sessionParams: sessionParams?.session_mvc_value,
+        globalMvcThreshold: mvcThresholdForPlot
+      });
+    }, [analytics, unifiedThresholds, finalDisplayDataKeys, sessionParams?.session_mvc_value, mvcThresholdForPlot]);
+
     const { contractionAreas, qualitySummary } = useContractionAnalysis({
         analytics,
         sessionParams,
@@ -550,6 +562,13 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             {(() => {
               const keysForThresholds = plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys;
               logger.chartRender('MVC Reference Lines Keys', keysForThresholds);
+              
+              // DEBUG: Log MVC threshold values for each key
+              keysForThresholds.forEach(key => {
+                const threshold = getMvcThreshold(key);
+                console.log(`🔍 MVC Debug - Key: ${key}, Threshold: ${threshold}`);
+                logger.chartRender(`MVC Threshold for ${key}`, { threshold, unifiedThresholds });
+              });
               
               // In comparison mode, ensure we have exactly 2 lines (one per base channel)
               if (viewMode === 'comparison') {

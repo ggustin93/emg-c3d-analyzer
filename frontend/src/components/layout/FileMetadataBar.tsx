@@ -5,10 +5,10 @@ import { File, User, Calendar, Clock, Activity } from 'lucide-react';
 import { EMGAnalysisResult } from '../../types/emg';
 import { 
   resolvePatientId, 
+  resolveTherapistId,
   resolveSessionDate, 
   getPatientIdBadgeProps,
   getTherapistIdBadgeProps,
-  resolveTherapistId,
   C3DFile
 } from '../../services/C3DFileDataResolver';
 
@@ -57,10 +57,12 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   // Apply consistent data resolution from the centralized resolver
   const resolvedPatientId = resolvePatientId(mockFile);
   const resolvedSessionDate = resolveSessionDate(mockFile);
+  // ✅ CONSISTENT WITH C3DFileBrowser: Use the same resolver for therapist ID
+  // This ensures DEV mode fake names work consistently across both components
   const resolvedTherapistId = resolveTherapistId(mockFile);
   
   const patientBadgeProps = getPatientIdBadgeProps(resolvedPatientId);
-  const therapistBadgeProps = getTherapistIdBadgeProps(resolvedTherapistId);
+  const therapistBadgeProps = getTherapistIdBadgeProps(resolvedTherapistId || 'Unknown');
   
   // Debug info removed for test compatibility
 

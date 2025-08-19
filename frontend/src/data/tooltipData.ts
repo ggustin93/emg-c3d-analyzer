@@ -69,14 +69,40 @@ export const getComplianceTooltipData = (
 
 // NEW: Overall Performance Score Tooltip Data
 export const getOverallPerformanceScoreTooltipData = (
-  muscleComplianceWeight?: number,
+  complianceWeight?: number,
+  symmetryWeight?: number,
   effortScoreWeight?: number,
   gameScoreWeight?: number
 ): TooltipData => {
-  // Provide default weights if none are passed
-  const mcWeight = muscleComplianceWeight ?? 0.65;
-  const effortWeight = effortScoreWeight ?? 0.20;
-  const gameWeight = gameScoreWeight ?? 0.15;
+  // Provide default weights if none are passed (using current system defaults)
+  const cWeight = complianceWeight ?? 0.45;
+  const sWeight = symmetryWeight ?? 0.30;
+  const effortWeight = effortScoreWeight ?? 0.25;
+  const gameWeight = gameScoreWeight ?? 0.00;
+
+  // Build formula components dynamically based on non-zero weights
+  const formulaComponents = [];
+  const componentDescriptions = [];
+  
+  if (cWeight > 0) {
+    formulaComponents.push(`${(cWeight * 100).toFixed(0)}% · S<sub>compliance</sub>`);
+    componentDescriptions.push({ label: "Therapeutic Compliance", description: `(${(cWeight * 100).toFixed(0)}% weight) Completion, intensity, and duration quality.` });
+  }
+  
+  if (sWeight > 0) {
+    formulaComponents.push(`${(sWeight * 100).toFixed(0)}% · S<sub>symmetry</sub>`);
+    componentDescriptions.push({ label: "Muscle Symmetry", description: `(${(sWeight * 100).toFixed(0)}% weight) Balance between left and right muscles.` });
+  }
+  
+  if (effortWeight > 0) {
+    formulaComponents.push(`${(effortWeight * 100).toFixed(0)}% · S<sub>effort</sub>`);
+    componentDescriptions.push({ label: "Effort Score", description: `(${(effortWeight * 100).toFixed(0)}% weight) Patient-reported exertion (RPE).` });
+  }
+  
+  if (gameWeight > 0) {
+    formulaComponents.push(`${(gameWeight * 100).toFixed(0)}% · S<sub>game</sub>`);
+    componentDescriptions.push({ label: "Game Score", description: `(${(gameWeight * 100).toFixed(0)}% weight) In-game performance metric.` });
+  }
 
   return {
     title: "Overall Performance Score",
@@ -88,18 +114,14 @@ export const getOverallPerformanceScoreTooltipData = (
         items: [
           { 
             label: "S<sub>overall</sub>", 
-            value: ` = ${(mcWeight * 100).toFixed(0)}% · S<sub>muscle</sub> + ${(effortWeight * 100).toFixed(0)}% · S<sub>effort</sub> + ${(gameWeight * 100).toFixed(0)}% · S<sub>game</sub>`
+            value: ` = ${formulaComponents.join(' + ')}`
           }
         ]
       },
       {
         title: "Components",
         type: "list",
-        items: [
-          { label: "Muscle Compliance", description: `(${ (mcWeight * 100).toFixed(0)}% weight) Average of all individual muscle scores.` },
-          { label: "Effort Score", description: `(${ (effortWeight * 100).toFixed(0)}% weight) Patient-reported exertion (RPE).` },
-          { label: "Game Score", description: `(${ (gameWeight * 100).toFixed(0)}% weight) In-game performance metric.` }
-        ]
+        items: componentDescriptions
       },
       {
         type: "list",

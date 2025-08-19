@@ -68,6 +68,14 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   
   const isExperimentalEnabled = sessionParams.experimental_features?.enabled || false;
   const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+  
+  // Calculate total of main components for display validation
+  const calculateMainComponentsTotal = (weightsObj: ScoringWeights) => {
+    const mainComponents = ['compliance', 'symmetry', 'effort', 'gameScore'] as const;
+    return mainComponents.reduce((sum, key) => sum + (weightsObj[key] || 0), 0);
+  };
+  
+  const mainTotal = calculateMainComponentsTotal(weights);
   const gameNormalization = sessionParams.enhanced_scoring?.game_score_normalization || {
     algorithm: 'linear' as const,
     min_score: 0,
@@ -172,14 +180,26 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   };
 
   const updateWeights = (newWeights: ScoringWeights) => {
-    // Normaliser pour que le total fasse 100%
-    const total = Object.values(newWeights).reduce((sum, w) => sum + w, 0);
+    // Normalize only the main four scoring components to ensure they sum to 1.0
+    const mainComponents = ['compliance', 'symmetry', 'effort', 'gameScore'] as const;
+    const mainComponentsTotal = mainComponents.reduce((sum, key) => {
+      return sum + (newWeights[key] || 0);
+    }, 0);
+    
     const normalizedWeights = { ...newWeights };
     
-    if (total > 0) {
-      Object.keys(normalizedWeights).forEach(key => {
-        normalizedWeights[key as keyof ScoringWeights] = 
-          normalizedWeights[key as keyof ScoringWeights] / total;
+    if (mainComponentsTotal > 0) {
+      // Normalize only the main four components
+      mainComponents.forEach(key => {
+        if (newWeights[key] !== undefined) {
+          normalizedWeights[key] = newWeights[key] / mainComponentsTotal;
+        }
+      });
+    } else {
+      // Fallback: set equal weights if all are zero
+      const equalWeight = 1 / mainComponents.length;
+      mainComponents.forEach(key => {
+        normalizedWeights[key] = equalWeight;
       });
     }
 
@@ -282,7 +302,20 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
             {/* Component Weights Configuration */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-base font-semibold text-gray-800">Component Weights</h4>
+                <div className="flex items-center gap-3">
+                  <h4 className="text-base font-semibold text-gray-800">Component Weights</h4>
+                  <Badge 
+                    variant={Math.abs(mainTotal - 1.0) < 0.001 ? "outline" : "warning"}
+                    className={cn(
+                      "text-xs font-mono",
+                      Math.abs(mainTotal - 1.0) < 0.001 
+                        ? "bg-green-50 text-green-700 border-green-300" 
+                        : "bg-orange-50 text-orange-700 border-orange-300"
+                    )}
+                  >
+                    Total: {(mainTotal * 100).toFixed(1)}%
+                  </Badge>
+                </div>
                 <Select value={currentPreset} onValueChange={(value) => {
                   setCurrentPreset(value);
                   if (value !== 'custom') {

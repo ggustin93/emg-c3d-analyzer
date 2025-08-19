@@ -386,18 +386,21 @@ export const AOPTooltip: React.FC<{
 export const OverallPerformanceScoreTooltip: React.FC<{
   side?: 'top' | 'right' | 'bottom' | 'left';
   children?: React.ReactNode;
-  muscleComplianceWeight?: number;
+  complianceWeight?: number;
+  symmetryWeight?: number;
   effortScoreWeight?: number;
   gameScoreWeight?: number;
 }> = ({ 
   side = 'top', 
   children,
-  muscleComplianceWeight,
+  complianceWeight,
+  symmetryWeight,
   effortScoreWeight,
   gameScoreWeight
 }) => {
   const data = getOverallPerformanceScoreTooltipData(
-    muscleComplianceWeight,
+    complianceWeight,
+    symmetryWeight,
     effortScoreWeight,
     gameScoreWeight
   );
