@@ -1,9 +1,9 @@
 # Active Context
 
-## ✅ COMPLETED: EMG Contraction Detection Algorithm Fix (August 19, 2025)
+## ✅ COMPLETED: Advanced Dual Signal Detection Implementation (August 19, 2025)
 
-**Status**: Successfully implemented and tested ✅  
-**Impact**: Critical clinical fix - Eliminated physiologically impossible 36-49 second contractions
+**Status**: Successfully implemented and clinically validated ✅  
+**Impact**: Revolutionary EMG processing - Eliminated baseline noise false positives with 13% improvement in contraction detection
 
 ### Key Achievements
 
@@ -760,6 +760,19 @@ tail -f logs/frontend.log             # Frontend development server output and b
 - **E2E Tests**: Complete workflow from upload to clinical results
 - **Coverage Reports**: 43 total tests (9 backend + 34 frontend) passing
 - **Quality Assurance**: Professional test patterns with fixtures and mocking
+
+## Latest Implementation: ExportTab Download Button Fix ✅ (August 19, 2025)
+
+### Problem Resolution
+- **"Download Original C3D" Button Fixed**: Resolved type mismatch where `SupabaseStorageService.downloadFile()` returns `Blob` but code expected boolean
+- **Proper Blob Handling**: Implemented browser download with `URL.createObjectURL()` pattern
+- **Export Functionality Complete**: Both buttons now working correctly
+
+### Technical Implementation  
+- **File**: `frontend/src/components/tabs/ExportTab/ExportTab.tsx` (lines 93-113)
+- **Fix**: Handle Blob return properly with programmatic download trigger
+- **Testing**: Added comprehensive `export-actions.test.tsx` (10 tests)
+- **Principles**: KISS/DRY minimalist approach maintained
 
 ## Previous Implementation: Professional Repository Cleanup Complete ✅ (August 12, 2025)
 

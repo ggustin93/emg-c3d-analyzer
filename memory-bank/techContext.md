@@ -403,3 +403,11 @@ python -m pytest tests/test_emg_analysis.py   # Run specific EMG analysis tests
 
 ## Import Strategy
 - Standardized relative imports within the backend module to resolve import errors. 
+
+## Tooltips
+- **UI Components**: Primarily uses **shadcn/ui**, a collection of reusable UI components. This is the preferred library for building UI elements to maintain consistency and reduce custom component development.
+- **Tooltips**: A data-driven, composable tooltip system has been implemented to ensure consistency and maintainability.
+  - **Base Component**: `frontend/src/components/ui/tooltip.tsx` provides the base styling and portal functionality for all tooltips.
+  - **Clinical Context Wrapper**: `frontend/src/components/ui/clinical-tooltip.tsx` is a wrapper that structures tooltips with a title, description, and sections.
+  - **Data Source**: All tooltip content is centralized in `frontend/src/data/tooltipData.ts`. This separates content from presentation.
+  - **Usage**: To use a tooltip for a specific metric (e.g., RPE Score), use its dedicated preset component (e.g., `<RPEScoreTooltip>`). To create a new tooltip, add a new data function to `tooltipData.ts` and a corresponding preset component to `clinical-tooltip.tsx`. 
