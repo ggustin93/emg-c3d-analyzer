@@ -6,16 +6,17 @@
  * Created: 2025-01-18
  */
 
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react';
 import { useUnifiedThresholds } from '../useUnifiedThresholds';
 import { GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
+import { vi, describe, it, expect } from 'vitest';
 
 // Mock logger to avoid console errors during tests
-jest.mock('@/services/logger', () => ({
+vi.mock('@/services/logger', () => ({
   logger: {
-    debug: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
   },
   LogCategory: {
     DATA_PROCESSING: 'DATA_PROCESSING',
@@ -23,7 +24,7 @@ jest.mock('@/services/logger', () => ({
   },
 }));
 
-const mockGetColorForChannel = jest.fn(() => ({ stroke: '#000000' }));
+const mockGetColorForChannel = vi.fn(() => ({ stroke: '#000000' }));
 
 describe('useUnifiedThresholds', () => {
   const mockSessionParams: GameSessionParameters = {
