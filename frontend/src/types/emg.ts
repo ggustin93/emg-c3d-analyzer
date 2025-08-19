@@ -254,6 +254,13 @@ export interface ChannelAnalyticsData {
   good_short_contraction_count?: number | null;
   
   mvc_threshold_used?: number;
+  
+  // MVC Estimation data (for export functionality)
+  mvc_estimation?: {
+    estimated_mvc_95th_percentile?: number;
+    method?: string;
+    [key: string]: any;
+  };
 }
 
 export interface EMGChannelSignalData {

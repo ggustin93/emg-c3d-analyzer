@@ -314,17 +314,22 @@ describe('useMvcService Integration Tests', () => {
         warnings: []
       };
 
+      (MVCService.extractMVCFromAnalysis as any).mockReturnValue(mockResults);
       (MVCService.validateEstimation as any).mockReturnValue(mockValidation);
 
       const { result } = renderHook(() => useMvcService());
 
-      // Set estimation results
+      // Set estimation results through the proper method
       act(() => {
-        result.current.extractFromAnalysis({ analytics: {} } as any);
+        result.current.extractFromAnalysis({ 
+          analytics: {
+            CH1: {
+              mvc_threshold_actual_value: 0.00375,
+              mvc_estimation_method: 'clinical_estimation'
+            }
+          } 
+        } as any);
       });
-      
-      // Mock the results
-      (result.current as any).estimationResults = mockResults;
 
       const validation = result.current.validateEstimation('CH1');
 
@@ -342,14 +347,27 @@ describe('useMvcService Integration Tests', () => {
 
   describe('clearResults functionality', () => {
     it('should clear all estimation state', () => {
+      const mockResults = { CH1: { mvc_value: 0.005 } };
+      (MVCService.extractMVCFromAnalysis as any).mockReturnValue(mockResults);
+      
       const { result } = renderHook(() => useMvcService());
 
-      // Set some initial state
+      // Set some initial state through proper methods
       act(() => {
-        (result.current as any).estimationResults = { CH1: { mvc_value: 0.005 } };
-        (result.current as any).error = 'Some error';
+        result.current.extractFromAnalysis({ 
+          analytics: {
+            CH1: {
+              mvc_threshold_actual_value: 0.00375,
+              mvc_estimation_method: 'clinical_estimation'
+            }
+          } 
+        } as any);
       });
 
+      // Verify state is set
+      expect(result.current.estimationResults).toEqual(mockResults);
+
+      // Clear results
       act(() => {
         result.current.clearResults();
       });
