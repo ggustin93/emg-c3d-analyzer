@@ -154,8 +154,8 @@ export function useExportData(
               analyticsWithMvc[channel].mvc_estimation = {};
             }
             
-            analyticsWithMvc[channel].mvc_estimation.estimated_mvc_95th_percentile = sessionParams.session_mvc_values[channel];
-            analyticsWithMvc[channel].mvc_estimation.method = analyticsWithMvc[channel].mvc_estimation_method || 'unknown';
+            analyticsWithMvc[channel].mvc_estimation!.estimated_mvc_95th_percentile = sessionParams.session_mvc_values[channel];
+            analyticsWithMvc[channel].mvc_estimation!.method = analyticsWithMvc[channel].mvc_estimation_method || 'unknown';
           }
         });
       }
