@@ -36,16 +36,18 @@ $$P_{overall} = w_c \cdot S_{compliance} + w_s \cdot S_{symmetry} + w_e \cdot S_
 - $w_c = 0.40$ (Therapeutic Compliance)
 - $w_s = 0.25$ (Muscle Symmetry) 
 - $w_e = 0.20$ (Subjective Effort)
-- $w_g = 0.15$ (Game Performance)
+- $w_g = 0.15$ (Game Performance) *Default weight = 0.00 when game data unavailable*
 
 ### 3.1 Therapeutic Compliance Score
 
 $$S_{compliance} = \left(\frac{S_{comp}^{left} + S_{comp}^{right}}{2}\right) \times C_{BFR}$$
 
-**BFR Safety Gate**:
+**BFR Safety Gate** (Applied to Overall Score):
+$$P_{overall} = \left(w_c \cdot S_{compliance} + w_s \cdot S_{symmetry} + w_e \cdot S_{effort} + w_g \cdot S_{game}\right) \times C_{BFR}$$
+
 $$C_{BFR} = \begin{cases}
 1.0 & \text{if pressure} \in [45\%, 55\%] \text{ AOP} \\
-\textcolor{red}{0.0} & \text{otherwise}
+\textcolor{red}{0.0} & \text{otherwise (full penalty)}
 \end{cases}$$
 
 **Per-Muscle Compliance**:
@@ -65,18 +67,20 @@ $$S_{symmetry} = \left(1 - \frac{|S_{comp}^{left} - S_{comp}^{right}|}{S_{comp}^
 
 ### 3.3 Subjective Effort Score
 
+Based on post-session Rating of Perceived Exertion (RPE) on 0-10 scale:
+
 $$S_{effort} = \begin{cases}
-100\% & \text{if } \text{RPE}_{post} \in [4, 6] \text{ (optimal)} \\
-80\% & \text{if } \text{RPE}_{post} \in \{3, 7\} \text{ (acceptable)} \\
-60\% & \text{if } \text{RPE}_{post} \in \{2, 8\} \text{ (suboptimal)} \\
-20\% & \text{if } \text{RPE}_{post} \in \{0, 1, 9, 10\} \text{ (poor)}
+100\% & \text{if } \text{RPE}_{post} \in [4, 6] \text{ (optimal therapeutic range)} \\
+80\% & \text{if } \text{RPE}_{post} \in \{3, 7\} \text{ (acceptable range)} \\
+60\% & \text{if } \text{RPE}_{post} \in \{2, 8\} \text{ (suboptimal range)} \\
+20\% & \text{if } \text{RPE}_{post} \in \{0, 1, 9, 10\} \text{ (poor/dangerous)}
 \end{cases}$$
 
 ### 3.4 Game Performance Score
 
 $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points (current difficulty)}} \times 100$$
 
-*Note: Maximum achievable points adapt via Dynamic Difficulty Adjustment (DDA) system.*
+*Note: Game performance score is optional and highly game-dependent. Default weight is 0.00 when game scoring data is unavailable or unreliable. Maximum achievable points adapt via Dynamic Difficulty Adjustment (DDA) system.*
 
 ---
 
@@ -85,8 +89,9 @@ $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points (cur
 $$\text{Adherence}(t) = \frac{\text{Game Sessions completed by day } t}{\text{Game Sessions expected by day } t} \times 100$$
 
 Where:
-- $t$ = current protocol day ($t \geq 3$ for stability)
+- $t$ = current protocol day ($t \geq 3$ for measurement stability)
 - Expected rate: 15 Game Sessions per 7 days ≈ $2.14 \times t$
+- **Starting Day**: Adherence calculation begins from day 3 onwards to ensure stable baseline
 
 **Clinical Thresholds**:
 - **Excellent**: ≥85% (meeting/exceeding frequency)
@@ -114,8 +119,8 @@ Where:
 - $S_{effort} = 100\%$ (RPE = 6)
 - $S_{game} = 85\%$
 
-**Overall Performance**:
-$$P_{overall} = 0.40 \times 87.3 + 0.25 \times 98.8 + 0.20 \times 100 + 0.15 \times 85 = 91.6\%$$
+**Overall Performance** (with BFR safety gate):
+$$P_{overall} = \left(0.40 \times 87.3 + 0.25 \times 98.8 + 0.20 \times 100 + 0.15 \times 85\right) \times 1.0 = 91.6\%$$
 
 **Clinical Interpretation**: Excellent rehabilitation performance - optimal therapeutic benefit achieved.
 

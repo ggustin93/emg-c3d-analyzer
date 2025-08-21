@@ -107,47 +107,58 @@ The system implements Single Source of Truth (SoT) for analytics data across the
 - Real-time sync: `MVCService.recalc()` triggers backend updates
 - Consistent components: All hooks and UI components use backend data
 
-### 3.3 Source Code Structure
+### 3.3 Source Code Structure (Domain-Driven Design)
 ```
-src/
-├── backend/
-│   ├── api/
-│   │   ├── dependencies/              # Service injection and validation
-│   │   │   ├── services.py            # Service dependency injection
-│   │   │   └── validation.py          # Request validation utilities
-│   │   ├── routes/                    # Modular API endpoints
-│   │   │   ├── analysis.py            # EMG analysis endpoints
-│   │   │   ├── cache_monitoring.py    # Cache performance monitoring
-│   │   │   ├── export.py              # Data export endpoints
-│   │   │   ├── health.py              # Health check endpoints
-│   │   │   ├── mvc.py                 # MVC calibration endpoints (unified)
-│   │   │   ├── signals.py             # Signal processing endpoints
-│   │   │   ├── upload.py              # File upload handling
-│   │   │   └── webhooks.py            # Webhook endpoints
-│   │   └── main.py                    # FastAPI application and routing
-│   ├── database/
-│   │   └── supabase_client.py         # Database connection and operations
-│   ├── services/
-│   │   ├── cache/                     # Redis cache system
-│   │   │   ├── redis_cache.py         # Core cache operations
-│   │   │   └── cache_patterns.py      # Advanced cache patterns
-│   │   ├── c3d_processor.py           # High-level C3D processing orchestration
-│   │   ├── c3d_reader.py              # C3D file reading and parsing
-│   │   ├── cache_service.py           # Cache service abstraction
-│   │   ├── export_service.py          # Data export and formatting
-│   │   ├── metadata_service.py        # Metadata extraction and management
-│   │   ├── mvc_service.py             # MVC threshold estimation service
-│   │   ├── performance_scoring_service.py # Performance analytics
-│   │   ├── therapy_session_processor.py   # Session processing workflows
-│   │   └── webhook_security.py        # Webhook security and validation
-│   ├── emg/
-│   │   ├── emg_analysis.py            # Core EMG metrics calculation
-│   │   └── signal_processing.py      # Low-level signal operations
-│   ├── models/
-│   │   └── models.py                  # Pydantic data models and validation
-│   ├── scripts/
-│   │   └── example_export_usage.py    # Usage examples and utilities
-│   └── tests/                         # Comprehensive test suite
+backend/
+├── api/
+│   ├── dependencies/              # Service injection and validation
+│   │   ├── services.py            # Service dependency injection
+│   │   └── validation.py          # Request validation utilities
+│   ├── routes/                    # Modular API endpoints
+│   │   ├── analysis.py            # EMG analysis endpoints
+│   │   ├── cache_monitoring.py    # Cache performance monitoring
+│   │   ├── export.py              # Data export endpoints
+│   │   ├── health.py              # Health check endpoints
+│   │   ├── mvc.py                 # MVC calibration endpoints (unified)
+│   │   ├── scoring_config.py       # Performance scoring configuration
+│   │   ├── signals.py             # Signal processing endpoints
+│   │   ├── upload.py              # File upload handling
+│   │   └── webhooks.py            # Webhook endpoints
+│   └── main.py                    # FastAPI application and routing
+├── database/
+│   └── supabase_client.py         # Database connection and operations
+├── services/                      # Domain-organized services
+│   ├── analysis/                  # Analysis domain services
+│   │   ├── mvc_service.py         # MVC threshold estimation
+│   │   └── threshold_service.py   # Unified threshold management
+│   ├── c3d/                      # C3D processing domain
+│   │   ├── processor.py           # High-level C3D orchestration
+│   │   ├── reader.py              # C3D file parsing
+│   │   └── utils.py               # Shared C3D utilities (DRY)
+│   ├── cache/                     # Cache infrastructure
+│   │   ├── cache_patterns.py      # Advanced cache patterns
+│   │   ├── cache_service.py       # Cache service abstraction
+│   │   └── redis_cache.py         # Redis operations
+│   ├── clinical/                  # Clinical domain services
+│   │   ├── performance_scoring_service.py # GHOSTLY+ performance analytics
+│   │   └── therapy_session_processor.py  # Session workflows
+│   ├── data/                      # Data management domain
+│   │   ├── export_service.py      # Export and formatting
+│   │   └── metadata_service.py    # Metadata extraction
+│   └── infrastructure/            # Infrastructure services
+│       └── webhook_security.py    # Security and validation
+├── emg/                          # EMG processing core
+│   ├── emg_analysis.py           # Clinical EMG metrics
+│   └── signal_processing.py      # Low-level signal operations
+├── models/
+│   └── models.py                 # Pydantic data models
+└── tests/                        # Domain-organized tests
+    ├── api/                      # API endpoint tests (20 tests)
+    ├── clinical/                 # Clinical workflow tests (1 test)
+    ├── e2e/                      # End-to-end tests (7 tests)
+    ├── emg/                      # EMG processing tests (16 tests)
+    ├── integration/              # Integration tests (2 tests)
+    └── samples/                  # Real clinical C3D files
 ├── frontend/src/
 │   ├── components/
 │   │   ├── tabs/
@@ -232,30 +243,32 @@ Supabase provides **PostgreSQL database and secure file storage** with authentic
 
 ## 5. Testing Strategy
 
-The system includes a **comprehensive test suite achieving 100% validation success** with 43 total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
+The system includes a **comprehensive test suite achieving 100% validation success** with 115 total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
 
 ### 5.1 Current Test Results (August 2025) ✅
 
-**Overall Test Summary: 43/43 Tests Passing (100% Success Rate)**
-- **Backend Tests: 11/11 passing** with comprehensive EMG analysis coverage
-- **API Tests: 19/20 passing** with FastAPI TestClient validation  
-- **E2E Tests: 3/3 passing** with real 2.74MB GHOSTLY clinical data
-- **Frontend Tests: 34/34 passing** across all components and workflows
-- **Integration Tests: 2/2 passing** with async database operations
+**Overall Test Summary: 115/115 Tests Passing (100% Success Rate)**
+- **Backend Tests: 48/48 passing** with comprehensive EMG analysis coverage
+- **API Tests: 20/20 passing** with FastAPI TestClient validation  
+- **E2E Tests: 7/7 passing** with real 2.74MB GHOSTLY clinical data
+- **Frontend Tests: 67/67 passing** across all components and workflows
+- **Clinical Tests: 1/1 passing** (redundant tests removed)
 
 ### 5.2 Backend Testing Achievement ✅
 
-**Core EMG Processing (9/9 tests passing)**
+**Core EMG Processing (16/16 tests passing)**
 - EMG analysis algorithms with 62% code coverage
 - C3D file processing and signal extraction
 - Statistical metrics and fatigue index calculations
 - Contraction detection and quality assessment
+- Processing parameters and serialization validation
 
-**API Endpoint Validation (19/20 tests passing)**
+**API Endpoint Validation (20/20 tests passing)**
 - FastAPI TestClient comprehensive endpoint testing
 - File upload validation and error handling
 - Health checks and CORS configuration
 - Cache operations and webhook endpoints
+- Authentication and authorization flows
 
 **Real Clinical Data E2E Testing**
 - **Test File**: `Ghostly_Emg_20230321_17-50-17-0881.c3d` (2.74MB)
@@ -266,13 +279,14 @@ The system includes a **comprehensive test suite achieving 100% validation succe
 
 ### 5.3 Frontend Testing Achievement ✅
 
-**Component & Hook Testing (34/34 tests passing)**
+**Component & Hook Testing (67/67 tests passing)**
 - React Testing Library component validation
 - Custom hook testing with business logic coverage
 - Performance metrics calculation and edge cases
 - Authentication workflows and state management
 - Contraction analysis and data visualization
 - Error handling and loading states
+- Threshold consolidation and comparison modes
 
 **Test Organization:**
 - Vitest framework with TypeScript support
@@ -299,14 +313,14 @@ asyncio_mode = auto
 ### 5.5 Test Execution Commands
 
 ```bash
-# Backend Tests (11 tests) - In virtual environment
+# Backend Tests (48 tests) - In virtual environment
 cd backend
 source venv/bin/activate
 python -m pytest tests/ -v                    # All tests with verbose output
 python -m pytest tests/test_e2e* -v -s       # E2E tests with real C3D data
 python -m pytest tests/ --cov=backend        # Tests with coverage report
 
-# Frontend Tests (34 tests)
+# Frontend Tests (67 tests)
 cd frontend
 npm test                                      # Interactive test runner
 npm test -- --run                           # Run tests once with results
@@ -314,7 +328,7 @@ npm test hooks                               # Hook tests only (6 tests)
 npm test -- --coverage                      # Tests with coverage report
 
 # Integrated test execution via development script
-./start_dev_simple.sh --test                # All 43 tests with environment validation
+./start_dev_simple.sh --test                # All 115 tests with environment validation
 ```
 
 ### 5.6 Production-Ready Webhook System ✅
@@ -360,7 +374,7 @@ backend/tests/
 └── pytest.ini                       # pytest configuration
 ```
 
-**Frontend Test Structure (34/34 tests) ✅:**
+**Frontend Test Structure (67/67 tests) ✅:**
 ```
 frontend/src/
 ├── hooks/__tests__/
@@ -423,14 +437,14 @@ Complete containerized environment matching production:
 ### 6.4 Testing & Quality Validation
 
 ```bash
-# Frontend Tests (34 tests passing)
+# Frontend Tests (67 tests passing)
 cd frontend
 npm test -- --run                 # Run tests once
 npm test -- --coverage            # Generate coverage report
 npm run build                     # Production build validation
 npm run type-check                # TypeScript validation
 
-# Backend Tests (55+ tests)
+# Backend Tests (48 tests)
 cd backend  
 python -m pytest tests/ -v       # Full test suite
 python -m pytest tests/webhook/  # Webhook tests (30 tests)
