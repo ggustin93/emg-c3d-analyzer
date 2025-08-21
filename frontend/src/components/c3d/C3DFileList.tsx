@@ -52,6 +52,7 @@ interface C3DFileListProps {
   sortDirection: SortDirection;
   onSort: (field: SortField) => void;
   visibleColumns: ColumnVisibility;
+  resolveSessionDate?: (file: C3DFile) => string | null;
 }
 
 const C3DFileList: React.FC<C3DFileListProps> = ({
@@ -62,10 +63,16 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   sortField,
   sortDirection,
   onSort,
-  visibleColumns
+  visibleColumns,
+  resolveSessionDate: customResolveSessionDate
 }) => {
   // UI states
   const [loadingFileId, setLoadingFileId] = useState<string | null>(null);
+  
+  // Enhanced session date resolver
+  const getSessionDate = useCallback((file: C3DFile): string | null => {
+    return customResolveSessionDate ? customResolveSessionDate(file) : getSessionDate(file);
+  }, [customResolveSessionDate]);
   
   // Column resize states
   const [filenameColumnWidth, setFilenameColumnWidth] = useState(() => {
@@ -421,17 +428,17 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           )}
                         </div>
                       )}
-                      {visibleColumns.session_date && resolveSessionDate(file) && (
+                      {visibleColumns.session_date && getSessionDate(file) && (
                         <div className="flex items-center gap-2">
                           <span>Session:</span>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
-                                {formatDate(resolveSessionDate(file)!)}
+                                {formatDate(getSessionDate(file)!)}
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
+                              <p>Session date: {formatFullDate(getSessionDate(file)!)}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -604,15 +611,15 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                     )}
                     {visibleColumns.session_date && (
                       <div className="px-3 py-2 flex-1 min-w-0">
-                        {resolveSessionDate(file) ? (
+                        {getSessionDate(file) ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
-                                {formatDate(resolveSessionDate(file)!)}
+                                {formatDate(getSessionDate(file)!)}
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Session date: {formatFullDate(resolveSessionDate(file)!)}</p>
+                              <p>Session date: {formatFullDate(getSessionDate(file)!)}</p>
                             </TooltipContent>
                           </Tooltip>
                         ) : (

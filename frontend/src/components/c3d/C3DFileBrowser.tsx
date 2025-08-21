@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import SupabaseStorageService from '@/services/supabaseStorage';
 import SupabaseSetup from '@/lib/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
+import { TherapySessionsService, TherapySession } from '@/services/therapySessionsService';
 import { 
   C3DFile,
   resolvePatientId,
@@ -50,6 +51,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [files, setFiles] = useState<C3DFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Session data state
+  const [sessionData, setSessionData] = useState<Record<string, TherapySession>>({});
   
   // Filter states
   const [filters, setFilters] = useState<FilterState>({
@@ -96,6 +100,47 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       hasCreatedAt: !!f.created_at
     }))
   });
+
+  // Load session data for all files
+  const loadSessionData = useCallback(async (fileList: C3DFile[]) => {
+    if (!fileList.length) return;
+
+    try {
+      // Create file paths from storage files (bucket/object format)
+      const filePaths = fileList.map(file => `c3d-examples/${file.name}`);
+      
+      console.log('🔍 Loading session data for files:', filePaths.slice(0, 3), '...');
+      
+      const sessions = await TherapySessionsService.getSessionsByFilePaths(filePaths);
+      
+      console.log('✅ Session data loaded:', Object.keys(sessions).length, 'sessions found');
+      setSessionData(sessions);
+    } catch (error) {
+      console.warn('Failed to load session data:', error);
+      // Not critical - continue without session data
+    }
+  }, []);
+
+  // Enhanced session date resolver that uses processed session data
+  const resolveEnhancedSessionDate = useCallback((file: C3DFile): string | null => {
+    const filePath = `c3d-examples/${file.name}`;
+    const session = sessionData[filePath];
+    
+    // Priority 1: Processed session timestamp from therapy_sessions table
+    if (session?.session_date) {
+      console.log('✅ Using processed session timestamp for:', file.name, '→', session.session_date);
+      return session.session_date;
+    }
+    
+    // Priority 2: C3D metadata time from therapy_sessions table
+    if (session?.game_metadata?.time) {
+      console.log('✅ Using C3D metadata time for:', file.name, '→', session.game_metadata.time);
+      return session.game_metadata.time;
+    }
+    
+    // Priority 3: Fallback to original filename/storage resolution
+    return resolveSessionDate(file);
+  }, [sessionData]);
 
   // Load files from Supabase
   useEffect(() => {
@@ -159,6 +204,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         } else {
           setFiles(supabaseFiles);
           setError(null);
+          // Load session data after files are loaded
+          loadSessionData(supabaseFiles);
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
@@ -229,10 +276,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       const matchesTherapistId = !filters.therapistIdFilter || 
         resolvedTherapist.toLowerCase().includes(filters.therapistIdFilter.toLowerCase());
       
-      // Session date range filtering
+      // Session date range filtering using enhanced resolver
       let matchesDateRange = true;
       if (filters.dateFromFilter || filters.dateToFilter) {
-        const sessionDate = resolveSessionDate(file);
+        const sessionDate = resolveEnhancedSessionDate(file);
         
         // If file has no session date, exclude it from date-based filtering
         if (!sessionDate) {
@@ -252,7 +299,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
       return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesSize;
     });
-  }, [files, filters]);
+  }, [files, filters, resolveEnhancedSessionDate]);
 
   // Sorted files (apply sorting to ALL filtered results)
   const sortedFiles = useMemo(() => {
@@ -268,8 +315,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         aValue = resolveTherapistId(a);
         bValue = resolveTherapistId(b);
       } else if (sortField === 'session_date') {
-        aValue = resolveSessionDate(a);
-        bValue = resolveSessionDate(b);
+        aValue = resolveEnhancedSessionDate(a);
+        bValue = resolveEnhancedSessionDate(b);
         // Handle null values - put them at the end
         if (!aValue && !bValue) return 0;
         if (!aValue) return sortDirection === 'asc' ? 1 : -1;
@@ -300,7 +347,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return sorted;
-  }, [filteredFiles, sortField, sortDirection]);
+  }, [filteredFiles, sortField, sortDirection, resolveEnhancedSessionDate]);
 
   // Pagination calculations (now applied to sorted data)
   const totalFiles = sortedFiles.length;
@@ -401,6 +448,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         } else {
           setFiles(supabaseFiles);
           setError(null);
+          // Load session data after files are loaded
+          loadSessionData(supabaseFiles);
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
@@ -424,6 +473,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         const supabaseFiles = await SupabaseStorageService.listC3DFiles();
         setFiles(supabaseFiles);
         setError(null);
+        // Load session data after files are refreshed
+        loadSessionData(supabaseFiles);
       }
     } catch (err) {
       setError('Failed to refresh file list. Please try again.');
@@ -650,6 +701,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           sortDirection={sortDirection}
           onSort={handleSort}
           visibleColumns={visibleColumns}
+          resolveSessionDate={resolveEnhancedSessionDate}
         />
 
         {/* Pagination Controls */}
