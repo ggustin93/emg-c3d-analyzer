@@ -88,6 +88,18 @@ The system includes **clinically validated EMG metrics**:
 - **Temporal Statistics**: Mean, standard deviation, coefficient of variation for all metrics
 - **Dual Signal Contraction Detection**: Hybrid approach using activated signals for temporal detection and RMS envelope for amplitude assessment
 
+## GHOSTLY+ Performance Scoring
+
+The system implements **official GHOSTLY+ clinical trial metrics** following the multicenter RCT specification:
+
+- **Overall Performance Score**: `P_overall = w_c × S_compliance + w_s × S_symmetry + w_e × S_effort + w_g × S_game`
+- **Therapeutic Compliance**: Per-muscle compliance using completion, intensity, and duration rates with equal weighting (1/3 each)
+- **Bilateral Symmetry**: CH1/CH2 analysis using `S_symmetry = (1 - |left - right| / (left + right))`
+- **Clinical Effort Assessment**: RPE-based scoring with amplitude proxy when RPE unavailable
+- **Game Performance Integration**: Game points achievement relative to maximum achievable points
+- **GHOSTLY+ Weights**: Compliance (40%), Symmetry (25%), Effort (20%), Game (15%)
+- **Clinical Validation**: Optimized for hospitalized older adults (≥65 years) with mobility restrictions
+
 ### Dual Signal Detection Algorithm
 
 The system implements an advanced **dual signal detection approach** that addresses baseline noise issues:

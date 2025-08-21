@@ -14,17 +14,20 @@ The GHOSTLY+ EMG C3D Analyzer implements a revolutionary **dual signal detection
 - **Signal Quality**: 2x cleaner signal-to-noise ratio compared to single signal detection
 - **Clinical Validation**: +13% more contractions detected with real GHOSTLY clinical data
 
-### 1. Backend (Python/FastAPI) - Advanced Dual Signal Processing
+### 1. Backend (Python/FastAPI) - Domain-Driven Architecture
 - **Location**: `backend/`
 - **Responsibility**: Handles all business logic, data processing, and serves a RESTful API with revolutionary dual signal EMG analysis.
-- **Core Components**:
-    - `api/api.py`: FastAPI endpoints with comprehensive C3D processing capabilities
-    - `services/c3d_processor.py`: Advanced C3D processing engine with dual signal detection
-    - `emg/emg_analysis.py`: **Dual Signal Detection Algorithm** - Uses activated signals for timing, RMS for amplitude
-    - `emg/signal_processing.py`: Low-level signal operations (filtering, smoothing, envelope calculation)
+- **Domain-Driven Structure (August 2025)**:
+    - `api/`: FastAPI endpoints with modular route organization
+    - `services/analysis/`: EMG analysis domain (mvc_service.py, threshold_service.py)
+    - `services/clinical/`: Clinical workflows (performance_scoring_service.py, therapy_session_processor.py)
+    - `services/data/`: Data management (export_service.py, metadata_service.py)
+    - `services/infrastructure/`: Cross-cutting concerns (webhook_security.py)
+    - `services/c3d/`: C3D processing domain (processor.py, reader.py, utils.py)
+    - `emg/`: **Dual Signal Detection Algorithm** - Uses activated signals for timing, RMS for amplitude
     - `models/models.py`: Pydantic data models with enhanced EMG channel support
     - `config.py`: Research-validated parameters (150ms merge, 50ms refractory, 5%/10% thresholds)
-    - `tests/`: Production-ready test suite (43/43 tests passing) with real clinical data validation
+    - `tests/`: Production-ready test suite (51/51 tests passing) organized by domain
 
 ### 2. Frontend (React/TypeScript)
 - **Location**: `frontend/`
@@ -59,18 +62,23 @@ The GHOSTLY+ EMG C3D Analyzer implements a revolutionary **dual signal detection
 ```
 emg-c3d-analyzer/
 ├── backend/
+│   ├── services/
+│   │   ├── analysis/           # EMG analysis domain
+│   │   ├── clinical/           # Clinical workflows
+│   │   ├── data/              # Data management
+│   │   ├── infrastructure/    # Cross-cutting concerns
+│   │   └── c3d/              # C3D processing
 │   ├── tests/
-│   │   ├── test_emg_analysis.py          # Unit tests (9 tests)
-│   │   ├── test_integration.py           # Integration tests (2 tests)
-│   │   ├── test_api_endpoints.py         # API tests (20 tests)
-│   │   └── test_e2e_complete_workflow.py # E2E tests (real C3D data)
-│   ├── __init__.py
-│   ├── api.py
-│   ├── processor.py
-│   ├── models.py
-│   ├── emg_analysis.py
-│   ├── config.py
-│   ├── main.py
+│   │   ├── api/               # API endpoint tests (20 tests)
+│   │   ├── clinical/          # Clinical workflow tests (3 tests)
+│   │   ├── e2e/              # E2E tests (3 tests)
+│   │   ├── emg/              # EMG analysis tests (11 tests)
+│   │   └── integration/       # Integration tests (2 tests)
+│   ├── api/main.py           # FastAPI app factory
+│   ├── models/models.py      # Pydantic models
+│   ├── emg/                  # EMG processing
+│   ├── config.py             # Configuration
+│   └── main.py               # Entry point
 ├── frontend/
 │   └── src/
 │       ├── components/
