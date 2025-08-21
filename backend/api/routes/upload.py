@@ -22,7 +22,7 @@ from models.models import (
     GameMetadata, ChannelAnalytics, GameSessionParameters
 )
 from config import MAX_FILE_SIZE
-from services.c3d_processor import GHOSTLYC3DProcessor
+from services.c3d.processor import GHOSTLYC3DProcessor
 from api.dependencies.validation import (
     get_processing_options, get_session_parameters, get_file_metadata
 )

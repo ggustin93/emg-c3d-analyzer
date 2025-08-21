@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from models.models import EMGAnalysisResult, ChannelAnalytics, GameMetadata, GameSessionParameters
-from services.c3d_processor import GHOSTLYC3DProcessor
+from services.c3d.processor import GHOSTLYC3DProcessor
 
 logger = logging.getLogger(__name__)
 

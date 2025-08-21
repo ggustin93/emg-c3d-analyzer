@@ -12,14 +12,15 @@ import shutil
 import json
 import logging
 import tempfile
+import numpy as np
 from typing import Optional, Dict, Union
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from services.c3d_processor import GHOSTLYC3DProcessor
-from services.mvc_service import mvc_service
+from services.c3d.processor import GHOSTLYC3DProcessor
+from services.analysis import mvc_service
 from models.models import EMGAnalysisResult, GameSessionParameters
 
 logger = logging.getLogger(__name__)
@@ -119,10 +120,18 @@ async def _calibrate_from_file(
         processor._identify_emg_channels()  # Identify EMG channels
         processor._extract_emg_data()  # Extract EMG data
         
-        # Get signals and sampling rate
+        # Get RMS envelope signals for GOLD STANDARD MVC estimation
         for channel in processor.emg_channels:
             if hasattr(processor, 'emg_data') and channel in processor.emg_data:
-                emg_signals[channel] = processor.emg_data[channel]['raw']
+                # PRIORITY: Use RMS envelope if available (gold standard for MVC)
+                if 'rms_envelope' in processor.emg_data[channel] and processor.emg_data[channel]['rms_envelope']:
+                    emg_signals[channel] = np.array(processor.emg_data[channel]['rms_envelope'])
+                    logger.info(f"🏆 Using RMS envelope for MVC estimation: {channel}")
+                else:
+                    # Fallback to raw signal (will be processed to RMS in mvc_service)
+                    emg_signals[channel] = processor.emg_data[channel]['raw']
+                    logger.info(f"⚠️ Using raw signal (will calculate RMS): {channel}")
+                
                 if sampling_rate is None and 'sampling_rate' in processor.emg_data[channel]:
                     sampling_rate = processor.emg_data[channel]['sampling_rate']
         

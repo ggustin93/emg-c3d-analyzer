@@ -6,9 +6,9 @@ Service injection patterns for dependency inversion.
 Provides clean service instantiation and lifecycle management.
 """
 
-from services.c3d_processor import GHOSTLYC3DProcessor
-from services.mvc_service import mvc_service
-from services.export_service import EMGDataExporter
+from services.c3d.processor import GHOSTLYC3DProcessor
+from services.analysis import mvc_service
+from services.data.export_service import EMGDataExporter
 
 
 def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:

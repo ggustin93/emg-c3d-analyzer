@@ -17,8 +17,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import JSONResponse
 
 from models.models import ProcessingOptions, GameSessionParameters
-from services.c3d_processor import GHOSTLYC3DProcessor
-from services.export_service import EMGDataExporter
+from services.c3d.processor import GHOSTLYC3DProcessor
+from services.data.export_service import EMGDataExporter
 from api.dependencies.validation import (
     get_processing_options, get_session_parameters, get_file_metadata
 )

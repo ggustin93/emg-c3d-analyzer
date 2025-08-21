@@ -28,8 +28,8 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 from database.supabase_client import get_supabase_client
-from services.c3d_processor import GHOSTLYC3DProcessor
-from services.metadata_service import MetadataService
+from services.c3d.processor import GHOSTLYC3DProcessor
+from services.data.metadata_service import MetadataService
 from config import get_settings
 from models.models import ProcessingOptions, GameSessionParameters
 

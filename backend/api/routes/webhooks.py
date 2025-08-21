@@ -17,8 +17,8 @@ from typing import Dict, Optional
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 
-from services.therapy_session_processor import TherapySessionProcessor
-from services.webhook_security import WebhookSecurity
+from services.clinical.therapy_session_processor import TherapySessionProcessor
+from services.infrastructure.webhook_security import WebhookSecurity
 from config import get_settings
 
 logger = logging.getLogger(__name__)

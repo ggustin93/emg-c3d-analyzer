@@ -311,6 +311,10 @@ def analyze_contractions(
     mean_amplitudes_of_contractions = [c['mean_amplitude'] for c in contractions_list] 
     max_amplitudes_of_contractions = [c['max_amplitude'] for c in contractions_list]
 
+    # Calculate compliance rate (percentage of contractions meeting both criteria)
+    total_contractions = len(contractions_list)
+    compliance_rate = (good_contraction_count / total_contractions) if total_contractions > 0 else 0.0
+
     return {
         'contraction_count': len(contractions_list),
         'avg_duration_ms': float(np.mean(durations)) if durations else 0.0,
@@ -324,7 +328,8 @@ def analyze_contractions(
         'mvc_contraction_count': int(mvc_contraction_count),
         'duration_contraction_count': int(duration_contraction_count),
         'mvc_threshold_actual_value': mvc_amplitude_threshold,
-        'duration_threshold_actual_value': contraction_duration_threshold_ms
+        'duration_threshold_actual_value': contraction_duration_threshold_ms,
+        'compliance_rate': compliance_rate  # Percentage of contractions meeting both MVC and duration criteria
     }
 
 
