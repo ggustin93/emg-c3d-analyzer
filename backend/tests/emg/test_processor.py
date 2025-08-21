@@ -34,9 +34,9 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         # Find a sample C3D file for testing
         # Look in multiple possible locations
         possible_sample_dirs = [
+            os.path.join(PROJECT_ROOT, "backend", "tests", "samples"),
             os.path.join(PROJECT_ROOT, "frontend", "public", "samples"),
             os.path.join(PROJECT_ROOT, "samples"),
-            os.path.join(PROJECT_ROOT, "backend", "tests", "samples"),
         ]
         
         self.sample_file = None

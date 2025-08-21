@@ -42,7 +42,7 @@ class TestRefactoredServicesIntegration:
     @pytest.fixture
     def sample_c3d_file(self):
         """Use the actual GHOSTLY C3D file for testing"""
-        sample_path = Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        sample_path = Path(__file__).parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
         
         if sample_path.exists():
             print(f"✅ Using actual C3D file: {sample_path}")
