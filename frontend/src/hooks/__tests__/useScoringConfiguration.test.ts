@@ -112,7 +112,7 @@ describe('useScoringConfiguration', () => {
       expect(result.current.weights).toEqual(expectedFallbackWeights);
       expect(result.current.error).toBe(null);
       expect(mockConsoleInfo).toHaveBeenCalledWith(
-        'No active scoring configuration found in database, using fallback weights'
+        'No scoring configuration found in database, using fallback weights from metricsDefinitions.md'
       );
     });
 
