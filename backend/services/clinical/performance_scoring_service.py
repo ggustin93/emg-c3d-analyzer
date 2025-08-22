@@ -29,6 +29,46 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class RPEMapping:
+    """Configurable RPE (Rating of Perceived Exertion) mapping for researcher customization"""
+    # Default mapping from metricsDefinitions.md
+    optimal_range: List[int] = None     # Default: [4, 5, 6] → 100%
+    acceptable_range: List[int] = None  # Default: [3, 7] → 80%
+    suboptimal_range: List[int] = None  # Default: [2, 8] → 60%
+    poor_range: List[int] = None        # Default: [0, 1, 9, 10] → 20%
+    
+    optimal_score: float = 100.0
+    acceptable_score: float = 80.0
+    suboptimal_score: float = 60.0
+    poor_score: float = 20.0
+    default_score: float = 50.0  # For unexpected values
+    
+    def __post_init__(self):
+        """Initialize default ranges if not provided"""
+        if self.optimal_range is None:
+            self.optimal_range = [4, 5, 6]
+        if self.acceptable_range is None:
+            self.acceptable_range = [3, 7]
+        if self.suboptimal_range is None:
+            self.suboptimal_range = [2, 8]
+        if self.poor_range is None:
+            self.poor_range = [0, 1, 9, 10]
+    
+    def get_effort_score(self, rpe: int) -> float:
+        """Get effort score for given RPE value"""
+        if rpe in self.optimal_range:
+            return self.optimal_score
+        elif rpe in self.acceptable_range:
+            return self.acceptable_score
+        elif rpe in self.suboptimal_range:
+            return self.suboptimal_score
+        elif rpe in self.poor_range:
+            return self.poor_score
+        else:
+            return self.default_score
+
+
+@dataclass
 class ScoringWeights:
     """Configurable weights for performance scoring (must sum to 1.0)"""
     w_compliance: float = 0.40  # Therapeutic Compliance
@@ -90,6 +130,7 @@ class PerformanceScoringService:
     def __init__(self, supabase_client=None):
         self.client = supabase_client or get_supabase_client(use_service_key=True)
         self.weights = ScoringWeights()
+        self.rpe_mapping = RPEMapping()  # Default RPE mapping
         
         logger.info("🎯 Performance Scoring Service initialized")
     
@@ -121,6 +162,38 @@ class PerformanceScoringService:
             logger.warning(f"Failed to load scoring weights from database: {e}, using defaults")
             return self.weights
     
+    def _load_rpe_mapping_from_database(self, session_id: str) -> RPEMapping:
+        """
+        Load configurable RPE mapping from database (researcher role only)
+        Fallback to defaults if not found
+        """
+        try:
+            # Check for researcher-configured RPE mapping
+            rpe_query = self.client.table('rpe_mapping_configuration').select('*').eq('active', True).order('created_at', desc=True).limit(1).execute()
+            
+            if rpe_query.data:
+                config = rpe_query.data[0]
+                logger.info(f"📊 Loading custom RPE mapping from researcher configuration")
+                
+                return RPEMapping(
+                    optimal_range=config.get('optimal_range', [4, 5, 6]),
+                    acceptable_range=config.get('acceptable_range', [3, 7]),
+                    suboptimal_range=config.get('suboptimal_range', [2, 8]),
+                    poor_range=config.get('poor_range', [0, 1, 9, 10]),
+                    optimal_score=config.get('optimal_score', 100.0),
+                    acceptable_score=config.get('acceptable_score', 80.0),
+                    suboptimal_score=config.get('suboptimal_score', 60.0),
+                    poor_score=config.get('poor_score', 20.0),
+                    default_score=config.get('default_score', 50.0)
+                )
+            else:
+                logger.info("📊 No custom RPE mapping found, using metricsDefinitions.md defaults")
+                return self.rpe_mapping
+                
+        except Exception as e:
+            logger.warning(f"Failed to load RPE mapping from database: {e}, using defaults")
+            return self.rpe_mapping
+    
     def calculate_performance_scores(self, 
                                     session_id: str,
                                     session_metrics: Optional[SessionMetrics] = None) -> Dict:
@@ -136,9 +209,11 @@ class PerformanceScoringService:
         """
         logger.info(f"📊 Calculating performance scores for session: {session_id}")
         
-        # Step 0: Load configurable weights from database  
+        # Step 0: Load configurable weights and RPE mapping from database  
         self.weights = self._load_scoring_weights_from_database(session_id)
+        self.rpe_mapping = self._load_rpe_mapping_from_database(session_id)
         logger.info(f"📊 Using weights: Compliance={self.weights.w_compliance}, Symmetry={self.weights.w_symmetry}, Effort={self.weights.w_effort}, Game={self.weights.w_game}")
+        logger.info(f"📊 Using RPE mapping: Optimal={self.rpe_mapping.optimal_range}→{self.rpe_mapping.optimal_score}%")
         
         # Step 1: Collect metrics if not provided
         if session_metrics is None:
@@ -276,27 +351,26 @@ class PerformanceScoringService:
         Calculate subjective effort score based on RPE (Rating of Perceived Exertion)
         
         RPE Scale: 0-10 (Borg CR10)
+        Uses configurable RPE mapping (researcher role can customize)
         Returns: (effort_score, is_fake_flag)
         """
         if rpe is None:
             return None, False
         
-        # RPE mapping from metricsDefinitions.md
-        if rpe in [4, 5, 6]:  # Optimal range
-            effort_score = 100.0
-        elif rpe in [3, 7]:   # Acceptable
-            effort_score = 80.0
-        elif rpe in [2, 8]:   # Suboptimal
-            effort_score = 60.0
-        elif rpe in [0, 1, 9, 10]:  # Poor
-            effort_score = 20.0
-        else:
-            logger.warning(f"Unexpected RPE value: {rpe}")
-            effort_score = 50.0  # Default middle value
+        # Use configurable RPE mapping (loaded from database or default)
+        effort_score = self.rpe_mapping.get_effort_score(rpe)
+        
+        # Log when using unexpected RPE values
+        if effort_score == self.rpe_mapping.default_score:
+            logger.warning(f"🔍 Unexpected RPE value: {rpe}, using default score: {effort_score}%")
         
         # Log when using default/fake RPE
         if rpe == 4 and rpe_is_fake:
             logger.info(f"💡 Using default RPE=4 (FAKE flag=True) for optimal scoring - therapist can update later")
+        
+        # Log RPE mapping used for transparency
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 RPE {rpe} → {effort_score}% (using {'custom' if hasattr(self, 'rpe_mapping') else 'default'} mapping)")
         
         return effort_score, rpe_is_fake
     
@@ -321,9 +395,11 @@ class PerformanceScoringService:
         Calculate BFR safety gate
         
         C_BFR = 1.0 if pressure ∈ [45%, 55%] AOP, else 0.0
+        CRITICAL: No BFR data = non-compliant (0.0) for safety
         """
         if pressure_aop is None:
-            return 1.0  # Assume compliant if no BFR data
+            logger.warning("⚠️ No BFR pressure data - applying safety penalty (C_BFR = 0.0)")
+            return 0.0  # Non-compliant if no BFR data (safety first)
         
         # BFR safety window: 45-55% AOP
         if 45.0 <= pressure_aop <= 55.0:
