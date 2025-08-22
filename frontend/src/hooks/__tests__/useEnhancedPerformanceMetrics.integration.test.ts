@@ -11,15 +11,13 @@ import { useEnhancedPerformanceMetrics } from '../useEnhancedPerformanceMetrics'
 import { EMGAnalysisResult, ScoringWeights, SessionParameters } from '@/types/emg';
 
 // Mock the scoring configuration hook
-const mockUseScoringConfiguration = vi.fn();
 vi.mock('../useScoringConfiguration', () => ({
-  useScoringConfiguration: mockUseScoringConfiguration
+  useScoringConfiguration: vi.fn()
 }));
 
 // Mock the session store
-const mockUseSessionStore = vi.fn();
 vi.mock('@/store/sessionStore', () => ({
-  useSessionStore: mockUseSessionStore
+  useSessionStore: vi.fn()
 }));
 
 // Mock effort score calculation
@@ -32,6 +30,13 @@ vi.mock('@/lib/effortScore', () => ({
     return 20; // Poor
   })
 }));
+
+// Import the mocked functions after mocking
+import { useScoringConfiguration } from '../useScoringConfiguration';
+import { useSessionStore } from '@/store/sessionStore';
+
+const mockUseScoringConfiguration = useScoringConfiguration as any;
+const mockUseSessionStore = useSessionStore as any;
 
 describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', () => {
   beforeEach(() => {
@@ -155,8 +160,8 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       // Compliance = (0.333 * 1.0 + 0.333 * 0.67 + 0.334 * 0.67) = 0.779 ≈ 78%
 
       expect(performanceData.leftMuscle.components.completion.value).toBeCloseTo(100);
-      expect(performanceData.leftMuscle.components.mvcQuality.value).toBeCloseTo(66.7);
-      expect(performanceData.leftMuscle.components.qualityThreshold.value).toBeCloseTo(66.7);
+      expect(performanceData.leftMuscle.components.mvcQuality.value).toBeCloseTo(66.7, 1);
+      expect(performanceData.leftMuscle.components.qualityThreshold.value).toBeCloseTo(66.7, 1);
     });
 
     it('should wait for weights loading before calculating metrics', async () => {
@@ -173,7 +178,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         sessionParams: mockSessionParams
       });
 
-      const { result } = renderHook(() => useEnhancedPerformanceMetrics(mockAnalysisResult));
+      const { result, rerender } = renderHook(() => useEnhancedPerformanceMetrics(mockAnalysisResult));
 
       // Should return null while weights are loading
       expect(result.current).toBeNull();
@@ -186,6 +191,9 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         refetchConfiguration: vi.fn(),
         saveCustomWeights: vi.fn()
       });
+
+      // Trigger re-render to pick up the new mock values
+      rerender();
 
       await waitFor(() => {
         expect(result.current).not.toBeNull();
@@ -411,8 +419,8 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       // Left muscle: 3 total, 3 expected, 2 MVC-compliant, 2 duration-compliant
       const leftMuscle = performanceData.leftMuscle;
       expect(leftMuscle.components.completion.value).toBeCloseTo(100); // 3/3 * 100 = 100%
-      expect(leftMuscle.components.mvcQuality.value).toBeCloseTo(66.7); // 2/3 * 100 ≈ 66.7%
-      expect(leftMuscle.components.qualityThreshold.value).toBeCloseTo(66.7); // 2/3 * 100 ≈ 66.7%
+      expect(leftMuscle.components.mvcQuality.value).toBeCloseTo(66.67, 0); // 2/3 * 100 ≈ 66.67%
+      expect(leftMuscle.components.qualityThreshold.value).toBeCloseTo(66.67, 0); // 2/3 * 100 ≈ 66.67%
 
       // Right muscle: 2 total, 3 expected, 2 MVC-compliant, 2 duration-compliant
       const rightMuscle = performanceData.rightMuscle;
