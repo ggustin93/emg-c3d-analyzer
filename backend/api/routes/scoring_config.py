@@ -39,15 +39,15 @@ class ScoringConfigurationRequest(BaseModel):
     therapist_id: Optional[str] = Field(None, description="Therapist ID for custom configuration")
     patient_id: Optional[str] = Field(None, description="Patient ID for custom configuration")
     
-    @validator('weight_compliance', 'weight_symmetry', 'weight_effort', 'weight_game')
+    @validator('weight_game')  # Only validate on the last weight field
     def validate_main_weights(cls, v, values):
         """Validate that main weights sum to 1.0"""
-        if len(values) == 3:  # All main weights are set
-            total = (values.get('weight_compliance', 0) + 
-                    values.get('weight_symmetry', 0) + 
-                    values.get('weight_effort', 0) + v)
-            if abs(total - 1.0) > 0.001:
-                raise ValueError(f'Main weights must sum to 1.0, got {total}')
+        # Calculate total including the current weight being validated
+        total = (values.get('weight_compliance', 0) + 
+                values.get('weight_symmetry', 0) + 
+                values.get('weight_effort', 0) + v)
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(f'Main weights must sum to 1.0, got {total}')
         return v
     
     @validator('weight_duration')
@@ -81,6 +81,10 @@ class ScoringConfigurationResponse(BaseModel):
     active: bool
     created_at: str
     updated_at: str
+    
+    # Optional therapist/patient association fields
+    therapist_id: Optional[str] = None
+    patient_id: Optional[str] = None
 
 
 @router.get("/configurations", response_model=list[ScoringConfigurationResponse])
@@ -92,6 +96,8 @@ async def get_scoring_configurations():
         
         return result.data
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch scoring configurations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -109,6 +115,8 @@ async def get_active_scoring_configuration():
         
         return result.data[0]
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch active scoring configuration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -142,6 +150,8 @@ async def create_scoring_configuration(config: ScoringConfigurationRequest):
         logger.info(f"Created scoring configuration: {config.configuration_name}")
         return result.data[0]
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create scoring configuration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -154,7 +164,7 @@ async def activate_scoring_configuration(config_id: str):
         supabase = get_supabase_client(use_service_key=True)
         
         # First, deactivate all configurations
-        supabase.table('scoring_configuration').update({'active': False}).neq('id', 'dummy').execute()
+        supabase.table('scoring_configuration').update({'active': False}).neq('id', '00000000-0000-0000-0000-000000000000').execute()
         
         # Then activate the specified one
         result = supabase.table('scoring_configuration').update({'active': True}).eq('id', config_id).execute()
@@ -165,6 +175,8 @@ async def activate_scoring_configuration(config_id: str):
         logger.info(f"Activated scoring configuration: {config_id}")
         return {"message": "Configuration activated successfully", "config_id": config_id}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to activate scoring configuration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -190,6 +202,8 @@ async def delete_scoring_configuration(config_id: str):
         logger.info(f"Deleted scoring configuration: {config_id}")
         return {"message": "Configuration deleted successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to delete scoring configuration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -223,6 +237,8 @@ async def get_custom_scoring_configuration(
         
         return result.data[0]
         
+    except HTTPException:
+        raise
     except HTTPException:
         raise
     except Exception as e:
@@ -282,6 +298,8 @@ async def create_custom_scoring_configuration(config: ScoringConfigurationReques
         
     except HTTPException:
         raise
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create custom scoring configuration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -315,6 +333,8 @@ async def test_scoring_weights():
             "weights_valid": test_weights.validate()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to test scoring weights: {e}")
         raise HTTPException(status_code=500, detail=str(e))

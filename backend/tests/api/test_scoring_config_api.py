@@ -63,7 +63,7 @@ class TestScoringConfigurationAPI:
             "weight_duration": 0.334
         }
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_get_scoring_configurations(self, mock_get_client, client, mock_supabase_response):
         """Test GET /scoring/configurations endpoint"""
         # Setup mock
@@ -74,7 +74,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/configurations")
+        response = client.get("/scoring/configurations")
         
         # Verify response
         assert response.status_code == 200
@@ -83,7 +83,7 @@ class TestScoringConfigurationAPI:
         assert data[0]['configuration_name'] == 'Test Configuration'
         assert data[0]['weight_compliance'] == 0.400
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_get_active_scoring_configuration(self, mock_get_client, client, mock_supabase_response):
         """Test GET /scoring/configurations/active endpoint"""
         # Setup mock
@@ -94,7 +94,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/configurations/active")
+        response = client.get("/scoring/configurations/active")
         
         # Verify response
         assert response.status_code == 200
@@ -103,7 +103,7 @@ class TestScoringConfigurationAPI:
         assert data['active'] == True
         assert data['weight_compliance'] == 0.400
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_get_active_scoring_configuration_not_found(self, mock_get_client, client):
         """Test GET /scoring/configurations/active when no active configuration exists"""
         # Setup mock for empty response
@@ -114,13 +114,13 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/configurations/active")
+        response = client.get("/scoring/configurations/active")
         
         # Verify response
         assert response.status_code == 404
-        assert "No active scoring configuration found" in response.json()['detail']
+        assert "No active scoring configuration found" in response.json()['message']
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_create_scoring_configuration(self, mock_get_client, client, valid_config_request):
         """Test POST /scoring/configurations endpoint"""
         # Setup mock
@@ -140,7 +140,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.post("/api/scoring/configurations", json=valid_config_request)
+        response = client.post("/scoring/configurations", json=valid_config_request)
         
         # Verify response
         assert response.status_code == 200
@@ -162,13 +162,13 @@ class TestScoringConfigurationAPI:
         }
         
         # Make request
-        response = client.post("/api/scoring/configurations", json=invalid_request)
+        response = client.post("/scoring/configurations", json=invalid_request)
         
         # Verify validation error
         assert response.status_code == 422  # Validation error
         assert "must sum to 1.0" in str(response.json())
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_activate_scoring_configuration(self, mock_get_client, client):
         """Test PUT /scoring/configurations/{config_id}/activate endpoint"""
         # Setup mock
@@ -182,7 +182,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.put("/api/scoring/configurations/test-config-123/activate")
+        response = client.put("/scoring/configurations/test-config-123/activate")
         
         # Verify response
         assert response.status_code == 200
@@ -190,7 +190,7 @@ class TestScoringConfigurationAPI:
         assert data['message'] == "Configuration activated successfully"
         assert data['config_id'] == 'test-config-123'
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_get_custom_scoring_configuration_therapist_only(self, mock_get_client, client):
         """Test GET /scoring/configurations/custom for therapist-only configuration"""
         # Setup mock for therapist-specific config
@@ -213,7 +213,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/configurations/custom?therapist_id=therapist-123")
+        response = client.get("/scoring/configurations/custom?therapist_id=therapist-123")
         
         # Verify response
         assert response.status_code == 200
@@ -222,7 +222,7 @@ class TestScoringConfigurationAPI:
         assert data['patient_id'] is None
         assert data['weight_compliance'] == 0.45
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_get_custom_scoring_configuration_therapist_patient(self, mock_get_client, client):
         """Test GET /scoring/configurations/custom for therapist+patient specific configuration"""
         # Setup mock for therapist+patient specific config
@@ -245,7 +245,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/configurations/custom?therapist_id=therapist-123&patient_id=patient-456")
+        response = client.get("/scoring/configurations/custom?therapist_id=therapist-123&patient_id=patient-456")
         
         # Verify response
         assert response.status_code == 200
@@ -257,13 +257,13 @@ class TestScoringConfigurationAPI:
     def test_get_custom_scoring_configuration_missing_therapist(self, client):
         """Test GET /scoring/configurations/custom without therapist_id parameter"""
         # Make request without therapist_id
-        response = client.get("/api/scoring/configurations/custom")
+        response = client.get("/scoring/configurations/custom")
         
         # Verify error
         assert response.status_code == 400
-        assert "therapist_id is required" in response.json()['detail']
+        assert "therapist_id is required" in response.json()['message']
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_create_custom_scoring_configuration(self, mock_get_client, client, valid_config_request):
         """Test POST /scoring/configurations/custom endpoint"""
         # Setup mock
@@ -293,7 +293,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.post("/api/scoring/configurations/custom", json=custom_request)
+        response = client.post("/scoring/configurations/custom", json=custom_request)
         
         # Verify response
         assert response.status_code == 200
@@ -305,13 +305,13 @@ class TestScoringConfigurationAPI:
     def test_create_custom_scoring_configuration_missing_therapist(self, client, valid_config_request):
         """Test POST /scoring/configurations/custom without therapist_id"""
         # Make request without therapist_id
-        response = client.post("/api/scoring/configurations/custom", json=valid_config_request)
+        response = client.post("/scoring/configurations/custom", json=valid_config_request)
         
         # Verify error
         assert response.status_code == 400
-        assert "therapist_id is required for custom configurations" in response.json()['detail']
+        assert "therapist_id is required for custom configurations" in response.json()['message']
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_update_existing_custom_configuration(self, mock_get_client, client, valid_config_request):
         """Test updating an existing custom configuration"""
         # Setup mock
@@ -338,7 +338,7 @@ class TestScoringConfigurationAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.post("/api/scoring/configurations/custom", json=custom_request)
+        response = client.post("/scoring/configurations/custom", json=custom_request)
         
         # Verify response
         assert response.status_code == 200
@@ -428,7 +428,7 @@ class TestSingleSourceOfTruthAPI:
         """FastAPI test client"""
         return TestClient(app)
     
-    @patch('database.supabase_client.get_supabase_client')
+    @patch('api.routes.scoring_config.get_supabase_client')
     def test_test_weights_endpoint_shows_consistency(self, mock_get_client, client):
         """Test /scoring/test-weights endpoint shows metricsDefinitions.md consistency"""
         # Setup mock to return default weights
@@ -436,7 +436,7 @@ class TestSingleSourceOfTruthAPI:
         mock_get_client.return_value = mock_client
         
         # Make request
-        response = client.get("/api/scoring/test-weights")
+        response = client.get("/scoring/test-weights")
         
         # Verify response structure
         assert response.status_code == 200
