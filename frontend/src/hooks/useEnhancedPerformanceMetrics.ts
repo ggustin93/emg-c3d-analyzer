@@ -12,17 +12,19 @@ import {
 } from '../types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import { getEffortScoreFromRPE } from '@/lib/effortScore';
+import { useScoringConfiguration } from './useScoringConfiguration';
 
-// Presets par défaut - Based on GHOSTLY+ TBM Clinical Trial
+// DEPRECATED: Use database as single source of truth via useScoringConfiguration hook
+// These presets are kept for backward compatibility and testing only
 export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  compliance: 0.45,  // Therapeutic Compliance (composite) (increased from 0.40)
-  symmetry: 0.30,  // Muscle Symmetry (increased from 0.25)
-  effort: 0.25,    // Subjective Effort (RPE) (increased from 0.20)
-  gameScore: 0.00,   // Game Performance (default to 0 as requested)
+  compliance: 0.40,    // Therapeutic Compliance (matches metricsDefinitions.md)
+  symmetry: 0.25,      // Muscle Symmetry (matches metricsDefinitions.md)
+  effort: 0.20,        // Subjective Effort (matches metricsDefinitions.md)
+  gameScore: 0.15,     // Game Performance (matches metricsDefinitions.md)
   // Sub-weights for compliance (should sum to 1)
-  compliance_completion: 1/3,
-  compliance_intensity: 1/3,
-  compliance_duration: 1/3,
+  compliance_completion: 0.333,
+  compliance_intensity: 0.333,
+  compliance_duration: 0.334,
 };
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
@@ -173,14 +175,16 @@ export const useEnhancedPerformanceMetrics = (
   analysisResult: EMGAnalysisResult | null
 ): EnhancedPerformanceData | null => {
   const { sessionParams } = useSessionStore();
+  const { weights: databaseWeights, isLoading: isWeightsLoading } = useScoringConfiguration();
   
   const enhancedData = useMemo(() => {
-    if (!analysisResult?.analytics || !sessionParams) {
+    if (!analysisResult?.analytics || !sessionParams || isWeightsLoading) {
       return null;
     }
     
-    // Récupération des paramètres
-    const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+    // SINGLE SOURCE OF TRUTH: Use database weights as primary source
+    // Priority order: 1. Database weights, 2. Session override, 3. Fallback defaults
+    const weights = databaseWeights || sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
     const detectionParams = sessionParams.contraction_detection || DEFAULT_DETECTION_PARAMS;
     const isDebugMode = sessionParams.experimental_features?.enabled || false;
     
