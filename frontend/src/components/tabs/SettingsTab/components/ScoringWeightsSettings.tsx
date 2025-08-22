@@ -10,6 +10,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Input } from '@/components/ui/input';
 import { InfoCircledIcon, GearIcon, ExclamationTriangleIcon, TargetIcon, MixerHorizontalIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ScoringWeights, GameScoreNormalization, EMGAnalysisResult } from '@/types/emg';
+
+// RPE Mapping interface for researcher configuration
+interface RPEMapping {
+  optimal_range: number[];      // Default: [4, 5, 6] → 100%
+  acceptable_range: number[];   // Default: [3, 7] → 80%
+  suboptimal_range: number[];   // Default: [2, 8] → 60%
+  poor_range: number[];         // Default: [0, 1, 9, 10] → 20%
+  optimal_score: number;        // Default: 100.0
+  acceptable_score: number;     // Default: 80.0
+  suboptimal_score: number;     // Default: 60.0
+  poor_score: number;           // Default: 20.0
+}
 import { useSessionStore } from '@/store/sessionStore';
 import { 
   DEFAULT_SCORING_WEIGHTS, 
@@ -64,7 +76,20 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isGameNormalizationOpen, setIsGameNormalizationOpen] = useState(false);
+  const [isRPEMappingOpen, setIsRPEMappingOpen] = useState(false);
   const [currentPreset, setCurrentPreset] = useState<string>('custom');
+  
+  // Default RPE mapping matching metricsDefinitions.md specification
+  const [rpeMapping, setRpeMapping] = useState<RPEMapping>({
+    optimal_range: [4, 5, 6],
+    acceptable_range: [3, 7],
+    suboptimal_range: [2, 8],
+    poor_range: [0, 1, 9, 10],
+    optimal_score: 100.0,
+    acceptable_score: 80.0,
+    suboptimal_score: 60.0,
+    poor_score: 20.0
+  });
   
   const isExperimentalEnabled = sessionParams.experimental_features?.enabled || false;
   const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
@@ -268,6 +293,27 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 
   const resetToDefaults = () => {
     updateWeights(DEFAULT_SCORING_WEIGHTS);
+  };
+
+  const updateRPEMapping = (newMapping: RPEMapping) => {
+    setRpeMapping(newMapping);
+    // TODO: Send to backend when API routes are implemented
+    // POST /api/scoring/rpe-mapping with therapist_id
+    console.info('RPE Mapping updated (would save to database):', newMapping);
+  };
+
+  const resetRPEMappingToDefaults = () => {
+    const defaultMapping: RPEMapping = {
+      optimal_range: [4, 5, 6],
+      acceptable_range: [3, 7],
+      suboptimal_range: [2, 8],
+      poor_range: [0, 1, 9, 10],
+      optimal_score: 100.0,
+      acceptable_score: 80.0,
+      suboptimal_score: 60.0,
+      poor_score: 20.0
+    };
+    updateRPEMapping(defaultMapping);
   };
 
 
@@ -581,6 +627,200 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
               </div>
             </div>
           </UnifiedSettingsCard>
+
+        {/* RPE Mapping Configuration - Researcher Role Only */}
+        <UnifiedSettingsCard
+          title="RPE Mapping Configuration"
+          description="Configure Rating of Perceived Exertion (RPE) scoring ranges for subjective effort assessment. This affects how post-session RPE values are converted to effort scores (S_effort)."
+          isOpen={isRPEMappingOpen}
+          onOpenChange={setIsRPEMappingOpen}
+          icon={<PersonIcon className="h-5 w-5 text-emerald-600" />}
+          accentColor="emerald-600"
+          muted={!canEdit}
+          badge={
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs">
+                Researcher
+              </Badge>
+              {!canEdit && !isTherapistMode && <LockedBadge />}
+              {isTherapistMode && (
+                <Badge variant="warning" className="text-xs">Demo (C3D)</Badge>
+              )}
+            </div>
+          }
+        >
+          <div className="space-y-6">
+            
+            {/* Current RPE Scale Overview */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-800">Current RPE Scale (0-10)</h4>
+              <div className="grid grid-cols-1 gap-3">
+                
+                {/* Optimal Range */}
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-emerald-800">Optimal (Comfortable Effort)</span>
+                    <Badge className="bg-emerald-600 text-white text-xs">
+                      {rpeMapping.optimal_score}%
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-emerald-700">
+                    RPE: {rpeMapping.optimal_range.join(', ')}
+                  </div>
+                </div>
+
+                {/* Acceptable Range */}
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-yellow-800">Acceptable (Slightly too easy/hard)</span>
+                    <Badge className="bg-yellow-600 text-white text-xs">
+                      {rpeMapping.acceptable_score}%
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-yellow-700">
+                    RPE: {rpeMapping.acceptable_range.join(', ')}
+                  </div>
+                </div>
+
+                {/* Suboptimal Range */}
+                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-orange-800">Suboptimal (Too easy/hard)</span>
+                    <Badge className="bg-orange-600 text-white text-xs">
+                      {rpeMapping.suboptimal_score}%
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-orange-700">
+                    RPE: {rpeMapping.suboptimal_range.join(', ')}
+                  </div>
+                </div>
+
+                {/* Poor Range */}
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-red-800">Poor (Way too easy/extremely hard)</span>
+                    <Badge className="bg-red-600 text-white text-xs">
+                      {rpeMapping.poor_score}%
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-red-700">
+                    RPE: {rpeMapping.poor_range.join(', ')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Configuration Interface */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-800">Customize RPE Mapping</h4>
+              
+              {Object.entries(rpeMapping).map(([key, value]) => {
+                if (key.endsWith('_range')) {
+                  const rangeKey = key as keyof RPEMapping;
+                  const scoreKey = key.replace('_range', '_score') as keyof RPEMapping;
+                  const ranges = value as number[];
+                  const score = rpeMapping[scoreKey] as number;
+                  
+                  const labels = {
+                    optimal_range: 'Optimal Range',
+                    acceptable_range: 'Acceptable Range', 
+                    suboptimal_range: 'Suboptimal Range',
+                    poor_range: 'Poor Range'
+                  };
+                  
+                  const colors = {
+                    optimal_range: 'emerald',
+                    acceptable_range: 'yellow',
+                    suboptimal_range: 'orange',
+                    poor_range: 'red'
+                  };
+                  
+                  return (
+                    <div key={key} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-sm font-medium">
+                          {labels[rangeKey as keyof typeof labels]}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">Score:</span>
+                          <Input
+                            type="number"
+                            value={score}
+                            onChange={(e) => {
+                              const newScore = Number(e.target.value);
+                              updateRPEMapping({
+                                ...rpeMapping,
+                                [scoreKey]: newScore
+                              });
+                            }}
+                            disabled={!canEdit}
+                            className="w-16 h-6 text-xs"
+                            min={0}
+                            max={100}
+                          />
+                          <span className="text-xs text-gray-500">%</span>
+                        </div>
+                      </div>
+                      <Input
+                        type="text"
+                        value={ranges.join(', ')}
+                        onChange={(e) => {
+                          const newRanges = e.target.value
+                            .split(',')
+                            .map(s => parseInt(s.trim()))
+                            .filter(n => !isNaN(n) && n >= 0 && n <= 10);
+                          updateRPEMapping({
+                            ...rpeMapping,
+                            [rangeKey]: newRanges
+                          });
+                        }}
+                        disabled={!canEdit}
+                        className="text-sm"
+                        placeholder="e.g., 4, 5, 6"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Enter RPE values (0-10) separated by commas
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetRPEMappingToDefaults}
+                  disabled={!canEdit}
+                >
+                  Reset to Defaults
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // TODO: Save to database with API call
+                    alert('RPE mapping would be saved to database (API not yet implemented)');
+                  }}
+                  disabled={!canEdit}
+                >
+                  Save Configuration
+                </Button>
+              </div>
+            </div>
+
+            {/* Clinical Note */}
+            <Alert className="bg-blue-50 border-blue-200">
+              <InfoCircledIcon className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800">
+                <strong>Clinical Note:</strong> RPE mapping changes affect how patient subjective effort is scored. 
+                Ensure mappings align with your clinical protocols and patient population characteristics.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </UnifiedSettingsCard>
       </div>
     </TooltipProvider>
   );
