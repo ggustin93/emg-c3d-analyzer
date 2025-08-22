@@ -1,5 +1,37 @@
 # Active Context
 
+## ✅ COMPLETED: Scoring Configuration API & Database Integration (August 22, 2025)
+
+**Status**: Production-ready scoring configuration system with real database integration ✅  
+**Impact**: Complete API test suite fixed (24/24 passing) with Supabase database table created and populated
+
+### Key Achievements
+
+1. **🔧 API Test Suite Overhaul**: 
+   - Fixed all 17 failing scoring configuration API tests
+   - Corrected URL paths (removed `/api` prefix)
+   - Fixed HTTPException handling and response structure validation
+   - Updated Pydantic validation logic for weight sum constraints
+   - All mock tests now passing with correct expectations
+
+2. **🗄️ Database Schema Implementation**: 
+   - Created `scoring_configuration` table in Supabase with proper UUID foreign keys
+   - Added constraints for weight validation (main weights sum to 1.0)
+   - Implemented triggers for automatic timestamp updates
+   - Seeded with GHOSTLY+ Default configuration (40%, 25%, 20%, 15%)
+
+3. **🧪 Integration Testing**: 
+   - Created 7 new integration tests that validate against real Supabase database
+   - Fixed `activate_scoring_configuration` endpoint database query issue
+   - All integration tests passing with actual database operations
+   - Validated create, read, update, and activate workflows
+
+4. **✅ E2E Validation**: 
+   - All 10 E2E tests passing with real clinical data
+   - 95 backend tests passing (4 skipped due to C3D sample files)
+   - Database consistently populated with 14 scoring configurations
+   - Complete backward compatibility maintained
+
 ## ✅ COMPLETED: Backend Domain-Driven Architecture Reorganization (August 21, 2025)
 
 **Status**: Production-ready domain-driven services organization complete ✅  
