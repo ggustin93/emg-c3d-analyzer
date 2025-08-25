@@ -42,11 +42,19 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
       
+      - name: Verify Python module structure
+        working-directory: backend
+        run: |
+          echo "Verifying Python module structure..."
+          find . -name "__init__.py" | head -20
+          ls -la services/data/
+          python -c "import sys; sys.path.insert(0, '.'); from services.data.export_service import EMGDataExporter; print('Import successful')"
+      
       - name: Run all backend tests with coverage
         working-directory: backend
         run: |
-          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-          python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term
+          export PYTHONPATH="$(pwd):${PYTHONPATH}"
+          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term
         timeout-minutes: 5
 
   frontend-test:
@@ -149,7 +157,7 @@ jobs:
       - name: Run comprehensive integration tests
         working-directory: backend
         run: |
-          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          export PYTHONPATH="$(pwd):${PYTHONPATH}"
           python -m pytest tests/integration/ -v --tb=short
         env:
           API_URL: http://localhost:8080

@@ -10,7 +10,7 @@ import PatientOutcomesSettings from './components/PatientOutcomesSettings';
 import BFRParametersSettings from './components/BFRParametersSettings';
 import ScoringWeightsSettings from './components/ScoringWeightsSettings';
 import ContractionDetectionSettings from './components/ContractionDetectionSettings';
-import ContractionColorDebugPanel from '../../debug/ContractionColorDebugPanel';
+import ContractionColorDebugPanel from '@/components/debug/ContractionColorDebugPanel';
 
 interface SettingsPanelProps {
   muscleChannels: string[];
