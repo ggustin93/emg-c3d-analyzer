@@ -52,6 +52,8 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           python -m pytest tests/ -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         timeout-minutes: 5
@@ -60,6 +62,8 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           python -m pytest tests/e2e/ -v --tb=short -s
         timeout-minutes: 8
@@ -168,6 +172,8 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
           API_URL: http://localhost:8080
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           python -m pytest tests/integration/ -v --tb=short
       
