@@ -4,6 +4,7 @@
 pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-asyncio>=0.21.0
+pytest-clarity>=1.0.1 # Improves pytest output
 httpx>=0.24.1  # Required for FastAPI TestClient
 
 # Development tools
