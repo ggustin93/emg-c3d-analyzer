@@ -13,8 +13,8 @@ from pathlib import Path
 import tempfile
 import shutil
 
-# Get the absolute path to the project root directory
-PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+# Get the absolute path to the project root directory (emg-c3d-analyzer)
+PROJECT_ROOT = str(Path(__file__).resolve().parents[3])
 
 # Add the project root to the Python path
 if PROJECT_ROOT not in sys.path:
@@ -32,10 +32,10 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         
         # Find a sample C3D file for testing
-        # Look in multiple possible locations
+        # Look in multiple possible locations, prioritizing frontend/public/samples
         possible_sample_dirs = [
-            os.path.join(PROJECT_ROOT, "backend", "tests", "samples"),
             os.path.join(PROJECT_ROOT, "frontend", "public", "samples"),
+            os.path.join(PROJECT_ROOT, "backend", "tests", "samples"),
             os.path.join(PROJECT_ROOT, "samples"),
         ]
         

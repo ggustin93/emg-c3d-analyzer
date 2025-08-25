@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { ScoringWeights } from '@/types/emg';
-import { DEFAULT_SCORING_WEIGHTS } from '@/hooks/useEnhancedPerformanceMetrics';
+import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 
 
@@ -36,8 +36,17 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { sessionParams } = useSessionStore();
+  const { weights: databaseWeights } = useScoringConfiguration();
   
-  const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+  const weights = sessionParams.enhanced_scoring?.weights || databaseWeights || {
+    compliance: 0.50,  // 50% - Therapeutic Compliance
+    symmetry: 0.20,    // 20% - Muscle Symmetry
+    effort: 0.30,      // 30% - Subjective Effort (RPE)
+    gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
+    compliance_completion: 0.333,
+    compliance_intensity: 0.333,
+    compliance_duration: 0.334,
+  };
   
   // If performanceData is not available, show a loading/default state
   if (!performanceData) {

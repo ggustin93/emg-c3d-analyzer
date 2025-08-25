@@ -65,7 +65,12 @@ data/plots/
 # Coverage reports
 .coverage
 coverage.xml
+coverage.json
 htmlcov/
+
+# Frontend coverage temporary files
+frontend/coverage/.tmp/
+frontend/coverage/**/*.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 

@@ -28,12 +28,12 @@ interface ScoringConfigurationHook {
   saveCustomWeights: (weights: ScoringWeights, therapistId?: string, patientId?: string) => Promise<void>;
 }
 
-// Fallback weights matching metricsDefinitions.md specification exactly
+// Fallback weights with user-specified defaults: 50% compliance, 30% effort, 20% symmetry, 0% game
 const FALLBACK_WEIGHTS: ScoringWeights = {
-  compliance: 0.40,        // 40% - Therapeutic Compliance
-  symmetry: 0.25,         // 25% - Muscle Symmetry
-  effort: 0.20,           // 20% - Subjective Effort (RPE)
-  gameScore: 0.15,        // 15% - Game Performance
+  compliance: 0.50,        // 50% - Therapeutic Compliance
+  symmetry: 0.20,         // 20% - Muscle Symmetry  
+  effort: 0.30,           // 30% - Subjective Effort (RPE)
+  gameScore: 0.00,        // 0% - Game Performance (default to zero as requested)
   
   // Sub-component weights for compliance (must sum to 1.0)
   compliance_completion: 0.333,  // 33.3% - Completion rate

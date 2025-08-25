@@ -24,17 +24,17 @@ interface RPEMapping {
 }
 import { useSessionStore } from '@/store/sessionStore';
 import { 
-  DEFAULT_SCORING_WEIGHTS, 
   QUALITY_FOCUSED_WEIGHTS, 
   EXPERIMENTAL_WITH_GAME_WEIGHTS 
 } from '@/hooks/useEnhancedPerformanceMetrics';
+import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import UnifiedSettingsCard from './UnifiedSettingsCard';
 import PerformanceEquation from '@/components/tabs/PerformanceTab/components/PerformanceEquation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
-const SCORING_PRESETS = {
-  default: DEFAULT_SCORING_WEIGHTS,
+// Note: SCORING_PRESETS will be defined inside component to access database weights
+const SCORING_PRESETS_TEMPLATES = {
   quality_focused: QUALITY_FOCUSED_WEIGHTS,
   experimental_with_game: EXPERIMENTAL_WITH_GAME_WEIGHTS
 };
@@ -74,6 +74,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 }) => {
   const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
+  const { weights: databaseWeights } = useScoringConfiguration();
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isGameNormalizationOpen, setIsGameNormalizationOpen] = useState(false);
   const [isRPEMappingOpen, setIsRPEMappingOpen] = useState(false);
@@ -92,7 +93,24 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   });
   
   const isExperimentalEnabled = sessionParams.experimental_features?.enabled || false;
-  const weights = sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+  const defaultWeights = databaseWeights || {
+    compliance: 0.50,  // 50% - Therapeutic Compliance
+    symmetry: 0.20,    // 20% - Muscle Symmetry
+    effort: 0.30,      // 30% - Subjective Effort (RPE)
+    gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
+    compliance_completion: 0.333,
+    compliance_intensity: 0.333,
+    compliance_duration: 0.334,
+  };
+  
+  const weights = sessionParams.enhanced_scoring?.weights || defaultWeights;
+  
+  // Create scoring presets with database weights as default
+  const SCORING_PRESETS = {
+    default: defaultWeights,
+    quality_focused: QUALITY_FOCUSED_WEIGHTS,
+    experimental_with_game: EXPERIMENTAL_WITH_GAME_WEIGHTS
+  };
   
   // Calculate total of main components for display validation
   const calculateMainComponentsTotal = (weightsObj: ScoringWeights) => {
@@ -292,7 +310,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   };
 
   const resetToDefaults = () => {
-    updateWeights(DEFAULT_SCORING_WEIGHTS);
+    updateWeights(defaultWeights);
   };
 
   const updateRPEMapping = (newMapping: RPEMapping) => {

@@ -4,7 +4,7 @@ import OverallPerformanceCard from '../PerformanceTab/components/OverallPerforma
 import MuscleSymmetryCard from '../PerformanceTab/components/MuscleSymmetryCard';
 import SubjectiveFatigueCard from '../PerformanceTab/components/SubjectiveFatigueCard';
 import GHOSTLYGameCard from '../PerformanceTab/components/GHOSTLYGameCard';
-import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
+import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMetrics';
 import { useSessionStore } from '@/store/sessionStore';
 import ClinicalTooltip from '@/components/ui/clinical-tooltip';
 
@@ -22,15 +22,13 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   const { sessionParams: storeSessionParams } = useSessionStore();
   const isEnhancedScoringEnabled = storeSessionParams?.enhanced_scoring?.enabled || false;
   
-  const { 
-    muscleData, 
-    overallPerformance,
-    overallScoreLabel, 
-    symmetryScore, 
-    therapeuticComplianceScore
-  } = usePerformanceMetrics(analysisResult, contractionDurationThreshold);
-
-  const gameScoreWeight = storeSessionParams?.enhanced_scoring?.weights?.gameScore ?? 0;
+  const enhancedPerformanceData = useEnhancedPerformanceMetrics(analysisResult);
+  
+  // Adapt enhanced metrics to legacy component interface
+  const gameScoreWeight = enhancedPerformanceData?.weights?.gameScore ?? 0;
+  const overallScore = enhancedPerformanceData?.overallScore ?? 0;
+  const symmetryScore = enhancedPerformanceData?.symmetryScore ?? undefined;
+  const therapeuticComplianceScore = enhancedPerformanceData?.complianceScore ?? 50;
 
   // Extract game data
   const gameScore = analysisResult?.metadata?.score ?? undefined;
@@ -39,8 +37,100 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
   // Extract RPE data - use post-exercise RPE (Borg CR10 scale 0-10)
   const rpeLevel = sessionParams?.post_session_rpe ?? storeSessionParams?.rpe_level ?? 5; // Default to 5 for demo
 
+  // Create adapted data structures for legacy component interface
+  const leftMuscle = enhancedPerformanceData?.leftMuscle;
+  const rightMuscle = enhancedPerformanceData?.rightMuscle;
+  
+  // Map enhanced muscle data to legacy muscleData format
+  const muscleData = [leftMuscle, rightMuscle].filter(Boolean).map((muscle, index) => {
+    if (!muscle) return null;
+    
+    const channelNames = analysisResult ? Object.keys(analysisResult.analytics).sort() : [];
+    const channelName = channelNames[index] || `Channel ${index + 1}`;
+    const channelData = analysisResult?.analytics?.[channelName];
+    
+    return {
+      channelName,
+      totalScore: muscle.totalScore,
+      scoreLabel: muscle.totalScore >= 80 ? 'Excellent' : 
+                  muscle.totalScore >= 60 ? 'Good' :
+                  muscle.totalScore >= 40 ? 'Fair' : 'Poor',
+      scoreTextColor: muscle.totalScore >= 80 ? 'text-emerald-700' :
+                      muscle.totalScore >= 60 ? 'text-blue-700' :
+                      muscle.totalScore >= 40 ? 'text-amber-700' : 'text-red-700',
+      scoreBgColor: muscle.totalScore >= 80 ? 'bg-emerald-100' :
+                    muscle.totalScore >= 60 ? 'bg-blue-100' :
+                    muscle.totalScore >= 40 ? 'bg-amber-100' : 'bg-red-100',
+      scoreHexColor: muscle.totalScore >= 80 ? '#10b981' :
+                     muscle.totalScore >= 60 ? '#3b82f6' :
+                     muscle.totalScore >= 40 ? '#f59e0b' : '#ef4444',
+      totalContractions: muscle.components.completion.count,
+      expectedContractions: muscle.components.completion.total,
+      contractionScore: muscle.components.completion.value,
+      goodContractions: muscle.components.mvcQuality.count,
+      shortContractions: 0, // Not available in enhanced metrics
+      shortGoodContractions: 0,
+      longContractions: muscle.components.qualityThreshold.count,
+      longGoodContractions: muscle.components.qualityThreshold.count,
+      expectedShortContractions: 0,
+      expectedLongContractions: muscle.components.completion.total,
+      averageContractionTime: channelData?.contractions?.reduce((sum, c) => sum + c.duration_ms, 0) / (channelData?.contractions?.length || 1) || 0,
+      mvcValue: channelData?.mvc_threshold_actual_value || 0,
+      mvcThreshold: 75, // Default from enhanced metrics
+      componentScores: {
+        completion: {
+          score: muscle.components.completion.value,
+          weight: enhancedPerformanceData?.weights?.compliance_completion || 0.333
+        },
+        intensity: {
+          score: muscle.components.mvcQuality.value,
+          weight: enhancedPerformanceData?.weights?.compliance_intensity || 0.333
+        },
+        duration: {
+          score: muscle.components.qualityThreshold.value,
+          weight: enhancedPerformanceData?.weights?.compliance_duration || 0.334
+        }
+      }
+    };
+  }).filter(Boolean);
+
+  // Create overall performance data with proper interface
+  const overallPerformance = {
+    totalScore: overallScore,
+    durationThreshold: contractionDurationThreshold,
+    contributions: {
+      compliance: enhancedPerformanceData?.weights?.compliance || 0.50,
+      symmetry: enhancedPerformanceData?.weights?.symmetry || 0.20,
+      effort: enhancedPerformanceData?.weights?.effort || 0.30,
+      game: enhancedPerformanceData?.weights?.gameScore || 0.00,
+    },
+    strongestDriver: 'compliance', // Default strongest driver
+    weightedScores: {
+      compliance: ((leftMuscle?.totalScore || 0) + (rightMuscle?.totalScore || 0)) / 2 * (enhancedPerformanceData?.weights?.compliance || 0.50),
+      symmetry: (enhancedPerformanceData?.symmetryScore || 0) * (enhancedPerformanceData?.weights?.symmetry || 0.20),
+      effort: (enhancedPerformanceData?.effortScore || 0) * (enhancedPerformanceData?.weights?.effort || 0.30),
+      game: (enhancedPerformanceData?.gameScoreNormalized || 0) * (enhancedPerformanceData?.weights?.gameScore || 0.00),
+    }
+  };
+
+  // Create overall score label
+  const overallScoreLabel = {
+    label: overallScore >= 80 ? 'Excellent' : 
+            overallScore >= 60 ? 'Good' :
+            overallScore >= 40 ? 'Fair' : 'Poor',
+    text: overallScore >= 80 ? 'text-emerald-700' :
+          overallScore >= 60 ? 'text-blue-700' :
+          overallScore >= 40 ? 'text-amber-700' : 'text-red-700',
+    bg: overallScore >= 80 ? 'bg-emerald-100' :
+        overallScore >= 60 ? 'bg-blue-100' :
+        overallScore >= 40 ? 'bg-amber-100' : 'bg-red-100',
+    hex: overallScore >= 80 ? '#10b981' :
+         overallScore >= 60 ? '#3b82f6' :
+         overallScore >= 40 ? '#f59e0b' : '#ef4444'
+  };
+
   // Render a loading state or placeholder if data isn't ready
-  if (!overallPerformance) {
+  if (!enhancedPerformanceData || !overallPerformance) {
     return (
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm border border-slate-200 text-center">
         <p className="text-slate-500">Calculating performance metrics...</p>

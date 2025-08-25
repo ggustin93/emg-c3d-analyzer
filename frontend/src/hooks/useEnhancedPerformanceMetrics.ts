@@ -14,18 +14,8 @@ import { useSessionStore } from '@/store/sessionStore';
 import { getEffortScoreFromRPE } from '@/lib/effortScore';
 import { useScoringConfiguration } from './useScoringConfiguration';
 
-// DEPRECATED: Use database as single source of truth via useScoringConfiguration hook
-// These presets are kept for backward compatibility and testing only
-export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  compliance: 0.40,    // Therapeutic Compliance (matches metricsDefinitions.md)
-  symmetry: 0.25,      // Muscle Symmetry (matches metricsDefinitions.md)
-  effort: 0.20,        // Subjective Effort (matches metricsDefinitions.md)
-  gameScore: 0.15,     // Game Performance (matches metricsDefinitions.md)
-  // Sub-weights for compliance (should sum to 1)
-  compliance_completion: 0.333,
-  compliance_intensity: 0.333,
-  compliance_duration: 0.334,
-};
+// UI Presets for scoring configuration settings (user-facing features)
+// These are used in SettingsTab for preset selection, not as fallback defaults
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
   compliance: 0.55,  // Much higher emphasis on execution quality
@@ -183,8 +173,22 @@ export const useEnhancedPerformanceMetrics = (
     }
     
     // SINGLE SOURCE OF TRUTH: Use database weights as primary source
-    // Priority order: 1. Database weights, 2. Session override, 3. Fallback defaults
-    const weights = databaseWeights || sessionParams.enhanced_scoring?.weights || DEFAULT_SCORING_WEIGHTS;
+    // Priority order: 1. Database weights, 2. Session override, 3. Hard fallback
+    // Note: databaseWeights already includes proper fallback values from useScoringConfiguration
+    const weights = databaseWeights || sessionParams.enhanced_scoring?.weights || {
+      compliance: 0.50,  // 50% - Therapeutic Compliance  
+      symmetry: 0.20,    // 20% - Muscle Symmetry
+      effort: 0.30,      // 30% - Subjective Effort (RPE)
+      gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
+      compliance_completion: 0.333,
+      compliance_intensity: 0.333,
+      compliance_duration: 0.334,
+    };
+    
+    if (!weights) {
+      console.warn('No scoring weights available, hook will return null');
+      return null;
+    }
     const detectionParams = sessionParams.contraction_detection || DEFAULT_DETECTION_PARAMS;
     const isDebugMode = sessionParams.experimental_features?.enabled || false;
     
@@ -230,10 +234,12 @@ export const useEnhancedPerformanceMetrics = (
     leftMuscle.totalScore = Math.round(calculateMuscleScore(leftMuscle));
     rightMuscle.totalScore = Math.round(calculateMuscleScore(rightMuscle));
     
-    // Calcul de la symétrie
-    const symmetryScore = leftMuscle.totalScore > 0 && rightMuscle.totalScore > 0
-      ? Math.round((Math.min(leftMuscle.totalScore, rightMuscle.totalScore) / 
-                   Math.max(leftMuscle.totalScore, rightMuscle.totalScore)) * 100)
+    // Calcul de la symétrie - Medical Standard Formula
+    // Uses the clinically established Asymmetry Index: (1 - |left - right| / (left + right)) × 100
+    // This formula is standard in rehabilitation medicine and provides clinically meaningful results
+    const symmetryScore = leftMuscle.totalScore + rightMuscle.totalScore > 0
+      ? Math.round((1 - Math.abs(leftMuscle.totalScore - rightMuscle.totalScore) / 
+                   (leftMuscle.totalScore + rightMuscle.totalScore)) * 100)
       : 100;
     
     // Calcul de l'effort subjectif
@@ -274,7 +280,7 @@ export const useEnhancedPerformanceMetrics = (
       isDebugMode
     };
     
-  }, [analysisResult, sessionParams]);
+  }, [analysisResult, sessionParams, databaseWeights, isWeightsLoading]);
   
   return enhancedData;
 };

@@ -48,10 +48,10 @@ describe('useScoringConfiguration', () => {
   };
 
   const expectedFallbackWeights: ScoringWeights = {
-    compliance: 0.40,
-    symmetry: 0.25,
-    effort: 0.20,
-    gameScore: 0.15,
+    compliance: 0.50,        // 50% - Therapeutic Compliance
+    symmetry: 0.20,         // 20% - Muscle Symmetry  
+    effort: 0.30,           // 30% - Subjective Effort (RPE)
+    gameScore: 0.00,        // 0% - Game Performance (default to zero as requested)
     compliance_completion: 0.333,
     compliance_intensity: 0.333,
     compliance_duration: 0.334,
@@ -241,7 +241,7 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.weights?.compliance).toBe(0.40); // Global config values
+      expect(result.current.weights?.compliance).toBe(0.40); // This test uses the global config mock, not fallback
       expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(mockFetch).toHaveBeenNthCalledWith(1, '/api/scoring/configurations/custom?therapist_id=therapist-123&patient_id=patient-456');
       expect(mockFetch).toHaveBeenNthCalledWith(2, '/api/scoring/configurations/custom?therapist_id=therapist-123');
@@ -478,11 +478,11 @@ describe('useScoringConfiguration', () => {
 
       const weights = result.current.weights!;
       
-      // Verify fallback weights match metricsDefinitions.md specification exactly
-      expect(weights.compliance).toBe(0.40);     // 40% - Therapeutic Compliance
-      expect(weights.symmetry).toBe(0.25);       // 25% - Muscle Symmetry
-      expect(weights.effort).toBe(0.20);         // 20% - Subjective Effort
-      expect(weights.gameScore).toBe(0.15);      // 15% - Game Performance
+      // Verify fallback weights match updated specification: 50% compliance, 30% effort, 20% symmetry, 0% game
+      expect(weights.compliance).toBe(0.50);     // 50% - Therapeutic Compliance
+      expect(weights.symmetry).toBe(0.20);       // 20% - Muscle Symmetry
+      expect(weights.effort).toBe(0.30);         // 30% - Subjective Effort
+      expect(weights.gameScore).toBe(0.00);      // 0% - Game Performance (default to zero)
       
       // Sub-component weights (must sum to 1.0)
       expect(weights.compliance_completion).toBe(0.333);  // ~33.3%
