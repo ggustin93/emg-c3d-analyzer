@@ -28,7 +28,8 @@ ACTIVATED_THRESHOLD_FACTOR = 0.05  # 5% of max amplitude for clean Activated sig
 DEFAULT_MIN_DURATION_MS = 100   # Minimum contraction duration in ms
 DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
 DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
-DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # milliseconds
+DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # milliseconds (for detection)
+DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = 2000  # milliseconds (patient-specific therapeutic goal)
 
 # Temporal Analysis Configuration (used for mean ± std over time)
 DEFAULT_TEMPORAL_WINDOW_SIZE_MS = 1000  # 1 second windows

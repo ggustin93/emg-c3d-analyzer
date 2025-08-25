@@ -45,6 +45,7 @@ from config import (
     DEFAULT_LOWPASS_CUTOFF,
     DEFAULT_FILTER_ORDER,
     DEFAULT_RMS_WINDOW_MS,
+    DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS,
     PROCESSING_VERSION
 )
 
@@ -143,6 +144,13 @@ class TherapySessionProcessor:
             Dict with processing results
         """
         try:
+            # Get session info to extract patient_id
+            session_info = await self.get_session_status(session_id)
+            patient_id = session_info.get("patient_id") if session_info else None
+            
+            # Get patient-specific duration threshold (with config fallback)
+            duration_threshold = await self._get_patient_duration_threshold(patient_id)
+            
             # Download C3D file
             file_data = await self._download_file(bucket, object_path)
             
@@ -163,7 +171,8 @@ class TherapySessionProcessor:
                 )
                 
                 session_params = GameSessionParameters(
-                    session_mvc_threshold_percentage=DEFAULT_MVC_THRESHOLD_PERCENTAGE
+                    session_mvc_threshold_percentage=DEFAULT_MVC_THRESHOLD_PERCENTAGE,
+                    contraction_duration_threshold=duration_threshold  # Patient-specific from database
                 )
                 
                 # Process file
@@ -177,7 +186,8 @@ class TherapySessionProcessor:
                     session_id=session_id,
                     processing_result=result,
                     file_data=file_data,
-                    processing_opts=processing_opts
+                    processing_opts=processing_opts,
+                    session_params=session_params
                 )
                 
                 # Update session with analytics cache and game metadata
@@ -256,6 +266,37 @@ class TherapySessionProcessor:
     
     # === PRIVATE METHODS ===
     
+    async def _get_patient_duration_threshold(self, patient_id: Optional[str]) -> float:
+        """
+        Get patient-specific duration threshold from database
+        
+        Args:
+            patient_id: Optional patient ID
+            
+        Returns:
+            float: Duration threshold in milliseconds (patient-specific or config default)
+        """
+        try:
+            if patient_id:
+                # Query patient profile for custom duration threshold
+                result = self.supabase.table("patient_profiles").select(
+                    "therapeutic_duration_threshold_ms"
+                ).eq("patient_id", patient_id).execute()
+                
+                if result.data and result.data[0].get("therapeutic_duration_threshold_ms"):
+                    threshold = result.data[0]["therapeutic_duration_threshold_ms"]
+                    logger.info(f"📊 Using patient-specific duration threshold: {threshold}ms for patient {patient_id}")
+                    return float(threshold)
+            
+            # Fallback to config default
+            logger.info(f"📊 Using config default duration threshold: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms")
+            return float(DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving patient duration threshold: {str(e)}")
+            logger.info(f"📊 Fallback to config default: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms")
+            return float(DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS)
+    
     async def _calculate_file_hash_from_path(self, file_path: str) -> str:
         """Calculate SHA-256 hash of file from storage path"""
         try:
@@ -306,7 +347,8 @@ class TherapySessionProcessor:
         session_id: str,
         processing_result: Dict[str, Any],
         file_data: bytes,
-        processing_opts: ProcessingOptions
+        processing_opts: ProcessingOptions,
+        session_params: GameSessionParameters
     ) -> None:
         """
         Populate all related database tables
@@ -360,7 +402,7 @@ class TherapySessionProcessor:
                     "mvc_value": channel_data.get("mvc_value", DEFAULT_MVC_VALUE),
                     "mvc_threshold": max(channel_data.get("mvc_threshold", DEFAULT_MVC_THRESHOLD_VALUE), DEFAULT_MVC_THRESHOLD_VALUE),
                     "mvc_threshold_actual_value": 75.0,  # Default 75% MVC threshold
-                    "duration_threshold_actual_value": 2000.0,  # Default 2 seconds duration threshold  
+                    "duration_threshold_actual_value": session_params.contraction_duration_threshold,  # Patient-specific from session params  
                     "total_time_under_tension_ms": channel_data.get("total_time_under_tension_ms", 0.0),
                     "avg_duration_ms": channel_data.get("avg_duration_ms", 0.0),
                     "max_duration_ms": channel_data.get("max_duration_ms", 0.0),
@@ -576,4 +618,61 @@ class TherapySessionProcessor:
         except Exception as e:
             logger.error(f"Failed to update session metadata: {str(e)}")
             # Not critical, continue processing
+    
+    def _calculate_overall_score(self, processing_result: Dict) -> float:
+        """
+        Calculate overall session score as weighted average of all muscle compliance
+        
+        Args:
+            processing_result: Complete C3D processing result with analytics
+            
+        Returns:
+            float: Overall compliance score (0.0 to 1.0)
+        """
+        try:
+            analytics = processing_result.get("analytics", {})
+            if not analytics:
+                return 0.0
+            
+            total_score = 0.0
+            muscle_count = 0
+            
+            for channel_name, channel_data in analytics.items():
+                compliance_rate = channel_data.get("compliance_rate", 0.0)
+                total_score += compliance_rate
+                muscle_count += 1
+            
+            return total_score / muscle_count if muscle_count > 0 else 0.0
+            
+        except Exception as e:
+            logger.error(f"Error calculating overall score: {str(e)}")
+            return 0.0
+    
+    def _calculate_compliance_score(self, analytics: Dict) -> float:
+        """
+        Calculate compliance score across all channels
+        
+        Args:
+            analytics: Dictionary of channel analytics
+            
+        Returns:
+            float: Average compliance score (0.0 to 1.0)
+        """
+        try:
+            if not analytics:
+                return 0.0
+            
+            total_compliance = 0.0
+            channel_count = 0
+            
+            for channel_name, channel_data in analytics.items():
+                compliance_rate = channel_data.get("compliance_rate", 0.0)
+                total_compliance += compliance_rate
+                channel_count += 1
+            
+            return total_compliance / channel_count if channel_count > 0 else 0.0
+            
+        except Exception as e:
+            logger.error(f"Error calculating compliance score: {str(e)}")
+            return 0.0
     
