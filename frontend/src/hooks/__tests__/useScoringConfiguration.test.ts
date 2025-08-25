@@ -421,8 +421,8 @@ describe('useScoringConfiguration', () => {
       });
 
       const { result, rerender } = renderHook(
-        ({ therapistId, patientId }) => useScoringConfiguration(therapistId, patientId),
-        { initialProps: { therapistId: undefined, patientId: undefined } }
+        ({ therapistId, patientId }: { therapistId?: string; patientId?: string }) => useScoringConfiguration(therapistId, patientId),
+        { initialProps: { therapistId: undefined as string | undefined, patientId: undefined as string | undefined } }
       );
 
       await waitFor(() => {
@@ -432,7 +432,7 @@ describe('useScoringConfiguration', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Change therapist ID
-      rerender({ therapistId: 'therapist-123' });
+      rerender({ therapistId: 'therapist-123', patientId: undefined });
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledTimes(2);

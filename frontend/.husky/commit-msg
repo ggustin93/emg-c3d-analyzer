@@ -1,0 +1,22 @@
+#!/bin/sh
+# Commit message validation for EMG C3D Analyzer
+# Ensures commit messages follow conventional format
+
+commit_regex='^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\(.+\))?: .{1,50}'
+
+error_msg="❌ Invalid commit message format!
+Commit message should follow: type(scope): description
+
+Types: feat|fix|docs|style|refactor|perf|test|chore|ci
+Examples:
+  feat: add performance metrics dashboard  
+  fix(auth): resolve login validation issue
+  docs: update API documentation
+  test: add integration tests for EMG analysis"
+
+if ! grep -qE "$commit_regex" "$1"; then
+    echo "$error_msg" >&2
+    exit 1
+fi
+
+echo "✅ Commit message format is valid!"

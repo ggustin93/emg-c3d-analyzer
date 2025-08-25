@@ -1,0 +1,29 @@
+#!/bin/sh
+# Pre-push Quality Gates for EMG C3D Analyzer  
+# Final validation before pushing to remote repository
+
+echo "🚀 Running pre-push validation..."
+
+# 1. Ensure we're on a feature branch (not main/master)
+current_branch=$(git branch --show-current)
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+    echo "⚠️  Warning: Pushing directly to $current_branch branch"
+    echo "Consider using feature branches for development"
+fi
+
+# 2. Run a full test suite
+echo "🧪 Running full test suite..."
+npm test -- --run --coverage
+if [ $? -ne 0 ]; then
+    echo "❌ Full test suite failed. Fix before pushing."
+    exit 1
+fi
+
+# 3. Check for TODO/FIXME comments (warning only)
+todo_count=$(git diff --cached --name-only | xargs grep -l "TODO\|FIXME" 2>/dev/null | wc -l)
+if [ $todo_count -gt 0 ]; then
+    echo "⚠️  Found $todo_count file(s) with TODO/FIXME comments"
+    echo "Consider resolving them before pushing to production"
+fi
+
+echo "✅ All pre-push validations passed! Ready to push."

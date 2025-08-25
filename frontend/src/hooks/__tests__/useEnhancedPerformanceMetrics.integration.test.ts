@@ -44,9 +44,37 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
   });
 
   const mockAnalysisResult: EMGAnalysisResult = {
+    file_id: 'test-file-456',
+    timestamp: '2024-01-01T12:00:00Z',
+    source_filename: 'test-session.c3d',
+    available_channels: ['CH1 - Left Muscle', 'CH2 - Right Muscle'],
+    emg_signals: {
+      'CH1 - Left Muscle': {
+        sampling_rate: 1000,
+        time_axis: [],
+        data: []
+      },
+      'CH2 - Right Muscle': {
+        sampling_rate: 1000,
+        time_axis: [],
+        data: []
+      }
+    },
     session_id: 'test-session-123',
     analytics: {
       'CH1 - Left Muscle': {
+        contraction_count: 3,
+        avg_duration_ms: 2166.67,
+        min_duration_ms: 1800,
+        max_duration_ms: 2500,
+        total_time_under_tension_ms: 6500,
+        avg_amplitude: 73.0,
+        max_amplitude: 85.0,
+        rms: 0.0,
+        mav: 0.0,
+        mpf: 0.0,
+        mdf: 0.0,
+        fatigue_index_fi_nsm5: 0.0,
         mvc_threshold_actual_value: 100.0,
         contractions: [
           {
@@ -79,6 +107,18 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         ]
       },
       'CH2 - Right Muscle': {
+        contraction_count: 2,
+        avg_duration_ms: 2300.0,
+        min_duration_ms: 2000,
+        max_duration_ms: 2600,
+        total_time_under_tension_ms: 4600,
+        avg_amplitude: 76.5,
+        max_amplitude: 90.0,
+        rms: 0.0,
+        mav: 0.0,
+        mpf: 0.0,
+        mdf: 0.0,
+        fatigue_index_fi_nsm5: 0.0,
         mvc_threshold_actual_value: 95.0,
         contractions: [
           {
@@ -109,11 +149,20 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       session_date: '2024-01-01',
       session_duration: 180,
       score: 85,
-      level: "3"
+      level: "3",
+      session_notes: 'Test session for integration testing'
     }
   };
 
   const mockSessionParams: GameSessionParameters = {
+    channel_muscle_mapping: {
+      'CH1': 'Left Quadriceps',
+      'CH2': 'Right Quadriceps'
+    },
+    muscle_color_mapping: {
+      'Left Quadriceps': '#3b82f6',
+      'Right Quadriceps': '#ef4444'
+    },
     session_expected_contractions: 6,
     session_expected_contractions_ch1: 3,
     session_expected_contractions_ch2: 3,

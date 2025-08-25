@@ -74,7 +74,8 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
       longGoodContractions: muscle.components.qualityThreshold.count,
       expectedShortContractions: 0,
       expectedLongContractions: muscle.components.completion.total,
-      averageContractionTime: (channelData?.contractions?.reduce((sum, c) => sum + c.duration_ms, 0) || 0) / (channelData?.contractions?.length || 1),
+      averageContractionTime: channelData?.contractions?.length ? 
+        (channelData.contractions.reduce((sum, c) => sum + c.duration_ms, 0) / channelData.contractions.length) : 0,
       mvcValue: channelData?.mvc_threshold_actual_value || 0,
       mvcThreshold: 75, // Default from enhanced metrics
       componentScores: {

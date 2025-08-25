@@ -1,0 +1,10 @@
+# Husky Configuration File
+# Automatically manages Git hooks for quality gates
+
+# Pre-commit hooks will run:
+# 1. TypeScript type checking
+# 2. ESLint for code quality
+# 3. Tests to prevent breaking changes
+# 4. Build validation
+
+# Commands can be bypassed with: git commit --no-verify

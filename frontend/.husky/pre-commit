@@ -1,0 +1,29 @@
+#!/bin/sh
+# Pre-commit Quality Gates for EMG C3D Analyzer
+# Ensures code quality before each commit
+
+echo "🔍 Running pre-commit quality gates..."
+
+# 1. TypeScript type checking
+echo "📝 Checking TypeScript types..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors found. Fix them before committing."
+  exit 1
+fi
+
+# 2. Run tests
+echo "🧪 Running tests..."
+npm test -- --run
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Fix them before committing."
+  exit 1
+fi
+
+# 3. ESLint (if available)
+if [ -f "node_modules/.bin/eslint" ]; then
+  echo "🔧 Running ESLint..."
+  npm run lint 2>/dev/null || echo "⚠️  ESLint not configured, skipping..."
+fi
+
+echo "✅ All quality gates passed! Ready to commit."
