@@ -45,6 +45,7 @@ jobs:
       - name: Run all backend tests with coverage
         working-directory: backend
         run: |
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
           python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term
         timeout-minutes: 5
 
@@ -148,6 +149,7 @@ jobs:
       - name: Run comprehensive integration tests
         working-directory: backend
         run: |
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
           python -m pytest tests/integration/ -v --tb=short
         env:
           API_URL: http://localhost:8080
