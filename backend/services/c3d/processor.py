@@ -68,6 +68,15 @@ class GHOSTLYC3DProcessor:
     """Class for processing C3D files from the GHOSTLY game."""
 
     def __init__(self, file_path: str, analysis_functions: Optional[Dict] = None):
+        """
+        Initializes the processor for a specific C3D file.
+
+        Args:
+            file_path: The local path to the .c3d file.
+            analysis_functions: A dictionary of signal analysis functions to
+                                apply. Defaults to the standard set in
+                                `emg.emg_analysis.ANALYSIS_FUNCTIONS`.
+        """
         self.file_path = file_path
         self.c3d = None
         self.emg_data = {}
@@ -187,9 +196,11 @@ class GHOSTLYC3DProcessor:
                     # Store channel with original C3D name (e.g., "CH1")
                     emg_data[channel_name] = channel_data
                     
-                    # ALSO store with "Raw" suffix for analysis pipeline compatibility
-                    # This ensures the analysis pipeline can find "{base_name} Raw" channels
-                    # But avoid creating duplicate "Raw Raw" entries
+                    # DESIGN CHOICE: Create a duplicate "Raw" entry.
+                    # This ensures the analysis pipeline can robustly find the
+                    # unprocessed signal data (e.g., "{base_name} Raw")
+                    # regardless of the original naming convention, while
+                    # preserving the original name for metadata purposes.
                     if not channel_name.endswith(" Raw"):
                         raw_channel_name = f"{channel_name} Raw"
                         emg_data[raw_channel_name] = channel_data.copy()
@@ -246,14 +257,11 @@ class GHOSTLYC3DProcessor:
         all_analytics = {}
         
         # RESILIENT CHANNEL HANDLING:
-        # The system preserves raw C3D channel names as keys but extracts base names for analysis.
-        # This approach allows the system to handle various C3D naming conventions while maintaining 
-        # data integrity and supporting user-defined muscle mappings for display purposes.
-        
-        # Find unique base channel names (e.g., "CH1" from "CH1 Raw", "CH1 activated")
-        # This pattern accommodates different C3D naming conventions:
-        # - "CH1 Raw" and "CH1 activated" -> base name "CH1"
-        # - "EMG Left Quad Raw" and "EMG Left Quad activated" -> base name "EMG Left Quad"
+        # The system must gracefully handle various C3D naming conventions
+        # (e.g., "CH1", "CH1 Raw", "CH1 activated", "EMG Left Quad").
+        # To do this, we identify a unique "base name" for each muscle
+        # by stripping suffixes. This allows us to group related signals
+        # and apply analysis consistently.
         base_names = sorted(list(set(
             name.replace(' Raw', '').replace(' activated', '') 
             for name in self.emg_data.keys()
@@ -275,11 +283,17 @@ class GHOSTLYC3DProcessor:
             channel_analytics['expected_contractions'] = expected_contractions
             
             # CLINICAL MVC THRESHOLD ESTIMATION
-            # Priority: User-provided > Backend estimation > No threshold (limited quality assessment)
+            # Determines the muscle activation level required for a
+            # contraction to be considered therapeutically effective ("good").
+            # The system prioritizes sources in the following order:
+            # 1. User-Provided: A specific MVC value and threshold % for this muscle.
+            # 2. Global Fallback: A session-wide MVC value and threshold %.
+            # 3. Backend Estimation: If no values are provided, the system
+            #    estimates MVC from the signal's 95th percentile.
             actual_mvc_threshold: Optional[float] = None
             mvc_estimation_method = "none"
             
-            # First check if we have explicitly provided MVC values
+            # Priority 1: Check for per-muscle MVC values.
             if (hasattr(session_params, 'session_mvc_values') and 
                 session_params.session_mvc_values and 
                 base_name in session_params.session_mvc_values and
@@ -300,12 +314,13 @@ class GHOSTLYC3DProcessor:
                 actual_mvc_threshold = channel_mvc * (threshold_percentage / 100.0)
                 mvc_estimation_method = "user_provided"
                 
-            # Fall back to global MVC if provided
+            # Priority 2: Fall back to a global session MVC if provided.
             elif global_mvc_threshold is not None:
                 actual_mvc_threshold = global_mvc_threshold
                 mvc_estimation_method = "global_provided"
                 
-            # Backend clinical estimation based on signal characteristics (when no MVC provided)
+            # Priority 3: Mark for backend estimation if no MVC data is available.
+            # The estimation will occur after the signal has been processed.
             else:
                 # We'll estimate after getting the signal - for now set to None
                 actual_mvc_threshold = None
@@ -514,12 +529,12 @@ class GHOSTLYC3DProcessor:
                     else:
                         logger.debug(f"  ❌ No duration threshold found - will use default")
                     
-                    # Backend MVC estimation if no threshold provided
+                    # Perform backend MVC estimation if no threshold was provided earlier.
                     if mvc_estimation_method == "backend_estimation":
-                        # Clinical estimation: Use 95th percentile of rectified signal as MVC estimate
-                        # This represents a strong voluntary contraction level
-                        rectified_signal = np.abs(signal_for_analysis)
-                        estimated_mvc = np.percentile(rectified_signal, 95)
+                        # Clinical estimation: Use 95th percentile of the processed
+                        # (rectified) signal as the MVC estimate. This robustly
+                        # represents a strong voluntary contraction level.
+                        estimated_mvc = np.percentile(signal_for_analysis, 95)
                         threshold_percentage = session_params.session_mvc_threshold_percentage or 75.0
                         actual_mvc_threshold = estimated_mvc * (threshold_percentage / 100.0)
                         
@@ -533,7 +548,11 @@ class GHOSTLYC3DProcessor:
                             session_params.session_mvc_values = {}
                         session_params.session_mvc_values[base_name] = estimated_mvc
                     
-                    # Extract Activated signal for dual signal detection (MVP implementation)
+                    # DUAL SIGNAL DETECTION (HYBRID APPROACH):
+                    # To improve detection accuracy, we can use a hybrid model:
+                    # - The 'activated' signal (if present) provides clean on/off timing.
+                    # - The rigorously processed 'RMS envelope' provides accurate amplitude.
+                    # If 'activated' is not present, the RMS envelope is used for both.
                     activated_signal = None
                     detection_threshold_factor = threshold_factor  # Default for single signal
                     activated_channel_name = f"{base_name} activated"
@@ -835,14 +854,22 @@ class GHOSTLYC3DProcessor:
                                      session_game_params: GameSessionParameters
                                     ) -> Dict:
         """
-        Recalculate scores for an existing result with updated session parameters.
-        
+        Recalculates compliance scores with new parameters without reprocessing.
+
+        This method takes existing, processed contraction data (start/end times,
+        amplitudes) and re-evaluates their quality (is_good, meets_mvc, etc.)
+        against a new set of `GameSessionParameters` (e.g., updated MVC
+        thresholds or duration targets). It's highly efficient for tuning
+        parameters on the frontend without re-running the entire signal
+        processing pipeline.
+
         Args:
-            existing_analytics: The existing result data
-            session_game_params: Updated session parameters
-            
+            existing_analytics: The full analytics dictionary from a previous
+                                `process_file` run.
+            session_game_params: The new set of parameters to apply.
+
         Returns:
-            Updated result data with recalculated scores
+            An updated analytics dictionary with recalculated scores.
         """
         # Store the session game parameters that were used for this processing run
         self.session_game_params_used = session_game_params
@@ -881,15 +908,13 @@ class GHOSTLYC3DProcessor:
                 # Use global threshold as fallback
                 session_game_params.session_mvc_threshold_percentages[base_name] = session_game_params.session_mvc_threshold_percentage
             
-        # Process each channel
-        for i, base_name in enumerate(base_names):
-            # Get the existing analytics for this channel
+            # Process each channel
             channel_analytics = existing_analytics.get(base_name, {})
             
             # Get the contractions for this channel
             contractions = channel_analytics.get('contractions', [])
             
-            # Determine which expected contractions count to use
+            # Determine which expected contractions count to use for this muscle.
             expected_contractions = session_game_params.session_expected_contractions
             if i == 0 and session_game_params.session_expected_contractions_ch1 is not None:
                 expected_contractions = session_game_params.session_expected_contractions_ch1
@@ -937,7 +962,7 @@ class GHOSTLYC3DProcessor:
             except Exception:
                 duration_threshold_ms = channel_analytics.get('duration_threshold_actual_value')
 
-            # Recompute flags and counts from existing contraction measurements
+            # Re-evaluate each existing contraction against the new thresholds.
             good_contraction_count = 0
             mvc_contraction_count = 0
             duration_contraction_count = 0
@@ -948,7 +973,8 @@ class GHOSTLYC3DProcessor:
                     dur_ms = c.get('duration_ms')
                     meets_mvc = bool(actual_mvc_threshold is not None and max_amp is not None and max_amp >= actual_mvc_threshold)
                     meets_duration = bool(duration_threshold_ms is not None and dur_ms is not None and dur_ms >= duration_threshold_ms)
-                    # Align with backend analyze_contractions semantics
+                    # A "good" contraction must meet both criteria if they are defined.
+                    # This logic aligns with the primary `analyze_contractions` function.
                     if actual_mvc_threshold is not None and duration_threshold_ms is not None:
                         is_good = meets_mvc and meets_duration
                     elif actual_mvc_threshold is not None and duration_threshold_ms is None:

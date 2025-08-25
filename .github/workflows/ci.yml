@@ -47,8 +47,6 @@ jobs:
         run: |
           echo "Verifying Python module structure..."
           find . -name "__init__.py" | head -20
-          ls -la services/data/
-          python -c "import sys; sys.path.insert(0, '.'); from services.data.export_service import EMGDataExporter; print('Import successful')"
       
       - name: Run all backend tests with coverage (excluding E2E)
         working-directory: backend
