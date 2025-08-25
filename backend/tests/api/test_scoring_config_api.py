@@ -7,19 +7,12 @@ Validates single source of truth implementation and database consistency.
 
 import pytest
 import pytest_asyncio
-import sys
-from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
 import json
 from typing import Dict, List
 
-# Add the project root to the Python path
-# This ensures that the `api` and `services` modules can be found
-project_root = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(project_root))
-
-from fastapi.testclient import TestClient
+# Import the main FastAPI app
 from api.main import app
 from api.routes.scoring_config import ScoringConfigurationRequest, ScoringConfigurationResponse
 

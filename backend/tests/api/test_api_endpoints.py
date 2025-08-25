@@ -4,14 +4,6 @@ Tests API layer functionality, authentication, validation, and error handling.
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-# Add the project root to the Python path
-# This ensures that the `api` and `services` modules can be found
-project_root = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(project_root))
-
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 import json

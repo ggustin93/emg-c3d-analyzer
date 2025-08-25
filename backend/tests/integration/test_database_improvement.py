@@ -7,13 +7,12 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add the project root to the Python path
-# This ensures that the `api` and `services` modules can be found
-project_root = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(project_root))
+# Ensure backend is on sys.path when running directly
+backend_dir = Path(__file__).resolve().parents[2]
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 from services.data.metadata_service import MetadataService
-from database.supabase_client import get_supabase_client
 
 async def test_two_phase_creation():
     """Test the new two-phase creation pattern (metadata → technical data)"""
@@ -71,6 +70,7 @@ async def test_two_phase_creation():
         # Test the view that combines both tables
         print(f"\n📊 Testing combined view...")
         try:
+            from database.supabase_client import get_supabase_client
             supabase = get_supabase_client(use_service_key=True)
             
             # Test the therapy_sessions_with_technical view

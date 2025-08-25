@@ -7,13 +7,12 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add the project root to the Python path
-# This ensures that the `api` and `services` modules can be found
-project_root = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(project_root))
+# Ensure backend is on sys.path when running directly
+backend_dir = Path(__file__).resolve().parents[2]
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 from services.data.metadata_service import MetadataService
-from services.c3d.processor import GHOSTLYC3DProcessor
 
 async def test_metadata_creation():
     """Test creating therapy session entry with minimal data (KISS)"""

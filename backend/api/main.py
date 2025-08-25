@@ -20,7 +20,6 @@ Date: 2025-08-14
 import logging
 import os
 import sys
-from pathlib import Path
 
 # Third-party imports
 from fastapi import FastAPI, Request, HTTPException
@@ -40,12 +39,6 @@ from .routes import (
     signals, webhooks, cache_monitoring
 )
 from .routes.scoring_config import router as scoring_router
-
-# Add project root to the Python path
-# This ensures that all modules are correctly resolved
-project_root = Path(__file__).resolve().parents[2]
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
 
 # Check cache monitoring availability
 CACHE_MONITORING_AVAILABLE = True
