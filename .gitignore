@@ -123,8 +123,12 @@ logs/
 # Temp files
 .dev_pids
 
-# Data files - these can be large and are generated
-backend/data/
+# Data files - these can be large and are generated  
+backend/data/temp_uploads/
+backend/data/results/
+backend/data/cache/
+backend/data/plots/
+# But keep services/data/ which contains service implementations
 
 # Test artifacts
 backend/tests/data/cache/

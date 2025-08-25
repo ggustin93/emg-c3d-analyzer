@@ -8,7 +8,7 @@ Provides clean service instantiation and lifecycle management.
 
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.analysis import mvc_service
-from services.data.export_service import EMGDataExporter
+# from services.data.export_service import EMGDataExporter  # TODO: Implement export service
 
 
 def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:
@@ -34,14 +34,15 @@ def get_mvc_service():
     return mvc_service
 
 
-def get_export_service(processor: GHOSTLYC3DProcessor) -> EMGDataExporter:
-    """
-    Factory for export service instances.
-    
-    Args:
-        processor: C3D processor instance
-        
-    Returns:
-        EMGDataExporter: Export service instance
-    """
-    return EMGDataExporter(processor)
+# def get_export_service(processor: GHOSTLYC3DProcessor) -> EMGDataExporter:
+#     """
+#     Factory for export service instances.
+#     
+#     Args:
+#         processor: C3D processor instance
+#         
+#     Returns:
+#         EMGDataExporter: Export service instance
+#     """
+#     return EMGDataExporter(processor)
+# TODO: Implement export service

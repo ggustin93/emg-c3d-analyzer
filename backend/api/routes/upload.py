@@ -22,7 +22,7 @@ from models.models import (
     GameMetadata, ChannelAnalytics, GameSessionParameters
 )
 from config import MAX_FILE_SIZE
-from services.c3d.processor import GHOSTLYC3DProcessor
+from services.clinical.therapy_session_processor import TherapySessionProcessor
 from api.dependencies.validation import (
     get_processing_options, get_session_parameters, get_file_metadata
 )
@@ -30,6 +30,9 @@ from api.dependencies.validation import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
+
+# Initialize therapy session processor (same as webhook route)
+session_processor = TherapySessionProcessor()
 
 
 @router.post("/", response_model=EMGAnalysisResult)
@@ -75,15 +78,17 @@ async def upload_file(
             shutil.copyfileobj(file.file, tmp)
             tmp_path = tmp.name
 
-        # Process the file from the temporary path
-        processor = GHOSTLYC3DProcessor(tmp_path)
-
-        # Wrap the CPU-bound processing in run_in_threadpool
-        result_data = await run_in_threadpool(
-            processor.process_file,
+        # Process the file using TherapySessionProcessor (SINGLE SOURCE OF TRUTH)
+        # Same processing logic as webhook route - unified approach
+        # Wrap CPU-bound sync processing in thread pool
+        processing_result = await run_in_threadpool(
+            session_processor.process_c3d_file_stateless,
+            file_path=tmp_path,
             processing_opts=processing_opts,
-            session_game_params=session_params
+            session_params=session_params
         )
+        
+        result_data = processing_result["processing_result"]
 
         # Create result object
         game_metadata = GameMetadata(**result_data['metadata'])
@@ -118,7 +123,7 @@ async def upload_file(
             }),
             analytics=analytics,
             available_channels=result_data['available_channels'],
-            emg_signals=processor.emg_data, # Directly assign if structure matches EMGChannelSignalData
+            emg_signals=result_data.get('emg_signals', {}), # EMG signal data from processing result
             c3d_parameters=c3d_params,  # Include comprehensive C3D parameters
             user_id=file_metadata["user_id"],
             patient_id=file_metadata["patient_id"],

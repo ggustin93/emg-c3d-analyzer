@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from models.models import ProcessingOptions, GameSessionParameters
 from services.c3d.processor import GHOSTLYC3DProcessor
-from services.data.export_service import EMGDataExporter
+# from services.data.export_service import EMGDataExporter  # TODO: Implement export service
 from api.dependencies.validation import (
     get_processing_options, get_session_parameters, get_file_metadata
 )
@@ -75,14 +75,24 @@ async def export_analysis_data(
         # Process the file completely
         result = processor.process_file(processing_opts, session_params)
         
-        # Create comprehensive export
-        exporter = EMGDataExporter(processor)
-        comprehensive_export = exporter.create_comprehensive_export(
-            session_params=session_params,
-            processing_opts=processing_opts,
-            include_raw_signals=include_raw_signals,
-            include_debug_info=include_debug_info
-        )
+        # TODO: Implement comprehensive export
+        # exporter = EMGDataExporter(processor)
+        # comprehensive_export = exporter.create_comprehensive_export(
+        #     session_params=session_params,
+        #     processing_opts=processing_opts,
+        #     include_raw_signals=include_raw_signals,
+        #     include_debug_info=include_debug_info
+        # )
+        
+        # Temporary basic export until EMGDataExporter is implemented
+        comprehensive_export = {
+            "analysis_results": result,
+            "file_info": {
+                "filename": file.filename,
+                "processing_options": processing_opts.dict(),
+                "session_parameters": session_params.dict()
+            }
+        }
         
         # Add request metadata
         comprehensive_export["request_metadata"] = {
@@ -90,7 +100,8 @@ async def export_analysis_data(
             "patient_id": file_metadata["patient_id"],
             "session_id": file_metadata["session_id"],
             "filename": file.filename,
-            "export_timestamp": datetime.now().isoformat()
+            "export_timestamp": datetime.now().isoformat(),
+            "note": "Basic export - EMGDataExporter not yet implemented"
         }
         
         return JSONResponse(content=comprehensive_export)

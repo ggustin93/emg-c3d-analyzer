@@ -50,6 +50,19 @@ BORG_CR10_SCALE_MAX = 10
 BFR_PRESSURE_RANGE = (40, 80)  # % AOP
 THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
 
+# EMG Signal Processing Constants
+DEFAULT_MVC_THRESHOLD_VALUE = 1e-5  # 10μV - reasonable EMG threshold
+MVC_PERCENTAGE_DIVISOR = 0.75  # 75% MVC threshold divisor
+EMG_HIGH_PASS_CUTOFF = 20.0  # Standard EMG high-pass filter (Hz)
+RMS_OVERLAP_PERCENTAGE = 50.0  # RMS window overlap
+MVC_WINDOW_SECONDS = 3.0  # MVC calculation window
+NYQUIST_SAFETY_FACTOR = 0.9  # 90% of Nyquist frequency for safety
+
+# Clinical Scoring Default Values
+DEFAULT_BFR_PRESSURE_AOP = 50.0  # 50% AOP
+DEFAULT_RPE_VALUE = 4  # Optimal RPE range
+EXPECTED_CONTRACTIONS_PER_MUSCLE = 12  # GHOSTLY+ protocol
+
 # Advanced Contraction Detection Parameters 
 MERGE_THRESHOLD_MS = 150  # Maximum time gap between contractions to merge them (ms)
                          # Optimized at 150ms: balance between merging physiologically related contractions
