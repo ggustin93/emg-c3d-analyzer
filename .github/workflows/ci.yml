@@ -50,23 +50,21 @@ jobs:
           find . -name "__init__.py" | head -20
       
       - name: Run all backend tests with coverage (excluding E2E)
-        working-directory: backend
+        run: |
+          python -m pytest backend/tests/ -v --tb=short --cov=backend --cov-report=term --ignore=backend/tests/e2e/
         env:
-          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHONPATH: ${{ github.workspace }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         timeout-minutes: 5
       
       - name: Run E2E tests separately
-        working-directory: backend
+        run: |
+          python -m pytest backend/tests/e2e/ -v --tb=short -s
         env:
-          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHONPATH: ${{ github.workspace }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          python -m pytest tests/e2e/ -v --tb=short -s
         timeout-minutes: 8
 
   frontend-test:
@@ -170,14 +168,13 @@ jobs:
         timeout-minutes: 1
       
       - name: Run comprehensive integration tests
-        working-directory: backend
+        run: |
+          python -m pytest backend/tests/integration/ -v --tb=short
         env:
-          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHONPATH: ${{ github.workspace }}
           API_URL: http://localhost:8080
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          python -m pytest tests/integration/ -v --tb=short
       
       - name: Stop backend server
         if: always()

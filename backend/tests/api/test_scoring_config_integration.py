@@ -4,8 +4,16 @@ Tests actual database operations to ensure E2E functionality works correctly
 """
 
 import pytest
-import os
+import sys
+from pathlib import Path
 from fastapi.testclient import TestClient
+
+# Add the project root to the Python path
+# This ensures that the `api` and `services` modules can be found
+project_root = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(project_root))
+
+from httpx import AsyncClient
 from api.main import app
 
 # Skip all tests if no Supabase credentials are available
