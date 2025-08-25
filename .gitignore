@@ -149,8 +149,6 @@ logs/
 logs/*.log
 logs/**/*.log
 
-# Local debug tools
-frontend/src/components/debug/
 # Temporary files
 *.pid
 dump.rdb
