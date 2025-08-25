@@ -49,6 +49,9 @@ jobs:
           echo "Verifying Python module structure..."
           find . -name "__init__.py" | head -20
       
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> "$GITHUB_ENV"
+      
       - name: Run all backend tests with coverage (excluding E2E)
         run: PYTHONPATH=${{ github.workspace }} python -m pytest backend/tests/ -v --tb=short --cov=backend --cov-report=term --ignore=backend/tests/e2e/
         env:
@@ -159,7 +162,7 @@ jobs:
           echo $! > backend_pid.txt
       
       - name: Set PYTHONPATH for Integration Tests
-        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> $GITHUB_ENV
+        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> "$GITHUB_ENV"
       
       - name: Wait for backend to be ready
         run: |
