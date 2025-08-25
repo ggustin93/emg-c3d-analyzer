@@ -50,12 +50,21 @@ jobs:
           ls -la services/data/
           python -c "import sys; sys.path.insert(0, '.'); from services.data.export_service import EMGDataExporter; print('Import successful')"
       
-      - name: Run all backend tests with coverage
+      - name: Run all backend tests with coverage (excluding E2E)
         working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
         run: |
-          export PYTHONPATH="$(pwd):${PYTHONPATH}"
-          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term
+          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         timeout-minutes: 5
+      
+      - name: Run E2E tests separately
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m pytest tests/e2e/ -v --tb=short -s
+        timeout-minutes: 8
 
   frontend-test:
     name: Frontend Tests (React)
@@ -145,6 +154,8 @@ jobs:
       
       - name: Start backend server (background)
         working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
         run: |
           python -m uvicorn main:app --host 0.0.0.0 --port 8080 &
           echo $! > backend_pid.txt
@@ -156,11 +167,11 @@ jobs:
       
       - name: Run comprehensive integration tests
         working-directory: backend
-        run: |
-          export PYTHONPATH="$(pwd):${PYTHONPATH}"
-          python -m pytest tests/integration/ -v --tb=short
         env:
+          PYTHONPATH: ${{ github.workspace }}/backend
           API_URL: http://localhost:8080
+        run: |
+          python -m pytest tests/integration/ -v --tb=short
       
       - name: Stop backend server
         if: always()
