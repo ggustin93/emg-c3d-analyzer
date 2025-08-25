@@ -66,7 +66,7 @@ export const useScoringConfiguration = (
       setError(null);
 
       // Try to fetch therapist/patient-specific configuration first
-      let response: Response;
+      let response: Response | undefined;
       let configSource = 'global';
 
       if (therapistId && patientId) {

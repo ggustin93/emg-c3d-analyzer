@@ -45,7 +45,8 @@ jobs:
       - name: Run all backend tests with coverage
         working-directory: backend
         run: |
-          python -m pytest tests/ -v --tb=short --timeout=300 --cov=backend --cov-report=term
+          python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term
+        timeout-minutes: 5
 
   frontend-test:
     name: Frontend Tests (React)
@@ -155,7 +156,7 @@ jobs:
         if: always()
         run: |
           if [ -f backend/backend_pid.txt ]; then
-            kill $(cat backend/backend_pid.txt) || true
+            kill "$(cat backend/backend_pid.txt)" || true
           fi
 
   quality-checks:
@@ -198,39 +199,40 @@ jobs:
     steps:
       - name: Check test results
         run: |
-          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Backend tests
-          if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
-            echo "✅ Backend Tests: PASSED (33 tests)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Backend Tests: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          # Frontend tests  
-          if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
-            echo "✅ Frontend Tests: PASSED (78 tests)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Frontend Tests: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          # Integration tests
-          if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
-            echo "✅ Integration Tests: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Integration Tests: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          # Quality checks
-          if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
-            echo "✅ Security & Quality: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Security & Quality: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total Tests**: 111+ tests across all categories" >> $GITHUB_STEP_SUMMARY
-          echo "**Medical Software Quality**: Production-ready for clinical applications" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow Duration**: $(( GITHUB_RUN_DURATION / 60 )) minutes" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Test Results Summary"
+            echo ""
+            
+            # Backend tests
+            if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
+              echo "✅ Backend Tests: PASSED (33 tests)"
+            else
+              echo "❌ Backend Tests: FAILED"
+            fi
+            
+            # Frontend tests  
+            if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
+              echo "✅ Frontend Tests: PASSED (78 tests)"
+            else
+              echo "❌ Frontend Tests: FAILED"
+            fi
+            
+            # Integration tests
+            if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
+              echo "✅ Integration Tests: PASSED"
+            else
+              echo "❌ Integration Tests: FAILED"
+            fi
+            
+            # Quality checks
+            if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
+              echo "✅ Security & Quality: PASSED"
+            else
+              echo "❌ Security & Quality: FAILED"
+            fi
+            
+            echo ""
+            echo "**Total Tests**: 111+ tests across all categories"
+            echo "**Medical Software Quality**: Production-ready for clinical applications"
+            echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
+          } >> "$GITHUB_STEP_SUMMARY"

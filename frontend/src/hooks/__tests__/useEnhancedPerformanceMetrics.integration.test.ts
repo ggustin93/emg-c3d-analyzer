@@ -53,6 +53,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
             start_time_ms: 1000,
             end_time_ms: 3500,
             duration_ms: 2500,
+            mean_amplitude: 80.0,
             max_amplitude: 85.0,
             meets_mvc: true,
             meets_duration: true
@@ -61,6 +62,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
             start_time_ms: 5000,
             end_time_ms: 7200,
             duration_ms: 2200,
+            mean_amplitude: 74.0,
             max_amplitude: 78.0,
             meets_mvc: true,
             meets_duration: true
@@ -69,6 +71,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
             start_time_ms: 9000,
             end_time_ms: 10800,
             duration_ms: 1800,
+            mean_amplitude: 60.0,
             max_amplitude: 65.0,
             meets_mvc: false,
             meets_duration: false
@@ -82,6 +85,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
             start_time_ms: 1200,
             end_time_ms: 3800,
             duration_ms: 2600,
+            mean_amplitude: 85.0,
             max_amplitude: 90.0,
             meets_mvc: true,
             meets_duration: true
@@ -90,6 +94,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
             start_time_ms: 5500,
             end_time_ms: 7500,
             duration_ms: 2000,
+            mean_amplitude: 68.0,
             max_amplitude: 72.0,
             meets_mvc: true,
             meets_duration: true
@@ -98,6 +103,11 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       }
     },
     metadata: {
+      game_title: 'GHOSTLY+',
+      game_type: 'rehabilitation',
+      game_version: '1.0',
+      session_date: '2024-01-01',
+      session_duration: 180,
       score: 85,
       level: "3"
     }
@@ -111,9 +121,24 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
     contraction_duration_threshold: 2000,
     post_session_rpe: 5,
     bfr_parameters: {
-      is_compliant: true,
-      left: { is_compliant: true },
-      right: { is_compliant: true }
+      left: {
+        aop_measured: 180,
+        applied_pressure: 90,
+        percentage_aop: 50,
+        is_compliant: true,
+        therapeutic_range_min: 40,
+        therapeutic_range_max: 60,
+        application_time_minutes: 15
+      },
+      right: {
+        aop_measured: 175,
+        applied_pressure: 88,
+        percentage_aop: 50,
+        is_compliant: true,
+        therapeutic_range_min: 40,
+        therapeutic_range_max: 60,
+        application_time_minutes: 15
+      }
     }
   };
 

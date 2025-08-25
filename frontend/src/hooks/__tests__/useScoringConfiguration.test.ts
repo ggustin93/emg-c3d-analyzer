@@ -432,7 +432,7 @@ describe('useScoringConfiguration', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Change therapist ID
-      rerender({ therapistId: 'therapist-123', patientId: undefined });
+      rerender({ therapistId: 'therapist-123' });
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledTimes(2);
