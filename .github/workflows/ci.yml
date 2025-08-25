@@ -226,7 +226,7 @@ jobs:
             
             # Backend tests
             if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
-              echo "✅ Backend Tests: PASSED (33 tests)"
+              echo "✅ Backend Tests: PASSED (99 tests - 89 unit/api + 10 E2E)"
             else
               echo "❌ Backend Tests: FAILED"
             fi
