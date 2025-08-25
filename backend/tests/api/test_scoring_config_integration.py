@@ -3,6 +3,14 @@ Integration tests for Scoring Configuration API with real Supabase database
 Tests actual database operations to ensure E2E functionality works correctly
 """
 
+import sys
+from pathlib import Path
+
+# Add the backend directory to the Python path
+backend_dir = Path(__file__).resolve().parents[2]  # Go up two levels to reach the backend directory
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 import pytest
 import os
 from fastapi.testclient import TestClient

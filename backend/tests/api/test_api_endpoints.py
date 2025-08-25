@@ -3,6 +3,14 @@ FastAPI TestClient tests for all API endpoints.
 Tests API layer functionality, authentication, validation, and error handling.
 """
 
+import sys
+from pathlib import Path
+
+# Add the backend directory to the Python path
+backend_dir = Path(__file__).resolve().parents[2]  # Go up two levels to reach the backend directory
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
