@@ -154,7 +154,6 @@ logs/**/*.log
 dump.rdb
 .serena/
 logs/
-data/
 
 # Playwright test directory
 .playwright-mcp/
