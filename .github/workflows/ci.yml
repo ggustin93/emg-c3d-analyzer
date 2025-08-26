@@ -163,6 +163,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       
       - name: Configure npm registry for integration
         run: |
@@ -297,7 +298,11 @@ jobs:
             echo ""
             echo "**Total Tests**: 111+ tests across all categories"
             echo "**Medical Software Quality**: Production-ready for clinical applications"
-            echo "**Workflow Duration**: $(("$GITHUB_RUN_DURATION" / 60)) minutes"
+            if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
+              echo "**Workflow Duration**: $(($GITHUB_RUN_DURATION / 60)) minutes"
+            else
+              echo "**Workflow Duration**: Not available"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-production:
