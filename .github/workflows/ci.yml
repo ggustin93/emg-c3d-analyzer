@@ -299,7 +299,7 @@ jobs:
             echo "**Total Tests**: 111+ tests across all categories"
             echo "**Medical Software Quality**: Production-ready for clinical applications"
             if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
-              echo "**Workflow Duration**: $(($GITHUB_RUN_DURATION / 60)) minutes"
+              echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
             else
               echo "**Workflow Duration**: Not available"
             fi
