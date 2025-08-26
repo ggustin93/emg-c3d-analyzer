@@ -10,7 +10,18 @@ import C3DFileBrowser from '../C3DFileBrowser';
 // Mock dependencies
 vi.mock('@/services/supabaseStorage');
 vi.mock('@/lib/supabaseSetup');
-vi.mock('@/contexts/AuthContext');
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    authState: { user: null, loading: false, error: null },
+    login: vi.fn(),
+    logout: vi.fn(),
+    register: vi.fn(),
+    refreshSession: vi.fn(),
+    resetPassword: vi.fn(),
+    isAuthenticated: false,
+    isLoading: false
+  }))
+}));
 vi.mock('@/services/therapySessionsService');
 vi.mock('@/components/c3d/C3DFileUpload', () => {
   return {
@@ -32,8 +43,28 @@ import { TherapySessionsService } from '@/services/therapySessionsService';
 // Mock implementations
 const mockSupabaseStorageService = SupabaseStorageService as any;
 const mockSupabaseSetup = SupabaseSetup as any;
-const mockUseAuth = useAuth as any;
+const mockUseAuth = vi.mocked(useAuth);
 const mockTherapySessionsService = TherapySessionsService as any;
+
+// Default mock auth state
+const mockAuthState = {
+  user: null,
+  session: null,
+  profile: null,
+  loading: false,
+  error: null
+};
+
+const mockAuthContext = {
+  authState: mockAuthState,
+  login: vi.fn(),
+  logout: vi.fn(),
+  register: vi.fn(),
+  refreshSession: vi.fn(),
+  resetPassword: vi.fn(),
+  isAuthenticated: false,
+  isLoading: false
+};
 
 describe('C3DFileBrowser - Core Functionality Tests', () => {
   const mockOnFileSelect = vi.fn();
@@ -54,8 +85,11 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
   const mockAuthenticatedUser = {
     id: 'user-123',
     email: 'test@example.com',
-    user_metadata: {}
-  };
+    user_metadata: {},
+    app_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString()
+  } as any;
 
   beforeEach(() => {
     // Reset all mocks
@@ -66,9 +100,14 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
     console.error = vi.fn();
     console.warn = vi.fn();
 
-    // Default mock implementations
+    // Default mock implementations  
     mockUseAuth.mockReturnValue({
-      authState: { user: mockAuthenticatedUser, loading: false }
+      ...mockAuthContext,
+      authState: { 
+        ...mockAuthState, 
+        user: mockAuthenticatedUser, 
+        loading: false 
+      }
     });
 
     mockSupabaseStorageService.isConfigured.mockReturnValue(true);
@@ -181,7 +220,14 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
 
     it('should handle unauthenticated state', async () => {
       mockUseAuth.mockReturnValue({
-        authState: { user: null, loading: false }
+        authState: { user: null, loading: false, session: null, profile: null, error: null },
+        login: vi.fn(),
+        logout: vi.fn(),
+        register: vi.fn(),
+        refreshSession: vi.fn(),
+        resetPassword: vi.fn(),
+        isAuthenticated: false,
+        isLoading: false
       });
 
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);

@@ -60,7 +60,6 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
   // ✅ CONSISTENT WITH C3DFileBrowser: Use the same resolver for therapist ID
   // This ensures DEV mode fake names work consistently across both components
   const resolvedTherapistId = resolveTherapistId(mockFile);
-    console.log('🔍 HEEEEEEEEEEERe',resolveTherapistId);
 
   
   const patientBadgeProps = getPatientIdBadgeProps(resolvedPatientId);
