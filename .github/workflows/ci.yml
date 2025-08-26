@@ -309,7 +309,11 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test, integration-test, quality-checks]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # This job is currently disabled from running automatically on pushes to main.
+    # It is intended for automated deployments of Supabase migrations and Edge Functions.
+    # To re-enable, uncomment the 'if' condition below.
+    # It can still be run manually via the GitHub Actions UI ("Run workflow" button).
+    # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: Production
     
     steps:
