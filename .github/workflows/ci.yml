@@ -297,7 +297,7 @@ jobs:
             echo ""
             echo "**Total Tests**: 111+ tests across all categories"
             echo "**Medical Software Quality**: Production-ready for clinical applications"
-            echo "**Workflow Duration**: $(("$GITHUB_RUN_DURATION" / 60)) minutes"""
+            echo "**Workflow Duration**: $(("$GITHUB_RUN_DURATION" / 60)) minutes"
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-production:
@@ -322,7 +322,7 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
           echo "🔗 Linking to production Supabase project..."
-          supabase link --project-ref $SUPABASE_PROJECT_ID
+          supabase link --project-ref "$SUPABASE_PROJECT_ID"
       
       - name: Deploy database migrations
         env:
