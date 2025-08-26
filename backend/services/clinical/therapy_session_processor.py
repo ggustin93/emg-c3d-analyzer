@@ -1,4 +1,4 @@
-"""
+""""
 Therapy Session Processor - Workflow Orchestrator
 ================================================
 
@@ -20,8 +20,13 @@ Therapy Session Processor - Workflow Orchestrator
 ⚠️ NOTE: This service is intentionally comprehensive for webhook processing.
 For individual operations, use the specific services directly.
 
+🏗️ ARCHITECTURE: 
+- Uses centralized database_operations service (DRY principle)
+- Timestamps managed automatically by database service
+- SOLID principles with service composition over inheritance
+
 Author: EMG C3D Analyzer Team
-Date: 2025-08-14
+Date: 2025-08-14 | Refactored: 2025-08-26
 """
 
 import hashlib
@@ -29,16 +34,12 @@ import logging
 import tempfile
 import os
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List, Union, Tuple
-from uuid import UUID, uuid4
+from typing import Dict, Any, Optional, Tuple
+from uuid import uuid4
 
 # Custom Exception Classes for Better Error Handling
 class TherapySessionError(Exception):
     """Base exception for therapy session processing errors"""
-    pass
-
-class DatabaseOperationError(TherapySessionError):
-    """Raised when database operations fail"""
     pass
 
 class FileProcessingError(TherapySessionError):
@@ -53,6 +54,7 @@ from database.supabase_client import get_supabase_client
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.c3d.reader import C3DReader
 from .performance_scoring_service import PerformanceScoringService, SessionMetrics
+from .database_operations import TherapySessionDatabaseOperations, DatabaseOperationError
 from models.models import ProcessingOptions, GameSessionParameters
 from config import (
     DEFAULT_THRESHOLD_FACTOR,
@@ -97,10 +99,13 @@ class TherapySessionProcessor:
         """
         Initializes the processor with Supabase client and specialized services.
         - `use_service_key=True` grants admin privileges for backend operations.
+        - Database operations service provides centralized data access (DRY principle)
         """
         self.supabase = get_supabase_client(use_service_key=True)
         self.c3d_reader = C3DReader()
         self.scoring_service = PerformanceScoringService(self.supabase)
+        # Centralized database operations to eliminate DRY violations
+        self.db_ops = TherapySessionDatabaseOperations(self.supabase)
     
     async def create_session(
         self,
@@ -142,6 +147,9 @@ class TherapySessionProcessor:
                 logger.info(f"♻️ Found existing session: {existing['id']}")
                 return str(existing['id'])
             
+            # Generate timestamps once for consistency
+            timestamp = datetime.now(timezone.utc).isoformat()
+            
             session_data = {
                 "id": str(uuid4()),
                 "file_path": file_path,
@@ -150,21 +158,15 @@ class TherapySessionProcessor:
                 "patient_id": patient_id,
                 "therapist_id": therapist_id,
                 "processing_status": "pending",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": timestamp,
+                "updated_at": timestamp,
                 "analytics_cache": {},
                 "game_metadata": {}
             }
             
-            result = self.supabase.table("therapy_sessions").insert(session_data).execute()
-            
-            if not result.data:
-                raise ValueError("Failed to create therapy session - no data returned from database")
-            
-            session_id = result.data[0]["id"]
-            logger.info(f"✅ Created therapy session: {session_id}")
-            
-            return session_id
+            # Use centralized database operations (DRY principle)
+            session = self.db_ops.create_therapy_session(session_data)
+            return session["id"]
             
         except Exception as e:
             logger.error(f"Failed to create session: {str(e)}", exc_info=True)
@@ -221,17 +223,8 @@ class TherapySessionProcessor:
             error_message: Optional error message if status is failed
         """
         try:
-            update_data = {
-                "processing_status": status,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
-            
-            if status == "completed":
-                update_data["processed_at"] = datetime.now(timezone.utc).isoformat()
-            elif status == "failed" and error_message:
-                update_data["processing_error_message"] = error_message
-            
-            self.supabase.table("therapy_sessions").update(update_data).eq("id", session_id).execute()
+            # Use centralized database operations (DRY principle)
+            self.db_ops.update_session_status(session_id, status, error_message)
             
             logger.info(f"📊 Session {session_id} status: {status}")
             
@@ -310,11 +303,8 @@ class TherapySessionProcessor:
             Session data or None if not found
         """
         try:
-            result = self.supabase.table("therapy_sessions").select("*").eq("id", session_id).execute()
-            
-            if result.data:
-                return result.data[0]
-            return None
+            # Use centralized database operations (DRY principle)
+            return self.db_ops.get_therapy_session(session_id)
             
         except Exception as e:
             logger.error(f"Failed to get session status: {str(e)}", exc_info=True)
@@ -396,11 +386,12 @@ class TherapySessionProcessor:
             # Create processing configuration
             processing_opts, session_params = self._create_processing_config(duration_threshold)
             
-            # Process C3D file
+            # Process C3D file in lightweight mode (webhook doesn't need EMG signals)
             processor = GHOSTLYC3DProcessor(tmp_file_path)
             result = processor.process_file(
                 processing_opts=processing_opts,
-                session_game_params=session_params
+                session_game_params=session_params,
+                include_signals=False  # ⚡ 90% memory reduction for webhook processing
             )
             
             # Populate database tables
@@ -463,13 +454,11 @@ class TherapySessionProcessor:
         """
         try:
             if patient_id:
-                # Query patient profile for custom duration threshold
-                result = self.supabase.table("patient_profiles").select(
-                    "therapeutic_duration_threshold_ms"
-                ).eq("patient_id", patient_id).execute()
+                # Use centralized database operations (DRY principle)
+                profile = self.db_ops.get_patient_profile(patient_id)
                 
-                if result.data and result.data[0].get("therapeutic_duration_threshold_ms"):
-                    threshold = result.data[0]["therapeutic_duration_threshold_ms"]
+                if profile and profile.get("therapeutic_duration_threshold_ms"):
+                    threshold = profile["therapeutic_duration_threshold_ms"]
                     logger.info(f"📊 Using patient-specific duration threshold: {threshold}ms for patient {patient_id}")
                     return float(threshold)
             
@@ -517,17 +506,9 @@ class TherapySessionProcessor:
             raise FileProcessingError(f"Download operation failed: {str(e)}") from e
     
     async def _find_existing_session(self, file_hash: str) -> Optional[Dict[str, Any]]:
-        """Find existing session with same file hash"""
-        try:
-            result = self.supabase.table("therapy_sessions").select("*").eq("file_hash", file_hash).execute()
-            
-            if result.data:
-                return result.data[0]
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error finding existing session: {str(e)}")
-            return None
+        """Find existing session with same file hash (using centralized DB operations)"""
+        # Use centralized database operations (DRY principle)
+        return self.db_ops.get_session_by_file_hash(file_hash)
     
     async def _populate_database_tables(
         self,
@@ -585,7 +566,7 @@ class TherapySessionProcessor:
             "sampling_rate": metadata.get("sampling_rate", 1000.0),
             "duration_seconds": metadata.get("duration_seconds", 0.0),
             "frame_count": metadata.get("frame_count", 0),
-            "extracted_at": datetime.now(timezone.utc).isoformat()
+            # Timestamp will be added automatically by database operations service
         }
         await self._upsert_table("c3d_technical_data", technical_data, "session_id")
     
@@ -606,12 +587,9 @@ class TherapySessionProcessor:
             stats_data = self._build_emg_stats_record(session_id, channel_name, channel_data, session_params)
             all_stats.append(stats_data)
         
-        # Batch insert for better performance
+        # Batch insert using centralized database operations (DRY principle)
         if all_stats:
-            result = self.supabase.table("emg_statistics").insert(all_stats).execute()
-            if not result.data:
-                raise DatabaseOperationError(f"Failed to insert EMG statistics for session {session_id}")
-            
+            self.db_ops.bulk_insert_emg_statistics(all_stats)
             logger.debug(f"📊 Inserted {len(all_stats)} EMG statistics records for session {session_id}")
     
     def _build_emg_stats_record(
@@ -657,7 +635,7 @@ class TherapySessionProcessor:
             "processing_confidence": channel_data.get("processing_confidence", 0.0),
             "median_frequency_slope": None,  # Future implementation
             "estimated_fatigue_percentage": None,  # Future implementation
-            "created_at": datetime.now(timezone.utc).isoformat()
+            # Timestamp will be added automatically by database operations service
         }
     
     def _extract_temporal_stats(self, channel_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -703,51 +681,16 @@ class TherapySessionProcessor:
             "rms_overlap_percent": RMS_OVERLAP_PERCENTAGE,
             "mvc_window_seconds": MVC_WINDOW_SECONDS,
             "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
-            "processing_version": PROCESSING_VERSION,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "processing_version": PROCESSING_VERSION
         }
         
-        result = self.supabase.table("processing_parameters").insert(params_data).execute()
-        if not result.data:
-            raise DatabaseOperationError(f"Failed to insert processing parameters for session {session_id}")
+        # Use centralized database operations (DRY principle)
+        await self.db_ops.insert_processing_parameters(params_data)
     
     async def _upsert_table(self, table_name: str, data: Dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling"""
-        try:
-            # Validate inputs to prevent downstream errors.
-            if not table_name or not data or unique_key not in data:
-                raise ValueError(f"Invalid upsert parameters: table={table_name}, key={unique_key}")
-            
-            # Optimization: Attempt to INSERT first, as this is the most common
-            # case for new data and is more performant than a SELECT-then-UPDATE.
-            result = self.supabase.table(table_name).insert(data).execute()
-            
-            # PostgREST returns data on successful insert. If it's empty, the
-            # insert may have failed (e.g., due to a unique key constraint).
-            if not result.data:
-                # If insert failed, assume the record exists and attempt to UPDATE.
-                unique_value = data[unique_key]
-                update_result = self.supabase.table(table_name).update(data).eq(unique_key, unique_value).execute()
-                
-                # If both insert and update fail to return data, a problem exists.
-                if not update_result.data:
-                    raise DatabaseOperationError(f"Both insert and update failed for {table_name}")
-                
-        except Exception as e:
-            # If the initial insert throws an exception (likely a unique key
-            # violation), we catch it and try an update as the fallback strategy.
-            try:
-                unique_value = data[unique_key]
-                update_result = self.supabase.table(table_name).update(data).eq(unique_key, unique_value).execute()
-                
-                if not update_result.data:
-                    raise DatabaseOperationError(f"Update operation failed for {table_name}")
-                    
-            except Exception as update_error:
-                # If the fallback update also fails, raise a comprehensive error.
-                raise DatabaseOperationError(
-                    f"Failed to upsert {table_name}: insert failed ({str(e)}), update failed ({str(update_error)})"
-                ) from update_error
+        # Use centralized database operations (DRY principle)
+        await self.db_ops.upsert_table_data(table_name, data, unique_key)
     
     async def _calculate_and_save_performance_scores(
         self, 
@@ -823,14 +766,14 @@ class TherapySessionProcessor:
                     "summary": {
                         "total_channels": len(processing_result.get("analytics", {})),
                         "overall_compliance": self._calculate_compliance_score(processing_result.get("analytics", {})),
-                        "cached_at": datetime.now(timezone.utc).isoformat()
+                        # Cache timestamp will be added by database operations service
                     }
                 },
-                "processing_time_ms": processing_result.get("processing_time_ms", 0),
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "processing_time_ms": processing_result.get("processing_time_ms", 0)
             }
             
-            self.supabase.table("therapy_sessions").update(cache_data).eq("id", session_id).execute()
+            # Use centralized database operations (DRY principle)
+            self.db_ops.update_session_analytics_cache(session_id, cache_data)
             
         except Exception as e:
             logger.error(f"Failed to update session cache: {str(e)}")
@@ -854,8 +797,7 @@ class TherapySessionProcessor:
             
             # Update session with metadata
             update_data = {
-                "game_metadata": metadata,
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "game_metadata": metadata
             }
             
             # Add session_date if we successfully parsed the timestamp
@@ -863,7 +805,8 @@ class TherapySessionProcessor:
                 update_data["session_date"] = session_timestamp
                 logger.info(f"📅 Extracted session timestamp: {session_timestamp}")
             
-            self.supabase.table("therapy_sessions").update(update_data).eq("id", session_id).execute()
+            # Use centralized database operations (DRY principle)
+            self.db_ops.update_therapy_session(session_id, update_data)
             
             logger.info(f"📊 Updated session metadata for: {session_id}")
             

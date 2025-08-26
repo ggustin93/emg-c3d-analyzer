@@ -123,7 +123,7 @@ async def upload_file(
             }),
             analytics=analytics,
             available_channels=result_data['available_channels'],
-            emg_signals=result_data.get('emg_signals', {}), # EMG signal data from processing result
+            emg_signals=result_data.get('emg_signals', {}), # EMG signal data (raw, activated, processed) from C3D processor
             c3d_parameters=c3d_params,  # Include comprehensive C3D parameters
             user_id=file_metadata["user_id"],
             patient_id=file_metadata["patient_id"],
