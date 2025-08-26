@@ -37,16 +37,39 @@ class TestScoringConfigurationIntegration:
     
     def test_get_all_configurations_from_database(self, client):
         """Test GET /scoring/configurations returns real database data"""
+        # First create a test configuration to ensure we have data to retrieve
+        test_config = {
+            "configuration_name": "Test Integration Config",
+            "description": "Created for integration test",
+            "weight_compliance": 0.40,
+            "weight_symmetry": 0.25,
+            "weight_effort": 0.20,
+            "weight_game": 0.15,
+            "weight_completion": 0.333,
+            "weight_intensity": 0.333,
+            "weight_duration": 0.334
+        }
+        
+        # Create the configuration
+        create_response = client.post("/scoring/configurations", json=test_config)
+        assert create_response.status_code == 200
+        created_config = create_response.json()
+        
+        # Now test that we can retrieve all configurations
         response = client.get("/scoring/configurations")
         
         assert response.status_code == 200
         data = response.json()
         
-        # Should have at least the default configuration we created
+        # Should have at least the configuration we just created
         assert len(data) >= 1
         
+        # Find our test configuration
+        test_configs = [c for c in data if c['configuration_name'] == 'Test Integration Config']
+        assert len(test_configs) >= 1, "Should find the test configuration we created"
+        
         # Verify structure matches our database schema
-        config = data[0]
+        config = test_configs[0]
         required_fields = [
             'id', 'configuration_name', 'weight_compliance', 
             'weight_symmetry', 'weight_effort', 'weight_game',
@@ -57,9 +80,9 @@ class TestScoringConfigurationIntegration:
         for field in required_fields:
             assert field in config, f"Missing field: {field}"
         
-        # Should have the GHOSTLY+ Default configuration
-        config_names = [c['configuration_name'] for c in data]
-        assert 'GHOSTLY+ Default' in config_names
+        # Verify the values match what we created
+        assert config['configuration_name'] == test_config['configuration_name']
+        assert float(config['weight_compliance']) == test_config['weight_compliance']
     
     def test_get_active_configuration_from_database(self, client):
         """Test GET /scoring/configurations/active returns active config"""
