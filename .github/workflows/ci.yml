@@ -309,9 +309,21 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test, integration-test, quality-checks]
-    # This job is intentionally disabled and will not run.
-    # It is preserved for future use with a self-hosted Supabase instance.
-    # To re-enable it, remove or change the 'if: false' condition below.
+
+    # --- DEPLOIEMENT EN PRODUCTION (GÉRÉ PAR COOLIFY) ---
+    # Ce job est intentionnellement désactivé (`if: false`).
+    #
+    # **Stratégie de déploiement recommandée :**
+    # 1.  **CI (Tests) -> GitHub Actions** : Les jobs ci-dessus (`backend-test`, `frontend-test`, etc.) valident la qualité du code.
+    # 2.  **CD (Déploiement) -> Coolify** : Coolify surveille la branche `main` et déploie automatiquement les nouvelles versions des applications.
+    #
+    # **Pour les migrations de base de données Supabase :**
+    # La méthode la plus sécurisée est de laisser Coolify les gérer. Dans les paramètres de votre service backend sur Coolify,
+    # utilisez une "Deploy Command" pour appliquer les migrations avant de démarrer le serveur, par exemple :
+    #
+    #   supabase db push && uvicorn main:app --host 0.0.0.0 --port 8080
+    #
+    # Les étapes définies ci-dessous peuvent servir de référence pour les commandes à utiliser.
     if: false
     environment: Production
     
