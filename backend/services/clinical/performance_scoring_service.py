@@ -24,6 +24,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from database.supabase_client import get_supabase_client
+from config import DevelopmentDefaults
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +229,7 @@ class PerformanceScoringService:
             compliance_components['left_muscle_compliance'],
             compliance_components['right_muscle_compliance']
         )
-        effort_score, rpe_is_fake = self._calculate_effort_score(session_metrics.rpe_post_session, True)  # Default RPE=4 is fake
+        effort_score, rpe_source = self._calculate_effort_score(session_metrics.rpe_post_session)
         game_score = self._calculate_game_score(
             session_metrics.game_points_achieved,
             session_metrics.game_points_max
@@ -261,7 +262,7 @@ class PerformanceScoringService:
             'bfr_compliant': bool(bfr_gate == 1.0),
             'bfr_pressure_aop': session_metrics.bfr_pressure_aop,
             'rpe_post_session': session_metrics.rpe_post_session,
-            'rpe_is_fake': rpe_is_fake,  # Flag indicating default RPE=4 usage
+            'rpe_source': rpe_source,  # Source of RPE data for debugging
             **compliance_components,
             'weights_used': {
                 'w_compliance': self.weights.w_compliance,
@@ -277,7 +278,7 @@ class PerformanceScoringService:
                 'has_rpe': session_metrics.rpe_post_session is not None,
                 'has_game_data': session_metrics.game_points_achieved is not None,
                 'has_bfr_data': session_metrics.bfr_pressure_aop is not None,
-                'rpe_source': 'fake_default' if rpe_is_fake else 'therapist_provided'
+                'rpe_source': rpe_source
             }
         }
         
@@ -346,16 +347,21 @@ class PerformanceScoringService:
         
         return symmetry_score
     
-    def _calculate_effort_score(self, rpe: Optional[int], rpe_is_fake: bool = False) -> Tuple[Optional[float], bool]:
+    def _calculate_effort_score(self, rpe: Optional[int]) -> Tuple[Optional[float], str]:
         """
         Calculate subjective effort score based on RPE (Rating of Perceived Exertion)
         
         RPE Scale: 0-10 (Borg CR10)
-        Uses configurable RPE mapping (researcher role can customize)
-        Returns: (effort_score, is_fake_flag)
+        Uses configurable RPE mapping and development defaults when needed
+        Returns: (effort_score, rpe_source)
         """
+        # Use development default if RPE is missing
         if rpe is None:
-            return None, False
+            rpe = DevelopmentDefaults.RPE_POST_SESSION
+            rpe_source = "development_default"
+            logger.info(f"💡 Using default RPE={rpe} for development - therapist can update later")
+        else:
+            rpe_source = "c3d_metadata"
         
         # Use configurable RPE mapping (loaded from database or default)
         effort_score = self.rpe_mapping.get_effort_score(rpe)
@@ -364,15 +370,7 @@ class PerformanceScoringService:
         if effort_score == self.rpe_mapping.default_score:
             logger.warning(f"🔍 Unexpected RPE value: {rpe}, using default score: {effort_score}%")
         
-        # Log when using default/fake RPE
-        if rpe == 4 and rpe_is_fake:
-            logger.info(f"💡 Using default RPE=4 (FAKE flag=True) for optimal scoring - therapist can update later")
-        
-        # Log RPE mapping used for transparency
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"📊 RPE {rpe} → {effort_score}% (using {'custom' if hasattr(self, 'rpe_mapping') else 'default'} mapping)")
-        
-        return effort_score, rpe_is_fake
+        return effort_score, rpe_source
     
     def _calculate_game_score(self, 
                              points_achieved: Optional[int], 
@@ -497,9 +495,7 @@ class PerformanceScoringService:
                 'weight_completion': scores['weights_used']['w_completion'],
                 'weight_intensity': scores['weights_used']['w_intensity'],
                 'weight_duration': scores['weights_used']['w_duration'],
-                # Add fake RPE flag when RPE=4 is used as default
-                'rpe_post_session': scores.get('rpe_post_session', 4),
-                'rpe_is_fake': scores.get('rpe_is_fake', True)  # Flag for default RPE=4
+                'rpe_post_session': scores.get('rpe_post_session', DevelopmentDefaults.RPE_POST_SESSION)
             }
             
             if existing.data:

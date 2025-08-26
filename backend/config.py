@@ -37,13 +37,7 @@ DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE = 50.0  # 50% overlap
 MIN_TEMPORAL_WINDOWS_REQUIRED = 3  # Minimum windows required for valid stats
 
 # --- File Processing ---
-MAX_FILE_SIZE_MB = 100
 SUPPORTED_FILE_EXTENSIONS = ['.c3d']
-TEMP_DIR_PREFIX = 'emg_analysis_'
-
-# --- Performance & Caching ---
-CACHE_TIMEOUT_SECONDS = 3600  # 1 hour
-MAX_CACHE_SIZE = 100  # number of cached results
 
 # --- Clinical Constants ---
 BORG_CR10_SCALE_MAX = 10
@@ -58,10 +52,21 @@ RMS_OVERLAP_PERCENTAGE = 50.0  # RMS window overlap
 MVC_WINDOW_SECONDS = 3.0  # MVC calculation window
 NYQUIST_SAFETY_FACTOR = 0.9  # 90% of Nyquist frequency for safety
 
-# Clinical Scoring Default Values
-DEFAULT_BFR_PRESSURE_AOP = 50.0  # 50% AOP
-DEFAULT_RPE_VALUE = 4  # Optimal RPE range
+# Clinical Protocol Constants
 EXPECTED_CONTRACTIONS_PER_MUSCLE = 12  # GHOSTLY+ protocol
+
+# =============================================================================
+# DEVELOPMENT DEFAULTS (MVP - Only Critical Values)
+# =============================================================================
+# Simple fallback values for development when C3D metadata is incomplete.
+# Production C3D files will have complete data.
+
+class DevelopmentDefaults:
+    """Default values for development/testing. KISS/MVP approach."""
+    
+    # Only the critical values that fix the immediate webhook issue
+    BFR_PRESSURE_AOP: float = 50.0  # Safe BFR default
+    RPE_POST_SESSION: int = 4  # Optimal RPE for development testing
 
 # Advanced Contraction Detection Parameters 
 MERGE_THRESHOLD_MS = 150  # Maximum time gap between contractions to merge them (ms)

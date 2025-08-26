@@ -358,29 +358,24 @@ class TestPerformanceScoringService:
         # Test all RPE mappings from specification
         test_cases = [
             # Optimal range (RPE 4-6): 100%
-            (4, False, 100.0), (5, False, 100.0), (6, False, 100.0),
+            (4, 100.0, "c3d_metadata"), (5, 100.0, "c3d_metadata"), (6, 100.0, "c3d_metadata"),
             # Acceptable range (RPE 3, 7): 80%
-            (3, False, 80.0), (7, False, 80.0),
+            (3, 80.0, "c3d_metadata"), (7, 80.0, "c3d_metadata"),
             # Suboptimal range (RPE 2, 8): 60%
-            (2, False, 60.0), (8, False, 60.0),
+            (2, 60.0, "c3d_metadata"), (8, 60.0, "c3d_metadata"),
             # Poor range (RPE 0-1, 9-10): 20%
-            (0, False, 20.0), (1, False, 20.0), (9, False, 20.0), (10, False, 20.0),
-            # None value
-            (None, False, None)
+            (0, 20.0, "c3d_metadata"), (1, 20.0, "c3d_metadata"), (9, 20.0, "c3d_metadata"), (10, 20.0, "c3d_metadata"),
+            # None value uses development default
+            (None, 100.0, "development_default")  # DevelopmentDefaults.RPE_POST_SESSION = 4 → 100%
         ]
         
-        for rpe, is_fake, expected in test_cases:
-            effort_score, fake_flag = scoring_service._calculate_effort_score(rpe, is_fake)
-            if expected is None:
+        for rpe, expected_score, expected_source in test_cases:
+            effort_score, rpe_source = scoring_service._calculate_effort_score(rpe)
+            if expected_score is None:
                 assert effort_score is None
             else:
-                assert effort_score == expected, f"RPE {rpe} should give effort score {expected}"
-                assert fake_flag == is_fake
-        
-        # Test fake RPE flag
-        effort_score, fake_flag = scoring_service._calculate_effort_score(4, True)
-        assert effort_score == 100.0
-        assert fake_flag == True
+                assert effort_score == expected_score, f"RPE {rpe} should give effort score {expected_score}"
+                assert rpe_source == expected_source, f"RPE {rpe} should have source {expected_source}"
     
     def test_calculate_game_score(self, scoring_service):
         """Test game performance score calculation"""
@@ -597,9 +592,10 @@ class TestSingleSourceOfTruthValidation:
         
         for rpe_values, expected_score in rpe_mappings:
             for rpe in rpe_values:
-                score, _ = service._calculate_effort_score(rpe, False)
+                score, rpe_source = service._calculate_effort_score(rpe)
                 assert score == expected_score, \
                     f"RPE {rpe} should map to {expected_score}% according to metricsDefinitions.md"
+                assert rpe_source == "c3d_metadata", f"RPE {rpe} should have c3d_metadata source"
         
         # Test BFR safety window matches specification
         assert service._calculate_bfr_gate(44.9) == 0.0  # Just outside lower bound

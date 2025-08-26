@@ -71,9 +71,9 @@ from config import (
     RMS_OVERLAP_PERCENTAGE,
     MVC_WINDOW_SECONDS,
     NYQUIST_SAFETY_FACTOR,
-    DEFAULT_BFR_PRESSURE_AOP,
-    DEFAULT_RPE_VALUE,
-    EXPECTED_CONTRACTIONS_PER_MUSCLE
+    EXPECTED_CONTRACTIONS_PER_MUSCLE,
+    # Development Defaults
+    DevelopmentDefaults
 )
 
 # Note: All clinical constants now imported from config.py (Single Source of Truth)
@@ -782,10 +782,10 @@ class TherapySessionProcessor:
                 right_mvc_contractions=right_data.get("mvc_contraction_count", 0),
                 right_duration_contractions=right_data.get("duration_contraction_count", 0),
                 
-                # Default clinical values using constants
-                bfr_pressure_aop=DEFAULT_BFR_PRESSURE_AOP,
+                # Default clinical values using centralized configuration
+                bfr_pressure_aop=DevelopmentDefaults.BFR_PRESSURE_AOP,
                 bfr_compliant=True,
-                rpe_post_session=DEFAULT_RPE_VALUE,
+                rpe_post_session=DevelopmentDefaults.RPE_POST_SESSION,
                 
                 # Game data from C3D metadata (if available)
                 game_points_achieved=processing_result.get("metadata", {}).get("game_points_achieved"),
