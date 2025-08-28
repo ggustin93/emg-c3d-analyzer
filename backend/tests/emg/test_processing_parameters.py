@@ -8,12 +8,11 @@ This test ensures that the filter frequency parameters satisfy the database cons
 """
 
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
-from config import DEFAULT_FILTER_ORDER, DEFAULT_LOWPASS_CUTOFF, DEFAULT_RMS_WINDOW_MS
-from services.clinical.therapy_session_processor import TherapySessionProcessor
+from config import DEFAULT_LOWPASS_CUTOFF
 
 
 class TestProcessingParameters:
