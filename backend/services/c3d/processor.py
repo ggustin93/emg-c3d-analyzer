@@ -32,13 +32,10 @@ ASSUMPTIONS & PARAMETERS:
    - Refractory period: 50ms to prevent artifact detection
 """
 
-import json
 import logging
-import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-import ezc3d
 import numpy as np
 
 from backend.services.c3d.utils import C3DUtils
@@ -48,14 +45,7 @@ logger = logging.getLogger(__name__)
 # Import configuration
 from config import (
     ACTIVATED_THRESHOLD_FACTOR,
-    ACTIVITY_COLORS,
-    CONTRACTION_COLOR,
-    DEFAULT_MIN_DURATION_MS,
     DEFAULT_SAMPLING_RATE,
-    DEFAULT_SMOOTHING_WINDOW,
-    DEFAULT_THRESHOLD_FACTOR,
-    # RMS envelope window is centralized in ProcessingParameters.SMOOTHING_WINDOW_MS
-    EMG_COLOR,
     MERGE_THRESHOLD_MS,
     REFRACTORY_PERIOD_MS,
 )
@@ -68,7 +58,6 @@ from emg.emg_analysis import (
 )
 from emg.signal_processing import (
     ProcessingParameters,
-    get_processing_metadata,
     preprocess_emg_signal,
 )
 from models import GameSessionParameters
@@ -1120,7 +1109,7 @@ class GHOSTLYC3DProcessor:
             session_game_params.session_mvc_threshold_percentages = {}
 
         # Ensure all base channels have MVC values
-        for base_name in base_names:
+        for i, base_name in enumerate(base_names):
             if base_name not in session_game_params.session_mvc_values:
                 # Use global value as fallback if available
                 session_game_params.session_mvc_values[base_name] = (

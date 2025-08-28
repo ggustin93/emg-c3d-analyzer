@@ -32,11 +32,10 @@ Date: 2025-08-27 | Migration from DB cache to Redis
 import gzip
 import json
 import logging
-import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import datetime, timezone
+from typing import Any
 
 try:
     import redis
@@ -373,8 +372,9 @@ class RedisCacheService:
                 try:
                     updated_data = self._serialize_entry(cache_entry)
                     redis_client.setex(cache_key, self.default_ttl_seconds, updated_data)
-                except Exception:
-                    pass  # Non-critical operation
+                except Exception as e:
+                    # Non-critical operation - log but don't fail
+                    logger.debug("Failed to update cache access stats for session %s: %s", session_id, e)
 
                 self.stats.hits += 1
                 self.stats.update_hit_rate()
@@ -445,8 +445,9 @@ class RedisCacheService:
                         "total_commands_processed": info.get("total_commands_processed"),
                         "uptime_in_seconds": info.get("uptime_in_seconds"),
                     }
-        except Exception:
-            pass
+        except Exception as e:
+            # Redis info unavailable - log but continue with partial health info
+            logger.debug("Failed to retrieve Redis server info: %s", e)
 
         return {
             "cache_service": {

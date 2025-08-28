@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import traceback
 from pathlib import Path
@@ -30,7 +29,7 @@ logger = logging.getLogger("backend")
 
 # Try to import the app with proper error handling
 try:
-    from api.main import app
+    from api.main import app  # noqa: F401
 
     logger.info("Successfully imported FastAPI application from modular structure")
 except ImportError as e:
