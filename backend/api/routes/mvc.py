@@ -6,16 +6,15 @@ Single responsibility: MVC calibration from files or existing data.
 KISS principle: One endpoint, smart input detection.
 """
 
-import json
+
 import logging
 import os
 import shutil
 import tempfile
-from typing import Dict, Optional, Union
+
 
 import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from models import EMGAnalysisResult, GameSessionParameters

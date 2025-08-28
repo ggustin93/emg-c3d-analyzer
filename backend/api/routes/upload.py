@@ -11,7 +11,6 @@ import shutil
 import tempfile
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from config import MAX_FILE_SIZE
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile

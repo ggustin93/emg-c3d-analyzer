@@ -4,7 +4,7 @@ Basic cache health, stats, and management endpoints.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel

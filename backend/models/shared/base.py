@@ -9,7 +9,6 @@ Date: 2025-08-28
 """
 
 from datetime import datetime, timezone
-
 from uuid import UUID
 
 from pydantic import BaseModel, Field

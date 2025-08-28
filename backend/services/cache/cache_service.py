@@ -2,11 +2,10 @@
 Manages caching of processed analysis data to avoid reprocessing identical files.
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4
+from typing import Any
+from uuid import UUID
 
 from config import get_settings
 

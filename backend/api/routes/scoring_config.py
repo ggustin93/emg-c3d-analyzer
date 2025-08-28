@@ -6,13 +6,11 @@ Allows therapists and researchers to customize scoring algorithms.
 """
 
 import logging
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, validator
 
 from database.supabase_client import get_supabase_client
-from services.clinical.performance_scoring_service import ScoringWeights
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/scoring", tags=["scoring"])

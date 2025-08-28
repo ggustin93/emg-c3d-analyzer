@@ -9,10 +9,9 @@ Date: 2025-08-28
 """
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 
 from backend.models.shared.base import DatabaseBaseModel, TimestampMixin
 from backend.models.shared.enums import AccessLevel, UserRole

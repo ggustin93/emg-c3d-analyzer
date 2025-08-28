@@ -3,7 +3,7 @@ Simple, focused utility functions for C3D metadata extraction.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     import ezc3d
@@ -95,11 +95,11 @@ class C3DUtils:
             return {}
 
     @staticmethod
-    def load_c3d_file(file_path: str):
+    def load_c3d_file(file_path):
         """Load C3D file using ezc3d library.
 
         Args:
-            file_path: Path to C3D file
+            file_path: Path to C3D file (str or pathlib.Path)
 
         Returns:
             Loaded C3D data or None if failed
@@ -109,7 +109,9 @@ class C3DUtils:
             return None
 
         try:
-            return ezc3d.c3d(file_path)
+            # Convert pathlib.Path to string if needed
+            file_path_str = str(file_path)
+            return ezc3d.c3d(file_path_str)
         except Exception as e:
             logger.exception(f"Failed to load C3D file {file_path}: {e!s}")
             return None

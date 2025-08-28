@@ -19,9 +19,7 @@ Date: 2025-08-12
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 from config import DevelopmentDefaults
 
 from database.supabase_client import get_supabase_client

@@ -35,7 +35,6 @@ Key parameters requiring clinical validation:
 Detailed hypotheses for each parameter are documented within the relevant function docstrings.
 """
 
-from typing import Dict, List, Optional
 
 import numpy as np
 from config import (

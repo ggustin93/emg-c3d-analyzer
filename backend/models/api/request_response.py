@@ -6,8 +6,7 @@ Data models for the FastAPI implementation to validate
 and serialize/deserialize data.
 """
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 # Import default parameters from config
 from config import (

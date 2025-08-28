@@ -5,7 +5,7 @@ Common validation patterns and parameter extraction.
 Implements DRY principle for repeated parameter patterns.
 """
 
-from typing import Optional
+
 
 from config import (
     DEFAULT_MIN_DURATION_MS,

@@ -10,7 +10,6 @@ import os
 import shutil
 import tempfile
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse

@@ -15,21 +15,19 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-14
 """
 
-import hashlib
 import logging
 import os
 import tempfile
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from config import get_settings
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from database.supabase_client import get_supabase_client
-from models import GameSessionParameters, ProcessingOptions
+from models import ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.data.metadata_service import MetadataService
 

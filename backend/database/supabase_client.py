@@ -7,7 +7,6 @@ import os
 
 # Load environment variables from .env file
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 from supabase import Client, create_client

@@ -1,8 +1,7 @@
 """Simple export service for EMG data."""
 
-import json
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class EMGDataExporter:

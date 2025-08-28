@@ -8,7 +8,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.services.cache.redis_cache import RedisCache, get_redis_cache
 

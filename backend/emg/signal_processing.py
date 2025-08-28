@@ -26,7 +26,6 @@ Date: 2025-08-08
 """
 
 import logging
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 from scipy.signal import butter, filtfilt

@@ -2,16 +2,14 @@
 Fast, reliable caching with graceful fallback.
 """
 
-import asyncio
 import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import redis.asyncio as redis
 from config import get_settings
-from redis.exceptions import ConnectionError, TimeoutError
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
