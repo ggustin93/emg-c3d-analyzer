@@ -195,7 +195,7 @@ jobs:
             echo "ERROR: Supabase environment variables are missing"
             exit 1
           fi
-          python -m uvicorn main:app --host 0.0.0.0 --port 8080 --log-level debug &
+          python main.py &
           echo $! > backend_pid.txt
       
       - name: Set PYTHONPATH for Integration Tests
