@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Performance Scores Verification Test
+"""Performance Scores Verification Test.
+
 ==================================
 
 Test the enhanced performance scores calculation to verify all NULL
@@ -23,9 +23,7 @@ from services.clinical.therapy_session_processor import TherapySessionProcessor
 
 
 async def test_performance_scores():
-    """
-    Test enhanced performance scores calculation
-    """
+    """Test enhanced performance scores calculation."""
     print("📊 Performance Scores Enhancement Test")
     print("=" * 60)
 
@@ -45,18 +43,13 @@ async def test_performance_scores():
         print("\n🚀 Step 1: Create Session for Performance Testing")
         print("-" * 50)
 
-        import uuid
-
-        file_metadata = {
-            "size": c3d_file_path.stat().st_size,
-            "name": "performance_test.c3d"
-        }
+        file_metadata = {"size": c3d_file_path.stat().st_size, "name": "performance_test.c3d"}
 
         session_id = await processor.create_session(
             file_path="test/performance_test.c3d",
             file_metadata=file_metadata,
             patient_id=None,
-            therapist_id=None
+            therapist_id=None,
         )
 
         print(f"✅ Created session: {session_id}")
@@ -79,6 +72,7 @@ async def test_performance_scores():
                 DEFAULT_SMOOTHING_WINDOW,
                 DEFAULT_THRESHOLD_FACTOR,
             )
+
             from models import GameSessionParameters, ProcessingOptions
             from services.c3d.processor import GHOSTLYC3DProcessor
 
@@ -87,7 +81,7 @@ async def test_performance_scores():
             processing_opts = ProcessingOptions(
                 threshold_factor=DEFAULT_THRESHOLD_FACTOR,
                 min_duration_ms=DEFAULT_MIN_DURATION_MS,
-                smoothing_window=DEFAULT_SMOOTHING_WINDOW
+                smoothing_window=DEFAULT_SMOOTHING_WINDOW,
             )
 
             session_params = GameSessionParameters(
@@ -95,8 +89,7 @@ async def test_performance_scores():
             )
 
             result = c3d_processor.process_file(
-                processing_opts=processing_opts,
-                session_game_params=session_params
+                processing_opts=processing_opts, session_game_params=session_params
             )
 
             print("✅ C3D processing complete")
@@ -106,7 +99,7 @@ async def test_performance_scores():
                 session_id=session_id,
                 processing_result=result,
                 file_data=file_data,
-                processing_opts=processing_opts
+                processing_opts=processing_opts,
             )
 
             await processor.update_session_status(session_id, "completed")
@@ -119,7 +112,12 @@ async def test_performance_scores():
             supabase = get_supabase_client(use_service_key=True)
 
             # Get performance scores
-            perf_result = supabase.table("performance_scores").select("*").eq("session_id", session_id).execute()
+            perf_result = (
+                supabase.table("performance_scores")
+                .select("*")
+                .eq("session_id", session_id)
+                .execute()
+            )
 
             if not perf_result.data:
                 print("❌ No performance scores found")
@@ -143,19 +141,39 @@ async def test_performance_scores():
             print(f"   Right Side: {scores.get('completion_rate_right', 'NULL')}")
 
             print("\n💪 Intensity Rates (MVC Compliance):")
-            print(f"   Left Side: {scores.get('intensity_rate_left', 'NULL'):.1%}" if scores.get("intensity_rate_left") is not None else "   Left Side: NULL")
-            print(f"   Right Side: {scores.get('intensity_rate_right', 'NULL'):.1%}" if scores.get("intensity_rate_right") is not None else "   Right Side: NULL")
+            print(
+                f"   Left Side: {scores.get('intensity_rate_left', 'NULL'):.1%}"
+                if scores.get("intensity_rate_left") is not None
+                else "   Left Side: NULL"
+            )
+            print(
+                f"   Right Side: {scores.get('intensity_rate_right', 'NULL'):.1%}"
+                if scores.get("intensity_rate_right") is not None
+                else "   Right Side: NULL"
+            )
 
             print("\n⏱️ Duration Rates (Duration Compliance):")
-            print(f"   Left Side: {scores.get('duration_rate_left', 'NULL'):.1%}" if scores.get("duration_rate_left") is not None else "   Left Side: NULL")
-            print(f"   Right Side: {scores.get('duration_rate_right', 'NULL'):.1%}" if scores.get("duration_rate_right") is not None else "   Right Side: NULL")
+            print(
+                f"   Left Side: {scores.get('duration_rate_left', 'NULL'):.1%}"
+                if scores.get("duration_rate_left") is not None
+                else "   Left Side: NULL"
+            )
+            print(
+                f"   Right Side: {scores.get('duration_rate_right', 'NULL'):.1%}"
+                if scores.get("duration_rate_right") is not None
+                else "   Right Side: NULL"
+            )
 
             print("\n🎮 Game Metrics:")
             print(f"   Points Achieved: {scores.get('game_points_achieved', 'NULL')}")
             print(f"   Points Maximum: {scores.get('game_points_max', 'NULL')}")
 
             # Count NULL fields
-            null_count = sum(1 for key, value in scores.items() if value is None and key not in ["session_id", "created_at"])
+            null_count = sum(
+                1
+                for key, value in scores.items()
+                if value is None and key not in ["session_id", "created_at"]
+            )
             total_fields = len(scores) - 2  # Exclude session_id and created_at
 
             print("\n🎯 FIELD POPULATION SUMMARY:")
@@ -180,8 +198,10 @@ async def test_performance_scores():
     except Exception as e:
         print(f"\n❌ Test failed: {e!s}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     result = asyncio.run(test_performance_scores())

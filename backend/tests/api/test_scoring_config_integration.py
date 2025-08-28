@@ -1,6 +1,6 @@
-"""
-Integration tests for Scoring Configuration API with real Supabase database
-Tests actual database operations to ensure E2E functionality works correctly
+"""Integration tests for Scoring Configuration API with real Supabase database.
+
+Tests actual database operations to ensure E2E functionality works correctly.
 """
 
 import sys
@@ -15,30 +15,26 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 
 from api.main import app
 
 # Skip all tests if no Supabase credentials are available
 pytestmark = pytest.mark.skipif(
-    not all([
-        os.getenv("SUPABASE_URL"),
-        os.getenv("SUPABASE_SERVICE_KEY")
-    ]),
-    reason="Supabase credentials not available - skipping database integration tests"
+    not all([os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")]),
+    reason="Supabase credentials not available - skipping database integration tests",
 )
 
 
 class TestScoringConfigurationIntegration:
-    """Integration tests with real Supabase database"""
+    """Integration tests with real Supabase database."""
 
     @pytest.fixture
     def client(self):
-        """FastAPI test client"""
+        """FastAPI test client."""
         return TestClient(app)
 
     def test_get_all_configurations_from_database(self, client):
-        """Test GET /scoring/configurations returns real database data"""
+        """Test GET /scoring/configurations returns real database data."""
         # First create a test configuration to ensure we have data to retrieve
         test_config = {
             "configuration_name": "Test Integration Config",
@@ -49,13 +45,12 @@ class TestScoringConfigurationIntegration:
             "weight_game": 0.15,
             "weight_completion": 0.333,
             "weight_intensity": 0.333,
-            "weight_duration": 0.334
+            "weight_duration": 0.334,
         }
 
         # Create the configuration
         create_response = client.post("/scoring/configurations", json=test_config)
         assert create_response.status_code == 200
-        created_config = create_response.json()
 
         # Now test that we can retrieve all configurations
         response = client.get("/scoring/configurations")
@@ -73,10 +68,18 @@ class TestScoringConfigurationIntegration:
         # Verify structure matches our database schema
         config = test_configs[0]
         required_fields = [
-            "id", "configuration_name", "weight_compliance",
-            "weight_symmetry", "weight_effort", "weight_game",
-            "weight_completion", "weight_intensity", "weight_duration",
-            "active", "created_at", "updated_at"
+            "id",
+            "configuration_name",
+            "weight_compliance",
+            "weight_symmetry",
+            "weight_effort",
+            "weight_game",
+            "weight_completion",
+            "weight_intensity",
+            "weight_duration",
+            "active",
+            "created_at",
+            "updated_at",
         ]
 
         for field in required_fields:
@@ -87,7 +90,7 @@ class TestScoringConfigurationIntegration:
         assert float(config["weight_compliance"]) == test_config["weight_compliance"]
 
     def test_get_active_configuration_from_database(self, client):
-        """Test GET /scoring/configurations/active returns active config"""
+        """Test GET /scoring/configurations/active returns active config."""
         response = client.get("/scoring/configurations/active")
 
         assert response.status_code == 200
@@ -108,7 +111,7 @@ class TestScoringConfigurationIntegration:
         assert 0.0 <= data["weight_game"] <= 1.0
 
     def test_create_configuration_in_database(self, client):
-        """Test POST /scoring/configurations creates real database entry"""
+        """Test POST /scoring/configurations creates real database entry."""
         new_config = {
             "configuration_name": "Integration Test Config",
             "description": "Created by integration test",
@@ -118,7 +121,7 @@ class TestScoringConfigurationIntegration:
             "weight_game": 0.10,
             "weight_completion": 0.4,
             "weight_intensity": 0.3,
-            "weight_duration": 0.3
+            "weight_duration": 0.3,
         }
 
         response = client.post("/scoring/configurations", json=new_config)
@@ -143,7 +146,7 @@ class TestScoringConfigurationIntegration:
         assert created_config["configuration_name"] == new_config["configuration_name"]
 
     def test_activate_configuration_in_database(self, client):
-        """Test PUT /scoring/configurations/{id}/activate works with database"""
+        """Test PUT /scoring/configurations/{id}/activate works with database."""
         # First get all configurations
         response = client.get("/scoring/configurations")
         configs = response.json()
@@ -168,7 +171,7 @@ class TestScoringConfigurationIntegration:
         assert active_data["active"] is True
 
     def test_test_weights_endpoint_with_database(self, client):
-        """Test /scoring/test-weights works with real database"""
+        """Test /scoring/test-weights works with real database."""
         response = client.get("/scoring/test-weights")
 
         assert response.status_code == 200
@@ -194,14 +197,14 @@ class TestScoringConfigurationIntegration:
 
 
 class TestScoringConfigurationDatabaseConstraints:
-    """Test database constraints and validation"""
+    """Test database constraints and validation."""
 
     @pytest.fixture
     def client(self):
         return TestClient(app)
 
     def test_database_rejects_invalid_weights_sum(self, client):
-        """Test database constraints prevent invalid weight combinations"""
+        """Test database constraints prevent invalid weight combinations."""
         invalid_config = {
             "configuration_name": "Invalid Weights Test",
             "weight_compliance": 0.50,  # These sum to 1.10, not 1.0
@@ -210,7 +213,7 @@ class TestScoringConfigurationDatabaseConstraints:
             "weight_game": 0.10,
             "weight_completion": 0.333,
             "weight_intensity": 0.333,
-            "weight_duration": 0.334
+            "weight_duration": 0.334,
         }
 
         response = client.post("/scoring/configurations", json=invalid_config)
@@ -219,7 +222,7 @@ class TestScoringConfigurationDatabaseConstraints:
         assert response.status_code in [400, 422, 500]
 
     def test_database_foreign_key_constraints(self, client):
-        """Test foreign key constraints for therapist/patient references"""
+        """Test foreign key constraints for therapist/patient references."""
         # This should succeed without therapist/patient IDs
         valid_global_config = {
             "configuration_name": "Global Config Test",
@@ -229,7 +232,7 @@ class TestScoringConfigurationDatabaseConstraints:
             "weight_game": 0.15,
             "weight_completion": 0.333,
             "weight_intensity": 0.333,
-            "weight_duration": 0.334
+            "weight_duration": 0.334,
         }
 
         response = client.post("/scoring/configurations", json=valid_global_config)

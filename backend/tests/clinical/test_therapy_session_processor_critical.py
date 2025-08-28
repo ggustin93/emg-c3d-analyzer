@@ -1,18 +1,17 @@
-"""
-Critical Therapy Session Processor Tests
-========================================
+"""Critical Therapy Session Processor Tests.
+
+======================================
 
 KISS, DRY implementation testing core therapy session orchestration logic that was missing from coverage.
 Tests the critical business logic that orchestrates the entire C3D processing workflow.
 
-Author: Senior Engineer  
+Author: Senior Engineer
 Date: 2025-08-27
 """
 
-import os
-import tempfile
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+import asyncio
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -24,7 +23,6 @@ from services.clinical.therapy_session_processor import (
     TherapySessionError,
     TherapySessionProcessor,
 )
-
 
 # ============================================================================
 # MODULE-LEVEL FIXTURES (shared across all test classes)
@@ -109,9 +107,9 @@ def processor():
         # Mock Supabase client
         mock_supabase = MagicMock()
         mock_client.return_value = mock_supabase
-        
+
         processor = TherapySessionProcessor()
-        
+
         # Mock all repository dependencies (new repository pattern)
         processor.session_repo = MagicMock()
         processor.patient_repo = MagicMock()
@@ -120,7 +118,7 @@ def processor():
         processor.scoring_service = MagicMock()
         processor.cache_service = MagicMock()
         processor.supabase = mock_supabase
-        
+
         return processor
 
 
@@ -133,13 +131,13 @@ class TestTherapySessionProcessorCore:
         # Mock repository operations
         test_session_id = str(uuid4())
         mock_session = {"id": test_session_id, "file_path": "c3d-examples/P039/test.c3d"}
-        
+
         # Mock the methods used by create_session
         processor.session_repo.get_session_by_file_hash = MagicMock(return_value=None)  # No existing session
         processor.session_repo.create_therapy_session = MagicMock(return_value=mock_session)
-        
+
         # Mock file hash calculation to avoid file operations
-        with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+        with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
             result = await processor.create_session(
                 file_path="c3d-examples/P039/test.c3d",
                 file_metadata=sample_file_metadata,
@@ -160,13 +158,13 @@ class TestTherapySessionProcessorCore:
         """Test session creation without patient ID"""
         test_session_id = str(uuid4())
         mock_session = {"id": test_session_id, "file_path": "c3d-examples/anonymous/test.c3d"}
-        
+
         # Mock repository operations
         processor.session_repo.get_session_by_file_hash = MagicMock(return_value=None)
         processor.session_repo.create_therapy_session = MagicMock(return_value=mock_session)
-        
+
         # Mock file hash calculation to avoid file operations
-        with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+        with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
             result = await processor.create_session(
                 file_path="c3d-examples/anonymous/test.c3d",
                 file_metadata=sample_file_metadata
@@ -183,13 +181,13 @@ class TestTherapySessionProcessorCore:
     async def test_create_session_database_error(self, processor, sample_file_metadata):
         """Test session creation handles database errors"""
         # Mock repository operations to fail
-        with patch.object(processor, '_find_existing_session', return_value=None):
+        with patch.object(processor, "_find_existing_session", return_value=None):
             processor.session_repo.create_therapy_session = MagicMock(
                 side_effect=Exception("Database connection failed")
             )
-            
+
             # Mock file hash calculation to avoid file operations
-            with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+            with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
                 with pytest.raises(TherapySessionError, match="Session creation failed"):
                     await processor.create_session(
                         file_path="c3d-examples/P039/test.c3d",
@@ -259,9 +257,9 @@ class TestTherapySessionProcessorFileHandling:
             # Mock Supabase client
             mock_supabase = MagicMock()
             mock_client.return_value = mock_supabase
-            
+
             processor = TherapySessionProcessor()
-            
+
             # Mock all repository dependencies (new repository pattern)
             processor.session_repo = MagicMock()
             processor.patient_repo = MagicMock()
@@ -270,7 +268,7 @@ class TestTherapySessionProcessorFileHandling:
             processor.scoring_service = MagicMock()
             processor.cache_service = MagicMock()
             processor.supabase_client = mock_supabase
-            
+
             return processor
 
     @pytest.mark.asyncio
@@ -304,11 +302,11 @@ class TestTherapySessionProcessorFileHandling:
         # Mock file download
         mock_file_data = b"C3D binary data"
         processor._download_file = AsyncMock(return_value=mock_file_data)
-        
+
         # Mock session config preparation
         processor._prepare_session_config = AsyncMock(return_value=("session_info", "patient-id", 2.0))
         processor._validate_processing_params = MagicMock()
-        
+
         # Mock temporary file
         mock_temp = MagicMock()
         mock_temp.name = "/tmp/test.c3d"
@@ -346,7 +344,7 @@ class TestTherapySessionProcessorFileHandling:
         """Test C3D file processing handles processing errors"""
         # Mock validation to pass
         processor._validate_processing_params = MagicMock()
-        
+
         # Mock session config preparation to fail
         processor._prepare_session_config = AsyncMock(
             side_effect=Exception("Session not found")
@@ -385,13 +383,13 @@ class TestTherapySessionProcessorFileHandling:
             with patch("os.unlink") as mock_unlink:
                 processor._cleanup_temp_file("/tmp/test.c3d")
                 mock_unlink.assert_called_once_with("/tmp/test.c3d")
-            
+
         # Test cleanup with missing file (should not call unlink)
         with patch("os.path.exists", return_value=False):
             with patch("os.unlink") as mock_unlink:
                 processor._cleanup_temp_file("/tmp/missing.c3d")
                 mock_unlink.assert_not_called()
-                
+
         # Test cleanup with OSError (should not raise exception)
         with patch("os.path.exists", return_value=True):
             with patch("os.unlink", side_effect=OSError("Permission denied")):
@@ -409,9 +407,9 @@ class TestTherapySessionProcessorIntegration:
             # Mock Supabase client
             mock_supabase = MagicMock()
             mock_client.return_value = mock_supabase
-            
+
             processor = TherapySessionProcessor()
-            
+
             # Mock all repository dependencies (new repository pattern)
             processor.session_repo = MagicMock()
             processor.patient_repo = MagicMock()
@@ -420,7 +418,7 @@ class TestTherapySessionProcessorIntegration:
             processor.scoring_service = MagicMock()
             processor.cache_service = MagicMock()
             processor.supabase_client = mock_supabase
-            
+
             return processor
 
     @pytest.mark.asyncio
@@ -435,7 +433,7 @@ class TestTherapySessionProcessorIntegration:
         processor.session_repo.create_therapy_session = MagicMock(return_value=mock_session)
 
         # Mock file hash calculation to avoid file operations
-        with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+        with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
             session_id = await processor.create_session(
                 file_path="c3d-examples/P039/test.c3d",
                 file_metadata={"size": 1024}
@@ -447,7 +445,7 @@ class TestTherapySessionProcessorIntegration:
 
         # 3. Get status
         mock_status = {
-            "processing_status": "processing", 
+            "processing_status": "processing",
             "file_path": "c3d-examples/P039/test.c3d"
             # Note: analytics_cache removed in schema v2.0 (Redis migration)
         }
@@ -478,8 +476,6 @@ class TestTherapySessionProcessorIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_session_creation(self, processor):
         """Test multiple concurrent session creations"""
-        import asyncio
-
         # Mock repository operations
         call_count = 0
         def mock_create_session(session_data):
@@ -493,7 +489,7 @@ class TestTherapySessionProcessorIntegration:
 
         # Create multiple sessions concurrently
         tasks = []
-        with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+        with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
             for i in range(5):
                 task = processor.create_session(
                     file_path=f"c3d-examples/P{i:03d}/test_{i}.c3d",
@@ -525,7 +521,7 @@ class TestTherapySessionProcessorIntegration:
         processor.session_repo.create_therapy_session = MagicMock(side_effect=mock_create_with_retry)
 
         # This should fail initially (we're not implementing retry logic in this test)
-        with patch.object(processor, '_calculate_file_hash_from_path', return_value="test-hash"):
+        with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
             with pytest.raises(TherapySessionError):
                 await processor.create_session(
                     file_path="c3d-examples/P039/test.c3d",
@@ -537,7 +533,7 @@ class TestTherapySessionProcessorIntegration:
         with patch("services.clinical.therapy_session_processor.get_supabase_client") as mock_client:
             mock_supabase = MagicMock()
             mock_client.return_value = mock_supabase
-            
+
             processor = TherapySessionProcessor()
 
             # Verify dependencies are initialized

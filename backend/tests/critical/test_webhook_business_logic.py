@@ -1,5 +1,5 @@
-"""
-CRITICAL Business Logic Tests - KISS Implementation
+"""CRITICAL Business Logic Tests - KISS Implementation.
+
 ==================================================
 
 Senior engineer approach: Focus on core business logic that was missing test coverage.
@@ -9,7 +9,6 @@ Author: Senior Engineer
 Date: 2025-08-27
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -25,7 +24,6 @@ class TestCriticalWebhookLogic:
 
     def test_supabase_event_parsing_and_validation(self):
         """Test core business logic: Supabase event parsing and C3D detection"""
-
         # Test 1: Valid C3D upload should be detected
         valid_c3d_payload = {
             "type": "INSERT",
@@ -75,7 +73,6 @@ class TestCriticalWebhookLogic:
 
     def test_patient_code_extraction_business_logic(self):
         """Test patient code extraction from file paths - critical for clinical workflows"""
-
         test_cases = [
             # Standard patient codes
             ("P039/file.c3d", "P039"),
@@ -102,7 +99,6 @@ class TestCriticalWebhookLogic:
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_endpoint_critical_path_success(self, mock_processor):
         """Test the critical success path of webhook processing"""
-
         # Setup mocks for the critical path
         mock_processor.create_session = AsyncMock(return_value="session-123")
         mock_processor.update_session_status = AsyncMock()
@@ -146,7 +142,6 @@ class TestCriticalWebhookLogic:
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_endpoint_ignores_non_c3d(self, mock_processor):
         """Test webhook correctly ignores non-C3D files (critical filtering logic)"""
-
         client = TestClient(app)
 
         # Test non-C3D file is ignored
@@ -182,7 +177,6 @@ class TestCriticalWebhookLogic:
     @patch("api.routes.webhooks.PatientRepository")
     def test_webhook_error_handling(self, mock_patient_repo, mock_processor):
         """Test critical error handling in webhook processing"""
-
         # Mock patient lookup (required for error path)
         mock_patient_instance = MagicMock()
         mock_patient_instance.get_patient_by_code.return_value = {"id": "patient-123"}
@@ -223,7 +217,6 @@ class TestCriticalWebhookLogic:
 
     def test_webhook_invalid_json_handling(self):
         """Test webhook handles invalid JSON (basic error handling)"""
-
         client = TestClient(app)
 
         response = client.post(
@@ -243,7 +236,6 @@ class TestCriticalWebhookLogic:
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_status_endpoint_basic(self, mock_processor):
         """Test status endpoint basic functionality"""
-
         # Mock successful status retrieval
         mock_status = {
             "processing_status": "completed",
@@ -266,7 +258,6 @@ class TestCriticalWebhookLogic:
 
     def test_webhook_health_endpoint(self):
         """Test webhook health endpoint (basic functionality check)"""
-
         client = TestClient(app)
 
         response = client.get("/webhooks/health")
@@ -287,7 +278,6 @@ class TestCriticalBackgroundProcessing:
     @pytest.mark.asyncio
     async def test_background_processing_success_path(self, mock_processor):
         """Test successful background processing workflow"""
-
         from api.routes.webhooks import _process_c3d_background
 
         # Mock successful processing workflow
@@ -324,7 +314,6 @@ class TestCriticalBackgroundProcessing:
     @pytest.mark.asyncio
     async def test_background_processing_failure_handling(self, mock_processor):
         """Test background processing handles failures correctly"""
-
         from api.routes.webhooks import _process_c3d_background
 
         # Mock processing failure
@@ -355,7 +344,6 @@ class TestCriticalBusinessRules:
 
     def test_c3d_file_validation_rules(self):
         """Test C3D file validation business rules"""
-
         # Rule 1: Only .c3d files should be processed
         c3d_extensions = [".c3d", ".C3D"]  # Case insensitive
         non_c3d_extensions = [".txt", ".pdf", ".json", ".zip", ""]
@@ -388,7 +376,6 @@ class TestCriticalBusinessRules:
 
     def test_bucket_validation_rules(self):
         """Test bucket validation business rules"""
-
         # Rule 2: Only 'c3d-examples' bucket should be processed
         valid_buckets = ["c3d-examples"]
         invalid_buckets = ["documents", "images", "backups", ""]
@@ -421,7 +408,6 @@ class TestCriticalBusinessRules:
 
     def test_event_type_validation_rules(self):
         """Test event type validation business rules"""
-
         # Rule 3: Only INSERT events should be processed
         valid_events = ["INSERT"]
         invalid_events = ["UPDATE", "DELETE", ""]

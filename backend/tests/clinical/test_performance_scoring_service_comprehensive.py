@@ -1,14 +1,10 @@
-"""
-Comprehensive Tests for Performance Scoring Service
+"""Comprehensive Tests for Performance Scoring Service.
 
 Tests the complete GHOSTLY+ performance scoring algorithm implementation
 against metricsDefinitions.md specification with single source of truth validation.
 """
 
-import json
-from decimal import Decimal
-from typing import Dict, List, Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -136,13 +132,13 @@ class TestScoringWeights:
         valid_weights = ScoringWeights(
             w_compliance=0.40, w_symmetry=0.25, w_effort=0.20, w_game=0.15
         )
-        assert valid_weights.validate() == True
+        assert valid_weights.validate()
 
         # Invalid weights (sum > 1.0)
         invalid_weights = ScoringWeights(
             w_compliance=0.50, w_symmetry=0.30, w_effort=0.25, w_game=0.20
         )
-        assert invalid_weights.validate() == False
+        assert not invalid_weights.validate()
 
         # Invalid weights (sum < 1.0)
         invalid_weights2 = ScoringWeights(
@@ -156,13 +152,13 @@ class TestScoringWeights:
         valid_weights = ScoringWeights(
             w_completion=0.333, w_intensity=0.333, w_duration=0.334
         )
-        assert valid_weights.validate() == True
+        assert valid_weights.validate()
 
         # Invalid sub-weights
         invalid_weights = ScoringWeights(
             w_completion=0.5, w_intensity=0.3, w_duration=0.3
         )
-        assert invalid_weights.validate() == False
+        assert not invalid_weights.validate()
 
 
 class TestSessionMetrics:
@@ -289,7 +285,7 @@ class TestPerformanceScoringService:
         assert weights.w_effort == 0.20
         assert weights.w_game == 0.15
 
-    def test_calculate_compliance_components_perfect_performance(self, scoring_service, sample_session_metrics):
+    def test_calculate_compliance_components_perfect_performance(self, scoring_service):
         """Test compliance calculation with perfect performance scenario"""
         # Modify metrics for perfect performance
         perfect_metrics = SessionMetrics(
@@ -447,7 +443,7 @@ class TestPerformanceScoringService:
         assert 0 <= result["game_score"] <= 100, "Game score should be 0-100%"
 
         # Verify BFR compliance
-        assert result["bfr_compliant"] == True, "BFR should be compliant with 50% AOP"
+        assert result["bfr_compliant"], "BFR should be compliant with 50% AOP"
 
         # Verify weights are included for transparency
         assert "weights_used" in result
