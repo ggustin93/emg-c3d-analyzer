@@ -1,17 +1,16 @@
-"""
-FastAPI TestClient tests for all API endpoints.
+"""FastAPI TestClient tests for all API endpoints.
+
 Tests API layer functionality, authentication, validation, and error handling.
 """
 
 import sys
 from pathlib import Path
 
-# Add the backend directory to the Python path
-backend_dir = Path(__file__).resolve().parents[2]  # Go up two levels to reach the backend directory
+# Add backend to sys.path for imports
+backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-import json
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -26,10 +25,10 @@ client = TestClient(app)
 
 
 class TestHealthEndpoint:
-    """Test health check endpoint"""
+    """Test health check endpoint."""
 
     def test_health_check(self):
-        """Test basic health check endpoint"""
+        """Test basic health check endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
 
@@ -43,15 +42,15 @@ class TestHealthEndpoint:
 
 
 class TestUploadEndpoints:
-    """Test file upload endpoints"""
+    """Test file upload endpoints."""
 
     def test_upload_endpoint_no_file(self):
-        """Test upload endpoint without file"""
+        """Test upload endpoint without file."""
         response = client.post("/upload")
         assert response.status_code == 422  # Validation error
 
     def test_upload_endpoint_with_mock_file(self):
-        """Test upload endpoint with mock C3D file"""
+        """Test upload endpoint with mock C3D file."""
         # Create a temporary file to simulate C3D upload
         with tempfile.NamedTemporaryFile(suffix=".c3d", delete=False) as tmp_file:
             tmp_file.write(b"Mock C3D file content")
@@ -73,7 +72,7 @@ class TestUploadEndpoints:
                 os.unlink(tmp_file.name)
 
     def test_upload_invalid_file_type(self):
-        """Test upload with invalid file type"""
+        """Test upload with invalid file type."""
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_file:
             tmp_file.write(b"Not a C3D file")
             tmp_file.flush()
@@ -91,22 +90,22 @@ class TestUploadEndpoints:
 
 
 class TestWebhookEndpoints:
-    """Test webhook endpoints"""
+    """Test webhook endpoints."""
 
     def test_webhook_c3d_upload_invalid_payload(self):
-        """Test webhook with invalid payload"""
+        """Test webhook with invalid payload."""
         invalid_payload = {"invalid": "data"}
 
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=invalid_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code in [400, 422, 500]
 
     def test_webhook_c3d_upload_valid_structure(self):
-        """Test webhook with valid payload structure"""
+        """Test webhook with valid payload structure."""
         valid_payload = {
             "type": "INSERT",
             "table": "objects",
@@ -117,18 +116,15 @@ class TestWebhookEndpoints:
                 "bucket_id": "c3d-examples",
                 "created_at": "2025-08-14T15:00:00Z",
                 "updated_at": "2025-08-14T15:00:00Z",
-                "metadata": {
-                    "size": 1024,
-                    "mimetype": "application/octet-stream"
-                }
+                "metadata": {"size": 1024, "mimetype": "application/octet-stream"},
             },
-            "old_record": None
+            "old_record": None,
         }
 
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=valid_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         # Should process successfully or return meaningful error
@@ -140,21 +136,21 @@ class TestWebhookEndpoints:
 
 
 class TestSignalsEndpoints:
-    """Test signals API endpoints"""
+    """Test signals API endpoints."""
 
     def test_get_session_signals_no_id(self):
-        """Test getting signals without session ID"""
+        """Test getting signals without session ID."""
         response = client.get("/api/sessions//signals")
         assert response.status_code == 404
 
     def test_get_session_signals_invalid_id(self):
-        """Test getting signals with invalid session ID"""
+        """Test getting signals with invalid session ID."""
         response = client.get("/api/sessions/invalid-uuid/signals")
         # Should return error for invalid UUID or not found
         assert response.status_code in [400, 404, 422]
 
     def test_get_session_signals_valid_format(self):
-        """Test getting signals with valid UUID format"""
+        """Test getting signals with valid UUID format."""
         test_uuid = "550e8400-e29b-41d4-a716-446655440000"
         response = client.get(f"/api/sessions/{test_uuid}/signals")
 
@@ -167,12 +163,12 @@ class TestSignalsEndpoints:
             assert isinstance(data, dict)
 
     def test_recalc_session_invalid_id(self):
-        """Test recalc endpoint with invalid session ID"""
+        """Test recalc endpoint with invalid session ID."""
         response = client.post("/api/sessions/invalid-uuid/recalc")
         assert response.status_code in [400, 404, 422]
 
     def test_recalc_session_no_body(self):
-        """Test recalc endpoint without request body"""
+        """Test recalc endpoint without request body."""
         test_uuid = "550e8400-e29b-41d4-a716-446655440000"
         response = client.post(f"/api/sessions/{test_uuid}/recalc")
 
@@ -180,18 +176,14 @@ class TestSignalsEndpoints:
         assert response.status_code in [400, 404, 422]
 
     def test_recalc_session_with_params(self):
-        """Test recalc endpoint with parameters"""
+        """Test recalc endpoint with parameters."""
         test_uuid = "550e8400-e29b-41d4-a716-446655440000"
-        params = {
-            "threshold_factor": 0.2,
-            "min_duration_ms": 100,
-            "smoothing_window": 50
-        }
+        params = {"threshold_factor": 0.2, "min_duration_ms": 100, "smoothing_window": 50}
 
         response = client.post(
             f"/api/sessions/{test_uuid}/recalc",
             json=params,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         # Should process or return meaningful error
@@ -199,10 +191,10 @@ class TestSignalsEndpoints:
 
 
 class TestCacheEndpoints:
-    """Test cache monitoring endpoints"""
+    """Test cache monitoring endpoints."""
 
     def test_cache_stats(self):
-        """Test cache statistics endpoint"""
+        """Test cache statistics endpoint."""
         response = client.get("/cache/stats")
 
         # Should return cache stats, not found, or indicate cache not available
@@ -213,7 +205,7 @@ class TestCacheEndpoints:
             assert isinstance(data, dict)
 
     def test_cache_clear(self):
-        """Test cache clear endpoint"""
+        """Test cache clear endpoint."""
         response = client.post("/cache/clear")
 
         # Should clear cache or indicate operation status
@@ -221,40 +213,37 @@ class TestCacheEndpoints:
 
 
 class TestErrorHandling:
-    """Test API error handling"""
+    """Test API error handling."""
 
     def test_404_endpoint(self):
-        """Test non-existent endpoint returns 404"""
+        """Test non-existent endpoint returns 404."""
         response = client.get("/api/nonexistent")
         assert response.status_code == 404
 
     def test_method_not_allowed(self):
-        """Test wrong HTTP method returns 405"""
+        """Test wrong HTTP method returns 405."""
         response = client.delete("/health")  # Health only supports GET
         assert response.status_code == 405
 
     def test_malformed_json(self):
-        """Test malformed JSON in POST requests"""
+        """Test malformed JSON in POST requests."""
         response = client.post(
             "/webhooks/storage/c3d-upload",
             data="invalid json{",
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code in [400, 422]  # Bad request or validation error
 
 
 class TestCORS:
-    """Test CORS headers"""
+    """Test CORS headers."""
 
     def test_cors_preflight(self):
-        """Test CORS preflight request"""
+        """Test CORS preflight request."""
         response = client.options(
             "/health",
-            headers={
-                "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": "GET"
-            }
+            headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "GET"},
         )
 
         # Should handle CORS appropriately
@@ -263,7 +252,7 @@ class TestCORS:
 
 @pytest.mark.asyncio
 async def test_background_task_processing():
-    """Test that background tasks are scheduled correctly"""
+    """Test that background tasks are scheduled correctly."""
     with patch("api.routes.webhooks.BackgroundTasks") as mock_bg_tasks:
         mock_bg_tasks.return_value.add_task = MagicMock()
 
@@ -277,15 +266,12 @@ async def test_background_task_processing():
                 "bucket_id": "c3d-examples",
                 "created_at": "2025-08-14T15:00:00Z",
                 "updated_at": "2025-08-14T15:00:00Z",
-                "metadata": {"size": 2048, "mimetype": "application/octet-stream"}
+                "metadata": {"size": 2048, "mimetype": "application/octet-stream"},
             },
-            "old_record": None
+            "old_record": None,
         }
 
-        response = client.post(
-            "/webhooks/storage/c3d-upload",
-            json=payload
-        )
+        response = client.post("/webhooks/storage/c3d-upload", json=payload)
 
         # Background task should be scheduled regardless of processing outcome
         # (We're testing the webhook scheduling, not the actual processing)
@@ -293,10 +279,10 @@ async def test_background_task_processing():
 
 
 class TestAuthentication:
-    """Test authentication requirements (if implemented)"""
+    """Test authentication requirements (if implemented)."""
 
     def test_protected_endpoints_require_auth(self):
-        """Test that protected endpoints require authentication"""
+        """Test that protected endpoints require authentication."""
         # Test various endpoints that might require authentication
         protected_endpoints = [
             "/api/admin/stats",

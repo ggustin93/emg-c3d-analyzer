@@ -1,1 +1,1 @@
-"""EMG Processing Tests"""
+"""EMG Processing Tests."""

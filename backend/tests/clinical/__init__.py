@@ -1,1 +1,1 @@
-"""Clinical Tests"""
+"""Clinical Tests."""

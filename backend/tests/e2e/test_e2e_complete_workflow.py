@@ -1,12 +1,12 @@
-"""
-Comprehensive End-to-End Test for EMG C3D Analyzer
+"""Comprehensive End-to-End Test for EMG C3D Analyzer.
+
 ==================================================
 
 Tests the complete user workflow:
 1. Upload C3D file → 2. Process EMG data → 3. Retrieve results → 4. Verify analysis
 
 This E2E test verifies:
-- File upload and validation  
+- File upload and validation
 - C3D processing pipeline
 - Database persistence
 - Signal analysis accuracy
@@ -19,17 +19,15 @@ Date: 2025-08-14
 
 import asyncio
 import json
-import os
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytest
 
 # FastAPI Test Client
 from fastapi.testclient import TestClient
-
 from main import app
 
 # Import only what we need and handle import errors gracefully
@@ -49,24 +47,28 @@ client = TestClient(app)
 
 @pytest.mark.e2e
 class TestCompleteWorkflow:
-    """End-to-End workflow testing"""
+    """End-to-End workflow testing."""
 
     @pytest.fixture
     def sample_c3d_file(self):
-        """Use the actual GHOSTLY C3D file for realistic E2E testing"""
+        """Use the actual GHOSTLY C3D file for realistic E2E testing."""
         # Use the actual sample file from the specified path
-        sample_path = Path("/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d")
+        sample_path = Path(
+            "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        )
 
         if sample_path.exists():
             print(f"✅ Using actual C3D file: {sample_path}")
-            print(f"📊 File size: {sample_path.stat().st_size / (1024*1024):.2f} MB")
+            print(f"📊 File size: {sample_path.stat().st_size / (1024 * 1024):.2f} MB")
             return sample_path
         else:
             # Fallback to relative path
-            relative_path = Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+            relative_path = (
+                Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+            )
             if relative_path.exists():
                 print(f"✅ Using actual C3D file (relative): {relative_path}")
-                print(f"📊 File size: {relative_path.stat().st_size / (1024*1024):.2f} MB")
+                print(f"📊 File size: {relative_path.stat().st_size / (1024 * 1024):.2f} MB")
                 return relative_path
             else:
                 # Create a minimal mock C3D file if the real one isn't available
@@ -83,7 +85,9 @@ class TestCompleteWorkflow:
                     header[16:20] = (2).to_bytes(4, "little")  # Channel count
 
                     # Write some mock EMG data
-                    mock_data = np.random.randn(124000, 2).astype(np.float32) * 0.001  # Realistic EMG amplitude
+                    mock_data = (
+                        np.random.randn(124000, 2).astype(np.float32) * 0.001
+                    )  # Realistic EMG amplitude
 
                     tmp_file.write(header)
                     tmp_file.write(mock_data.tobytes())
@@ -93,9 +97,8 @@ class TestCompleteWorkflow:
                     return Path(tmp_file.name)
 
     def test_complete_emg_analysis_workflow(self, sample_c3d_file):
-        """
-        Test the complete EMG analysis workflow from upload to results.
-        
+        """Test the complete EMG analysis workflow from upload to results.
+
         Workflow Steps:
         1. Upload C3D file via API
         2. Verify immediate response (should be fast <2s)
@@ -110,7 +113,7 @@ class TestCompleteWorkflow:
         # Step 1: Upload C3D file
         start_time = time.time()
 
-        with open(sample_c3d_file, "rb") as f:
+        with sample_c3d_file.open("rb") as f:
             files = {"file": ("test_e2e.c3d", f, "application/octet-stream")}
             upload_response = client.post("/upload", files=files)
 
@@ -123,7 +126,9 @@ class TestCompleteWorkflow:
             print("⚠️ Upload failed due to missing MAX_FILE_SIZE constant (expected)")
             pytest.skip("Upload API has known issue with missing MAX_FILE_SIZE constant")
 
-        assert upload_response.status_code in [200, 400, 422], f"Unexpected upload status: {upload_response.status_code}"
+        assert upload_response.status_code in [200, 400, 422], (
+            f"Unexpected upload status: {upload_response.status_code}"
+        )
 
         if upload_response.status_code != 200:
             print(f"⚠️ Upload returned {upload_response.status_code} - testing alternate workflow")
@@ -158,7 +163,7 @@ class TestCompleteWorkflow:
         print("🎉 Complete E2E Workflow Test Passed!")
 
     def _wait_for_processing_completion(self, session_id: str, timeout: int = 30):
-        """Wait for background processing to complete"""
+        """Wait for background processing to complete."""
         print(f"⏳ Waiting for processing completion (timeout: {timeout}s)")
 
         start_time = time.time()
@@ -190,7 +195,7 @@ class TestCompleteWorkflow:
         print(f"⚠️ Processing timeout after {timeout}s - continuing with available data")
 
     def _verify_analysis_results(self, session_id: str):
-        """Verify the analysis results are correct and complete"""
+        """Verify the analysis results are correct and complete."""
         print(f"🔍 Verifying analysis results for session: {session_id}")
 
         # Get signals data
@@ -222,7 +227,7 @@ class TestCompleteWorkflow:
             self._verify_metadata(metadata)
 
     def _verify_emg_analytics(self, analytics: dict[str, Any]):
-        """Verify EMG analytics are reasonable"""
+        """Verify EMG analytics are reasonable."""
         print(f"🧪 Verifying EMG analytics for {len(analytics)} channels")
 
         for channel_name, channel_data in analytics.items():
@@ -234,7 +239,7 @@ class TestCompleteWorkflow:
                 "good_contractions",
                 "compliance_rate",
                 "avg_amplitude",
-                "max_amplitude"
+                "max_amplitude",
             ]
 
             for metric in expected_metrics:
@@ -253,7 +258,7 @@ class TestCompleteWorkflow:
                     print(f"  ⚠️ Missing {metric}")
 
     def _verify_metadata(self, metadata: dict[str, Any]):
-        """Verify file metadata is correct"""
+        """Verify file metadata is correct."""
         print(f"📋 Verifying metadata: {metadata}")
 
         # Check expected metadata fields
@@ -274,12 +279,11 @@ class TestCompleteWorkflow:
                 print(f"  ⚠️ Missing {field}")
 
     def _test_data_export(self, session_id: str):
-        """Test data export capabilities"""
+        """Test data export capabilities."""
         print(f"💾 Testing data export for session: {session_id}")
 
         # Test export endpoint if available
-        export_response = client.post(f"/api/sessions/{session_id}/export",
-                                    json={"format": "json"})
+        export_response = client.post(f"/api/sessions/{session_id}/export", json={"format": "json"})
 
         if export_response.status_code == 200:
             export_data = export_response.json()
@@ -290,7 +294,7 @@ class TestCompleteWorkflow:
             print(f"⚠️ Export failed with status: {export_response.status_code}")
 
     def _test_manual_processing_workflow(self, sample_c3d_file: Path):
-        """Test manual processing workflow when upload API is not available"""
+        """Test manual processing workflow when upload API is not available."""
         print("🔧 Testing manual processing workflow")
 
         try:
@@ -319,9 +323,8 @@ class TestCompleteWorkflow:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_webhook_e2e_processing():
-    """
-    Test the complete webhook processing workflow.
-    
+    """Test the complete webhook processing workflow.
+
     This simulates the real-world scenario where:
     1. A file is uploaded to Supabase Storage
     2. Supabase triggers a webhook
@@ -342,19 +345,16 @@ async def test_webhook_e2e_processing():
             "bucket_id": "c3d-examples",
             "created_at": "2025-08-14T16:00:00Z",
             "updated_at": "2025-08-14T16:00:00Z",
-            "metadata": {
-                "size": 256000,
-                "mimetype": "application/octet-stream"
-            }
+            "metadata": {"size": 256000, "mimetype": "application/octet-stream"},
         },
-        "old_record": None
+        "old_record": None,
     }
 
     # Send webhook request
     webhook_response = client.post(
         "/webhooks/storage/c3d-upload",
         json=webhook_payload,
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     )
 
     print(f"📤 Webhook Response Status: {webhook_response.status_code}")
@@ -391,9 +391,8 @@ async def test_webhook_e2e_processing():
 
 @pytest.mark.e2e
 def test_performance_benchmarks():
-    """
-    Test performance benchmarks for key operations.
-    
+    """Test performance benchmarks for key operations.
+
     Benchmarks:
     - API response times < 2s
     - Webhook processing < 50ms (immediate response)
@@ -403,8 +402,16 @@ def test_performance_benchmarks():
 
     benchmarks = {
         "health_check": {"target": 0.1, "endpoint": "/health", "method": "GET"},
-        "webhook_response": {"target": 0.05, "endpoint": "/webhooks/storage/c3d-upload", "method": "POST"},
-        "signals_query": {"target": 2.0, "endpoint": "/api/sessions/test-id/signals", "method": "GET"}
+        "webhook_response": {
+            "target": 0.05,
+            "endpoint": "/webhooks/storage/c3d-upload",
+            "method": "POST",
+        },
+        "signals_query": {
+            "target": 2.0,
+            "endpoint": "/api/sessions/test-id/signals",
+            "method": "GET",
+        },
     }
 
     for benchmark_name, config in benchmarks.items():
@@ -418,9 +425,11 @@ def test_performance_benchmarks():
             if "webhook" in benchmark_name:
                 # Use minimal valid payload for webhook benchmark
                 payload = {
-                    "type": "INSERT", "table": "objects", "schema": "storage",
+                    "type": "INSERT",
+                    "table": "objects",
+                    "schema": "storage",
                     "record": {"id": "benchmark", "name": "test.c3d", "bucket_id": "test"},
-                    "old_record": None
+                    "old_record": None,
                 }
                 response = client.post(config["endpoint"], json=payload)
             else:

@@ -1,12 +1,11 @@
-"""
-Integration tests for the GHOSTLYC3DProcessor class
+"""Integration tests for the GHOSTLYC3DProcessor class.
+
 ==================================================
 
 These tests verify that the processor can correctly extract data from C3D files
 and calculate analytics.
 """
 
-import os
 import shutil
 import sys
 import tempfile
@@ -20,8 +19,8 @@ PROJECT_ROOT = str(Path(__file__).resolve().parents[3])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from models import GameSessionParameters, ProcessingOptions
-from services.c3d.processor import GHOSTLYC3DProcessor
+from models import GameSessionParameters, ProcessingOptions  # ruff: noqa: E402
+from services.c3d.processor import GHOSTLYC3DProcessor  # ruff: noqa: E402
 
 
 class TestGHOSTLYC3DProcessor(unittest.TestCase):
@@ -35,24 +34,24 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         # Find a sample C3D file for testing
         # Look in multiple possible locations, prioritizing frontend/public/samples
         possible_sample_dirs = [
-            os.path.join(PROJECT_ROOT, "frontend", "public", "samples"),
-            os.path.join(PROJECT_ROOT, "backend", "tests", "samples"),
-            os.path.join(PROJECT_ROOT, "samples"),
+            Path(PROJECT_ROOT) / "frontend" / "public" / "samples",
+            Path(PROJECT_ROOT) / "backend" / "tests" / "samples",
+            Path(PROJECT_ROOT) / "samples",
         ]
 
         self.sample_file = None
         for sample_dir in possible_sample_dirs:
-            if os.path.exists(sample_dir):
-                sample_files = [f for f in os.listdir(sample_dir) if f.endswith(".c3d")]
+            if sample_dir.exists():
+                sample_files = [f for f in sample_dir.iterdir() if f.suffix == ".c3d"]
                 if sample_files:
-                    self.sample_file = os.path.join(sample_dir, sample_files[0])
+                    self.sample_file = sample_dir / sample_files[0]
                     break
 
         if not self.sample_file:
             self.skipTest("No sample C3D files found in any of the expected directories")
             return
 
-        self.test_file = os.path.join(self.test_dir, os.path.basename(self.sample_file))
+        self.test_file = Path(self.test_dir) / self.sample_file.name
         shutil.copy(self.sample_file, self.test_file)
 
         # Create a processor instance with the test file path
@@ -61,7 +60,7 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
     def tearDown(self):
         """Clean up after tests."""
         # Remove temporary directories
-        if hasattr(self, "test_dir") and os.path.exists(self.test_dir):
+        if hasattr(self, "test_dir") and Path(self.test_dir).exists():
             shutil.rmtree(self.test_dir)
 
     def test_load_file(self):
@@ -84,7 +83,7 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         self.assertGreater(len(emg_data), 0)
 
         # Check structure of first channel
-        first_channel = list(emg_data.keys())[0]
+        first_channel = next(iter(emg_data.keys()))
         self.assertIn("data", emg_data[first_channel])
         self.assertIn("time_axis", emg_data[first_channel])
         self.assertIn("sampling_rate", emg_data[first_channel])
@@ -93,15 +92,13 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         """Test the process_file method."""
         # Create processing options
         processing_opts = ProcessingOptions(
-            threshold_factor=0.3,
-            min_duration_ms=50,
-            smoothing_window=25
+            threshold_factor=0.3, min_duration_ms=50, smoothing_window=25
         )
 
         session_params = GameSessionParameters(
             session_mvc_value=1.0,
             session_mvc_threshold_percentage=75.0,
-            session_expected_contractions=10
+            session_expected_contractions=10,
         )
 
         # Process the file
@@ -116,6 +113,7 @@ class TestGHOSTLYC3DProcessor(unittest.TestCase):
         # Check that EMG data was extracted
         self.assertIsNotNone(self.processor.emg_data)
         self.assertGreater(len(self.processor.emg_data), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

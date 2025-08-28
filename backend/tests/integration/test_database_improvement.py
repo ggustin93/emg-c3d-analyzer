@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+"""Test script for DATABASE_IMPROVEMENT_PROPOSAL.md implementation.
+
+Tests the KISS two-phase creation pattern with new schema.
 """
-Test script for DATABASE_IMPROVEMENT_PROPOSAL.md implementation
-Tests the KISS two-phase creation pattern with new schema
-"""
+
 import asyncio
 import sys
+import traceback
 from pathlib import Path
 
 # Ensure backend is on sys.path when running directly
@@ -12,12 +14,12 @@ backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from services.data.metadata_service import MetadataService
+from database.supabase_client import get_supabase_client  # ruff: noqa: E402
+from services.data.metadata_service import MetadataService  # ruff: noqa: E402
 
 
 async def test_two_phase_creation():
-    """Test the new two-phase creation pattern (metadata → technical data)"""
-
+    """Test the new two-phase creation pattern (metadata → technical data)."""
     try:
         print("🧪 Testing DATABASE_IMPROVEMENT_PROPOSAL.md implementation...")
 
@@ -31,7 +33,7 @@ async def test_two_phase_creation():
             file_size_bytes=2048,
             patient_id=None,  # NULL to avoid foreign key constraint
             session_id=None,
-            metadata={"test": "two_phase_creation", "phase": 1}
+            metadata={"test": "two_phase_creation", "phase": 1},
         )
 
         print(f"✅ SUCCESS Phase 1: Created therapy session: {session_id}")
@@ -71,11 +73,15 @@ async def test_two_phase_creation():
         # Test the view that combines both tables
         print("\n📊 Testing combined view...")
         try:
-            from database.supabase_client import get_supabase_client
             supabase = get_supabase_client(use_service_key=True)
 
             # Test the therapy_sessions_with_technical view
-            view_result = supabase.table("therapy_sessions_with_technical").select("*").eq("id", str(session_id)).execute()
+            view_result = (
+                supabase.table("therapy_sessions_with_technical")
+                .select("*")
+                .eq("id", str(session_id))
+                .execute()
+            )
 
             if view_result.data:
                 combined_data = view_result.data[0]
@@ -96,8 +102,8 @@ async def test_two_phase_creation():
 
     except Exception as e:
         print(f"❌ FAILED: {e!s}")
-        import traceback
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     asyncio.run(test_two_phase_creation())

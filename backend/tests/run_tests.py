@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-GHOSTLY+ EMG Analyzer Test Runner
+"""GHOSTLY+ EMG Analyzer Test Runner.
+
 ================================
 
 This script runs all tests for the GHOSTLY+ EMG Analyzer backend.
@@ -12,7 +12,6 @@ Usage:
 """
 
 import argparse
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -29,8 +28,10 @@ BACKEND_DIR = str(Path(__file__).resolve().parent.parent)
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
+
 class Colors:
     """ANSI color codes for terminal output."""
+
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
     OKCYAN = "\033[96m"
@@ -41,11 +42,12 @@ class Colors:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
 
+
 def run_tests(verbose=False):
     """Run all tests and return the test result."""
     # Discover and run all tests
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover(os.path.dirname(os.path.abspath(__file__)), pattern="test_*.py")
+    test_suite = test_loader.discover(Path(__file__).parent.resolve(), pattern="test_*.py")
 
     # Run the tests with the specified verbosity
     verbosity = 2 if verbose else 1
@@ -53,6 +55,7 @@ def run_tests(verbose=False):
     test_result = test_runner.run(test_suite)
 
     return test_result
+
 
 def print_summary(test_result):
     """Print a summary of the test results."""
@@ -87,6 +90,7 @@ def print_summary(test_result):
     else:
         print(f"\n{Colors.BOLD}{Colors.FAIL}❌ TESTS FAILED!{Colors.ENDC}")
 
+
 def main():
     """Parse arguments and run tests."""
     parser = argparse.ArgumentParser(description="Run GHOSTLY+ EMG Analyzer tests")
@@ -100,6 +104,7 @@ def main():
 
     # Return non-zero exit code if tests failed
     return 0 if test_result.wasSuccessful() else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,4 +1,3 @@
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -12,7 +11,7 @@ PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from emg.emg_analysis import (
+from emg.emg_analysis import (  # ruff: noqa: E402
     analyze_contractions,
     calculate_fatigue_index_fi_nsm5,
     calculate_mav,
@@ -33,14 +32,20 @@ class TestEMGAnalysis(unittest.TestCase):
         self.t = np.linspace(0, self.duration, int(self.sampling_rate * self.duration))
 
         # Good signal with multiple frequency components
-        self.good_signal = np.sin(2 * np.pi * 10 * self.t) + 0.5 * np.sin(2 * np.pi * 50 * self.t) + 0.25 * np.sin(2 * np.pi * 100 * self.t)
+        self.good_signal = (
+            np.sin(2 * np.pi * 10 * self.t)
+            + 0.5 * np.sin(2 * np.pi * 50 * self.t)
+            + 0.25 * np.sin(2 * np.pi * 100 * self.t)
+        )
 
         # Signal with clear contractions
         self.contraction_signal = np.zeros(1000)
         # Add three contractions
         self.contraction_signal[100:200] = 1.0  # 100ms contraction
         self.contraction_signal[400:600] = 2.0  # 200ms contraction
-        self.contraction_signal[800:850] = 0.5  # 50ms contraction (below min_duration if set to >50ms)
+        self.contraction_signal[800:850] = (
+            0.5  # 50ms contraction (below min_duration if set to >50ms)
+        )
 
         # Short signal (too short for spectral analysis)
         self.short_signal = np.sin(2 * np.pi * 10 * self.t[:100])
@@ -139,7 +144,7 @@ class TestEMGAnalysis(unittest.TestCase):
             threshold_factor=0.3,
             min_duration_ms=50,
             smoothing_window=5,
-            merge_threshold_ms=0  # Explicitly disable merging for this test
+            merge_threshold_ms=0,  # Explicitly disable merging for this test
         )
 
         self.assertIsNotNone(result)
@@ -156,7 +161,7 @@ class TestEMGAnalysis(unittest.TestCase):
             threshold_factor=0.3,
             min_duration_ms=60,
             smoothing_window=5,
-            merge_threshold_ms=0  # Explicitly disable merging for this test
+            merge_threshold_ms=0,  # Explicitly disable merging for this test
         )
         self.assertEqual(result["contraction_count"], 2)
 
@@ -164,7 +169,9 @@ class TestEMGAnalysis(unittest.TestCase):
         three_contractions_signal = np.zeros(1000)
         three_contractions_signal[100:200] = 1.0  # 100ms contraction
         three_contractions_signal[400:600] = 2.0  # 200ms contraction
-        three_contractions_signal[800:900] = 1.5  # 100ms contraction (increased amplitude from 0.5 to 1.5)
+        three_contractions_signal[800:900] = (
+            1.5  # 100ms contraction (increased amplitude from 0.5 to 1.5)
+        )
 
         # Test with the new signal and a lower threshold factor to ensure detection
         result = analyze_contractions(
@@ -173,7 +180,7 @@ class TestEMGAnalysis(unittest.TestCase):
             threshold_factor=0.2,  # Lower threshold to ensure detection
             min_duration_ms=50,
             smoothing_window=5,
-            merge_threshold_ms=0  # Explicitly disable merging for this test
+            merge_threshold_ms=0,  # Explicitly disable merging for this test
         )
         self.assertEqual(result["contraction_count"], 3)
 
@@ -185,7 +192,7 @@ class TestEMGAnalysis(unittest.TestCase):
             min_duration_ms=50,
             smoothing_window=5,
             mvc_amplitude_threshold=1.5,
-            merge_threshold_ms=0  # Explicitly disable merging for this test
+            merge_threshold_ms=0,  # Explicitly disable merging for this test
         )
 
         # Should have good_contraction_count
@@ -199,9 +206,10 @@ class TestEMGAnalysis(unittest.TestCase):
             self.sampling_rate,
             threshold_factor=0.3,
             min_duration_ms=50,
-            smoothing_window=5
+            smoothing_window=5,
         )
         self.assertEqual(result["contraction_count"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

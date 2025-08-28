@@ -1,5 +1,4 @@
-"""
-Test for processing_parameters database insertion with Nyquist constraint compliance.
+"""Test for processing_parameters database insertion with Nyquist constraint compliance.
 
 This test ensures that the filter frequency parameters satisfy the database constraint:
 - filter_low_cutoff_hz > 0
@@ -7,11 +6,7 @@ This test ensures that the filter frequency parameters satisfy the database cons
 - filter_high_cutoff_hz < sampling_rate_hz / 2 (Nyquist frequency)
 """
 
-from datetime import datetime, timezone
-from unittest.mock import Mock
-
 import pytest
-
 from config import DEFAULT_LOWPASS_CUTOFF
 
 
@@ -31,10 +26,14 @@ class TestProcessingParameters:
         # Test case 2: Sampling rate 2000 Hz (higher sampling rate)
         sampling_rate = 2000.0
         nyquist_freq = sampling_rate / 2  # 1000 Hz
-        safe_high_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * 0.9)  # 500 Hz (limited by config)
+        safe_high_cutoff = min(
+            DEFAULT_LOWPASS_CUTOFF, nyquist_freq * 0.9
+        )  # 500 Hz (limited by config)
 
         assert safe_high_cutoff < nyquist_freq, "High cutoff must be less than Nyquist frequency"
-        assert safe_high_cutoff == DEFAULT_LOWPASS_CUTOFF, "Should use config limit when Nyquist allows"
+        assert safe_high_cutoff == DEFAULT_LOWPASS_CUTOFF, (
+            "Should use config limit when Nyquist allows"
+        )
 
         # Test case 3: Sampling rate 800 Hz (lower sampling rate)
         sampling_rate = 800.0
@@ -48,10 +47,10 @@ class TestProcessingParameters:
         """Test that filter parameters satisfy the database constraint."""
         test_cases = [
             # (sampling_rate, low_cutoff, expected_high_cutoff, should_pass)
-            (1000.0, 20.0, 450.0, True),   # Normal case
-            (2000.0, 20.0, 500.0, True),   # Higher sampling rate
-            (800.0, 20.0, 360.0, True),    # Lower sampling rate
-            (500.0, 20.0, 225.0, True),    # Very low sampling rate
+            (1000.0, 20.0, 450.0, True),  # Normal case
+            (2000.0, 20.0, 500.0, True),  # Higher sampling rate
+            (800.0, 20.0, 360.0, True),  # Lower sampling rate
+            (500.0, 20.0, 225.0, True),  # Very low sampling rate
         ]
 
         for sampling_rate, low_cutoff, expected_high_cutoff, should_pass in test_cases:
@@ -60,9 +59,7 @@ class TestProcessingParameters:
 
             # Check database constraint conditions
             constraint_check = (
-                low_cutoff > 0 and
-                safe_high_cutoff > low_cutoff and
-                safe_high_cutoff < nyquist_freq
+                low_cutoff > 0 and safe_high_cutoff > low_cutoff and safe_high_cutoff < nyquist_freq
             )
 
             assert constraint_check == should_pass, (
@@ -76,11 +73,7 @@ class TestProcessingParameters:
     def test_populate_database_parameters(self):
         """Test that _populate_database_tables creates correct processing_parameters."""
         # Test the Nyquist calculation logic directly
-        test_metadata = {
-            "sampling_rate": 1000.0,
-            "duration": 10.0,
-            "channel_count": 2
-        }
+        test_metadata = {"sampling_rate": 1000.0, "duration": 10.0, "channel_count": 2}
 
         # Calculate expected values (same logic as in therapy_session_processor.py)
         sampling_rate = test_metadata["sampling_rate"]
@@ -95,8 +88,8 @@ class TestProcessingParameters:
         test_cases = [
             (1000.0, 450.0),  # Standard case
             (2000.0, 500.0),  # High sampling rate (limited by config)
-            (800.0, 360.0),   # Low sampling rate
-            (990.0, 445.5),   # GHOSTLY typical rate
+            (800.0, 360.0),  # Low sampling rate
+            (990.0, 445.5),  # GHOSTLY typical rate
         ]
 
         for test_rate, expected_cutoff in test_cases:
@@ -111,12 +104,12 @@ class TestProcessingParameters:
     def test_duplicate_raw_channel_prevention(self):
         """Test that duplicate 'Raw Raw' channels are not created."""
         test_channels = [
-            ("CH1", True),           # Should create "CH1" and "CH1 Raw"
-            ("CH2", True),           # Should create "CH2" and "CH2 Raw"
-            ("CH1 Raw", False),      # Should NOT create "CH1 Raw Raw"
-            ("CH2 Raw", False),      # Should NOT create "CH2 Raw Raw"
-            ("CH1 activated", True), # Should create both versions
-            ("CH2 activated", True), # Should create both versions
+            ("CH1", True),  # Should create "CH1" and "CH1 Raw"
+            ("CH2", True),  # Should create "CH2" and "CH2 Raw"
+            ("CH1 Raw", False),  # Should NOT create "CH1 Raw Raw"
+            ("CH2 Raw", False),  # Should NOT create "CH2 Raw Raw"
+            ("CH1 activated", True),  # Should create both versions
+            ("CH2 activated", True),  # Should create both versions
         ]
 
         for channel_name, should_create_raw in test_channels:

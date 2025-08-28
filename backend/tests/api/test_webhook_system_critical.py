@@ -1,5 +1,5 @@
-"""
-Critical Webhook System Tests
+"""Critical Webhook System Tests.
+
 ============================
 
 KISS, DRY implementation testing core webhook business logic that was missing from coverage.
@@ -9,8 +9,6 @@ Author: Senior Engineer
 Date: 2025-08-27
 """
 
-import json
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,7 +19,7 @@ from api.routes.webhooks import SupabaseStorageEvent
 
 
 class TestWebhookSystemCritical:
-    """Test critical webhook functionality that was missing coverage"""
+    """Test critical webhook functionality that was missing coverage."""
 
     @pytest.fixture
     def client(self):
@@ -29,7 +27,7 @@ class TestWebhookSystemCritical:
 
     @pytest.fixture
     def valid_c3d_webhook_payload(self):
-        """Real Supabase Storage webhook payload for C3D upload"""
+        """Real Supabase Storage webhook payload for C3D upload."""
         return {
             "type": "INSERT",
             "table": "objects",
@@ -45,14 +43,14 @@ class TestWebhookSystemCritical:
                 "metadata": {
                     "size": 2874924,
                     "mimetype": "application/octet-stream",
-                    "cacheControl": "max-age=3600"
-                }
-            }
+                    "cacheControl": "max-age=3600",
+                },
+            },
         }
 
     @pytest.fixture
     def invalid_webhook_payload(self):
-        """Non-C3D file payload that should be ignored"""
+        """Non-C3D file payload that should be ignored."""
         return {
             "type": "INSERT",
             "table": "objects",
@@ -60,12 +58,12 @@ class TestWebhookSystemCritical:
             "record": {
                 "name": "some-document.pdf",
                 "bucket_id": "documents",
-                "metadata": {"size": 1024}
-            }
+                "metadata": {"size": 1024},
+            },
         }
 
     def test_supabase_storage_event_model(self):
-        """Test SupabaseStorageEvent model parsing and properties"""
+        """Test SupabaseStorageEvent model parsing and properties."""
         payload = {
             "type": "INSERT",
             "table": "objects",
@@ -73,8 +71,8 @@ class TestWebhookSystemCritical:
             "record": {
                 "name": "P042/test_file.c3d",
                 "bucket_id": "c3d-examples",
-                "metadata": {"size": 1024}
-            }
+                "metadata": {"size": 1024},
+            },
         }
 
         event = SupabaseStorageEvent(**payload)
@@ -87,13 +85,13 @@ class TestWebhookSystemCritical:
         assert event.is_c3d_upload is True
 
     def test_patient_code_extraction(self):
-        """Test patient code extraction from various file paths"""
+        """Test patient code extraction from various file paths."""
         test_cases = [
             ("P039/file.c3d", "P039"),
             ("P123/subfolder/file.c3d", "P123"),
             ("no_patient/file.c3d", None),
             ("file.c3d", None),
-            ("", None)
+            ("", None),
         ]
 
         for file_path, expected_code in test_cases:
@@ -101,17 +99,17 @@ class TestWebhookSystemCritical:
                 "type": "INSERT",
                 "table": "objects",
                 "schema": "storage",
-                "record": {"name": file_path, "bucket_id": "c3d-examples"}
+                "record": {"name": file_path, "bucket_id": "c3d-examples"},
             }
             event = SupabaseStorageEvent(**payload)
             assert event.patient_code == expected_code
 
     def test_webhook_ignores_non_c3d_files(self, client, invalid_webhook_payload):
-        """Test webhook correctly ignores non-C3D files"""
+        """Test webhook correctly ignores non-C3D files."""
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=invalid_webhook_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 200
@@ -122,8 +120,10 @@ class TestWebhookSystemCritical:
 
     @patch("api.routes.webhooks.session_processor")
     @patch("api.routes.webhooks.PatientRepository")
-    def test_webhook_c3d_processing_success(self, mock_patient_repo, mock_processor, client, valid_c3d_webhook_payload):
-        """Test successful C3D webhook processing workflow"""
+    def test_webhook_c3d_processing_success(
+        self, mock_patient_repo, mock_processor, client, valid_c3d_webhook_payload
+    ):
+        """Test successful C3D webhook processing workflow."""
         # Mock patient lookup
         mock_patient_instance = MagicMock()
         mock_patient_instance.get_patient_by_code.return_value = {"id": "patient-uuid-123"}
@@ -138,7 +138,7 @@ class TestWebhookSystemCritical:
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=valid_c3d_webhook_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 200
@@ -156,13 +156,16 @@ class TestWebhookSystemCritical:
         # Verify session creation was called with correct parameters
         mock_processor.create_session.assert_called_once()
         call_args = mock_processor.create_session.call_args
-        assert call_args.kwargs["file_path"] == "c3d-examples/P039/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        assert (
+            call_args.kwargs["file_path"]
+            == "c3d-examples/P039/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        )
         assert call_args.kwargs["patient_id"] == "patient-uuid-123"
         assert call_args.kwargs["file_metadata"]["size"] == 2874924
 
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_patient_not_found(self, mock_processor, client, valid_c3d_webhook_payload):
-        """Test webhook handles missing patient gracefully"""
+        """Test webhook handles missing patient gracefully."""
         # Mock session processor with async methods
         test_session_id = "session-uuid-no-patient"
         mock_processor.create_session = AsyncMock(return_value=test_session_id)
@@ -177,7 +180,7 @@ class TestWebhookSystemCritical:
             response = client.post(
                 "/webhooks/storage/c3d-upload",
                 json=valid_c3d_webhook_payload,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             assert response.status_code == 200
@@ -190,28 +193,32 @@ class TestWebhookSystemCritical:
             assert call_args.kwargs["patient_id"] is None
 
     def test_webhook_invalid_json(self, client):
-        """Test webhook handles invalid JSON payload"""
+        """Test webhook handles invalid JSON payload."""
         response = client.post(
             "/webhooks/storage/c3d-upload",
             data="invalid json{",
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 400
         assert "Invalid JSON payload" in response.json()["message"]
 
     @patch("api.routes.webhooks.session_processor")
-    def test_webhook_session_creation_failure(self, mock_processor, client, valid_c3d_webhook_payload):
-        """Test webhook handles session creation errors"""
+    def test_webhook_session_creation_failure(
+        self, mock_processor, client, valid_c3d_webhook_payload
+    ):
+        """Test webhook handles session creation errors."""
         # Mock session processor to raise an exception
-        mock_processor.create_session = AsyncMock(side_effect=Exception("Database connection failed"))
+        mock_processor.create_session = AsyncMock(
+            side_effect=Exception("Database connection failed")
+        )
         mock_processor.update_session_status = AsyncMock()
         mock_processor.process_c3d_file = AsyncMock()
 
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=valid_c3d_webhook_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 500
@@ -219,14 +226,14 @@ class TestWebhookSystemCritical:
 
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_status_endpoint_success(self, mock_processor, client):
-        """Test webhook status endpoint returns session information"""
+        """Test webhook status endpoint returns session information."""
         session_id = "test-session-123"
         mock_status = {
             "processing_status": "completed",
             "file_path": "c3d-examples/P039/test.c3d",
             "created_at": "2025-08-27T10:00:00Z",
             "processed_at": "2025-08-27T10:05:00Z",
-            "analytics_cache": {"channels_analyzed": 2}
+            "analytics_cache": {"channels_analyzed": 2},
         }
         mock_processor.get_session_status = AsyncMock(return_value=mock_status)
 
@@ -240,7 +247,7 @@ class TestWebhookSystemCritical:
 
     @patch("api.routes.webhooks.session_processor")
     def test_webhook_status_endpoint_not_found(self, mock_processor, client):
-        """Test webhook status endpoint handles missing sessions"""
+        """Test webhook status endpoint handles missing sessions."""
         mock_processor.get_session_status = AsyncMock(return_value=None)
         mock_processor.update_session_status = AsyncMock()
         mock_processor.process_c3d_file = AsyncMock()
@@ -251,7 +258,7 @@ class TestWebhookSystemCritical:
         assert "Session not found" in response.json()["message"]
 
     def test_webhook_health_endpoint(self, client):
-        """Test webhook health check endpoint"""
+        """Test webhook health check endpoint."""
         response = client.get("/webhooks/health")
 
         assert response.status_code == 200
@@ -263,7 +270,7 @@ class TestWebhookSystemCritical:
 
 
 class TestWebhookSecurity:
-    """Test webhook security features"""
+    """Test webhook security features."""
 
     @pytest.fixture
     def client(self):
@@ -275,13 +282,15 @@ class TestWebhookSecurity:
             "type": "INSERT",
             "table": "objects",
             "schema": "storage",
-            "record": {"name": "test.c3d", "bucket_id": "c3d-examples"}
+            "record": {"name": "test.c3d", "bucket_id": "c3d-examples"},
         }
 
     @patch("api.routes.webhooks.session_processor")
     @patch("api.routes.webhooks.settings")
-    def test_webhook_signature_verification_disabled(self, mock_settings, mock_processor, client, valid_payload):
-        """Test webhook works when signature verification is disabled"""
+    def test_webhook_signature_verification_disabled(
+        self, mock_settings, mock_processor, client, valid_payload
+    ):
+        """Test webhook works when signature verification is disabled."""
         mock_settings.WEBHOOK_SECRET = ""  # Disabled
         mock_processor.create_session = AsyncMock(return_value="session-123")
         mock_processor.update_session_status = AsyncMock()
@@ -290,7 +299,7 @@ class TestWebhookSecurity:
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=valid_payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         # Should succeed without signature
@@ -299,8 +308,10 @@ class TestWebhookSecurity:
     @patch("api.routes.webhooks.session_processor")
     @patch("api.routes.webhooks.webhook_security")
     @patch("api.routes.webhooks.settings")
-    def test_webhook_signature_verification_success(self, mock_settings, mock_security, mock_processor, client, valid_payload):
-        """Test webhook succeeds with valid signature"""
+    def test_webhook_signature_verification_success(
+        self, mock_settings, mock_security, mock_processor, client, valid_payload
+    ):
+        """Test webhook succeeds with valid signature."""
         mock_settings.WEBHOOK_SECRET = "test-secret-key"
         mock_security.verify_signature.return_value = True
         mock_processor.create_session = AsyncMock(return_value="session-123")
@@ -310,10 +321,7 @@ class TestWebhookSecurity:
         response = client.post(
             "/webhooks/storage/c3d-upload",
             json=valid_payload,
-            headers={
-                "Content-Type": "application/json",
-                "x-supabase-signature": "valid-signature"
-            }
+            headers={"Content-Type": "application/json", "x-supabase-signature": "valid-signature"},
         )
 
         assert response.status_code == 200
@@ -321,8 +329,10 @@ class TestWebhookSecurity:
     @patch("api.routes.webhooks.session_processor")
     @patch("api.routes.webhooks.webhook_security")
     @patch("api.routes.webhooks.settings")
-    def test_webhook_signature_verification_failure(self, mock_settings, mock_security, mock_processor, client, valid_payload):
-        """Test webhook rejects invalid signature"""
+    def test_webhook_signature_verification_failure(
+        self, mock_settings, mock_security, mock_processor, client, valid_payload
+    ):
+        """Test webhook rejects invalid signature."""
         mock_settings.WEBHOOK_SECRET = "test-secret-key"
         mock_security.verify_signature.return_value = False
         mock_processor.create_session = AsyncMock(return_value="session-123")
@@ -334,8 +344,8 @@ class TestWebhookSecurity:
             json=valid_payload,
             headers={
                 "Content-Type": "application/json",
-                "x-supabase-signature": "invalid-signature"
-            }
+                "x-supabase-signature": "invalid-signature",
+            },
         )
 
         assert response.status_code == 401
@@ -343,26 +353,22 @@ class TestWebhookSecurity:
 
 
 class TestBackgroundProcessing:
-    """Test background processing functionality"""
+    """Test background processing functionality."""
 
     @patch("api.routes.webhooks.session_processor")
     @pytest.mark.asyncio
     async def test_background_processing_success(self, mock_processor):
-        """Test successful background C3D processing"""
+        """Test successful background C3D processing."""
         from api.routes.webhooks import _process_c3d_background
 
         # Mock successful processing
         mock_processor.update_session_status = AsyncMock()
-        mock_processor.process_c3d_file = AsyncMock(return_value={
-            "success": True,
-            "channels_analyzed": 2,
-            "overall_score": 85.5
-        })
+        mock_processor.process_c3d_file = AsyncMock(
+            return_value={"success": True, "channels_analyzed": 2, "overall_score": 85.5}
+        )
 
         await _process_c3d_background(
-            session_id="test-session",
-            bucket="c3d-examples",
-            object_path="P039/test.c3d"
+            session_id="test-session", bucket="c3d-examples", object_path="P039/test.c3d"
         )
 
         # Verify processing workflow
@@ -375,28 +381,23 @@ class TestBackgroundProcessing:
 
         # Verify file processing called
         mock_processor.process_c3d_file.assert_called_once_with(
-            session_id="test-session",
-            bucket="c3d-examples",
-            object_path="P039/test.c3d"
+            session_id="test-session", bucket="c3d-examples", object_path="P039/test.c3d"
         )
 
     @patch("api.routes.webhooks.session_processor")
     @pytest.mark.asyncio
     async def test_background_processing_failure(self, mock_processor):
-        """Test background processing handles errors correctly"""
+        """Test background processing handles errors correctly."""
         from api.routes.webhooks import _process_c3d_background
 
         # Mock processing failure
         mock_processor.update_session_status = AsyncMock()
-        mock_processor.process_c3d_file = AsyncMock(return_value={
-            "success": False,
-            "error": "C3D file corrupted"
-        })
+        mock_processor.process_c3d_file = AsyncMock(
+            return_value={"success": False, "error": "C3D file corrupted"}
+        )
 
         await _process_c3d_background(
-            session_id="failed-session",
-            bucket="c3d-examples",
-            object_path="P039/corrupted.c3d"
+            session_id="failed-session", bucket="c3d-examples", object_path="P039/corrupted.c3d"
         )
 
         # Verify error handling workflow
@@ -410,7 +411,7 @@ class TestBackgroundProcessing:
     @patch("api.routes.webhooks.session_processor")
     @pytest.mark.asyncio
     async def test_background_processing_exception(self, mock_processor):
-        """Test background processing handles exceptions"""
+        """Test background processing handles exceptions."""
         from api.routes.webhooks import _process_c3d_background
 
         # Mock exception during processing
@@ -418,9 +419,7 @@ class TestBackgroundProcessing:
         mock_processor.process_c3d_file = AsyncMock(side_effect=Exception("Database timeout"))
 
         await _process_c3d_background(
-            session_id="exception-session",
-            bucket="c3d-examples",
-            object_path="P039/test.c3d"
+            session_id="exception-session", bucket="c3d-examples", object_path="P039/test.c3d"
         )
 
         # Verify exception handling

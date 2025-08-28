@@ -41,7 +41,9 @@ def test_flags_duration_only():
     )
     assert res["duration_contraction_count"] >= 1
     assert res["mvc_contraction_count"] == 0
-    assert res["good_contraction_count"] >= 1  # is_good == meets_duration when only duration provided
+    assert (
+        res["good_contraction_count"] >= 1
+    )  # is_good == meets_duration when only duration provided
 
 
 def test_flags_both_thresholds():
@@ -58,4 +60,3 @@ def test_flags_both_thresholds():
     assert res["duration_contraction_count"] >= 1
     assert res["mvc_contraction_count"] >= 1
     assert res["good_contraction_count"] >= 1
-
