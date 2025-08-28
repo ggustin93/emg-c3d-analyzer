@@ -1,5 +1,4 @@
-"""
-API Routes Module
+"""API Routes Module
 ================
 
 Modular route definitions following SOLID principles.
@@ -10,12 +9,12 @@ Each route module has single responsibility.
 # Import individual modules as needed to avoid circular imports
 
 __all__ = [
-    "health",
-    "upload", 
     "analysis",
+    "cache_monitoring",
     "export",
+    "health",
     "mvc",
     "signals",
-    "webhooks",
-    "cache_monitoring"
+    "upload",
+    "webhooks"
 ]

@@ -1,5 +1,4 @@
-"""
-Request Validation Dependencies
+"""Request Validation Dependencies
 ==============================
 
 Common validation patterns and parameter extraction.
@@ -7,11 +6,16 @@ Implements DRY principle for repeated parameter patterns.
 """
 
 from typing import Optional
+
 from fastapi import Form
+
 from models.models import (
-    ProcessingOptions, GameSessionParameters,
-    DEFAULT_THRESHOLD_FACTOR, DEFAULT_MIN_DURATION_MS, DEFAULT_SMOOTHING_WINDOW,
-    DEFAULT_MVC_THRESHOLD_PERCENTAGE
+    DEFAULT_MIN_DURATION_MS,
+    DEFAULT_MVC_THRESHOLD_PERCENTAGE,
+    DEFAULT_SMOOTHING_WINDOW,
+    DEFAULT_THRESHOLD_FACTOR,
+    GameSessionParameters,
+    ProcessingOptions,
 )
 
 
@@ -20,8 +24,7 @@ def get_processing_options(
     min_duration_ms: int = Form(DEFAULT_MIN_DURATION_MS),
     smoothing_window: int = Form(DEFAULT_SMOOTHING_WINDOW)
 ) -> ProcessingOptions:
-    """
-    Dependency for standard EMG processing options.
+    """Dependency for standard EMG processing options.
     
     Args:
         threshold_factor: Signal threshold multiplier
@@ -39,15 +42,14 @@ def get_processing_options(
 
 
 def get_session_parameters(
-    session_mvc_value: Optional[float] = Form(None),
-    session_mvc_threshold_percentage: Optional[float] = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
-    session_expected_contractions: Optional[int] = Form(None),
-    session_expected_contractions_ch1: Optional[int] = Form(None),
-    session_expected_contractions_ch2: Optional[int] = Form(None),
-    contraction_duration_threshold: Optional[int] = Form(2000)
+    session_mvc_value: float | None = Form(None),
+    session_mvc_threshold_percentage: float | None = Form(DEFAULT_MVC_THRESHOLD_PERCENTAGE),
+    session_expected_contractions: int | None = Form(None),
+    session_expected_contractions_ch1: int | None = Form(None),
+    session_expected_contractions_ch2: int | None = Form(None),
+    contraction_duration_threshold: int | None = Form(2000)
 ) -> GameSessionParameters:
-    """
-    Dependency for game session parameters.
+    """Dependency for game session parameters.
     
     Args:
         session_mvc_value: MVC value for session
@@ -71,12 +73,11 @@ def get_session_parameters(
 
 
 def get_file_metadata(
-    user_id: Optional[str] = Form(None),
-    patient_id: Optional[str] = Form(None),
-    session_id: Optional[str] = Form(None)
+    user_id: str | None = Form(None),
+    patient_id: str | None = Form(None),
+    session_id: str | None = Form(None)
 ) -> dict:
-    """
-    Dependency for file metadata extraction.
+    """Dependency for file metadata extraction.
     
     Args:
         user_id: User identifier

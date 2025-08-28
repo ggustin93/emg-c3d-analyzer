@@ -1,5 +1,4 @@
-"""
-GHOSTLY+ EMG Analysis API - Main Application
+"""GHOSTLY+ EMG Analysis API - Main Application
 ===========================================
 
 FastAPI application factory with modular route organization.
@@ -22,21 +21,32 @@ import os
 import sys
 
 # Third-party imports
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Local imports - Configuration
 from config import (
-    API_TITLE, API_VERSION, API_DESCRIPTION,
-    CORS_ORIGINS, CORS_CREDENTIALS, CORS_METHODS, CORS_HEADERS
+    API_DESCRIPTION,
+    API_TITLE,
+    API_VERSION,
+    CORS_CREDENTIALS,
+    CORS_HEADERS,
+    CORS_METHODS,
+    CORS_ORIGINS,
 )
 
 # Local imports - Route modules (SOLID principle: Single Responsibility)
 from .routes import (
-    health, upload, analysis, export, mvc,
-    signals, webhooks, cache_monitoring
+    analysis,
+    cache_monitoring,
+    export,
+    health,
+    mvc,
+    signals,
+    upload,
+    webhooks,
 )
 from .routes.scoring_config import router as scoring_router
 
@@ -47,19 +57,19 @@ CACHE_MONITORING_AVAILABLE = True
 def setup_logging():
     """Setup consistent logging configuration"""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
+
     logging.basicConfig(
         level=getattr(logging, log_level, logging.INFO),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
         ]
     )
-    
+
     # Set specific logger levels
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("uvicorn").setLevel(logging.INFO)
-    
+
 
 # Initialize logging
 setup_logging()
@@ -94,8 +104,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 
 def create_app() -> FastAPI:
-    """
-    FastAPI application factory.
+    """FastAPI application factory.
     
     Creates and configures the FastAPI application with all routes and middleware.
     Follows app factory pattern for clean initialization.
@@ -118,7 +127,7 @@ def create_app() -> FastAPI:
         allow_methods=CORS_METHODS,
         allow_headers=CORS_HEADERS,
     )
-    
+
     # Add exception handlers
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
@@ -142,7 +151,7 @@ def create_app() -> FastAPI:
     logger.info("🚀 FastAPI application created successfully")
     logger.info("🏗️  Architecture: Modular routes with error handling")
     logger.info("📊 Logging: Configured with level %s", os.getenv("LOG_LEVEL", "INFO"))
-    
+
     return app
 
 

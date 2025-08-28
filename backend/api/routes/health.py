@@ -1,5 +1,4 @@
-"""
-Health Check Routes
+"""Health Check Routes
 ==================
 
 System health monitoring endpoints.
@@ -7,6 +6,7 @@ Single responsibility: Application health status.
 """
 
 from datetime import datetime
+
 from fastapi import APIRouter
 
 router = APIRouter(tags=["health"])

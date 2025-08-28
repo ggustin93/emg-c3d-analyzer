@@ -1,13 +1,13 @@
-import uvicorn
-import sys
 import logging
-from pathlib import Path
-import traceback
 import os
+import sys
+import traceback
+from pathlib import Path
+
+import uvicorn
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-from pathlib import Path
 backend_dir = Path(__file__).parent
 env_path = backend_dir / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -53,11 +53,11 @@ except Exception as e:
 if __name__ == "__main__":
     try:
         # Get configuration from config module
-        from config import get_port, get_host, get_log_level
+        from config import get_host, get_log_level, get_port
         port = get_port()
         host = get_host()
         log_level = get_log_level()
-        
+
         logger.info(f"Starting uvicorn server on http://{host}:{port}")
         # Remove reload=True to avoid the warning in production
         uvicorn.run("backend.api.main:app", host=host, port=port, log_level=log_level)

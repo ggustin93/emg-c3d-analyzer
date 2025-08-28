@@ -1,14 +1,14 @@
-"""
-Simple Cache Monitoring API
+"""Simple Cache Monitoring API
 Basic cache health, stats, and management endpoints
 """
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from services.cache import get_redis_cache, get_cache_patterns
+from services.cache import get_cache_patterns, get_redis_cache
 
 router = APIRouter(prefix="/api/cache", tags=["Cache"])
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class CacheHealthResponse(BaseModel):
     healthy: bool
     message: str
-    error: Optional[str] = None
+    error: str | None = None
     timestamp: str
 
 
@@ -28,7 +28,7 @@ class CacheStatsResponse(BaseModel):
     hits: int
     misses: int
     total_requests: int
-    config: Dict[str, Any]
+    config: dict[str, Any]
 
 
 @router.get("/health", response_model=CacheHealthResponse)
@@ -37,16 +37,16 @@ async def get_cache_health():
     try:
         cache = await get_redis_cache()
         health = await cache.health_check()
-        
+
         return CacheHealthResponse(
             healthy=health["healthy"],
             message=health.get("message", "Health check completed"),
             error=health.get("error"),
             timestamp=datetime.utcnow().isoformat()
         )
-        
+
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
+        logger.error(f"Health check failed: {e!s}")
         return CacheHealthResponse(
             healthy=False,
             message="Health check failed",
@@ -61,10 +61,10 @@ async def get_cache_stats():
     try:
         cache = await get_redis_cache()
         stats = await cache.get_stats()
-        
+
         if stats.get("status") == "error":
             raise HTTPException(status_code=500, detail=stats.get("error"))
-        
+
         return CacheStatsResponse(
             status=stats.get("status", "unknown"),
             memory_mb=stats.get("memory_mb", 0.0),
@@ -74,11 +74,11 @@ async def get_cache_stats():
             total_requests=stats.get("total_requests", 0),
             config=stats.get("config", {})
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get cache stats: {str(e)}")
+        logger.error(f"Failed to get cache stats: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -90,16 +90,16 @@ async def invalidate_cache_pattern(
     try:
         patterns = await get_cache_patterns()
         count = await patterns.invalidate_by_pattern(pattern)
-        
+
         return {
             "status": "completed",
             "invalidated_keys": count,
             "pattern": pattern,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
     except Exception as e:
-        logger.error(f"Cache invalidation failed: {str(e)}")
+        logger.error(f"Cache invalidation failed: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -110,7 +110,7 @@ async def get_cache_dashboard():
         cache = await get_redis_cache()
         health = await cache.health_check()
         stats = await cache.get_stats()
-        
+
         return {
             "timestamp": datetime.utcnow().isoformat(),
             "health": {
@@ -127,7 +127,7 @@ async def get_cache_dashboard():
             },
             "config": stats.get("config", {})
         }
-        
+
     except Exception as e:
-        logger.error(f"Dashboard error: {str(e)}")
+        logger.error(f"Dashboard error: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))

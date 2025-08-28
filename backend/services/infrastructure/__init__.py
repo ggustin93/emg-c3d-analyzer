@@ -1,5 +1,4 @@
-"""
-Infrastructure Domain Services
+"""Infrastructure Domain Services
 ==============================
 
 Services for security, webhooks, and system utilities.

@@ -1,5 +1,4 @@
-"""
-Analysis Routes
+"""Analysis Routes
 ==============
 
 Analysis recalculation endpoints.
@@ -7,10 +6,16 @@ Single responsibility: EMG analysis recalculation without file re-upload.
 """
 
 import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from models.models import EMGAnalysisResult, ChannelAnalytics, GameMetadata, GameSessionParameters
+from models.models import (
+    ChannelAnalytics,
+    EMGAnalysisResult,
+    GameMetadata,
+    GameSessionParameters,
+)
 from services.c3d.processor import GHOSTLYC3DProcessor
 
 logger = logging.getLogger(__name__)
@@ -26,8 +31,7 @@ class RecalcRequest(BaseModel):
 
 @router.post("/recalc", response_model=EMGAnalysisResult)
 async def recalc_analysis(request: RecalcRequest):
-    """
-    Recalculate analytics from an existing EMGAnalysisResult with updated session parameters.
+    """Recalculate analytics from an existing EMGAnalysisResult with updated session parameters.
     This avoids re-processing the entire C3D file and only updates counts/flags/thresholds
     based on the new parameters (e.g., duration threshold, MVC settings).
     
@@ -73,9 +77,9 @@ async def recalc_analysis(request: RecalcRequest):
             session_id=request.existing.session_id,
         )
         return response_model
-        
+
     except Exception as e:
         import traceback
-        logger.error(f"ERROR in /analysis/recalc: {str(e)}")
+        logger.error(f"ERROR in /analysis/recalc: {e!s}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {e!s}")

@@ -1,11 +1,14 @@
-"""
-Clinical/Therapeutic Domain Services
+"""Clinical/Therapeutic Domain Services
 ====================================
 
 Services for clinical workflows, performance scoring, and therapy sessions.
 """
 
-from .performance_scoring_service import PerformanceScoringService, ScoringWeights, SessionMetrics
+from .performance_scoring_service import (
+    PerformanceScoringService,
+    ScoringWeights,
+    SessionMetrics,
+)
 from .therapy_session_processor import TherapySessionProcessor
 
 __all__ = ["PerformanceScoringService", "ScoringWeights", "SessionMetrics", "TherapySessionProcessor"]

@@ -1,5 +1,4 @@
-"""
-Data Management Domain Services
+"""Data Management Domain Services
 ===============================
 
 Services for data persistence, export, and metadata management.

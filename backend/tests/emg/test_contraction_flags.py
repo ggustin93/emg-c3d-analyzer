@@ -1,4 +1,5 @@
 import numpy as np
+
 from emg.emg_analysis import analyze_contractions
 
 
@@ -21,10 +22,10 @@ def test_flags_none_thresholds_returns_false():
         mvc_amplitude_threshold=None,
         contraction_duration_threshold_ms=None,
     )
-    for c in res.get('contractions', []):
-        assert c['meets_mvc'] is False
-        assert c['meets_duration'] is False
-        assert c['is_good'] is False
+    for c in res.get("contractions", []):
+        assert c["meets_mvc"] is False
+        assert c["meets_duration"] is False
+        assert c["is_good"] is False
 
 
 def test_flags_duration_only():
@@ -38,9 +39,9 @@ def test_flags_duration_only():
         mvc_amplitude_threshold=None,
         contraction_duration_threshold_ms=2000,
     )
-    assert res['duration_contraction_count'] >= 1
-    assert res['mvc_contraction_count'] == 0
-    assert res['good_contraction_count'] >= 1  # is_good == meets_duration when only duration provided
+    assert res["duration_contraction_count"] >= 1
+    assert res["mvc_contraction_count"] == 0
+    assert res["good_contraction_count"] >= 1  # is_good == meets_duration when only duration provided
 
 
 def test_flags_both_thresholds():
@@ -54,7 +55,7 @@ def test_flags_both_thresholds():
         mvc_amplitude_threshold=0.05,  # below burst amplitude
         contraction_duration_threshold_ms=2000,
     )
-    assert res['duration_contraction_count'] >= 1
-    assert res['mvc_contraction_count'] >= 1
-    assert res['good_contraction_count'] >= 1
+    assert res["duration_contraction_count"] >= 1
+    assert res["mvc_contraction_count"] >= 1
+    assert res["good_contraction_count"] >= 1
 
