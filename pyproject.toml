@@ -78,7 +78,7 @@ exclude = [
 ]
 
 # Match Black's line length for consistency
-line-length = 88
+line-length = 100
 indent-width = 4
 
 # Target Python 3.10+ for modern backend development
@@ -161,7 +161,9 @@ ignore = [
     "D103",  # Missing docstring in public function
     "D104",  # Missing docstring in public package
     "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public function
     "D107",  # Missing docstring in __init__
+    "D415",  # First line should end with a period (too strict)
     
     # Line length - handled by formatter
     "E501",  # Line too long
