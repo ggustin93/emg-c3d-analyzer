@@ -144,7 +144,7 @@ class TestScoringWeights:
         invalid_weights2 = ScoringWeights(
             w_compliance=0.30, w_symmetry=0.20, w_effort=0.15, w_game=0.10
         )
-        assert invalid_weights2.validate() == False
+        assert not invalid_weights2.validate()
 
     def test_weights_validation_sub_components(self):
         """Test compliance sub-component weights validation (must sum to 1.0)"""

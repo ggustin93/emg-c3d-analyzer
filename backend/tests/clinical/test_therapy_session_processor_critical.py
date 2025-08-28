@@ -379,16 +379,14 @@ class TestTherapySessionProcessorFileHandling:
     def test_cleanup_temp_file(self, processor):
         """Test temporary file cleanup utility"""
         # Test the _cleanup_temp_file method directly
-        with patch("os.path.exists", return_value=True):
-            with patch("os.unlink") as mock_unlink:
-                processor._cleanup_temp_file("/tmp/test.c3d")
-                mock_unlink.assert_called_once_with("/tmp/test.c3d")
+        with patch("os.path.exists", return_value=True), patch("os.unlink") as mock_unlink:
+            processor._cleanup_temp_file("/tmp/test.c3d")
+            mock_unlink.assert_called_once_with("/tmp/test.c3d")
 
         # Test cleanup with missing file (should not call unlink)
-        with patch("os.path.exists", return_value=False):
-            with patch("os.unlink") as mock_unlink:
-                processor._cleanup_temp_file("/tmp/missing.c3d")
-                mock_unlink.assert_not_called()
+        with patch("os.path.exists", return_value=False), patch("os.unlink") as mock_unlink:
+            processor._cleanup_temp_file("/tmp/missing.c3d")
+            mock_unlink.assert_not_called()
 
         # Test cleanup with OSError (should not raise exception)
         with patch("os.path.exists", return_value=True):

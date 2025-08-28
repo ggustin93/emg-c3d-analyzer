@@ -4,14 +4,12 @@ from pathlib import Path
 
 import numpy as np
 
-# Get the absolute path to the project root directory
-PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+# Add project root to path to allow absolute imports
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-# Add the project root to the Python path
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-from emg.emg_analysis import (  # ruff: noqa: E402
+from emg.emg_analysis import (
     analyze_contractions,
     calculate_fatigue_index_fi_nsm5,
     calculate_mav,
