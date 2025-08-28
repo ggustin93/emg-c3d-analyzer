@@ -1,4 +1,4 @@
-"""Patient Repository
+"""Patient Repository.
 ==================
 
 🎯 PURPOSE: Patient data management with RGPD-compliant PII separation
@@ -20,50 +20,51 @@ import logging
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
+from backend.services.shared.repositories.base.abstract_repository import (
+    AbstractRepository,
+    RepositoryError,
+)
 from models.clinical.patient import Patient, PatientCreate, PatientUpdate
-from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
 
 logger = logging.getLogger(__name__)
 
 
 class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient]):
-    """Repository for patient data management with PII separation
-    
+    """Repository for patient data management with PII separation.
+
     Handles both pseudonymized patient profiles (public schema) and
     personally identifiable information (private schema) following
     RGPD compliance requirements.
     """
 
     def get_table_name(self) -> str:
-        """Return primary table name for patients"""
+        """Return primary table name for patients."""
         return "patients"
 
-    def get_create_model(self) -> Type[PatientCreate]:
-        """Return the Pydantic model class for create operations"""
+    def get_create_model(self) -> type[PatientCreate]:
+        """Return the Pydantic model class for create operations."""
         return PatientCreate
 
-    def get_update_model(self) -> Type[PatientUpdate]:
-        """Return the Pydantic model class for update operations"""
+    def get_update_model(self) -> type[PatientUpdate]:
+        """Return the Pydantic model class for update operations."""
         return PatientUpdate
 
-    def get_response_model(self) -> Type[Patient]:
-        """Return the Pydantic model class for response operations"""
+    def get_response_model(self) -> type[Patient]:
+        """Return the Pydantic model class for response operations."""
         return Patient
 
     def create_patient(
-        self,
-        patient_data: dict[str, Any],
-        pii_data: dict[str, Any] | None = None
+        self, patient_data: dict[str, Any], pii_data: dict[str, Any] | None = None
     ) -> dict[str, Any]:
-        """Create new patient with optional PII data
-        
+        """Create new patient with optional PII data.
+
         Args:
             patient_data: Patient profile data (pseudonymized)
             pii_data: Personal identifiable information (optional)
-            
+
         Returns:
             Dict: Created patient profile
-            
+
         Raises:
             RepositoryError: If creation fails
         """
@@ -77,33 +78,20 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
 
             # Validate therapist_id as UUID
             profile_data["therapist_id"] = self._validate_uuid(
-                profile_data["therapist_id"],
-                "therapist_id"
+                profile_data["therapist_id"], "therapist_id"
             )
 
             # Create patient profile in public schema
-            result = (
-                self.client
-                .table("patients")
-                .insert(profile_data)
-                .execute()
-            )
+            result = self.client.table("patients").insert(profile_data).execute()
 
-            created_patient = self._handle_supabase_response(
-                result, "create", "patient"
-            )[0]
+            created_patient = self._handle_supabase_response(result, "create", "patient")[0]
 
             # Create PII data if provided
             if pii_data:
                 pii_data["patient_id"] = created_patient["id"]
                 pii_data = self._prepare_timestamps(pii_data)
 
-                pii_result = (
-                    self.client
-                    .table("patient_pii")
-                    .insert(pii_data)
-                    .execute()
-                )
+                pii_result = self.client.table("patient_pii").insert(pii_data).execute()
 
                 self._handle_supabase_response(pii_result, "create", "patient PII")
 
@@ -116,11 +104,11 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             raise RepositoryError(error_msg) from e
 
     def get_patient_profile(self, patient_id: str | UUID) -> dict[str, Any] | None:
-        """Get patient profile (pseudonymized data only)
-        
+        """Get patient profile (pseudonymized data only).
+
         Args:
             patient_id: Patient UUID
-            
+
         Returns:
             Optional[Dict]: Patient profile or None if not found
         """
@@ -128,27 +116,22 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             validated_id = self._validate_uuid(patient_id, "patient_id")
 
             result = (
-                self.client
-                .table("patients")
-                .select("*")
-                .eq("id", validated_id)
-                .limit(1)
-                .execute()
+                self.client.table("patients").select("*").eq("id", validated_id).limit(1).execute()
             )
 
             data = self._handle_supabase_response(result, "get", "patient profile")
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get patient profile {patient_id}: {e!s}")
+            self.logger.exception(f"Failed to get patient profile {patient_id}: {e!s}")
             raise RepositoryError(f"Failed to get patient profile: {e!s}") from e
 
     def get_patient_pii(self, patient_id: str | UUID) -> dict[str, Any] | None:
-        """Get patient personally identifiable information (private schema)
-        
+        """Get patient personally identifiable information (private schema).
+
         Args:
             patient_id: Patient UUID
-            
+
         Returns:
             Optional[Dict]: Patient PII or None if not found
         """
@@ -156,8 +139,7 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             validated_id = self._validate_uuid(patient_id, "patient_id")
 
             result = (
-                self.client
-                .table("patient_pii")
+                self.client.table("patient_pii")
                 .select("*")
                 .eq("patient_id", validated_id)
                 .limit(1)
@@ -168,20 +150,18 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get patient PII {patient_id}: {e!s}")
+            self.logger.exception(f"Failed to get patient PII {patient_id}: {e!s}")
             raise RepositoryError(f"Failed to get patient PII: {e!s}") from e
 
     def get_patients_by_therapist(
-        self,
-        therapist_id: str | UUID,
-        limit: int | None = None
+        self, therapist_id: str | UUID, limit: int | None = None
     ) -> list[dict[str, Any]]:
-        """Get all patients for a specific therapist
-        
+        """Get all patients for a specific therapist.
+
         Args:
             therapist_id: Therapist UUID
             limit: Optional limit on results
-            
+
         Returns:
             List[Dict]: List of patient profiles
         """
@@ -189,8 +169,7 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             validated_id = self._validate_uuid(therapist_id, "therapist_id")
 
             query = (
-                self.client
-                .table("patients")
+                self.client.table("patients")
                 .select("*")
                 .eq("therapist_id", validated_id)
                 .order("created_at", desc=True)
@@ -204,20 +183,18 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             return self._handle_supabase_response(result, "get", "patients by therapist")
 
         except Exception as e:
-            self.logger.error(f"Failed to get patients for therapist {therapist_id}: {e!s}")
+            self.logger.exception(f"Failed to get patients for therapist {therapist_id}: {e!s}")
             raise RepositoryError(f"Failed to get patients for therapist: {e!s}") from e
 
     def update_patient_profile(
-        self,
-        patient_id: str | UUID,
-        update_data: dict[str, Any]
+        self, patient_id: str | UUID, update_data: dict[str, Any]
     ) -> dict[str, Any]:
-        """Update patient profile data
-        
+        """Update patient profile data.
+
         Args:
             patient_id: Patient UUID
             update_data: Data to update
-            
+
         Returns:
             Dict: Updated patient profile
         """
@@ -226,11 +203,7 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             update_data = self._prepare_timestamps(update_data, update=True)
 
             result = (
-                self.client
-                .table("patients")
-                .update(update_data)
-                .eq("id", validated_id)
-                .execute()
+                self.client.table("patients").update(update_data).eq("id", validated_id).execute()
             )
 
             updated_data = self._handle_supabase_response(result, "update", "patient profile")
@@ -247,11 +220,11 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             raise RepositoryError(error_msg) from e
 
     def get_patient_by_code(self, patient_code: str) -> dict[str, Any] | None:
-        """Get patient by patient_code (e.g., P039)
-        
+        """Get patient by patient_code (e.g., P039).
+
         Args:
             patient_code: Patient code (e.g., 'P039')
-            
+
         Returns:
             Optional[Dict]: Patient data or None if not found
         """
@@ -260,8 +233,7 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
                 raise RepositoryError("Invalid patient_code provided")
 
             result = (
-                self.client
-                .table("patients")
+                self.client.table("patients")
                 .select("*")
                 .eq("patient_code", patient_code.upper())
                 .limit(1)
@@ -272,5 +244,5 @@ class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get patient by code {patient_code}: {e!s}")
+            self.logger.exception(f"Failed to get patient by code {patient_code}: {e!s}")
             raise RepositoryError(f"Failed to get patient by code: {e!s}") from e

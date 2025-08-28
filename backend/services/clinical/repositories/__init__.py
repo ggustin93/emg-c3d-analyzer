@@ -1,4 +1,4 @@
-"""Clinical Repository Package
+"""Clinical Repository Package.
 ===========================
 
 Domain-driven repository pattern for EMG C3D Analyzer clinical data management.
@@ -16,15 +16,20 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
-from .emg_data_repository import EMGDataRepository
-from .patient_repository import PatientRepository
-from .therapy_session_repository import TherapySessionRepository
+from backend.services.clinical.repositories.emg_data_repository import EMGDataRepository
+from backend.services.clinical.repositories.patient_repository import PatientRepository
+from backend.services.clinical.repositories.therapy_session_repository import (
+    TherapySessionRepository,
+)
+from backend.services.shared.repositories.base.abstract_repository import (
+    AbstractRepository,
+    RepositoryError,
+)
 
 __all__ = [
     "AbstractRepository",
     "EMGDataRepository",
     "PatientRepository",
     "RepositoryError",
-    "TherapySessionRepository"
+    "TherapySessionRepository",
 ]

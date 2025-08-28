@@ -1,4 +1,4 @@
-"""User Domain Services
+"""User Domain Services.
 ====================
 
 Domain services for user management, authentication, and role-based access control.
@@ -11,8 +11,6 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from .repositories.user_repository import UserRepository
+from backend.services.user.repositories.user_repository import UserRepository
 
-__all__ = [
-    "UserRepository"
-]
+__all__ = ["UserRepository"]

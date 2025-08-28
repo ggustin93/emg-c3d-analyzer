@@ -1,4 +1,4 @@
-"""Performance Scoring Service
+"""Performance Scoring Service.
 ===========================
 
 🎯 GHOSTLY+ Performance Metrics Calculation Service
@@ -22,8 +22,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-
 from config import DevelopmentDefaults
+
 from database.supabase_client import get_supabase_client
 
 logger = logging.getLogger(__name__)
@@ -31,12 +31,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RPEMapping:
-    """Configurable RPE (Rating of Perceived Exertion) mapping for researcher customization"""
+    """Configurable RPE (Rating of Perceived Exertion) mapping for researcher customization."""
+
     # Default mapping from metricsDefinitions.md
-    optimal_range: list[int] = None     # Default: [4, 5, 6] → 100%
+    optimal_range: list[int] = None  # Default: [4, 5, 6] → 100%
     acceptable_range: list[int] = None  # Default: [3, 7] → 80%
     suboptimal_range: list[int] = None  # Default: [2, 8] → 60%
-    poor_range: list[int] = None        # Default: [0, 1, 9, 10] → 20%
+    poor_range: list[int] = None  # Default: [0, 1, 9, 10] → 20%
 
     optimal_score: float = 100.0
     acceptable_score: float = 80.0
@@ -45,7 +46,7 @@ class RPEMapping:
     default_score: float = 50.0  # For unexpected values
 
     def __post_init__(self):
-        """Initialize default ranges if not provided"""
+        """Initialize default ranges if not provided."""
         if self.optimal_range is None:
             self.optimal_range = [4, 5, 6]
         if self.acceptable_range is None:
@@ -56,7 +57,7 @@ class RPEMapping:
             self.poor_range = [0, 1, 9, 10]
 
     def get_effort_score(self, rpe: int) -> float:
-        """Get effort score for given RPE value"""
+        """Get effort score for given RPE value."""
         if rpe in self.optimal_range:
             return self.optimal_score
         elif rpe in self.acceptable_range:
@@ -71,19 +72,20 @@ class RPEMapping:
 
 @dataclass
 class ScoringWeights:
-    """Configurable weights for performance scoring (must sum to 1.0)"""
+    """Configurable weights for performance scoring (must sum to 1.0)."""
+
     w_compliance: float = 0.40  # Therapeutic Compliance
-    w_symmetry: float = 0.25    # Muscle Symmetry
-    w_effort: float = 0.20      # Subjective Effort (RPE)
-    w_game: float = 0.15        # Game Performance
+    w_symmetry: float = 0.25  # Muscle Symmetry
+    w_effort: float = 0.20  # Subjective Effort (RPE)
+    w_game: float = 0.15  # Game Performance
 
     # Sub-component weights for compliance (must sum to 1.0)
     w_completion: float = 0.333  # Completion rate weight
-    w_intensity: float = 0.333   # Intensity rate weight
-    w_duration: float = 0.334    # Duration rate weight
+    w_intensity: float = 0.333  # Intensity rate weight
+    w_duration: float = 0.334  # Duration rate weight
 
     def validate(self) -> bool:
-        """Validate that weights sum to 1.0 (within tolerance)"""
+        """Validate that weights sum to 1.0 (within tolerance)."""
         main_sum = self.w_compliance + self.w_symmetry + self.w_effort + self.w_game
         sub_sum = self.w_completion + self.w_intensity + self.w_duration
         return abs(main_sum - 1.0) < 0.01 and abs(sub_sum - 1.0) < 0.01
@@ -91,7 +93,8 @@ class ScoringWeights:
 
 @dataclass
 class SessionMetrics:
-    """Metrics from a single therapy session"""
+    """Metrics from a single therapy session."""
+
     session_id: str
 
     # Per-muscle metrics (left/right)
@@ -121,8 +124,8 @@ class SessionMetrics:
 
 
 class PerformanceScoringService:
-    """Service for calculating GHOSTLY+ performance scores
-    
+    """Service for calculating GHOSTLY+ performance scores.
+
     Implements the complete scoring algorithm from metricsDefinitions.md
     with support for partial data (some scores can be calculated later)
     """
@@ -136,11 +139,17 @@ class PerformanceScoringService:
 
     def _load_scoring_weights_from_database(self, session_id: str) -> ScoringWeights:
         """Load configurable scoring weights from database
-        Fallback to defaults if not found
+        Fallback to defaults if not found.
         """
         try:
             # Check for session-specific or global scoring weights configuration
-            weights_query = self.client.table("scoring_configuration").select("*").order("created_at", desc=True).limit(1).execute()
+            weights_query = (
+                self.client.table("scoring_configuration")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
 
             if weights_query.data:
                 config = weights_query.data[0]
@@ -151,7 +160,7 @@ class PerformanceScoringService:
                     w_game=config.get("weight_game", 0.15),
                     w_completion=config.get("weight_completion", 0.333),
                     w_intensity=config.get("weight_intensity", 0.333),
-                    w_duration=config.get("weight_duration", 0.334)
+                    w_duration=config.get("weight_duration", 0.334),
                 )
             else:
                 logger.info("No custom scoring weights found, using defaults")
@@ -163,11 +172,18 @@ class PerformanceScoringService:
 
     def _load_rpe_mapping_from_database(self, session_id: str) -> RPEMapping:
         """Load configurable RPE mapping from database (researcher role only)
-        Fallback to defaults if not found
+        Fallback to defaults if not found.
         """
         try:
             # Check for researcher-configured RPE mapping
-            rpe_query = self.client.table("rpe_mapping_configuration").select("*").eq("active", True).order("created_at", desc=True).limit(1).execute()
+            rpe_query = (
+                self.client.table("rpe_mapping_configuration")
+                .select("*")
+                .eq("active", True)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
 
             if rpe_query.data:
                 config = rpe_query.data[0]
@@ -182,7 +198,7 @@ class PerformanceScoringService:
                     acceptable_score=config.get("acceptable_score", 80.0),
                     suboptimal_score=config.get("suboptimal_score", 60.0),
                     poor_score=config.get("poor_score", 20.0),
-                    default_score=config.get("default_score", 50.0)
+                    default_score=config.get("default_score", 50.0),
                 )
             else:
                 logger.info("📊 No custom RPE mapping found, using metricsDefinitions.md defaults")
@@ -192,15 +208,15 @@ class PerformanceScoringService:
             logger.warning(f"Failed to load RPE mapping from database: {e}, using defaults")
             return self.rpe_mapping
 
-    def calculate_performance_scores(self,
-                                    session_id: str,
-                                    session_metrics: SessionMetrics | None = None) -> dict:
-        """Calculate all available performance scores for a session
-        
+    def calculate_performance_scores(
+        self, session_id: str, session_metrics: SessionMetrics | None = None
+    ) -> dict:
+        """Calculate all available performance scores for a session.
+
         Args:
             session_id: Therapy session UUID
             session_metrics: Optional pre-collected metrics (if None, fetches from DB)
-            
+
         Returns:
             Dictionary with calculated scores and sub-components
         """
@@ -209,8 +225,12 @@ class PerformanceScoringService:
         # Step 0: Load configurable weights and RPE mapping from database
         self.weights = self._load_scoring_weights_from_database(session_id)
         self.rpe_mapping = self._load_rpe_mapping_from_database(session_id)
-        logger.info(f"📊 Using weights: Compliance={self.weights.w_compliance}, Symmetry={self.weights.w_symmetry}, Effort={self.weights.w_effort}, Game={self.weights.w_game}")
-        logger.info(f"📊 Using RPE mapping: Optimal={self.rpe_mapping.optimal_range}→{self.rpe_mapping.optimal_score}%")
+        logger.info(
+            f"📊 Using weights: Compliance={self.weights.w_compliance}, Symmetry={self.weights.w_symmetry}, Effort={self.weights.w_effort}, Game={self.weights.w_game}"
+        )
+        logger.info(
+            f"📊 Using RPE mapping: Optimal={self.rpe_mapping.optimal_range}→{self.rpe_mapping.optimal_score}%"
+        )
 
         # Step 1: Collect metrics if not provided
         if session_metrics is None:
@@ -223,12 +243,11 @@ class PerformanceScoringService:
         compliance_components = self._calculate_compliance_components(session_metrics)
         symmetry_score = self._calculate_symmetry_score(
             compliance_components["left_muscle_compliance"],
-            compliance_components["right_muscle_compliance"]
+            compliance_components["right_muscle_compliance"],
         )
         effort_score, rpe_source = self._calculate_effort_score(session_metrics.rpe_post_session)
         game_score = self._calculate_game_score(
-            session_metrics.game_points_achieved,
-            session_metrics.game_points_max
+            session_metrics.game_points_achieved, session_metrics.game_points_max
         )
 
         # Step 3: Apply BFR safety gate
@@ -241,10 +260,10 @@ class PerformanceScoringService:
         overall_score = None
         if all(x is not None for x in [compliance_score, symmetry_score, effort_score, game_score]):
             overall_score = (
-                self.weights.w_compliance * compliance_score +
-                self.weights.w_symmetry * symmetry_score +
-                self.weights.w_effort * effort_score +
-                self.weights.w_game * game_score
+                self.weights.w_compliance * compliance_score
+                + self.weights.w_symmetry * symmetry_score
+                + self.weights.w_effort * effort_score
+                + self.weights.w_game * game_score
             )
 
         # Step 6: Prepare result
@@ -267,50 +286,70 @@ class PerformanceScoringService:
                 "w_game": self.weights.w_game,
                 "w_completion": self.weights.w_completion,
                 "w_intensity": self.weights.w_intensity,
-                "w_duration": self.weights.w_duration
+                "w_duration": self.weights.w_duration,
             },
             "data_completeness": {
                 "has_emg_data": True,
                 "has_rpe": session_metrics.rpe_post_session is not None,
                 "has_game_data": session_metrics.game_points_achieved is not None,
                 "has_bfr_data": session_metrics.bfr_pressure_aop is not None,
-                "rpe_source": rpe_source
-            }
+                "rpe_source": rpe_source,
+            },
         }
 
-        logger.info(f"✅ Scores calculated: Overall={overall_score:.1f}%" if overall_score else "⚠️ Partial scores calculated (waiting for RPE/game data)")
+        logger.info(
+            f"✅ Scores calculated: Overall={overall_score:.1f}%"
+            if overall_score
+            else "⚠️ Partial scores calculated (waiting for RPE/game data)"
+        )
 
         return result
 
     def _calculate_compliance_components(self, metrics: SessionMetrics) -> dict:
-        """Calculate per-muscle compliance and sub-components
-        
+        """Calculate per-muscle compliance and sub-components.
+
         S_comp^muscle = w_comp * R_comp + w_int * R_int + w_dur * R_dur
         """
         # Left muscle compliance
-        left_completion_rate = metrics.left_total_contractions / metrics.expected_contractions_per_muscle
-        left_intensity_rate = (metrics.left_mvc_contractions / metrics.left_total_contractions
-                              if metrics.left_total_contractions > 0 else 0.0)
-        left_duration_rate = (metrics.left_duration_contractions / metrics.left_total_contractions
-                             if metrics.left_total_contractions > 0 else 0.0)
+        left_completion_rate = (
+            metrics.left_total_contractions / metrics.expected_contractions_per_muscle
+        )
+        left_intensity_rate = (
+            metrics.left_mvc_contractions / metrics.left_total_contractions
+            if metrics.left_total_contractions > 0
+            else 0.0
+        )
+        left_duration_rate = (
+            metrics.left_duration_contractions / metrics.left_total_contractions
+            if metrics.left_total_contractions > 0
+            else 0.0
+        )
 
         left_muscle_compliance = (
-            self.weights.w_completion * left_completion_rate +
-            self.weights.w_intensity * left_intensity_rate +
-            self.weights.w_duration * left_duration_rate
+            self.weights.w_completion * left_completion_rate
+            + self.weights.w_intensity * left_intensity_rate
+            + self.weights.w_duration * left_duration_rate
         ) * 100  # Convert to percentage
 
         # Right muscle compliance
-        right_completion_rate = metrics.right_total_contractions / metrics.expected_contractions_per_muscle
-        right_intensity_rate = (metrics.right_mvc_contractions / metrics.right_total_contractions
-                               if metrics.right_total_contractions > 0 else 0.0)
-        right_duration_rate = (metrics.right_duration_contractions / metrics.right_total_contractions
-                              if metrics.right_total_contractions > 0 else 0.0)
+        right_completion_rate = (
+            metrics.right_total_contractions / metrics.expected_contractions_per_muscle
+        )
+        right_intensity_rate = (
+            metrics.right_mvc_contractions / metrics.right_total_contractions
+            if metrics.right_total_contractions > 0
+            else 0.0
+        )
+        right_duration_rate = (
+            metrics.right_duration_contractions / metrics.right_total_contractions
+            if metrics.right_total_contractions > 0
+            else 0.0
+        )
 
         right_muscle_compliance = (
-            self.weights.w_completion * right_completion_rate +
-            self.weights.w_intensity * right_intensity_rate +
-            self.weights.w_duration * right_duration_rate
+            self.weights.w_completion * right_completion_rate
+            + self.weights.w_intensity * right_intensity_rate
+            + self.weights.w_duration * right_duration_rate
         ) * 100  # Convert to percentage
 
         # Overall compliance (average of left and right)
@@ -325,12 +364,12 @@ class PerformanceScoringService:
             "intensity_rate_left": left_intensity_rate,
             "intensity_rate_right": right_intensity_rate,
             "duration_rate_left": left_duration_rate,
-            "duration_rate_right": right_duration_rate
+            "duration_rate_right": right_duration_rate,
         }
 
     def _calculate_symmetry_score(self, left_compliance: float, right_compliance: float) -> float:
-        """Calculate muscle symmetry score
-        
+        """Calculate muscle symmetry score.
+
         S_symmetry = (1 - |left - right| / (left + right)) × 100
         """
         if left_compliance + right_compliance == 0:
@@ -342,8 +381,8 @@ class PerformanceScoringService:
         return symmetry_score
 
     def _calculate_effort_score(self, rpe: int | None) -> tuple[float | None, str]:
-        """Calculate subjective effort score based on RPE (Rating of Perceived Exertion)
-        
+        """Calculate subjective effort score based on RPE (Rating of Perceived Exertion).
+
         RPE Scale: 0-10 (Borg CR10)
         Uses configurable RPE mapping and development defaults when needed
         Returns: (effort_score, rpe_source)
@@ -365,11 +404,11 @@ class PerformanceScoringService:
 
         return effort_score, rpe_source
 
-    def _calculate_game_score(self,
-                             points_achieved: int | None,
-                             points_max: int | None) -> float | None:
-        """Calculate game performance score
-        
+    def _calculate_game_score(
+        self, points_achieved: int | None, points_max: int | None
+    ) -> float | None:
+        """Calculate game performance score.
+
         S_game = (points_achieved / points_max) × 100
         """
         if points_achieved is None or points_max is None:
@@ -381,8 +420,8 @@ class PerformanceScoringService:
         return (points_achieved / points_max) * 100
 
     def _calculate_bfr_gate(self, pressure_aop: float | None) -> float:
-        """Calculate BFR safety gate
-        
+        """Calculate BFR safety gate.
+
         C_BFR = 1.0 if pressure ∈ [45%, 55%] AOP, else 0.0
         CRITICAL: No BFR data = non-compliant (0.0) for safety
         """
@@ -398,11 +437,15 @@ class PerformanceScoringService:
             return 0.0
 
     def _fetch_session_metrics(self, session_id: str) -> SessionMetrics | None:
-        """Fetch metrics from database tables
-        """
+        """Fetch metrics from database tables."""
         try:
             # Fetch EMG statistics
-            emg_stats = self.client.table("emg_statistics").select("*").eq("session_id", session_id).execute()
+            emg_stats = (
+                self.client.table("emg_statistics")
+                .select("*")
+                .eq("session_id", session_id)
+                .execute()
+            )
 
             if not emg_stats.data:
                 logger.error(f"No EMG statistics found for session: {session_id}")
@@ -421,12 +464,22 @@ class PerformanceScoringService:
             right = right_stats[0]
 
             # Fetch BFR monitoring data (if exists)
-            bfr_data = self.client.table("bfr_monitoring").select("*").eq("session_id", session_id).execute()
+            bfr_data = (
+                self.client.table("bfr_monitoring")
+                .select("*")
+                .eq("session_id", session_id)
+                .execute()
+            )
             bfr_pressure = bfr_data.data[0]["actual_pressure_aop"] if bfr_data.data else None
             bfr_compliant = bfr_data.data[0]["safety_compliant"] if bfr_data.data else True
 
             # Check if performance_scores already has RPE/game data
-            perf_data = self.client.table("performance_scores").select("*").eq("session_id", session_id).execute()
+            perf_data = (
+                self.client.table("performance_scores")
+                .select("*")
+                .eq("session_id", session_id)
+                .execute()
+            )
             rpe = perf_data.data[0]["rpe_post_session"] if perf_data.data else None
             game_points = perf_data.data[0]["game_points_achieved"] if perf_data.data else None
             game_max = perf_data.data[0]["game_points_max"] if perf_data.data else None
@@ -436,29 +489,42 @@ class PerformanceScoringService:
                 left_total_contractions=left["total_contractions"],
                 left_good_contractions=left["good_contractions"],
                 left_mvc_contractions=left.get("mvc_contraction_count", left["good_contractions"]),
-                left_duration_contractions=left.get("duration_contraction_count", left["good_contractions"]),
+                left_duration_contractions=left.get(
+                    "duration_contraction_count", left["good_contractions"]
+                ),
                 right_total_contractions=right["total_contractions"],
                 right_good_contractions=right["good_contractions"],
-                right_mvc_contractions=right.get("mvc_contraction_count", right["good_contractions"]),
-                right_duration_contractions=right.get("duration_contraction_count", right["good_contractions"]),
+                right_mvc_contractions=right.get(
+                    "mvc_contraction_count", right["good_contractions"]
+                ),
+                right_duration_contractions=right.get(
+                    "duration_contraction_count", right["good_contractions"]
+                ),
                 bfr_pressure_aop=bfr_pressure,
                 bfr_compliant=bfr_compliant,
                 rpe_post_session=rpe,
                 game_points_achieved=game_points,
-                game_points_max=game_max
+                game_points_max=game_max,
             )
 
         except Exception as e:
-            logger.error(f"Error fetching session metrics: {e!s}")
+            logger.exception(f"Error fetching session metrics: {e!s}")
             return None
 
     def _get_default_scoring_config_id(self) -> str | None:
         """Get the default global GHOSTLY+ scoring configuration ID
-        Schema v2.1 compliance - references centralized scoring configuration
+        Schema v2.1 compliance - references centralized scoring configuration.
         """
         try:
             # Query for the default global GHOSTLY+ configuration
-            result = self.client.table("scoring_configuration").select("id").eq("configuration_name", "GHOSTLY+ Default").eq("is_global", True).limit(1).execute()
+            result = (
+                self.client.table("scoring_configuration")
+                .select("id")
+                .eq("configuration_name", "GHOSTLY+ Default")
+                .eq("is_global", True)
+                .limit(1)
+                .execute()
+            )
 
             if result.data and len(result.data) > 0:
                 scoring_config_id = result.data[0]["id"]
@@ -469,12 +535,12 @@ class PerformanceScoringService:
                 return None
 
         except Exception as e:
-            logger.error(f"Error fetching default scoring configuration: {e!s}")
+            logger.exception(f"Error fetching default scoring configuration: {e!s}")
             return None
 
     def save_performance_scores(self, scores: dict) -> bool:
         """Save calculated scores to performance_scores table
-        Schema v2.1 compliance - uses scoring_config_id instead of individual weight fields
+        Schema v2.1 compliance - uses scoring_config_id instead of individual weight fields.
         """
         try:
             # Get default global scoring configuration ID
@@ -484,7 +550,12 @@ class PerformanceScoringService:
                 return False
 
             # Check if record exists
-            existing = self.client.table("performance_scores").select("id").eq("session_id", scores["session_id"]).execute()
+            existing = (
+                self.client.table("performance_scores")
+                .select("id")
+                .eq("session_id", scores["session_id"])
+                .execute()
+            )
 
             # Prepare data for database - Schema v2.1 compliant
             db_data = {
@@ -505,13 +576,20 @@ class PerformanceScoringService:
                 "duration_rate_right": scores.get("duration_rate_right"),
                 "bfr_compliant": scores.get("bfr_compliant"),
                 "bfr_pressure_aop": scores.get("bfr_pressure_aop"),
-                "rpe_post_session": scores.get("rpe_post_session", DevelopmentDefaults.RPE_POST_SESSION)
+                "rpe_post_session": scores.get(
+                    "rpe_post_session", DevelopmentDefaults.RPE_POST_SESSION
+                ),
                 # NOTE: weight_* fields removed - now in scoring_configuration table
             }
 
             if existing.data:
                 # Update existing record
-                result = self.client.table("performance_scores").update(db_data).eq("session_id", scores["session_id"]).execute()
+                result = (
+                    self.client.table("performance_scores")
+                    .update(db_data)
+                    .eq("session_id", scores["session_id"])
+                    .execute()
+                )
             else:
                 # Insert new record
                 result = self.client.table("performance_scores").insert(db_data).execute()
@@ -519,16 +597,18 @@ class PerformanceScoringService:
             return bool(result.data)
 
         except Exception as e:
-            logger.error(f"Error saving performance scores: {e!s}")
+            logger.exception(f"Error saving performance scores: {e!s}")
             return False
 
-    def update_subjective_data(self,
-                              session_id: str,
-                              rpe: int | None = None,
-                              game_points: int | None = None,
-                              game_max: int | None = None) -> dict:
-        """Update RPE and/or game data for a session and recalculate scores
-        
+    def update_subjective_data(
+        self,
+        session_id: str,
+        rpe: int | None = None,
+        game_points: int | None = None,
+        game_max: int | None = None,
+    ) -> dict:
+        """Update RPE and/or game data for a session and recalculate scores.
+
         This method is called when subjective data becomes available after initial processing
         """
         logger.info(f"📝 Updating subjective data for session: {session_id}")
@@ -545,10 +625,17 @@ class PerformanceScoringService:
 
             if update_data:
                 # Check if record exists
-                existing = self.client.table("performance_scores").select("id").eq("session_id", session_id).execute()
+                existing = (
+                    self.client.table("performance_scores")
+                    .select("id")
+                    .eq("session_id", session_id)
+                    .execute()
+                )
 
                 if existing.data:
-                    self.client.table("performance_scores").update(update_data).eq("session_id", session_id).execute()
+                    self.client.table("performance_scores").update(update_data).eq(
+                        "session_id", session_id
+                    ).execute()
                 else:
                     update_data["session_id"] = session_id
                     self.client.table("performance_scores").insert(update_data).execute()
@@ -563,34 +650,40 @@ class PerformanceScoringService:
             return scores
 
         except Exception as e:
-            logger.error(f"Error updating subjective data: {e!s}")
+            logger.exception(f"Error updating subjective data: {e!s}")
             return {"error": str(e)}
 
-    def calculate_adherence_score(self,
-                                 patient_id: str,
-                                 protocol_day: int) -> dict:
-        """Calculate longitudinal adherence score
-        
+    def calculate_adherence_score(self, patient_id: str, protocol_day: int) -> dict:
+        """Calculate longitudinal adherence score.
+
         Adherence(t) = (Game Sessions completed by day t) / (Game Sessions expected by day t) × 100
-        
+
         Expected rate: 15 Game Sessions per 7 days ≈ 2.14 × t
         """
         if protocol_day < 3:
             return {
                 "adherence_score": None,
-                "message": "Minimum 3 days required for adherence calculation"
+                "message": "Minimum 3 days required for adherence calculation",
             }
 
         try:
             # Fetch all sessions for patient up to protocol_day
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=protocol_day)
 
-            sessions = self.client.table("therapy_sessions").select("id, session_date").eq("patient_id", patient_id).gte("session_date", cutoff_date.isoformat()).execute()
+            sessions = (
+                self.client.table("therapy_sessions")
+                .select("id, session_date")
+                .eq("patient_id", patient_id)
+                .gte("session_date", cutoff_date.isoformat())
+                .execute()
+            )
 
             completed_sessions = len(sessions.data) if sessions.data else 0
             expected_sessions = 2.14 * protocol_day  # From protocol
 
-            adherence_score = (completed_sessions / expected_sessions) * 100 if expected_sessions > 0 else 0
+            adherence_score = (
+                (completed_sessions / expected_sessions) * 100 if expected_sessions > 0 else 0
+            )
 
             # Determine clinical threshold category
             if adherence_score >= 85:
@@ -613,25 +706,24 @@ class PerformanceScoringService:
                 "completed_sessions": completed_sessions,
                 "expected_sessions": expected_sessions,
                 "category": category,
-                "interpretation": interpretation
+                "interpretation": interpretation,
             }
 
         except Exception as e:
-            logger.error(f"Error calculating adherence score: {e!s}")
+            logger.exception(f"Error calculating adherence score: {e!s}")
             return {"error": str(e)}
 
 
 # Service wrapper for webhook integration
 class ScoringWebhookHandler:
-    """Handler for scoring calculations triggered by webhooks
-    """
+    """Handler for scoring calculations triggered by webhooks."""
 
     def __init__(self):
         self.scoring_service = PerformanceScoringService()
 
     async def process_after_emg_analysis(self, session_id: str) -> dict:
         """Calculate initial scores after EMG analysis (without RPE/game data)
-        Called by webhook after C3D processing
+        Called by webhook after C3D processing.
         """
         logger.info(f"🎯 Webhook: Calculating initial scores for session {session_id}")
 
@@ -644,16 +736,13 @@ class ScoringWebhookHandler:
 
         return scores
 
-    async def process_subjective_update(self,
-                                       session_id: str,
-                                       rpe: int | None = None,
-                                       game_data: dict | None = None) -> dict:
+    async def process_subjective_update(
+        self, session_id: str, rpe: int | None = None, game_data: dict | None = None
+    ) -> dict:
         """Update scores when subjective data becomes available
-        Called by API when therapist/patient provides RPE or game completes
+        Called by API when therapist/patient provides RPE or game completes.
         """
         game_points = game_data.get("points_achieved") if game_data else None
         game_max = game_data.get("points_max") if game_data else None
 
-        return self.scoring_service.update_subjective_data(
-            session_id, rpe, game_points, game_max
-        )
+        return self.scoring_service.update_subjective_data(session_id, rpe, game_points, game_max)

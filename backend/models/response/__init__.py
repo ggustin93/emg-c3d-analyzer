@@ -1,12 +1,9 @@
-"""
-Response Models
+"""Response Models.
 ===============
 
 Standard API response models for consistent response formatting.
 """
 
-from .models import *
+from backend.models.response.models import *
 
-__all__ = [
-    'StandardResponse', 'PaginatedResponse', 'validate_uuid4', 'validate_patient_code'
-]
+__all__ = ["PaginatedResponse", "StandardResponse", "validate_patient_code", "validate_uuid4"]

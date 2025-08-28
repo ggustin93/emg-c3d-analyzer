@@ -1,4 +1,4 @@
-"""Therapy Session Repository
+"""Therapy Session Repository.
 ==========================
 
 🎯 PURPOSE: Therapy session lifecycle and metadata management
@@ -22,44 +22,53 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from models.clinical.session import TherapySession, TherapySessionCreate, TherapySessionUpdate
-from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
+from backend.services.shared.repositories.base.abstract_repository import (
+    AbstractRepository,
+    RepositoryError,
+)
+from models.clinical.session import (
+    TherapySession,
+    TherapySessionCreate,
+    TherapySessionUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapySessionUpdate, TherapySession]):
-    """Repository for therapy session management and lifecycle tracking
-    
+class TherapySessionRepository(
+    AbstractRepository[TherapySessionCreate, TherapySessionUpdate, TherapySession]
+):
+    """Repository for therapy session management and lifecycle tracking.
+
     Handles session creation, status updates, metadata management,
     and integration with C3D file processing workflows.
     """
 
     def get_table_name(self) -> str:
-        """Return primary table name for therapy sessions"""
+        """Return primary table name for therapy sessions."""
         return "therapy_sessions"
 
-    def get_create_model(self) -> Type[TherapySessionCreate]:
-        """Return the Pydantic model class for create operations"""
+    def get_create_model(self) -> type[TherapySessionCreate]:
+        """Return the Pydantic model class for create operations."""
         return TherapySessionCreate
 
-    def get_update_model(self) -> Type[TherapySessionUpdate]:
-        """Return the Pydantic model class for update operations"""
+    def get_update_model(self) -> type[TherapySessionUpdate]:
+        """Return the Pydantic model class for update operations."""
         return TherapySessionUpdate
 
-    def get_response_model(self) -> Type[TherapySession]:
-        """Return the Pydantic model class for response operations"""
+    def get_response_model(self) -> type[TherapySession]:
+        """Return the Pydantic model class for response operations."""
         return TherapySession
 
     def create_therapy_session(self, session_data: dict[str, Any]) -> dict[str, Any]:
-        """Create new therapy session with metadata
-        
+        """Create new therapy session with metadata.
+
         Args:
             session_data: Session data including patient_id, therapist_id, etc.
-            
+
         Returns:
             Dict: Created session data
-            
+
         Raises:
             RepositoryError: If creation fails
         """
@@ -78,16 +87,9 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
                 data["processing_status"] = "pending"
 
             # Create session
-            result = (
-                self.client
-                .table("therapy_sessions")
-                .insert(data)
-                .execute()
-            )
+            result = self.client.table("therapy_sessions").insert(data).execute()
 
-            created_session = self._handle_supabase_response(
-                result, "create", "therapy session"
-            )[0]
+            created_session = self._handle_supabase_response(result, "create", "therapy session")[0]
 
             self.logger.info(f"✅ Created therapy session: {created_session['id']}")
             return created_session
@@ -98,11 +100,11 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             raise RepositoryError(error_msg) from e
 
     def get_therapy_session(self, session_id: str | UUID) -> dict[str, Any] | None:
-        """Get therapy session by ID
-        
+        """Get therapy session by ID.
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             Optional[Dict]: Session data or None if not found
         """
@@ -110,8 +112,7 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             validated_id = self._validate_uuid(session_id, "session_id")
 
             result = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .select("*")
                 .eq("id", validated_id)
                 .limit(1)
@@ -122,15 +123,15 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get therapy session {session_id}: {e!s}")
+            self.logger.exception(f"Failed to get therapy session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get therapy session: {e!s}") from e
 
     def get_session_by_file_hash(self, file_hash: str) -> dict[str, Any] | None:
-        """Get therapy session by C3D file hash (duplicate detection)
-        
+        """Get therapy session by C3D file hash (duplicate detection).
+
         Args:
             file_hash: SHA-256 hash of C3D file
-            
+
         Returns:
             Optional[Dict]: Session data or None if not found
         """
@@ -139,8 +140,7 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
                 raise RepositoryError("Invalid file_hash provided")
 
             result = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .select("*")
                 .eq("file_hash", file_hash)
                 .limit(1)
@@ -151,20 +151,18 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get session by file hash {file_hash}: {e!s}")
+            self.logger.exception(f"Failed to get session by file hash {file_hash}: {e!s}")
             raise RepositoryError(f"Failed to get session by file hash: {e!s}") from e
 
     def update_therapy_session(
-        self,
-        session_id: str | UUID,
-        update_data: dict[str, Any]
+        self, session_id: str | UUID, update_data: dict[str, Any]
     ) -> dict[str, Any]:
-        """Update therapy session data
-        
+        """Update therapy session data.
+
         Args:
             session_id: Session UUID
             update_data: Data to update
-            
+
         Returns:
             Dict: Updated session data
         """
@@ -173,8 +171,7 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             update_data = self._prepare_timestamps(update_data, update=True)
 
             result = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .update(update_data)
                 .eq("id", validated_id)
                 .execute()
@@ -194,13 +191,10 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             raise RepositoryError(error_msg) from e
 
     def update_session_status(
-        self,
-        session_id: str | UUID,
-        status: str,
-        error_message: str | None = None
+        self, session_id: str | UUID, status: str, error_message: str | None = None
     ) -> None:
-        """Update session processing status
-        
+        """Update session processing status.
+
         Args:
             session_id: Session UUID
             status: New processing status (pending, processing, completed, failed)
@@ -209,17 +203,13 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
         try:
             validated_id = self._validate_uuid(session_id, "session_id")
 
-            update_data = {
-                "processing_status": status,
-                "updated_at": datetime.now().isoformat()
-            }
+            update_data = {"processing_status": status, "updated_at": datetime.now().isoformat()}
 
             if error_message:
                 update_data["processing_error_message"] = error_message
 
             result = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .update(update_data)
                 .eq("id", validated_id)
                 .execute()
@@ -234,16 +224,14 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             raise RepositoryError(error_msg) from e
 
     def get_sessions_by_patient(
-        self,
-        patient_id: str | UUID,
-        limit: int | None = None
+        self, patient_id: str | UUID, limit: int | None = None
     ) -> list[dict[str, Any]]:
-        """Get therapy sessions for a specific patient
-        
+        """Get therapy sessions for a specific patient.
+
         Args:
             patient_id: Patient UUID
             limit: Optional limit on results
-            
+
         Returns:
             List[Dict]: List of therapy sessions
         """
@@ -251,8 +239,7 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             validated_id = self._validate_uuid(patient_id, "patient_id")
 
             query = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .select("*")
                 .eq("patient_id", validated_id)
                 .order("session_date", desc=True)
@@ -266,27 +253,22 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             return self._handle_supabase_response(result, "get", "sessions by patient")
 
         except Exception as e:
-            self.logger.error(f"Failed to get sessions for patient {patient_id}: {e!s}")
+            self.logger.exception(f"Failed to get sessions for patient {patient_id}: {e!s}")
             raise RepositoryError(f"Failed to get sessions for patient: {e!s}") from e
 
-    def get_sessions_by_status(
-        self,
-        status: str,
-        limit: int | None = None
-    ) -> list[dict[str, Any]]:
-        """Get therapy sessions by processing status
-        
+    def get_sessions_by_status(self, status: str, limit: int | None = None) -> list[dict[str, Any]]:
+        """Get therapy sessions by processing status.
+
         Args:
             status: Processing status to filter by
             limit: Optional limit on results
-            
+
         Returns:
             List[Dict]: List of therapy sessions
         """
         try:
             query = (
-                self.client
-                .table("therapy_sessions")
+                self.client.table("therapy_sessions")
                 .select("*")
                 .eq("processing_status", status)
                 .order("created_at", desc=True)
@@ -300,5 +282,5 @@ class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapyS
             return self._handle_supabase_response(result, "get", f"sessions with status {status}")
 
         except Exception as e:
-            self.logger.error(f"Failed to get sessions by status {status}: {e!s}")
+            self.logger.exception(f"Failed to get sessions by status {status}: {e!s}")
             raise RepositoryError(f"Failed to get sessions by status: {e!s}") from e

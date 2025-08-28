@@ -1,4 +1,4 @@
-"""C3D Reader Service - Lightweight Metadata Extractor
+"""C3D Reader Service - Lightweight Metadata Extractor.
 ===================================================
 
 🎯 PURPOSE: Fast metadata extraction WITHOUT signal processing
@@ -13,6 +13,7 @@
 
 📊 OUTPUT: Basic metadata dictionary for file preview/validation
 """
+
 import logging
 import struct
 from io import BytesIO
@@ -22,18 +23,18 @@ logger = logging.getLogger(__name__)
 
 
 class C3DReader:
-    """Service for reading C3D file metadata without full processing"""
+    """Service for reading C3D file metadata without full processing."""
 
     def __init__(self):
         self.parameter_section_size = None
         self.data_section_size = None
 
     async def extract_metadata(self, file_data: bytes) -> dict[str, Any]:
-        """Extract metadata from C3D file content
-        
+        """Extract metadata from C3D file content.
+
         Args:
             file_data: Raw C3D file bytes
-            
+
         Returns:
             Dict containing extracted metadata
         """
@@ -49,7 +50,7 @@ class C3DReader:
                 "session_duration": None,
                 "session_notes": None,
                 "therapist_id": None,
-                "player_name": None
+                "player_name": None,
             }
 
             # Read C3D header and parameters
@@ -64,12 +65,14 @@ class C3DReader:
             if metadata["sampling_rate"] and metadata["frame_count"]:
                 metadata["duration_seconds"] = metadata["frame_count"] / metadata["sampling_rate"]
 
-            logger.info(f"Extracted metadata from C3D file: {len(metadata['channel_names'])} channels, {metadata['duration_seconds']}s")
+            logger.info(
+                f"Extracted metadata from C3D file: {len(metadata['channel_names'])} channels, {metadata['duration_seconds']}s"
+            )
 
             return metadata
 
         except Exception as e:
-            logger.error(f"Failed to extract C3D metadata: {e!s}")
+            logger.exception(f"Failed to extract C3D metadata: {e!s}")
             # Return minimal metadata on failure
             return {
                 "channel_names": [],
@@ -81,15 +84,15 @@ class C3DReader:
                 "session_duration": None,
                 "session_notes": None,
                 "therapist_id": None,
-                "player_name": None
+                "player_name": None,
             }
 
     def _read_header(self, file_data: bytes) -> dict[str, Any]:
-        """Read C3D file header
-        
+        """Read C3D file header.
+
         Args:
             file_data: Raw C3D file bytes
-            
+
         Returns:
             Dict with header information
         """
@@ -150,16 +153,16 @@ class C3DReader:
             return header
 
         except Exception as e:
-            logger.error(f"Error reading C3D header: {e!s}")
+            logger.exception(f"Error reading C3D header: {e!s}")
             raise
 
     def _read_parameters(self, file_data: bytes, parameter_start: int) -> dict[str, Any]:
-        """Read C3D parameter section
-        
+        """Read C3D parameter section.
+
         Args:
             file_data: Raw C3D file bytes
             parameter_start: Starting block of parameter section
-            
+
         Returns:
             Dict with parameter information
         """
@@ -178,7 +181,7 @@ class C3DReader:
             parameters = {}
 
             # Read parameter header
-            param_header = file_data[param_offset:param_offset + 8]
+            param_header = file_data[param_offset : param_offset + 8]
             if len(param_header) < 8:
                 return {}
 
@@ -252,17 +255,19 @@ class C3DReader:
             return parameters
 
         except Exception as e:
-            logger.error(f"Error reading C3D parameters: {e!s}")
+            logger.exception(f"Error reading C3D parameters: {e!s}")
             return {}
 
-    def _find_parameter_group(self, file_data: bytes, start_offset: int, group_name: str) -> dict[str, Any] | None:
-        """Find and parse a specific parameter group
-        
+    def _find_parameter_group(
+        self, file_data: bytes, start_offset: int, group_name: str
+    ) -> dict[str, Any] | None:
+        """Find and parse a specific parameter group.
+
         Args:
             file_data: Raw C3D file bytes
             start_offset: Starting offset in file
             group_name: Name of group to find (e.g., "ANALOG")
-            
+
         Returns:
             Dict with group parameters or None if not found
         """
@@ -290,7 +295,7 @@ class C3DReader:
             if group_name in ["ANALOG", "POINT"]:
                 # Try to find channel/point labels
                 labels = self._extract_labels_from_section(
-                    file_data[start_offset + group_pos:start_offset + group_pos + 2048]
+                    file_data[start_offset + group_pos : start_offset + group_pos + 2048]
                 )
                 if labels:
                     group_data["LABELS"] = labels
@@ -298,7 +303,7 @@ class C3DReader:
             # Look for subject information
             elif group_name == "SUBJECT":
                 # Look for common subject fields
-                section_data = file_data[start_offset + group_pos:start_offset + group_pos + 1024]
+                section_data = file_data[start_offset + group_pos : start_offset + group_pos + 1024]
                 name = self._extract_string_parameter(section_data, "NAME")
                 if name:
                     group_data["NAME"] = name
@@ -314,11 +319,11 @@ class C3DReader:
             return None
 
     def _extract_labels_from_section(self, section_data: bytes) -> list[str]:
-        """Extract channel/point labels from a parameter section
-        
+        """Extract channel/point labels from a parameter section.
+
         Args:
             section_data: Bytes from parameter section
-            
+
         Returns:
             List of extracted labels
         """
@@ -326,14 +331,7 @@ class C3DReader:
 
         try:
             # Look for common EMG channel naming patterns
-            common_patterns = [
-                b"EMG",
-                b"BicepsL",
-                b"BicepsR",
-                b"TricepsL",
-                b"TricepsR",
-                b"Channel"
-            ]
+            common_patterns = [b"EMG", b"BicepsL", b"BicepsR", b"TricepsL", b"TricepsR", b"Channel"]
 
             # Simple extraction - look for ASCII strings
             text_data = section_data.decode("ascii", errors="ignore")
@@ -354,12 +352,12 @@ class C3DReader:
             return []
 
     def _extract_string_parameter(self, section_data: bytes, param_name: str) -> str | None:
-        """Extract a string parameter from a section
-        
+        """Extract a string parameter from a section.
+
         Args:
             section_data: Bytes from parameter section
             param_name: Name of parameter to extract
-            
+
         Returns:
             Extracted string value or None
         """
@@ -373,7 +371,7 @@ class C3DReader:
 
             # Look for string value after parameter name
             # This is a simplified extraction
-            after_param = section_data[param_pos + len(param_bytes):]
+            after_param = section_data[param_pos + len(param_bytes) :]
 
             # Try to extract ASCII string
             text_data = after_param[:100].decode("ascii", errors="ignore")

@@ -1,4 +1,4 @@
-"""Webhook Security Service
+"""Webhook Security Service.
 =======================
 
 Simple, secure webhook signature verification.
@@ -17,25 +17,20 @@ logger = logging.getLogger(__name__)
 
 
 class WebhookSecurity:
-    """Webhook signature verification service
-    
+    """Webhook signature verification service.
+
     Provides secure HMAC-SHA256 signature verification
     following industry best practices.
     """
 
-    def verify_signature(
-        self,
-        payload: bytes,
-        signature: str,
-        secret: str
-    ) -> bool:
-        """Verify webhook signature using HMAC-SHA256
-        
+    def verify_signature(self, payload: bytes, signature: str, secret: str) -> bool:
+        """Verify webhook signature using HMAC-SHA256.
+
         Args:
             payload: Raw request body bytes
             signature: Signature from webhook header
             secret: Webhook secret key
-            
+
         Returns:
             bool: True if signature is valid
         """
@@ -46,9 +41,7 @@ class WebhookSecurity:
         try:
             # Generate expected signature
             expected_signature = hmac.new(
-                secret.encode("utf-8"),
-                payload,
-                hashlib.sha256
+                secret.encode("utf-8"), payload, hashlib.sha256
             ).hexdigest()
 
             # Handle different signature formats
@@ -70,26 +63,22 @@ class WebhookSecurity:
             return is_valid
 
         except Exception as e:
-            logger.error(f"Signature verification error: {e!s}")
+            logger.exception(f"Signature verification error: {e!s}")
             return False
 
     def generate_signature(self, payload: bytes, secret: str) -> str:
-        """Generate HMAC-SHA256 signature for payload
-        
+        """Generate HMAC-SHA256 signature for payload.
+
         Args:
             payload: Raw payload bytes
             secret: Webhook secret key
-            
+
         Returns:
             str: Generated signature
         """
         if not payload or not secret:
             raise ValueError("Payload and secret are required")
 
-        signature = hmac.new(
-            secret.encode("utf-8"),
-            payload,
-            hashlib.sha256
-        ).hexdigest()
+        signature = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
         return f"sha256={signature}"

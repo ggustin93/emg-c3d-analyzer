@@ -1,4 +1,4 @@
-"""EMG Data Repository
+"""EMG Data Repository.
 ===================
 
 🎯 PURPOSE: EMG analysis data and processing parameters management
@@ -21,44 +21,53 @@ import logging
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from models.clinical.session import EMGStatistics, EMGStatisticsCreate, EMGStatisticsUpdate
-from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
+from backend.services.shared.repositories.base.abstract_repository import (
+    AbstractRepository,
+    RepositoryError,
+)
+from models.clinical.session import (
+    EMGStatistics,
+    EMGStatisticsCreate,
+    EMGStatisticsUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpdate, EMGStatistics]):
-    """Repository for EMG analysis data and processing parameters
-    
+class EMGDataRepository(
+    AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpdate, EMGStatistics]
+):
+    """Repository for EMG analysis data and processing parameters.
+
     Handles bulk EMG statistics, C3D technical data, and processing
     parameters with optimized batch operations for performance.
     """
 
     def get_table_name(self) -> str:
-        """Return primary table name (EMG statistics)"""
+        """Return primary table name (EMG statistics)."""
         return "emg_statistics"
 
-    def get_create_model(self) -> Type[EMGStatisticsCreate]:
-        """Return the Pydantic model class for create operations"""
+    def get_create_model(self) -> type[EMGStatisticsCreate]:
+        """Return the Pydantic model class for create operations."""
         return EMGStatisticsCreate
 
-    def get_update_model(self) -> Type[EMGStatisticsUpdate]:
-        """Return the Pydantic model class for update operations"""
+    def get_update_model(self) -> type[EMGStatisticsUpdate]:
+        """Return the Pydantic model class for update operations."""
         return EMGStatisticsUpdate
 
-    def get_response_model(self) -> Type[EMGStatistics]:
-        """Return the Pydantic model class for response operations"""
+    def get_response_model(self) -> type[EMGStatistics]:
+        """Return the Pydantic model class for response operations."""
         return EMGStatistics
 
     def bulk_insert_emg_statistics(self, stats_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Bulk insert EMG statistics for multiple channels
-        
+        """Bulk insert EMG statistics for multiple channels.
+
         Args:
             stats_data: List of EMG statistics data
-            
+
         Returns:
             List[Dict]: Inserted EMG statistics
-            
+
         Raises:
             RepositoryError: If bulk insert fails
         """
@@ -78,12 +87,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
                 prepared_data.append(data)
 
             # Bulk insert
-            result = (
-                self.client
-                .table("emg_statistics")
-                .insert(prepared_data)
-                .execute()
-            )
+            result = self.client.table("emg_statistics").insert(prepared_data).execute()
 
             inserted_data = self._handle_supabase_response(result, "bulk insert", "EMG statistics")
 
@@ -95,15 +99,12 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
-    def get_emg_statistics_by_session(
-        self,
-        session_id: str | UUID
-    ) -> list[dict[str, Any]]:
-        """Get all EMG statistics for a session
-        
+    def get_emg_statistics_by_session(self, session_id: str | UUID) -> list[dict[str, Any]]:
+        """Get all EMG statistics for a session.
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             List[Dict]: EMG statistics data
         """
@@ -111,8 +112,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             validated_id = self._validate_uuid(session_id, "session_id")
 
             result = (
-                self.client
-                .table("emg_statistics")
+                self.client.table("emg_statistics")
                 .select("*")
                 .eq("session_id", validated_id)
                 .order("channel_name")
@@ -122,15 +122,15 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             return self._handle_supabase_response(result, "get", "EMG statistics by session")
 
         except Exception as e:
-            self.logger.error(f"Failed to get EMG statistics for session {session_id}: {e!s}")
+            self.logger.exception(f"Failed to get EMG statistics for session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get EMG statistics: {e!s}") from e
 
     def insert_processing_parameters(self, params_data: dict[str, Any]) -> dict[str, Any]:
-        """Insert processing parameters for a session
-        
+        """Insert processing parameters for a session.
+
         Args:
             params_data: Processing parameters data
-            
+
         Returns:
             Dict: Inserted processing parameters
         """
@@ -141,14 +141,11 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             if "session_id" in data:
                 data["session_id"] = self._validate_uuid(data["session_id"], "session_id")
 
-            result = (
-                self.client
-                .table("processing_parameters")
-                .insert(data)
-                .execute()
-            )
+            result = self.client.table("processing_parameters").insert(data).execute()
 
-            inserted_data = self._handle_supabase_response(result, "insert", "processing parameters")[0]
+            inserted_data = self._handle_supabase_response(
+                result, "insert", "processing parameters"
+            )[0]
 
             self.logger.info(f"✅ Inserted processing parameters for session: {data['session_id']}")
             return inserted_data
@@ -159,16 +156,14 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             raise RepositoryError(error_msg) from e
 
     def upsert_c3d_technical_data(
-        self,
-        technical_data: dict[str, Any],
-        unique_key: str = "session_id"
+        self, technical_data: dict[str, Any], unique_key: str = "session_id"
     ) -> dict[str, Any]:
-        """Upsert C3D technical data (insert or update if exists)
-        
+        """Upsert C3D technical data (insert or update if exists).
+
         Args:
             technical_data: C3D technical metadata
             unique_key: Field to use for upsert matching
-            
+
         Returns:
             Dict: Upserted technical data
         """
@@ -182,8 +177,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             # Check if record exists
             unique_value = data[unique_key]
             existing_result = (
-                self.client
-                .table("c3d_technical_data")
+                self.client.table("c3d_technical_data")
                 .select("id")
                 .eq(unique_key, unique_value)
                 .limit(1)
@@ -197,8 +191,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             if existing_data:
                 # Update existing record
                 result = (
-                    self.client
-                    .table("c3d_technical_data")
+                    self.client.table("c3d_technical_data")
                     .update(self._prepare_timestamps(data, update=True))
                     .eq(unique_key, unique_value)
                     .execute()
@@ -206,17 +199,16 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
                 operation = "update"
             else:
                 # Insert new record
-                result = (
-                    self.client
-                    .table("c3d_technical_data")
-                    .insert(data)
-                    .execute()
-                )
+                result = self.client.table("c3d_technical_data").insert(data).execute()
                 operation = "insert"
 
-            upserted_data = self._handle_supabase_response(result, operation, "C3D technical data")[0]
+            upserted_data = self._handle_supabase_response(result, operation, "C3D technical data")[
+                0
+            ]
 
-            self.logger.info(f"✅ {operation.title()}ed C3D technical data for session: {data['session_id']}")
+            self.logger.info(
+                f"✅ {operation.title()}ed C3D technical data for session: {data['session_id']}"
+            )
             return upserted_data
 
         except Exception as e:
@@ -224,15 +216,12 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
-    def get_processing_parameters_by_session(
-        self,
-        session_id: str | UUID
-    ) -> dict[str, Any] | None:
-        """Get processing parameters for a session
-        
+    def get_processing_parameters_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
+        """Get processing parameters for a session.
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             Optional[Dict]: Processing parameters or None if not found
         """
@@ -240,8 +229,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             validated_id = self._validate_uuid(session_id, "session_id")
 
             result = (
-                self.client
-                .table("processing_parameters")
+                self.client.table("processing_parameters")
                 .select("*")
                 .eq("session_id", validated_id)
                 .limit(1)
@@ -252,18 +240,17 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get processing parameters for session {session_id}: {e!s}")
+            self.logger.exception(
+                f"Failed to get processing parameters for session {session_id}: {e!s}"
+            )
             raise RepositoryError(f"Failed to get processing parameters: {e!s}") from e
 
-    def get_c3d_technical_data_by_session(
-        self,
-        session_id: str | UUID
-    ) -> dict[str, Any] | None:
-        """Get C3D technical data for a session
-        
+    def get_c3d_technical_data_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
+        """Get C3D technical data for a session.
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             Optional[Dict]: C3D technical data or None if not found
         """
@@ -271,8 +258,7 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             validated_id = self._validate_uuid(session_id, "session_id")
 
             result = (
-                self.client
-                .table("c3d_technical_data")
+                self.client.table("c3d_technical_data")
                 .select("*")
                 .eq("session_id", validated_id)
                 .limit(1)
@@ -283,5 +269,5 @@ class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpd
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.error(f"Failed to get C3D technical data for session {session_id}: {e!s}")
+            self.logger.exception(f"Failed to get C3D technical data for session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get C3D technical data: {e!s}") from e

@@ -1,4 +1,4 @@
-"""Metadata Service - Database Metadata Manager
+"""Metadata Service - Database Metadata Manager.
 ============================================
 
 🎯 PURPOSE: Database CRUD operations for therapy session metadata
@@ -14,6 +14,7 @@
 
 📊 OUTPUT: Database session IDs and metadata persistence
 """
+
 import logging
 import re
 from datetime import datetime
@@ -28,10 +29,12 @@ logger = logging.getLogger(__name__)
 
 
 class MetadataService:
-    """Service for managing C3D file metadata with frontend-consistent resolution patterns"""
+    """Service for managing C3D file metadata with frontend-consistent resolution patterns."""
 
     def __init__(self):
-        self.supabase = get_supabase_client(use_service_key=True)  # Use service key for admin operations
+        self.supabase = get_supabase_client(
+            use_service_key=True
+        )  # Use service key for admin operations
         self.c3d_reader = C3DReader()
 
     async def create_metadata_entry(
@@ -41,14 +44,14 @@ class MetadataService:
         file_size_bytes: int,
         patient_id: str | None = None,
         session_id: str | None = None,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> UUID:
-        """Create therapy session entry with basic file information (KISS: Phase 1 - Metadata Only)
-        
+        """Create therapy session entry with basic file information (KISS: Phase 1 - Metadata Only).
+
         Following the DATABASE_IMPROVEMENT_PROPOSAL.md two-phase pattern:
         Phase 1: Create session with metadata only (this method)
         Phase 2: Add technical data via update_technical_metadata() after C3D processing
-        
+
         Args:
             file_path: Path to C3D file in storage
             file_hash: SHA-256 hash of file content
@@ -56,12 +59,11 @@ class MetadataService:
             patient_id: Optional patient ID from storage path
             session_id: Optional session ID from storage path
             metadata: Optional additional metadata from webhook
-            
+
         Returns:
             UUID: ID of created therapy session
         """
         session_id = uuid4()
-
 
         # KISS: Phase 1 - Create session with metadata ONLY (no technical fields)
         entry = {
@@ -72,25 +74,27 @@ class MetadataService:
             "patient_id": patient_id,
             "processing_status": "pending",
             "original_filename": Path(file_path).name,
-            "game_metadata": metadata or {}
+            "game_metadata": metadata or {},
         }
 
         try:
             result = self.supabase.table("therapy_sessions").insert(entry).execute()
-            logger.info(f"✅ Created therapy session (Phase 1 - Metadata): {file_path} (session_id: {session_id})")
+            logger.info(
+                f"✅ Created therapy session (Phase 1 - Metadata): {file_path} (session_id: {session_id})"
+            )
             return session_id
 
         except Exception as e:
-            logger.error(f"❌ Failed to create therapy session: {e!s}")
-            logger.error(f"Entry data: {entry}")
+            logger.exception(f"❌ Failed to create therapy session: {e!s}")
+            logger.exception(f"Entry data: {entry}")
             raise
 
     async def extract_c3d_metadata(self, file_data: bytes) -> dict[str, Any]:
-        """Extract technical metadata from C3D file content
-        
+        """Extract technical metadata from C3D file content.
+
         Args:
             file_data: Raw C3D file bytes
-            
+
         Returns:
             Dict containing C3D technical metadata
         """
@@ -108,23 +112,19 @@ class MetadataService:
                 "session_duration": c3d_info.get("session_duration"),
                 "session_notes": c3d_info.get("session_notes"),
                 "therapist_id": c3d_info.get("therapist_id"),
-                "player_name": c3d_info.get("player_name")
+                "player_name": c3d_info.get("player_name"),
             }
 
         except Exception as e:
-            logger.error(f"Failed to extract C3D metadata: {e!s}")
+            logger.exception(f"Failed to extract C3D metadata: {e!s}")
             raise
 
-    async def update_technical_metadata(
-        self,
-        session_id: UUID,
-        file_data: bytes
-    ) -> None:
-        """Phase 2: Add technical C3D data to existing therapy session
-        
+    async def update_technical_metadata(self, session_id: UUID, file_data: bytes) -> None:
+        """Phase 2: Add technical C3D data to existing therapy session.
+
         Creates entry in c3d_technical_data table with extracted technical metadata.
         This implements the two-phase pattern from DATABASE_IMPROVEMENT_PROPOSAL.md
-        
+
         Args:
             session_id: UUID of existing therapy session
             file_data: Raw C3D file bytes for metadata extraction
@@ -143,7 +143,7 @@ class MetadataService:
                 "channel_names": c3d_metadata.get("channel_names", []),
                 "sampling_rate": c3d_metadata.get("sampling_rate"),
                 "duration_seconds": c3d_metadata.get("duration_seconds"),
-                "frame_count": c3d_metadata.get("frame_count")
+                "frame_count": c3d_metadata.get("frame_count"),
             }
 
             # Insert technical data into separate table
@@ -154,14 +154,14 @@ class MetadataService:
                 file_path="",  # Will be fetched from session if needed
                 file_size_bytes=0,  # Will be fetched from session if needed
                 c3d_metadata=c3d_metadata,
-                storage_metadata={}
+                storage_metadata={},
             )
 
             # Update therapy session with resolved fields and game metadata
             session_update = {
                 "processing_status": "completed",
                 "updated_at": datetime.utcnow().isoformat(),
-                "processed_at": datetime.utcnow().isoformat()
+                "processed_at": datetime.utcnow().isoformat(),
             }
 
             # Add game metadata if available
@@ -171,18 +171,22 @@ class MetadataService:
             # Add resolved fields
             session_update.update(resolved_fields)
 
-            self.supabase.table("therapy_sessions").update(session_update).eq("id", str(session_id)).execute()
+            self.supabase.table("therapy_sessions").update(session_update).eq(
+                "id", str(session_id)
+            ).execute()
 
             logger.info(f"✅ Updated technical metadata (Phase 2): {session_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to update technical metadata: {e!s}")
+            logger.exception(f"❌ Failed to update technical metadata: {e!s}")
             # Update session status to failed
-            self.supabase.table("therapy_sessions").update({
-                "processing_status": "failed",
-                "processing_error_message": str(e),
-                "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", str(session_id)).execute()
+            self.supabase.table("therapy_sessions").update(
+                {
+                    "processing_status": "failed",
+                    "processing_error_message": str(e),
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            ).eq("id", str(session_id)).execute()
             raise
 
     async def update_metadata(
@@ -193,10 +197,10 @@ class MetadataService:
         sampling_rate: float,
         duration_seconds: float,
         frame_count: int,
-        **kwargs
+        **kwargs,
     ) -> None:
-        """Update metadata entry with extracted C3D information and resolved fields
-        
+        """Update metadata entry with extracted C3D information and resolved fields.
+
         Args:
             metadata_id: UUID of metadata entry
             channel_names: List of EMG channel names
@@ -208,7 +212,12 @@ class MetadataService:
         """
         try:
             # Get current session data for resolution (KISS: single table)
-            current = self.supabase.table("therapy_sessions").select("*").eq("id", str(metadata_id)).execute()
+            current = (
+                self.supabase.table("therapy_sessions")
+                .select("*")
+                .eq("id", str(metadata_id))
+                .execute()
+            )
 
             if not current.data:
                 raise ValueError(f"Therapy session not found: {metadata_id}")
@@ -222,7 +231,7 @@ class MetadataService:
                 "sampling_rate": sampling_rate,
                 "duration_seconds": duration_seconds,
                 "frame_count": frame_count,
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.utcnow().isoformat(),
             }
 
             # Add any additional metadata
@@ -237,19 +246,24 @@ class MetadataService:
                 c3d_metadata=kwargs,
                 storage_metadata={
                     "patient_id": current_data.get("patient_id"),
-                    "therapist_id": current_data.get("therapist_id")
-                }
+                    "therapist_id": current_data.get("therapist_id"),
+                },
             )
 
             update_data.update(resolved_fields)
 
             # Update therapy session (KISS: single table)
-            result = self.supabase.table("therapy_sessions").update(update_data).eq("id", str(metadata_id)).execute()
+            result = (
+                self.supabase.table("therapy_sessions")
+                .update(update_data)
+                .eq("id", str(metadata_id))
+                .execute()
+            )
 
             logger.info(f"Updated therapy session: {metadata_id}")
 
         except Exception as e:
-            logger.error(f"Failed to update therapy session: {e!s}")
+            logger.exception(f"Failed to update therapy session: {e!s}")
             raise
 
     def _resolve_metadata_fields(
@@ -257,16 +271,16 @@ class MetadataService:
         file_path: str,
         file_size_bytes: int,
         c3d_metadata: dict[str, Any],
-        storage_metadata: dict[str, Any]
+        storage_metadata: dict[str, Any],
     ) -> dict[str, Any]:
-        """Apply frontend-consistent metadata resolution patterns
-        
+        """Apply frontend-consistent metadata resolution patterns.
+
         Args:
             file_path: Path to C3D file
-            file_size_bytes: File size in bytes  
+            file_size_bytes: File size in bytes
             c3d_metadata: Extracted C3D metadata
             storage_metadata: Storage-level metadata
-            
+
         Returns:
             Dict with resolved metadata fields
         """
@@ -300,9 +314,11 @@ class MetadataService:
 
         return resolved
 
-    def _resolve_patient_id(self, file_path: str, c3d_metadata: dict, storage_metadata: dict) -> str:
+    def _resolve_patient_id(
+        self, file_path: str, c3d_metadata: dict, storage_metadata: dict
+    ) -> str:
         """Resolve patient ID using frontend-consistent priority system
-        Priority: 1) Subfolder pattern (P005/), 2) C3D metadata.player_name, 3) storage metadata
+        Priority: 1) Subfolder pattern (P005/), 2) C3D metadata.player_name, 3) storage metadata.
         """
         # Priority 1: Storage subfolder pattern
         subfolder_match = re.match(r"^(P\d{3})/", file_path)
@@ -326,7 +342,7 @@ class MetadataService:
 
     def _resolve_therapist_id(self, c3d_metadata: dict, storage_metadata: dict) -> str:
         """Resolve therapist ID using frontend-consistent priority system
-        Priority: 1) C3D metadata.therapist_id, 2) storage metadata.therapist_id
+        Priority: 1) C3D metadata.therapist_id, 2) storage metadata.therapist_id.
         """
         # Priority 1: C3D metadata
         if c3d_metadata.get("therapist_id"):
@@ -340,7 +356,7 @@ class MetadataService:
 
     def _resolve_session_date(self, file_path: str, c3d_metadata: dict) -> str | None:
         """Resolve session date using frontend-consistent priority system
-        Priority: 1) Filename extraction, 2) C3D metadata.session_date, 3) C3D metadata.time
+        Priority: 1) Filename extraction, 2) C3D metadata.session_date, 3) C3D metadata.time.
         """
         # Priority 1: Filename extraction (consistent with C3DFileDataResolver)
         extracted_date = self._extract_date_from_filename(file_path)
@@ -359,7 +375,7 @@ class MetadataService:
 
     def _extract_date_from_filename(self, filename: str) -> str | None:
         """Extract date from filename using patterns from C3DFileDataResolver
-        Patterns: YYYYMMDD, YYYY-MM-DD, DD-MM-YYYY
+        Patterns: YYYYMMDD, YYYY-MM-DD, DD-MM-YYYY.
         """
         # Pattern 1 & 2: YYYYMMDD format
         yyyymmdd = re.search(r"(\d{4})(\d{2})(\d{2})", filename)
@@ -387,23 +403,32 @@ class MetadataService:
 
         return None
 
-
     async def get_by_file_hash(self, file_hash: str) -> dict | None:
-        """Get therapy session by file hash (KISS: single table)"""
+        """Get therapy session by file hash (KISS: single table)."""
         try:
-            result = self.supabase.table("therapy_sessions").select("*").eq("file_hash", file_hash).execute()
+            result = (
+                self.supabase.table("therapy_sessions")
+                .select("*")
+                .eq("file_hash", file_hash)
+                .execute()
+            )
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.error(f"Failed to get session by hash: {e!s}")
+            logger.exception(f"Failed to get session by hash: {e!s}")
             return None
 
     async def get_by_id(self, session_id: UUID) -> dict | None:
-        """Get therapy session by ID (KISS: single table)"""
+        """Get therapy session by ID (KISS: single table)."""
         try:
-            result = self.supabase.table("therapy_sessions").select("*").eq("id", str(session_id)).execute()
+            result = (
+                self.supabase.table("therapy_sessions")
+                .select("*")
+                .eq("id", str(session_id))
+                .execute()
+            )
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.error(f"Failed to get session by ID: {e!s}")
+            logger.exception(f"Failed to get session by ID: {e!s}")
             return None
 
     async def update_processing_status(
@@ -411,14 +436,11 @@ class MetadataService:
         session_id: UUID,
         status: str,
         error_message: str | None = None,
-        enhanced_session_id: str | None = None
+        enhanced_session_id: str | None = None,
     ) -> None:
-        """Update processing status (KISS: single table)"""
+        """Update processing status (KISS: single table)."""
         try:
-            update_data = {
-                "processing_status": status,
-                "updated_at": datetime.utcnow().isoformat()
-            }
+            update_data = {"processing_status": status, "updated_at": datetime.utcnow().isoformat()}
 
             if status == "completed":
                 update_data["processed_at"] = datetime.utcnow().isoformat()
@@ -428,10 +450,12 @@ class MetadataService:
             if enhanced_session_id:
                 update_data["enhanced_session_id"] = enhanced_session_id
 
-            self.supabase.table("therapy_sessions").update(update_data).eq("id", str(session_id)).execute()
+            self.supabase.table("therapy_sessions").update(update_data).eq(
+                "id", str(session_id)
+            ).execute()
 
             logger.info(f"Updated processing status to {status} for session: {session_id}")
 
         except Exception as e:
-            logger.error(f"Failed to update processing status: {e!s}")
+            logger.exception(f"Failed to update processing status: {e!s}")
             raise

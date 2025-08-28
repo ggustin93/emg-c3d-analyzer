@@ -1,4 +1,4 @@
-"""Shared Repository Components
+"""Shared Repository Components.
 =============================
 
 Common repository patterns and base classes shared across all domains.
@@ -8,9 +8,6 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from .base import AbstractRepository, RepositoryError
+from backend.services.shared.repositories.base import AbstractRepository, RepositoryError
 
-__all__ = [
-    "AbstractRepository", 
-    "RepositoryError"
-]
+__all__ = ["AbstractRepository", "RepositoryError"]

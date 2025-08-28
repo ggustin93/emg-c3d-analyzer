@@ -1,5 +1,5 @@
-""""
-Therapy Session Processor - Workflow Orchestrator
+""" "
+Therapy Session Processor - Workflow Orchestrator.
 ================================================
 
 🎯 PURPOSE: Complete C3D processing pipeline orchestration
@@ -20,7 +20,7 @@ Therapy Session Processor - Workflow Orchestrator
 ⚠️ NOTE: This service is intentionally comprehensive for webhook processing.
 For individual operations, use the specific services directly.
 
-🏗️ ARCHITECTURE: 
+🏗️ ARCHITECTURE:
 - Uses repository pattern for domain-separated data access (DDD principles)
 - Timestamps managed automatically by database triggers
 - SOLID principles with dependency injection and service composition
@@ -40,13 +40,16 @@ from uuid import uuid4
 
 # Custom Exception Classes for Better Error Handling
 class TherapySessionError(Exception):
-    """Base exception for therapy session processing errors"""
+    """Base exception for therapy session processing errors."""
+
 
 class FileProcessingError(TherapySessionError):
-    """Raised when C3D file processing fails"""
+    """Raised when C3D file processing fails."""
+
 
 class SessionNotFoundError(TherapySessionError):
-    """Raised when a session cannot be found"""
+    """Raised when a session cannot be found."""
+
 
 from config import (
     DEFAULT_FILTER_ORDER,
@@ -69,20 +72,23 @@ from config import (
     # Development Defaults
     DevelopmentDefaults,
 )
-from database.supabase_client import get_supabase_client
-from models import GameSessionParameters, ProcessingOptions
-from services.c3d.processor import GHOSTLYC3DProcessor
-from services.c3d.reader import C3DReader
-from services.cache.redis_cache_service import get_cache_service
 
-from .performance_scoring_service import PerformanceScoringService, SessionMetrics
-from .repositories import (
+from backend.services.clinical.performance_scoring_service import (
+    PerformanceScoringService,
+    SessionMetrics,
+)
+from backend.services.clinical.repositories import (
     EMGDataRepository,
     PatientRepository,
     RepositoryError,
     TherapySessionRepository,
 )
-from ..user.repositories import UserRepository
+from backend.services.user.repositories import UserRepository
+from database.supabase_client import get_supabase_client
+from models import GameSessionParameters, ProcessingOptions
+from services.c3d.processor import GHOSTLYC3DProcessor
+from services.c3d.reader import C3DReader
+from services.cache.redis_cache_service import get_cache_service
 
 # Note: All clinical constants now imported from config.py (Single Source of Truth)
 
@@ -91,10 +97,10 @@ logger = logging.getLogger(__name__)
 
 class TherapySessionProcessor:
     """Core processor for therapy sessions and C3D file analysis.
-    
+
     Manages the complete lifecycle:
     1. Create therapy_sessions record
-    2. Process C3D file 
+    2. Process C3D file
     3. Populate related tables (emg_statistics, c3d_technical_data, etc.)
     4. Calculate performance scores
     5. Update session with results
@@ -104,7 +110,7 @@ class TherapySessionProcessor:
         """Initializes the processor with Supabase client and specialized services.
         - `use_service_key=True` grants admin privileges for backend operations.
         - Repository pattern provides domain-separated data access (DDD/SOLID principles)
-        - Redis cache service provides high-performance analytics caching
+        - Redis cache service provides high-performance analytics caching.
         """
         self.supabase = get_supabase_client(use_service_key=True)
         self.c3d_reader = C3DReader()
@@ -124,7 +130,7 @@ class TherapySessionProcessor:
         file_path: str,
         file_metadata: dict[str, Any],
         patient_id: str | None = None,
-        therapist_id: str | None = None
+        therapist_id: str | None = None,
     ) -> str:
         """Creates a new therapy session record, ensuring data integrity.
 
@@ -146,7 +152,9 @@ class TherapySessionProcessor:
         """
         try:
             # Validate input parameters
-            self._validate_session_creation_params(file_path, file_metadata, patient_id, therapist_id)
+            self._validate_session_creation_params(
+                file_path, file_metadata, patient_id, therapist_id
+            )
 
             # Generate a unique hash of the file content for deduplication.
             # This makes session creation idempotent.
@@ -171,7 +179,7 @@ class TherapySessionProcessor:
                 "processing_status": "pending",
                 "created_at": timestamp,
                 "updated_at": timestamp,
-                "game_metadata": {}
+                "game_metadata": {},
                 # REMOVED: analytics_cache (migrated to Redis for ~100x performance)
             }
 
@@ -184,18 +192,15 @@ class TherapySessionProcessor:
             raise TherapySessionError(f"Session creation failed: {e!s}") from e
 
     async def process_c3d_file(
-        self,
-        session_id: str,
-        bucket: str,
-        object_path: str
+        self, session_id: str, bucket: str, object_path: str
     ) -> dict[str, Any]:
-        """Complete C3D file processing
-        
+        """Complete C3D file processing.
+
         Args:
             session_id: Therapy session UUID
-            bucket: Storage bucket name  
+            bucket: Storage bucket name
             object_path: Path to C3D file in storage
-            
+
         Returns:
             Dict with processing results
         """
@@ -204,10 +209,14 @@ class TherapySessionProcessor:
             self._validate_processing_params(session_id, bucket, object_path)
 
             # Get session configuration
-            session_info, patient_id, duration_threshold = await self._prepare_session_config(session_id)
+            session_info, patient_id, duration_threshold = await self._prepare_session_config(
+                session_id
+            )
 
             # Download and process file with resource management
-            return await self._process_file_with_cleanup(session_id, bucket, object_path, duration_threshold)
+            return await self._process_file_with_cleanup(
+                session_id, bucket, object_path, duration_threshold
+            )
 
         except FileProcessingError:
             raise  # Re-raise file processing errors
@@ -219,13 +228,10 @@ class TherapySessionProcessor:
             return {"success": False, "error": str(e)}
 
     async def update_session_status(
-        self,
-        session_id: str,
-        status: str,
-        error_message: str | None = None
+        self, session_id: str, status: str, error_message: str | None = None
     ) -> None:
-        """Update therapy session processing status
-        
+        """Update therapy session processing status.
+
         Args:
             session_id: Session UUID
             status: New status (pending, processing, completed, failed)
@@ -245,18 +251,18 @@ class TherapySessionProcessor:
         self,
         file_path: str,
         processing_opts: ProcessingOptions,
-        session_params: GameSessionParameters
+        session_params: GameSessionParameters,
     ) -> dict[str, Any]:
-        """Process C3D file without database operations (for upload route)
-        
+        """Process C3D file without database operations (for upload route).
+
         SINGLE SOURCE OF TRUTH: Uses same processing logic as webhook route
         but without database persistence.
-        
+
         Args:
             file_path: Path to C3D file
             processing_opts: Processing options
             session_params: Session parameters
-            
+
         Returns:
             Processing result dictionary
         """
@@ -266,15 +272,14 @@ class TherapySessionProcessor:
             # Use SAME processor as webhook route (SINGLE SOURCE OF TRUTH)
             processor = GHOSTLYC3DProcessor(file_path)
             result = processor.process_file(
-                processing_opts=processing_opts,
-                session_game_params=session_params
+                processing_opts=processing_opts, session_game_params=session_params
             )
 
             return {
                 "success": True,
                 "processing_result": result,
                 "channels_analyzed": len(result.get("analytics", {})),
-                "overall_score": self._calculate_overall_score(result)
+                "overall_score": self._calculate_overall_score(result),
             }
 
         except Exception as e:
@@ -285,9 +290,9 @@ class TherapySessionProcessor:
         self,
         file_path: str,
         processing_opts: ProcessingOptions,
-        session_params: GameSessionParameters
+        session_params: GameSessionParameters,
     ) -> None:
-        """Validate parameters for stateless processing"""
+        """Validate parameters for stateless processing."""
         if not file_path or not file_path.strip():
             raise ValueError("File path cannot be empty")
 
@@ -301,11 +306,11 @@ class TherapySessionProcessor:
             raise ValueError("Session parameters are required")
 
     async def get_session_status(self, session_id: str) -> dict[str, Any] | None:
-        """Get therapy session status and data
-        
+        """Get therapy session status and data.
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             Session data or None if not found
         """
@@ -318,11 +323,11 @@ class TherapySessionProcessor:
             return None
 
     async def get_cached_session_analytics(self, session_id: str) -> dict[str, Any] | None:
-        """Get cached session analytics from Redis (high-performance retrieval)
-        
+        """Get cached session analytics from Redis (high-performance retrieval).
+
         Args:
             session_id: Session UUID
-            
+
         Returns:
             Cached analytics data or None if not found
         """
@@ -349,9 +354,9 @@ class TherapySessionProcessor:
         file_path: str,
         file_metadata: dict[str, Any],
         patient_id: str | None,
-        therapist_id: str | None
+        therapist_id: str | None,
     ) -> None:
-        """Validate session creation parameters"""
+        """Validate session creation parameters."""
         if not file_path or not file_path.strip():
             raise ValueError("File path cannot be empty")
 
@@ -365,7 +370,7 @@ class TherapySessionProcessor:
             raise ValueError("Therapist ID must be a string or None")
 
     def _validate_processing_params(self, session_id: str, bucket: str, object_path: str) -> None:
-        """Validate C3D processing parameters"""
+        """Validate C3D processing parameters."""
         if not session_id or not session_id.strip():
             raise ValueError("Session ID cannot be empty")
 
@@ -376,7 +381,9 @@ class TherapySessionProcessor:
             raise ValueError("Object path cannot be empty")
 
     # Session Configuration Methods
-    async def _prepare_session_config(self, session_id: str) -> tuple[dict | None, str | None, float]:
+    async def _prepare_session_config(
+        self, session_id: str
+    ) -> tuple[dict | None, str | None, float]:
         """Fetches all necessary configuration for a processing session.
 
         Retrieves the session record and determines the patient-specific
@@ -397,13 +404,9 @@ class TherapySessionProcessor:
         return session_info, patient_id, duration_threshold
 
     async def _process_file_with_cleanup(
-        self,
-        session_id: str,
-        bucket: str,
-        object_path: str,
-        duration_threshold: float
+        self, session_id: str, bucket: str, object_path: str, duration_threshold: float
     ) -> dict[str, Any]:
-        """Process C3D file with proper resource cleanup"""
+        """Process C3D file with proper resource cleanup."""
         # Download C3D file
         file_data = await self._download_file(bucket, object_path)
 
@@ -421,7 +424,7 @@ class TherapySessionProcessor:
             result = processor.process_file(
                 processing_opts=processing_opts,
                 session_game_params=session_params,
-                include_signals=False  # ⚡ 90% memory reduction for webhook processing
+                include_signals=False,  # ⚡ 90% memory reduction for webhook processing
             )
 
             # Populate database tables
@@ -430,7 +433,7 @@ class TherapySessionProcessor:
                 processing_result=result,
                 file_data=file_data,
                 processing_opts=processing_opts,
-                session_params=session_params
+                session_params=session_params,
             )
 
             # Cache analytics in Redis for high-performance retrieval
@@ -442,30 +445,32 @@ class TherapySessionProcessor:
                 "success": True,
                 "channels_analyzed": len(result.get("analytics", {})),
                 "overall_score": self._calculate_overall_score(result),
-                "processing_result": result
+                "processing_result": result,
             }
 
         finally:
             # Clean up temporary file
             self._cleanup_temp_file(tmp_file_path)
 
-    def _create_processing_config(self, duration_threshold: float) -> tuple[ProcessingOptions, GameSessionParameters]:
-        """Create processing configuration objects"""
+    def _create_processing_config(
+        self, duration_threshold: float
+    ) -> tuple[ProcessingOptions, GameSessionParameters]:
+        """Create processing configuration objects."""
         processing_opts = ProcessingOptions(
             threshold_factor=DEFAULT_THRESHOLD_FACTOR,
             min_duration_ms=DEFAULT_MIN_DURATION_MS,
-            smoothing_window=DEFAULT_SMOOTHING_WINDOW
+            smoothing_window=DEFAULT_SMOOTHING_WINDOW,
         )
 
         session_params = GameSessionParameters(
             session_mvc_threshold_percentage=DEFAULT_MVC_THRESHOLD_PERCENTAGE,
-            contraction_duration_threshold=duration_threshold  # Patient-specific from database
+            contraction_duration_threshold=duration_threshold,  # Patient-specific from database
         )
 
         return processing_opts, session_params
 
     def _cleanup_temp_file(self, file_path: str) -> None:
-        """Safely clean up temporary files"""
+        """Safely clean up temporary files."""
         try:
             if os.path.exists(file_path):
                 os.unlink(file_path)
@@ -474,11 +479,11 @@ class TherapySessionProcessor:
             logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
 
     async def _get_patient_duration_threshold(self, patient_id: str | None) -> float:
-        """Get patient-specific duration threshold from database
-        
+        """Get patient-specific duration threshold from database.
+
         Args:
             patient_id: Optional patient ID
-            
+
         Returns:
             float: Duration threshold in milliseconds (patient-specific or config default)
         """
@@ -489,20 +494,26 @@ class TherapySessionProcessor:
 
                 if profile and profile.get("therapeutic_duration_threshold_ms"):
                     threshold = profile["therapeutic_duration_threshold_ms"]
-                    logger.info(f"📊 Using patient-specific duration threshold: {threshold}ms for patient {patient_id}")
+                    logger.info(
+                        f"📊 Using patient-specific duration threshold: {threshold}ms for patient {patient_id}"
+                    )
                     return float(threshold)
 
             # Fallback to config default
-            logger.info(f"📊 Using config default duration threshold: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms")
+            logger.info(
+                f"📊 Using config default duration threshold: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms"
+            )
             return float(DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS)
 
         except Exception as e:
-            logger.error(f"Error retrieving patient duration threshold: {e!s}")
-            logger.info(f"📊 Fallback to config default: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms")
+            logger.exception(f"Error retrieving patient duration threshold: {e!s}")
+            logger.info(
+                f"📊 Fallback to config default: {DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS}ms"
+            )
             return float(DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS)
 
     async def _calculate_file_hash_from_path(self, file_path: str) -> str:
-        """Calculate SHA-256 hash of file from storage path"""
+        """Calculate SHA-256 hash of file from storage path."""
         try:
             # Extract bucket and object path from the full file_path string.
             parts = file_path.split("/", 1)
@@ -515,14 +526,14 @@ class TherapySessionProcessor:
             return hashlib.sha256(file_data).hexdigest()
 
         except Exception as e:
-            logger.error(f"Failed to calculate file hash: {e!s}")
+            logger.exception(f"Failed to calculate file hash: {e!s}")
             # Fallback: If file download or hashing fails, hash the file path
             # itself. This provides a less robust but still unique identifier
             # to prevent duplicate processing from the same path.
             return hashlib.sha256(file_path.encode()).hexdigest()
 
     async def _download_file(self, bucket: str, object_path: str) -> bytes:
-        """Download file from Supabase Storage"""
+        """Download file from Supabase Storage."""
         try:
             response = self.supabase.storage.from_(bucket).download(object_path)
 
@@ -532,11 +543,11 @@ class TherapySessionProcessor:
             return response
 
         except Exception as e:
-            logger.error(f"Download failed: {e!s}")
+            logger.exception(f"Download failed: {e!s}")
             raise FileProcessingError(f"Download operation failed: {e!s}") from e
 
     async def _find_existing_session(self, file_hash: str) -> dict[str, Any] | None:
-        """Find existing session with same file hash (using centralized DB operations)"""
+        """Find existing session with same file hash (using centralized DB operations)."""
         # Use centralized database operations (DRY principle)
         return self.session_repo.get_session_by_file_hash(file_hash)
 
@@ -546,14 +557,14 @@ class TherapySessionProcessor:
         processing_result: dict[str, Any],
         file_data: bytes,
         processing_opts: ProcessingOptions,
-        session_params: GameSessionParameters
+        session_params: GameSessionParameters,
     ) -> None:
-        """Populate all related database tables using specialized methods with transaction-like error handling
-        
+        """Populate all related database tables using specialized methods with transaction-like error handling.
+
         Tables populated:
         - c3d_technical_data
         - emg_statistics (per channel) - batch insert
-        - processing_parameters  
+        - processing_parameters
         - performance_scores
         - session_settings (Schema v2.1 compliance)
         - bfr_monitoring (Schema v2.1 compliance)
@@ -571,26 +582,33 @@ class TherapySessionProcessor:
             # Populate tables with optimized order for performance
             await self._populate_c3d_technical_data(session_id, metadata, analytics)
             await self._populate_processing_parameters(session_id, metadata, processing_opts)
-            await self._populate_emg_statistics(session_id, analytics, session_params)  # Batch insert
-            await self._calculate_and_save_performance_scores(session_id, analytics, processing_result)
+            await self._populate_emg_statistics(
+                session_id, analytics, session_params
+            )  # Batch insert
+            await self._calculate_and_save_performance_scores(
+                session_id, analytics, processing_result
+            )
 
             # Schema v2.1 compliance - populate missing tables
             await self._populate_session_settings(session_id, processing_opts, session_params)
             await self._populate_bfr_monitoring(session_id, session_params, processing_result)
 
-            logger.info(f"📊 Successfully populated all database tables (6 total) for session: {session_id}")
+            logger.info(
+                f"📊 Successfully populated all database tables (6 total) for session: {session_id}"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to populate database tables for session {session_id}: {e!s}", exc_info=True)
-            raise TherapySessionError(f"Database population failed for session {session_id}: {e!s}") from e
+            logger.error(
+                f"Failed to populate database tables for session {session_id}: {e!s}", exc_info=True
+            )
+            raise TherapySessionError(
+                f"Database population failed for session {session_id}: {e!s}"
+            ) from e
 
     async def _populate_c3d_technical_data(
-        self,
-        session_id: str,
-        metadata: dict[str, Any],
-        analytics: dict[str, Any]
+        self, session_id: str, metadata: dict[str, Any], analytics: dict[str, Any]
     ) -> None:
-        """Populate C3D technical data table"""
+        """Populate C3D technical data table."""
         technical_data = {
             "session_id": session_id,
             "original_sampling_rate": metadata.get("sampling_rate", 1000.0),
@@ -606,12 +624,9 @@ class TherapySessionProcessor:
         await self._upsert_table("c3d_technical_data", technical_data, "session_id")
 
     async def _populate_emg_statistics(
-        self,
-        session_id: str,
-        analytics: dict[str, Any],
-        session_params: GameSessionParameters
+        self, session_id: str, analytics: dict[str, Any], session_params: GameSessionParameters
     ) -> None:
-        """Populate EMG statistics for each channel using batch insert"""
+        """Populate EMG statistics for each channel using batch insert."""
         if not analytics:
             logger.warning(f"No analytics data for session {session_id}")
             return
@@ -619,27 +634,30 @@ class TherapySessionProcessor:
         # Build all statistics records for batch insert
         all_stats = []
         for channel_name, channel_data in analytics.items():
-            stats_data = self._build_emg_stats_record(session_id, channel_name, channel_data, session_params)
+            stats_data = self._build_emg_stats_record(
+                session_id, channel_name, channel_data, session_params
+            )
             all_stats.append(stats_data)
 
         # Batch insert using centralized database operations (DRY principle)
         if all_stats:
             self.emg_repo.bulk_insert_emg_statistics(all_stats)
-            logger.debug(f"📊 Inserted {len(all_stats)} EMG statistics records for session {session_id}")
+            logger.debug(
+                f"📊 Inserted {len(all_stats)} EMG statistics records for session {session_id}"
+            )
 
     def _build_emg_stats_record(
         self,
         session_id: str,
         channel_name: str,
         channel_data: dict[str, Any],
-        session_params: GameSessionParameters
+        session_params: GameSessionParameters,
     ) -> dict[str, Any]:
-        """Build EMG statistics record for a single channel"""
+        """Build EMG statistics record for a single channel."""
         # Use clinical constants for consistent values
-        default_mvc_value = channel_data.get(
-            "mvc_threshold",
-            DEFAULT_MVC_THRESHOLD_VALUE
-        ) / MVC_PERCENTAGE_DIVISOR
+        default_mvc_value = (
+            channel_data.get("mvc_threshold", DEFAULT_MVC_THRESHOLD_VALUE) / MVC_PERCENTAGE_DIVISOR
+        )
 
         # Extract temporal statistics
         temporal_stats = self._extract_temporal_stats(channel_data)
@@ -655,7 +673,7 @@ class TherapySessionProcessor:
             "mvc_value": channel_data.get("mvc_value", default_mvc_value),
             "mvc_threshold": max(
                 channel_data.get("mvc_threshold", DEFAULT_MVC_THRESHOLD_VALUE),
-                DEFAULT_MVC_THRESHOLD_VALUE
+                DEFAULT_MVC_THRESHOLD_VALUE,
             ),
             "mvc_threshold_actual_value": DEFAULT_MVC_THRESHOLD_PERCENTAGE,
             "duration_threshold_actual_value": session_params.contraction_duration_threshold,
@@ -674,7 +692,7 @@ class TherapySessionProcessor:
         }
 
     def _extract_temporal_stats(self, channel_data: dict[str, Any]) -> dict[str, Any]:
-        """Extract temporal statistics from channel data"""
+        """Extract temporal statistics from channel data."""
         rms_stats = channel_data.get("rms_temporal_stats", {})
         mav_stats = channel_data.get("mav_temporal_stats", {})
         mpf_stats = channel_data.get("mpf_temporal_stats", {})
@@ -696,12 +714,9 @@ class TherapySessionProcessor:
         }
 
     async def _populate_processing_parameters(
-        self,
-        session_id: str,
-        metadata: dict[str, Any],
-        processing_opts: ProcessingOptions
+        self, session_id: str, metadata: dict[str, Any], processing_opts: ProcessingOptions
     ) -> None:
-        """Populate processing parameters table with error handling"""
+        """Populate processing parameters table with error handling."""
         sampling_rate = metadata.get("sampling_rate", 1000.0)
         nyquist_freq = sampling_rate / 2
         safe_high_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * NYQUIST_SAFETY_FACTOR)
@@ -716,14 +731,14 @@ class TherapySessionProcessor:
             "rms_overlap_percent": RMS_OVERLAP_PERCENTAGE,
             "mvc_window_seconds": MVC_WINDOW_SECONDS,
             "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
-            "processing_version": PROCESSING_VERSION
+            "processing_version": PROCESSING_VERSION,
         }
 
         # Use centralized database operations (DRY principle)
         await self.emg_repo.insert_processing_parameters(params_data)
 
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
-        """Upsert data into table (insert or update if exists) with optimized error handling"""
+        """Upsert data into table (insert or update if exists) with optimized error handling."""
         # Use domain-specific repository for generic upsert operations
         if table_name == "c3d_technical_data":
             await self.emg_repo.upsert_c3d_technical_data(data, unique_key)
@@ -732,13 +747,10 @@ class TherapySessionProcessor:
             await self.session_repo.generic_upsert(table_name, data, unique_key)
 
     async def _calculate_and_save_performance_scores(
-        self,
-        session_id: str,
-        analytics: dict[str, Any],
-        processing_result: dict[str, Any]
+        self, session_id: str, analytics: dict[str, Any], processing_result: dict[str, Any]
     ) -> None:
-        """Calculate and save performance scores using the dedicated GHOSTLY+ scoring service
-        
+        """Calculate and save performance scores using the dedicated GHOSTLY+ scoring service.
+
         This method properly uses the existing performance_scoring_service.py to maintain
         DRY, SOLID, and KISS principles.
         """
@@ -750,42 +762,41 @@ class TherapySessionProcessor:
             # Create SessionMetrics object for the scoring service
             session_metrics = SessionMetrics(
                 session_id=session_id,
-
                 # Left muscle (CH1) metrics
                 left_total_contractions=left_data.get("contraction_count", 0),
                 left_good_contractions=left_data.get("good_contraction_count", 0),
                 left_mvc_contractions=left_data.get("mvc_contraction_count", 0),
                 left_duration_contractions=left_data.get("duration_contraction_count", 0),
-
                 # Right muscle (CH2) metrics
                 right_total_contractions=right_data.get("contraction_count", 0),
                 right_good_contractions=right_data.get("good_contraction_count", 0),
                 right_mvc_contractions=right_data.get("mvc_contraction_count", 0),
                 right_duration_contractions=right_data.get("duration_contraction_count", 0),
-
                 # Default clinical values using centralized configuration
                 bfr_pressure_aop=DevelopmentDefaults.BFR_PRESSURE_AOP,
                 bfr_compliant=True,
                 rpe_post_session=DevelopmentDefaults.RPE_POST_SESSION,
-
                 # Game data from C3D metadata (if available)
-                game_points_achieved=processing_result.get("metadata", {}).get("game_points_achieved"),
+                game_points_achieved=processing_result.get("metadata", {}).get(
+                    "game_points_achieved"
+                ),
                 game_points_max=processing_result.get("metadata", {}).get("game_points_max"),
-
-                expected_contractions_per_muscle=EXPECTED_CONTRACTIONS_PER_MUSCLE
+                expected_contractions_per_muscle=EXPECTED_CONTRACTIONS_PER_MUSCLE,
             )
 
             # Use the dedicated service to calculate scores
-            scores = self.scoring_service.calculate_performance_scores(
-                session_id, session_metrics
-            )
+            scores = self.scoring_service.calculate_performance_scores(session_id, session_metrics)
 
             if scores and "error" not in scores:
                 # Save scores using the service
                 success = self.scoring_service.save_performance_scores(scores)
                 if success:
-                    logger.info(f"✅ GHOSTLY+ performance scores calculated and saved for session: {session_id}")
-                    logger.info(f"   Overall: {scores.get('overall_score', 'N/A')}, Compliance: {scores.get('compliance_score', 'N/A')}")
+                    logger.info(
+                        f"✅ GHOSTLY+ performance scores calculated and saved for session: {session_id}"
+                    )
+                    logger.info(
+                        f"   Overall: {scores.get('overall_score', 'N/A')}, Compliance: {scores.get('compliance_score', 'N/A')}"
+                    )
                 else:
                     logger.error(f"❌ Failed to save performance scores for session: {session_id}")
             else:
@@ -795,8 +806,10 @@ class TherapySessionProcessor:
             logger.error(f"Failed to calculate performance scores: {e!s}", exc_info=True)
             # Not critical for C3D processing, continue without failing
 
-    async def _cache_session_analytics(self, session_id: str, processing_result: dict[str, Any]) -> None:
-        """Cache session analytics in Redis for high-performance retrieval"""
+    async def _cache_session_analytics(
+        self, session_id: str, processing_result: dict[str, Any]
+    ) -> None:
+        """Cache session analytics in Redis for high-performance retrieval."""
         try:
             analytics_data = processing_result.get("analytics", {})
             if not analytics_data:
@@ -811,11 +824,11 @@ class TherapySessionProcessor:
                     "total_channels": len(analytics_data),
                     "overall_compliance": self._calculate_compliance_score(analytics_data),
                     "processing_time_ms": processing_result.get("processing_time_ms", 0),
-                    "processed_at": datetime.now(timezone.utc).isoformat()
+                    "processed_at": datetime.now(timezone.utc).isoformat(),
                 },
                 "metadata": processing_result.get("metadata", {}),
                 # Cache version for schema evolution
-                "cache_version": "2.0"
+                "cache_version": "2.0",
             }
 
             # Cache in Redis with 24h TTL (configurable)
@@ -824,14 +837,18 @@ class TherapySessionProcessor:
             if success:
                 logger.info(f"📦 Cached analytics for session {session_id} in Redis")
             else:
-                logger.warning(f"⚠️ Failed to cache analytics for session {session_id} - continuing without cache")
+                logger.warning(
+                    f"⚠️ Failed to cache analytics for session {session_id} - continuing without cache"
+                )
 
         except Exception as e:
-            logger.error(f"Failed to cache session analytics: {e!s}")
+            logger.exception(f"Failed to cache session analytics: {e!s}")
             # Not critical, continue processing
 
-    async def _update_session_metadata(self, session_id: str, processing_result: dict[str, Any]) -> None:
-        """Update session with extracted game metadata and session timestamp"""
+    async def _update_session_metadata(
+        self, session_id: str, processing_result: dict[str, Any]
+    ) -> None:
+        """Update session with extracted game metadata and session timestamp."""
         try:
             metadata = processing_result.get("metadata", {})
 
@@ -844,12 +861,12 @@ class TherapySessionProcessor:
                     # Convert to UTC timezone for consistency
                     session_timestamp = parsed_dt.replace(tzinfo=timezone.utc).isoformat()
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"Failed to parse session timestamp '{metadata.get('time')}': {e!s}")
+                    logger.warning(
+                        f"Failed to parse session timestamp '{metadata.get('time')}': {e!s}"
+                    )
 
             # Update session with metadata
-            update_data = {
-                "game_metadata": metadata
-            }
+            update_data = {"game_metadata": metadata}
 
             # Add session_date if we successfully parsed the timestamp
             if session_timestamp:
@@ -862,15 +879,15 @@ class TherapySessionProcessor:
             logger.info(f"📊 Updated session metadata for: {session_id}")
 
         except Exception as e:
-            logger.error(f"Failed to update session metadata: {e!s}")
+            logger.exception(f"Failed to update session metadata: {e!s}")
             # Not critical, continue processing
 
     def _calculate_overall_score(self, processing_result: dict[str, Any]) -> float:
-        """Calculate overall session score as weighted average of all muscle compliance
-        
+        """Calculate overall session score as weighted average of all muscle compliance.
+
         Args:
             processing_result: Complete C3D processing result with analytics
-            
+
         Returns:
             float: Overall compliance score (0.0 to 1.0)
         """
@@ -890,15 +907,15 @@ class TherapySessionProcessor:
             return total_score / muscle_count if muscle_count > 0 else 0.0
 
         except Exception as e:
-            logger.error(f"Error calculating overall score: {e!s}")
+            logger.exception(f"Error calculating overall score: {e!s}")
             return 0.0
 
     def _calculate_compliance_score(self, analytics: dict[str, Any]) -> float:
-        """Calculate compliance score across all channels
-        
+        """Calculate compliance score across all channels.
+
         Args:
             analytics: Dictionary of channel analytics
-            
+
         Returns:
             float: Average compliance score (0.0 to 1.0)
         """
@@ -917,113 +934,143 @@ class TherapySessionProcessor:
             return total_compliance / channel_count if channel_count > 0 else 0.0
 
         except Exception as e:
-            logger.error(f"Error calculating compliance score: {e!s}")
+            logger.exception(f"Error calculating compliance score: {e!s}")
             return 0.0
 
     async def _populate_session_settings(
         self,
         session_id: str,
         processing_opts: ProcessingOptions,
-        session_params: GameSessionParameters
+        session_params: GameSessionParameters,
     ) -> None:
-        """Populate session_settings table with MVC thresholds, duration settings, and BFR configuration
-        
+        """Populate session_settings table with MVC thresholds, duration settings, and BFR configuration.
+
         Schema v2.1 compliance - ensures all session configuration is properly stored
         """
         try:
             session_settings_data = {
                 "session_id": session_id,
-
                 # MVC configuration from processing options or session parameters
-                "mvc_threshold_percentage": getattr(processing_opts, "mvc_threshold_percentage", 75.0),
-
+                "mvc_threshold_percentage": getattr(
+                    processing_opts, "mvc_threshold_percentage", 75.0
+                ),
                 # Duration thresholds from processing configuration
-                "duration_threshold_seconds": getattr(processing_opts, "duration_threshold_seconds", 2.0),
-
+                "duration_threshold_seconds": getattr(
+                    processing_opts, "duration_threshold_seconds", 2.0
+                ),
                 # Target contractions from session parameters
                 "target_contractions": getattr(session_params, "target_contractions", 12),
-                "expected_contractions_per_muscle": getattr(session_params, "expected_contractions_per_muscle", 12),
-
+                "expected_contractions_per_muscle": getattr(
+                    session_params, "expected_contractions_per_muscle", 12
+                ),
                 # BFR settings - enabled by default for GHOSTLY+ protocol
-                "bfr_enabled": getattr(session_params, "bfr_enabled", True)
+                "bfr_enabled": getattr(session_params, "bfr_enabled", True),
             }
 
             # Validate critical thresholds
-            if session_settings_data["mvc_threshold_percentage"] <= 0 or session_settings_data["mvc_threshold_percentage"] > 100:
-                logger.warning(f"Invalid MVC threshold {session_settings_data['mvc_threshold_percentage']}%, using default 75%")
+            if (
+                session_settings_data["mvc_threshold_percentage"] <= 0
+                or session_settings_data["mvc_threshold_percentage"] > 100
+            ):
+                logger.warning(
+                    f"Invalid MVC threshold {session_settings_data['mvc_threshold_percentage']}%, using default 75%"
+                )
                 session_settings_data["mvc_threshold_percentage"] = 75.0
 
             if session_settings_data["duration_threshold_seconds"] <= 0:
-                logger.warning(f"Invalid duration threshold {session_settings_data['duration_threshold_seconds']}s, using default 2.0s")
+                logger.warning(
+                    f"Invalid duration threshold {session_settings_data['duration_threshold_seconds']}s, using default 2.0s"
+                )
                 session_settings_data["duration_threshold_seconds"] = 2.0
 
             # Use upsert to handle potential duplicates
             await self._upsert_table("session_settings", session_settings_data, "session_id")
 
-            logger.info(f"📊 Session settings populated for session {session_id}: MVC {session_settings_data['mvc_threshold_percentage']}%, Duration {session_settings_data['duration_threshold_seconds']}s, BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}")
+            logger.info(
+                f"📊 Session settings populated for session {session_id}: MVC {session_settings_data['mvc_threshold_percentage']}%, Duration {session_settings_data['duration_threshold_seconds']}s, BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to populate session_settings for session {session_id}: {e!s}", exc_info=True)
+            logger.error(
+                f"Failed to populate session_settings for session {session_id}: {e!s}",
+                exc_info=True,
+            )
             raise TherapySessionError(f"Session settings population failed: {e!s}") from e
 
     async def _populate_bfr_monitoring(
         self,
         session_id: str,
         session_params: GameSessionParameters,
-        processing_result: dict[str, Any]
+        processing_result: dict[str, Any],
     ) -> None:
-        """Populate bfr_monitoring table with Blood Flow Restriction safety data
-        
+        """Populate bfr_monitoring table with Blood Flow Restriction safety data.
+
         Schema v2.1 compliance - ensures BFR safety monitoring is properly recorded
         """
         try:
             # Extract BFR pressure values first
-            target_pressure_aop = getattr(session_params, "target_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP)
-            actual_pressure_aop = getattr(session_params, "actual_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP)
+            target_pressure_aop = getattr(
+                session_params, "target_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP
+            )
+            actual_pressure_aop = getattr(
+                session_params, "actual_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP
+            )
 
             # Extract BFR data from session parameters or use clinical defaults
             bfr_monitoring_data = {
                 "session_id": session_id,
-
                 # Pressure monitoring (% of AOP - Arterial Occlusion Pressure)
                 "target_pressure_aop": target_pressure_aop,
                 "actual_pressure_aop": actual_pressure_aop,
-
                 # Convert AOP percentage to mmHg if available (typical conversion: 50% AOP ≈ 120-150 mmHg)
-                "cuff_pressure_mmhg": getattr(session_params, "cuff_pressure_mmhg",
-                                            actual_pressure_aop * 3.0),  # Realistic conversion
-
+                "cuff_pressure_mmhg": getattr(
+                    session_params, "cuff_pressure_mmhg", actual_pressure_aop * 3.0
+                ),  # Realistic conversion
                 # Blood pressure monitoring for safety
-                "systolic_bp_mmhg": getattr(session_params, "systolic_bp_mmhg", DevelopmentDefaults.SYSTOLIC_BP),
-                "diastolic_bp_mmhg": getattr(session_params, "diastolic_bp_mmhg", DevelopmentDefaults.DIASTOLIC_BP),
-
+                "systolic_bp_mmhg": getattr(
+                    session_params, "systolic_bp_mmhg", DevelopmentDefaults.SYSTOLIC_BP
+                ),
+                "diastolic_bp_mmhg": getattr(
+                    session_params, "diastolic_bp_mmhg", DevelopmentDefaults.DIASTOLIC_BP
+                ),
                 # Safety compliance (BFR should be 40-60% AOP for safety)
                 "safety_compliant": (40.0 <= actual_pressure_aop <= 60.0),
-
                 # Measurement metadata
                 "measurement_timestamp": processing_result.get("metadata", {}).get("timestamp"),
-                "measurement_method": "automatic"  # C3D processing provides automatic measurement
+                "measurement_method": "automatic",  # C3D processing provides automatic measurement
             }
 
             # Validate BFR safety ranges
             if bfr_monitoring_data["actual_pressure_aop"] > 60.0:
-                logger.warning(f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP exceeds safe range (≤60%), marking as non-compliant")
+                logger.warning(
+                    f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP exceeds safe range (≤60%), marking as non-compliant"
+                )
                 bfr_monitoring_data["safety_compliant"] = False
             elif bfr_monitoring_data["actual_pressure_aop"] < 40.0:
-                logger.warning(f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP below effective range (≥40%), marking as non-compliant")
+                logger.warning(
+                    f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP below effective range (≥40%), marking as non-compliant"
+                )
                 bfr_monitoring_data["safety_compliant"] = False
 
             # Validate blood pressure ranges
             if not (80 <= bfr_monitoring_data.get("systolic_bp_mmhg", 120) <= 250):
-                logger.warning(f"Systolic BP {bfr_monitoring_data.get('systolic_bp_mmhg')} outside safe range (80-250 mmHg)")
+                logger.warning(
+                    f"Systolic BP {bfr_monitoring_data.get('systolic_bp_mmhg')} outside safe range (80-250 mmHg)"
+                )
             if not (40 <= bfr_monitoring_data.get("diastolic_bp_mmhg", 80) <= 150):
-                logger.warning(f"Diastolic BP {bfr_monitoring_data.get('diastolic_bp_mmhg')} outside safe range (40-150 mmHg)")
+                logger.warning(
+                    f"Diastolic BP {bfr_monitoring_data.get('diastolic_bp_mmhg')} outside safe range (40-150 mmHg)"
+                )
 
             # Use upsert to handle potential duplicates
             await self._upsert_table("bfr_monitoring", bfr_monitoring_data, "session_id")
 
-            logger.info(f"🔄 BFR monitoring populated for session {session_id}: {bfr_monitoring_data['actual_pressure_aop']}% AOP, {'compliant' if bfr_monitoring_data['safety_compliant'] else 'NON-COMPLIANT'}")
+            logger.info(
+                f"🔄 BFR monitoring populated for session {session_id}: {bfr_monitoring_data['actual_pressure_aop']}% AOP, {'compliant' if bfr_monitoring_data['safety_compliant'] else 'NON-COMPLIANT'}"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to populate bfr_monitoring for session {session_id}: {e!s}", exc_info=True)
+            logger.error(
+                f"Failed to populate bfr_monitoring for session {session_id}: {e!s}", exc_info=True
+            )
             raise TherapySessionError(f"BFR monitoring population failed: {e!s}") from e

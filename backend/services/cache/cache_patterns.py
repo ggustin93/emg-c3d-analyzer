@@ -1,6 +1,7 @@
 """Advanced Caching Patterns for EMG Analysis
-Implements cache-aside pattern with pipeline operations
+Implements cache-aside pattern with pipeline operations.
 """
+
 import asyncio
 import json
 import logging
@@ -9,14 +10,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from .redis_cache import RedisCache, get_redis_cache
+from backend.services.cache.redis_cache import RedisCache, get_redis_cache
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class CacheEntry:
-    """Cache entry with metadata"""
+    """Cache entry with metadata."""
+
     data: Any
     created_at: datetime
     hits: int = 0
@@ -24,8 +26,8 @@ class CacheEntry:
 
 
 class CachePatterns:
-    """Advanced caching patterns for EMG analysis
-    
+    """Advanced caching patterns for EMG analysis.
+
     Patterns:
     - Cache-aside: Check cache first, load from source on miss
     - Pipeline operations: Batch multiple operations
@@ -37,23 +39,20 @@ class CachePatterns:
         self._refresh_tasks: list[asyncio.Task] = []
 
     async def initialize(self):
-        """Initialize with cache instance"""
+        """Initialize with cache instance."""
         if not self.cache:
             self.cache = await get_redis_cache()
 
     async def cache_aside_get(
-        self,
-        key: str,
-        loader_func: Callable[[], Any],
-        ttl: int = 3600
+        self, key: str, loader_func: Callable[[], Any], ttl: int = 3600
     ) -> Any:
-        """Cache-aside pattern: Check cache first, load from source on miss
-        
+        """Cache-aside pattern: Check cache first, load from source on miss.
+
         Args:
             key: Cache key
             loader_func: Function to load data if cache miss
             ttl: Time to live in seconds
-            
+
         Returns:
             Cached or freshly loaded data
         """
@@ -74,12 +73,12 @@ class CachePatterns:
             return data
 
         except Exception as e:
-            logger.error(f"Cache-aside error for {key}: {e!s}")
+            logger.exception(f"Cache-aside error for {key}: {e!s}")
             # Fallback to loader function
             return await self._safe_call(loader_func)
 
     async def batch_get(self, keys: list[str]) -> dict[str, Any]:
-        """Get multiple keys efficiently"""
+        """Get multiple keys efficiently."""
         if not self.cache or not self.cache.redis:
             return {}
 
@@ -106,11 +105,11 @@ class CachePatterns:
             return data
 
         except Exception as e:
-            logger.error(f"Batch get error: {e!s}")
+            logger.exception(f"Batch get error: {e!s}")
             return {}
 
     async def batch_set(self, data: dict[str, Any], ttl: int = 3600) -> dict[str, bool]:
-        """Set multiple keys efficiently"""
+        """Set multiple keys efficiently."""
         if not self.cache or not self.cache.redis:
             return dict.fromkeys(data.keys(), False)
 
@@ -122,7 +121,7 @@ class CachePatterns:
                 cache_data = {
                     "data": value,
                     "cached_at": datetime.utcnow().isoformat(),
-                    "cache_version": "1.0"
+                    "cache_version": "1.0",
                 }
 
                 cache_key = self.cache._cache_key(key)
@@ -132,35 +131,25 @@ class CachePatterns:
             results = await pipe.execute()
 
             # Build result status
-            return {
-                key: result is True
-                for key, result in zip(data.keys(), results)
-            }
+            return {key: result is True for key, result in zip(data.keys(), results)}
 
         except Exception as e:
-            logger.error(f"Batch set error: {e!s}")
+            logger.exception(f"Batch set error: {e!s}")
             return dict.fromkeys(data.keys(), False)
 
-    async def warm_cache(
-        self,
-        warming_configs: list[dict[str, Any]]
-    ) -> dict[str, bool]:
-        """Pre-warm cache with frequently accessed data
-        
+    async def warm_cache(self, warming_configs: list[dict[str, Any]]) -> dict[str, bool]:
+        """Pre-warm cache with frequently accessed data.
+
         Args:
             warming_configs: List of {key, loader_func, ttl, priority}
-            
+
         Returns:
             Dictionary of key -> success status
         """
         results = {}
 
         # Sort by priority (higher first)
-        sorted_configs = sorted(
-            warming_configs,
-            key=lambda x: x.get("priority", 0),
-            reverse=True
-        )
+        sorted_configs = sorted(warming_configs, key=lambda x: x.get("priority", 0), reverse=True)
 
         for config in sorted_configs:
             key = config["key"]
@@ -186,13 +175,13 @@ class CachePatterns:
                     results[key] = False
 
             except Exception as e:
-                logger.error(f"Cache warming failed for {key}: {e!s}")
+                logger.exception(f"Cache warming failed for {key}: {e!s}")
                 results[key] = False
 
         return results
 
     async def invalidate_by_pattern(self, pattern: str) -> int:
-        """Invalidate keys matching pattern"""
+        """Invalidate keys matching pattern."""
         if not self.cache or not self.cache.redis:
             return 0
 
@@ -209,11 +198,11 @@ class CachePatterns:
             return 0
 
         except Exception as e:
-            logger.error(f"Pattern invalidation error: {e!s}")
+            logger.exception(f"Pattern invalidation error: {e!s}")
             return 0
 
     async def refresh_ahead(self, key: str, loader_func: Callable, ttl: int = 3600):
-        """Refresh cache entry before expiration"""
+        """Refresh cache entry before expiration."""
         try:
             # Schedule background refresh
             task = asyncio.create_task(self._background_refresh(key, loader_func, ttl))
@@ -223,10 +212,10 @@ class CachePatterns:
             self._refresh_tasks = [t for t in self._refresh_tasks if not t.done()]
 
         except Exception as e:
-            logger.error(f"Refresh ahead error for {key}: {e!s}")
+            logger.exception(f"Refresh ahead error for {key}: {e!s}")
 
     async def _background_refresh(self, key: str, loader_func: Callable, ttl: int):
-        """Background task to refresh cache entry"""
+        """Background task to refresh cache entry."""
         try:
             data = await self._safe_call(loader_func)
             if data is not None:
@@ -234,21 +223,21 @@ class CachePatterns:
                 logger.debug(f"🔄 Refreshed cache for key: {key}")
 
         except Exception as e:
-            logger.error(f"Background refresh error for {key}: {e!s}")
+            logger.exception(f"Background refresh error for {key}: {e!s}")
 
     async def _safe_call(self, func: Callable, *args, **kwargs) -> Any:
-        """Safely call function with error handling"""
+        """Safely call function with error handling."""
         try:
             if asyncio.iscoroutinefunction(func):
                 return await func(*args, **kwargs)
             else:
                 return func(*args, **kwargs)
         except Exception as e:
-            logger.error(f"Function call error: {e!s}")
+            logger.exception(f"Function call error: {e!s}")
             return None
 
     async def close(self):
-        """Cleanup background tasks"""
+        """Cleanup background tasks."""
         for task in self._refresh_tasks:
             task.cancel()
         self._refresh_tasks.clear()
@@ -259,7 +248,7 @@ _patterns_instance: CachePatterns | None = None
 
 
 async def get_cache_patterns() -> CachePatterns:
-    """Get singleton cache patterns instance"""
+    """Get singleton cache patterns instance."""
     global _patterns_instance
 
     if _patterns_instance is None:

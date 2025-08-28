@@ -1,4 +1,4 @@
-"""Shared Services Components
+"""Shared Services Components.
 ============================
 
 Common components and patterns shared across all domain services.
@@ -8,9 +8,6 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from .repositories import AbstractRepository, RepositoryError
+from backend.services.shared.repositories import AbstractRepository, RepositoryError
 
-__all__ = [
-    "AbstractRepository",
-    "RepositoryError"
-]
+__all__ = ["AbstractRepository", "RepositoryError"]

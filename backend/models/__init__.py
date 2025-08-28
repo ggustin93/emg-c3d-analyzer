@@ -1,5 +1,4 @@
-"""
-EMG C3D Analyzer Data Models
+"""EMG C3D Analyzer Data Models.
 ============================
 
 Domain-driven model architecture aligned with services layer.
@@ -7,7 +6,7 @@ Provides centralized import aggregation with backward compatibility.
 
 Architecture:
 - shared/: Foundational enums and base models
-- api/: API request/response models  
+- api/: API request/response models
 - user/: User management domain
 - clinical/: Clinical workflow domain (patients, sessions, scoring)
 - data/: Data processing domain (C3D, processing parameters)
@@ -20,86 +19,115 @@ Date: 2025-08-28
 # =============================================================================
 # SHARED COMPONENTS (FOUNDATIONAL)
 # =============================================================================
-from .shared import *
-
 # =============================================================================
 # API MODELS (INTERFACE LAYER)
 # =============================================================================
-from .api import *
-
-# =============================================================================
-# DOMAIN MODELS (BUSINESS LOGIC)
-# =============================================================================
-from .user import *
-from .clinical import *
-from .data import *
+from backend.models.api import *
+from backend.models.clinical import *
+from backend.models.data import *
 
 # =============================================================================
 # RESPONSE MODELS (OUTPUT LAYER)
 # =============================================================================
-from .response import *
+from backend.models.response import *
+from backend.models.shared import *
+
+# =============================================================================
+# DOMAIN MODELS (BUSINESS LOGIC)
+# =============================================================================
+from backend.models.user import *
 
 # =============================================================================
 # BACKWARD COMPATIBILITY EXPORTS
 # =============================================================================
 # All imports from the original models.py and database_models.py continue to work
 __all__ = [
+    "AccessLevel",
+    "AgeGroup",
+    # Monitoring models
+    "BFRMonitoring",
+    "BFRMonitoringCreate",
+    "BFRMonitoringUpdate",
     # =======================================================================
-    # SHARED COMPONENTS
+    # DATA DOMAIN
     # =======================================================================
-    # Enums
-    'UserRole', 'AccessLevel', 'Gender', 'AgeGroup', 'ProcessingStatus', 'MeasurementMethod',
-    
+    "C3DTechnicalData",
+    "C3DTechnicalDataCreate",
+    "C3DTechnicalDataUpdate",
+    "ChannelAnalytics",
+    "Contraction",
     # Base models
-    'DatabaseBaseModel', 'TimestampMixin',
-    
-    # =======================================================================
-    # API MODELS (from original models.py)
-    # =======================================================================
-    'TemporalAnalysisStats', 'Contraction', 'ChannelAnalytics', 'GameSessionParameters',
-    'GameMetadata', 'ProcessingOptions', 'EMGChannelSignalData', 'EMGAnalysisResult', 'EMGRawData',
-    
-    # =======================================================================
-    # USER DOMAIN
-    # =======================================================================
-    'UserProfile', 'UserProfileCreate', 'UserProfileUpdate',
-    
+    "DatabaseBaseModel",
+    "EMGAnalysisResult",
+    "EMGChannelSignalData",
+    "EMGRawData",
+    "EMGStatistics",
+    "EMGStatisticsCreate",
+    "EMGStatisticsUpdate",
+    "GameMetadata",
+    "GameSessionParameters",
+    "Gender",
+    "MeasurementMethod",
+    "PaginatedResponse",
     # =======================================================================
     # CLINICAL DOMAIN
     # =======================================================================
     # Patient models
-    'Patient', 'PatientCreate', 'PatientUpdate', 'PatientPII', 'PatientPIICreate', 'PatientPIIUpdate',
-    'PatientAuthToken', 'PatientAuthTokenCreate', 'PatientWithPII',
-    
-    # Session models
-    'TherapySession', 'TherapySessionCreate', 'TherapySessionUpdate',
-    'EMGStatistics', 'EMGStatisticsCreate', 'EMGStatisticsUpdate',
-    'SessionSettings', 'SessionSettingsCreate', 'SessionSettingsUpdate',
-    'TherapySessionWithDetails',
-    
+    "Patient",
+    "PatientAuthToken",
+    "PatientAuthTokenCreate",
+    "PatientCreate",
+    "PatientPII",
+    "PatientPIICreate",
+    "PatientPIIUpdate",
+    "PatientUpdate",
+    "PatientWithPII",
+    "PerformanceScores",
+    "PerformanceScoresCreate",
+    "PerformanceScoresUpdate",
+    "ProcessingOptions",
+    "ProcessingParameters",
+    "ProcessingParametersCreate",
+    "ProcessingParametersUpdate",
+    "ProcessingStatus",
     # Scoring models
-    'ScoringConfiguration', 'ScoringConfigurationCreate', 'ScoringConfigurationUpdate',
-    'PerformanceScores', 'PerformanceScoresCreate', 'PerformanceScoresUpdate',
-    'ScoringConfigurationWithScores',
-    
-    # Monitoring models
-    'BFRMonitoring', 'BFRMonitoringCreate', 'BFRMonitoringUpdate',
-    
-    # =======================================================================
-    # DATA DOMAIN
-    # =======================================================================
-    'C3DTechnicalData', 'C3DTechnicalDataCreate', 'C3DTechnicalDataUpdate',
-    'ProcessingParameters', 'ProcessingParametersCreate', 'ProcessingParametersUpdate',
-    
+    "ScoringConfiguration",
+    "ScoringConfigurationCreate",
+    "ScoringConfigurationUpdate",
+    "ScoringConfigurationWithScores",
+    "SessionSettings",
+    "SessionSettingsCreate",
+    "SessionSettingsUpdate",
     # =======================================================================
     # RESPONSE MODELS
     # =======================================================================
-    'StandardResponse', 'PaginatedResponse',
-    
+    "StandardResponse",
+    # =======================================================================
+    # API MODELS (from original models.py)
+    # =======================================================================
+    "TemporalAnalysisStats",
+    # Session models
+    "TherapySession",
+    "TherapySessionCreate",
+    "TherapySessionUpdate",
+    "TherapySessionWithDetails",
+    "TimestampMixin",
+    # =======================================================================
+    # USER DOMAIN
+    # =======================================================================
+    "UserProfile",
+    "UserProfileCreate",
+    "UserProfileUpdate",
+    # =======================================================================
+    # SHARED COMPONENTS
+    # =======================================================================
+    # Enums
+    "UserRole",
+    "validate_patient_code",
     # =======================================================================
     # VALIDATION HELPERS
     # =======================================================================
-    'validate_uuid4', 'validate_patient_code'
+    "validate_uuid4",
 ]
 
 # =============================================================================

@@ -1,12 +1,9 @@
-"""
-User Domain Models
+"""User Domain Models.
 ==================
 
 User management models including profiles, authentication, and role-based access.
 """
 
-from .models import *
+from backend.models.user.models import *
 
-__all__ = [
-    'UserProfile', 'UserProfileCreate', 'UserProfileUpdate'
-]
+__all__ = ["UserProfile", "UserProfileCreate", "UserProfileUpdate"]

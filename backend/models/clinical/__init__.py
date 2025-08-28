@@ -1,32 +1,47 @@
-"""
-Clinical Domain Models
+"""Clinical Domain Models.
 ======================
 
 Models for clinical workflow including patients, therapy sessions, scoring, and monitoring.
 Aligned with services/clinical/ domain architecture.
 """
 
-from .patient import *
-from .session import *
-from .scoring import *
-from .monitoring import *
+from backend.models.clinical.monitoring import *
+from backend.models.clinical.patient import *
+from backend.models.clinical.scoring import *
+from backend.models.clinical.session import *
 
 __all__ = [
-    # Patient models
-    'Patient', 'PatientCreate', 'PatientUpdate', 'PatientPII', 'PatientPIICreate', 'PatientPIIUpdate',
-    'PatientAuthToken', 'PatientAuthTokenCreate', 'PatientWithPII',
-    
-    # Session models  
-    'TherapySession', 'TherapySessionCreate', 'TherapySessionUpdate',
-    'EMGStatistics', 'EMGStatisticsCreate', 'EMGStatisticsUpdate',
-    'SessionSettings', 'SessionSettingsCreate', 'SessionSettingsUpdate',
-    'TherapySessionWithDetails',
-    
-    # Scoring models
-    'ScoringConfiguration', 'ScoringConfigurationCreate', 'ScoringConfigurationUpdate',
-    'PerformanceScores', 'PerformanceScoresCreate', 'PerformanceScoresUpdate',
-    'ScoringConfigurationWithScores',
-    
     # Monitoring models
-    'BFRMonitoring', 'BFRMonitoringCreate', 'BFRMonitoringUpdate',
+    "BFRMonitoring",
+    "BFRMonitoringCreate",
+    "BFRMonitoringUpdate",
+    "EMGStatistics",
+    "EMGStatisticsCreate",
+    "EMGStatisticsUpdate",
+    # Patient models
+    "Patient",
+    "PatientAuthToken",
+    "PatientAuthTokenCreate",
+    "PatientCreate",
+    "PatientPII",
+    "PatientPIICreate",
+    "PatientPIIUpdate",
+    "PatientUpdate",
+    "PatientWithPII",
+    "PerformanceScores",
+    "PerformanceScoresCreate",
+    "PerformanceScoresUpdate",
+    # Scoring models
+    "ScoringConfiguration",
+    "ScoringConfigurationCreate",
+    "ScoringConfigurationUpdate",
+    "ScoringConfigurationWithScores",
+    "SessionSettings",
+    "SessionSettingsCreate",
+    "SessionSettingsUpdate",
+    # Session models
+    "TherapySession",
+    "TherapySessionCreate",
+    "TherapySessionUpdate",
+    "TherapySessionWithDetails",
 ]

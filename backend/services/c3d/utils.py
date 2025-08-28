@@ -1,6 +1,7 @@
 """Shared C3D utilities to eliminate code duplication
-Simple, focused utility functions for C3D metadata extraction
+Simple, focused utility functions for C3D metadata extraction.
 """
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -13,22 +14,22 @@ logger = logging.getLogger(__name__)
 
 
 class C3DUtils:
-    """Shared utilities for C3D file operations
-    
+    """Shared utilities for C3D file operations.
+
     KISS Principle: Simple utility functions to eliminate duplication
     between c3d_processor.py and c3d_reader.py
     """
 
     @staticmethod
     def extract_game_metadata_from_c3d(c3d_data) -> dict[str, Any]:
-        """Extract game metadata from loaded C3D data
-        
+        """Extract game metadata from loaded C3D data.
+
         Used by both c3d_processor.py and therapy_session_processor.py
         to eliminate duplicate field mapping logic
-        
+
         Args:
             c3d_data: Loaded C3D data from ezc3d
-            
+
         Returns:
             Dict with standardized game metadata fields
         """
@@ -46,7 +47,7 @@ class C3DUtils:
                     "DURATION": "duration",
                     "THERAPIST_ID": "therapist_id",
                     "GROUP_ID": "group_id",
-                    "TIME": "time"
+                    "TIME": "time",
                 }
 
                 for c3d_field, output_field in field_mappings.items():
@@ -90,16 +91,16 @@ class C3DUtils:
             return metadata
 
         except Exception as e:
-            logger.error(f"Failed to extract C3D metadata: {e!s}")
+            logger.exception(f"Failed to extract C3D metadata: {e!s}")
             return {}
 
     @staticmethod
     def load_c3d_file(file_path: str):
-        """Load C3D file using ezc3d library
-        
+        """Load C3D file using ezc3d library.
+
         Args:
             file_path: Path to C3D file
-            
+
         Returns:
             Loaded C3D data or None if failed
         """
@@ -110,16 +111,16 @@ class C3DUtils:
         try:
             return ezc3d.c3d(file_path)
         except Exception as e:
-            logger.error(f"Failed to load C3D file {file_path}: {e!s}")
+            logger.exception(f"Failed to load C3D file {file_path}: {e!s}")
             return None
 
     @staticmethod
     def get_technical_summary(metadata: dict[str, Any]) -> str:
-        """Generate a technical summary string for logging
-        
+        """Generate a technical summary string for logging.
+
         Args:
             metadata: C3D metadata dictionary
-            
+
         Returns:
             Human-readable summary string
         """

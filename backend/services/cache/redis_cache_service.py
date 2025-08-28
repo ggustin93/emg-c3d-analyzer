@@ -1,4 +1,4 @@
-"""Redis Cache Service - High-Performance Analytics Caching
+"""Redis Cache Service - High-Performance Analytics Caching.
 ========================================================
 
 🎯 PURPOSE: Redis-based caching system replacing database analytics_cache fields
@@ -14,7 +14,7 @@
 - Automatic fallback to database if Redis unavailable
 
 📊 CACHE STRUCTURE:
-- Key Pattern: "session:{session_id}:analytics" 
+- Key Pattern: "session:{session_id}:analytics"
 - Value: JSON serialized analytics data with metadata
 - TTL: 24 hours default (configurable)
 - Compression: Optional gzip compression for large payloads
@@ -41,6 +41,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 try:
     import redis
     from redis import ConnectionPool, Redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -65,9 +66,11 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class CacheStats:
-    """Cache statistics for monitoring performance"""
+    """Cache statistics for monitoring performance."""
+
     hits: int = 0
     misses: int = 0
     sets: int = 0
@@ -78,19 +81,21 @@ class CacheStats:
     last_reset: datetime = None
 
     def calculate_hit_rate(self) -> float:
-        """Calculate current hit rate percentage"""
+        """Calculate current hit rate percentage."""
         if self.total_requests == 0:
             return 0.0
         return (self.hits / self.total_requests) * 100.0
 
     def update_hit_rate(self) -> None:
-        """Update hit rate after new operation"""
+        """Update hit rate after new operation."""
         self.total_requests = self.hits + self.misses
         self.hit_rate = self.calculate_hit_rate()
 
+
 @dataclass
 class CacheEntry:
-    """Structured cache entry with metadata"""
+    """Structured cache entry with metadata."""
+
     session_id: str
     data: dict[str, Any]
     created_at: datetime
@@ -100,7 +105,7 @@ class CacheEntry:
     compression_enabled: bool = False
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
+        """Convert to dictionary for JSON serialization."""
         return {
             "session_id": self.session_id,
             "data": self.data,
@@ -108,12 +113,12 @@ class CacheEntry:
             "last_accessed": self.last_accessed.isoformat(),
             "access_count": self.access_count,
             "data_size_bytes": self.data_size_bytes,
-            "compression_enabled": self.compression_enabled
+            "compression_enabled": self.compression_enabled,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CacheEntry":
-        """Create CacheEntry from dictionary"""
+        """Create CacheEntry from dictionary."""
         return cls(
             session_id=data["session_id"],
             data=data["data"],
@@ -121,15 +126,16 @@ class CacheEntry:
             last_accessed=datetime.fromisoformat(data["last_accessed"]),
             access_count=data.get("access_count", 1),
             data_size_bytes=data.get("data_size_bytes", 0),
-            compression_enabled=data.get("compression_enabled", False)
+            compression_enabled=data.get("compression_enabled", False),
         )
 
+
 class RedisCacheService:
-    """High-performance Redis cache service for EMG analytics data
-    
+    """High-performance Redis cache service for EMG analytics data.
+
     Replaces database analytics cache with in-memory Redis storage for:
     - Faster analytics retrieval (~100x improvement)
-    - Reduced database load 
+    - Reduced database load
     - Automatic TTL-based expiration
     - Cache statistics and monitoring
     - Graceful fallback when Redis unavailable
@@ -140,10 +146,10 @@ class RedisCacheService:
         redis_url: str | None = None,
         default_ttl_hours: int = DEFAULT_CACHE_TTL_HOURS,
         enable_compression: bool = ENABLE_REDIS_COMPRESSION,
-        key_prefix: str = REDIS_KEY_PREFIX
+        key_prefix: str = REDIS_KEY_PREFIX,
     ):
-        """Initialize Redis cache service
-        
+        """Initialize Redis cache service.
+
         Args:
             redis_url: Redis connection URL (falls back to config)
             default_ttl_hours: Default TTL for cache entries
@@ -165,9 +171,11 @@ class RedisCacheService:
         self._initialize_redis()
 
     def _initialize_redis(self) -> None:
-        """Initialize Redis connection with retry logic"""
+        """Initialize Redis connection with retry logic."""
         if not REDIS_AVAILABLE:
-            logger.warning("⚠️ Redis library not available. Cache service will operate in fallback mode.")
+            logger.warning(
+                "⚠️ Redis library not available. Cache service will operate in fallback mode."
+            )
             return
 
         try:
@@ -179,7 +187,7 @@ class RedisCacheService:
                 "password": REDIS_PASSWORD,
                 "socket_timeout": REDIS_SOCKET_TIMEOUT,
                 "max_connections": REDIS_CONNECTION_POOL_SIZE,
-                "retry_on_timeout": REDIS_RETRY_ON_TIMEOUT
+                "retry_on_timeout": REDIS_RETRY_ON_TIMEOUT,
             }
 
             # Add SSL configuration if enabled
@@ -199,7 +207,9 @@ class RedisCacheService:
 
             logger.info("✅ Redis cache service initialized successfully")
             logger.info(f"   Host: {REDIS_HOST}:{REDIS_PORT} | DB: {REDIS_DB}")
-            logger.info(f"   TTL: {self.default_ttl_seconds}s | Compression: {self.enable_compression}")
+            logger.info(
+                f"   TTL: {self.default_ttl_seconds}s | Compression: {self.enable_compression}"
+            )
 
             # Set Redis memory policy if specified
             if REDIS_MAX_MEMORY_POLICY:
@@ -210,13 +220,13 @@ class RedisCacheService:
                     logger.warning(f"Failed to set Redis memory policy: {e}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Redis connection: {e!s}")
+            logger.exception(f"❌ Failed to initialize Redis connection: {e!s}")
             logger.warning("🔄 Cache service will operate in fallback mode (no caching)")
             self._connected = False
 
     @contextmanager
     def _safe_redis_operation(self, operation_name: str):
-        """Context manager for safe Redis operations with error handling"""
+        """Context manager for safe Redis operations with error handling."""
         if not self._connected or not self._redis:
             yield None
             return
@@ -224,23 +234,23 @@ class RedisCacheService:
         try:
             yield self._redis
         except Exception as e:
-            logger.error(f"Redis {operation_name} failed: {e!s}")
+            logger.exception(f"Redis {operation_name} failed: {e!s}")
             self.stats.errors += 1
             # Consider reconnection logic here if needed
             yield None
 
     def _generate_cache_key(self, session_id: str, suffix: str = "analytics") -> str:
-        """Generate standardized cache key"""
+        """Generate standardized cache key."""
         return f"{self.key_prefix}:session:{session_id}:{suffix}"
 
     def _compress_data(self, data: bytes) -> bytes:
-        """Compress data using gzip if enabled"""
+        """Compress data using gzip if enabled."""
         if not self.enable_compression:
             return data
         return gzip.compress(data)
 
     def _decompress_data(self, data: bytes) -> bytes:
-        """Decompress gzip data if compressed"""
+        """Decompress gzip data if compressed."""
         if not self.enable_compression:
             return data
         try:
@@ -250,7 +260,7 @@ class RedisCacheService:
             return data
 
     def _serialize_entry(self, entry: CacheEntry) -> bytes:
-        """Serialize cache entry to bytes with optional compression"""
+        """Serialize cache entry to bytes with optional compression."""
         json_data = json.dumps(entry.to_dict()).encode("utf-8")
         entry.data_size_bytes = len(json_data)
 
@@ -262,28 +272,25 @@ class RedisCacheService:
         return json_data
 
     def _deserialize_entry(self, data: bytes) -> CacheEntry | None:
-        """Deserialize bytes to cache entry with decompression"""
+        """Deserialize bytes to cache entry with decompression."""
         try:
             decompressed_data = self._decompress_data(data)
             entry_dict = json.loads(decompressed_data.decode("utf-8"))
             return CacheEntry.from_dict(entry_dict)
         except Exception as e:
-            logger.error(f"Failed to deserialize cache entry: {e!s}")
+            logger.exception(f"Failed to deserialize cache entry: {e!s}")
             return None
 
     def set_session_analytics(
-        self,
-        session_id: str,
-        analytics_data: dict[str, Any],
-        ttl_hours: int | None = None
+        self, session_id: str, analytics_data: dict[str, Any], ttl_hours: int | None = None
     ) -> bool:
-        """Cache session analytics data
-        
+        """Cache session analytics data.
+
         Args:
             session_id: Therapy session UUID
             analytics_data: EMG analytics data to cache
             ttl_hours: Optional custom TTL (uses default if None)
-            
+
         Returns:
             bool: True if cached successfully, False otherwise
         """
@@ -298,10 +305,7 @@ class RedisCacheService:
             # Create cache entry with metadata
             now = datetime.now(timezone.utc)
             cache_entry = CacheEntry(
-                session_id=session_id,
-                data=analytics_data,
-                created_at=now,
-                last_accessed=now
+                session_id=session_id, data=analytics_data, created_at=now, last_accessed=now
             )
 
             # Serialize and store
@@ -310,29 +314,27 @@ class RedisCacheService:
                     return False
 
                 serialized_data = self._serialize_entry(cache_entry)
-                result = redis_client.setex(
-                    cache_key,
-                    ttl_seconds,
-                    serialized_data
-                )
+                result = redis_client.setex(cache_key, ttl_seconds, serialized_data)
 
                 if result:
                     self.stats.sets += 1
-                    logger.debug(f"📦 Cached analytics for session {session_id} (TTL: {ttl_seconds}s)")
+                    logger.debug(
+                        f"📦 Cached analytics for session {session_id} (TTL: {ttl_seconds}s)"
+                    )
                     return True
 
         except Exception as e:
-            logger.error(f"Failed to cache session analytics: {e!s}")
+            logger.exception(f"Failed to cache session analytics: {e!s}")
             self.stats.errors += 1
 
         return False
 
     def get_session_analytics(self, session_id: str) -> dict[str, Any] | None:
-        """Retrieve cached session analytics data
-        
+        """Retrieve cached session analytics data.
+
         Args:
             session_id: Therapy session UUID
-            
+
         Returns:
             dict: Analytics data if found, None otherwise
         """
@@ -376,12 +378,14 @@ class RedisCacheService:
 
                 self.stats.hits += 1
                 self.stats.update_hit_rate()
-                logger.debug(f"📬 Cache hit for session {session_id} (accessed {cache_entry.access_count} times)")
+                logger.debug(
+                    f"📬 Cache hit for session {session_id} (accessed {cache_entry.access_count} times)"
+                )
 
                 return cache_entry.data
 
         except Exception as e:
-            logger.error(f"Failed to retrieve cached analytics: {e!s}")
+            logger.exception(f"Failed to retrieve cached analytics: {e!s}")
             self.stats.errors += 1
             self.stats.misses += 1
             self.stats.update_hit_rate()
@@ -389,11 +393,11 @@ class RedisCacheService:
         return None
 
     def delete_session_analytics(self, session_id: str) -> bool:
-        """Delete cached session analytics
-        
+        """Delete cached session analytics.
+
         Args:
             session_id: Therapy session UUID
-            
+
         Returns:
             bool: True if deleted successfully, False otherwise
         """
@@ -415,14 +419,14 @@ class RedisCacheService:
                     return True
 
         except Exception as e:
-            logger.error(f"Failed to delete cached analytics: {e!s}")
+            logger.exception(f"Failed to delete cached analytics: {e!s}")
             self.stats.errors += 1
 
         return False
 
     def get_cache_stats(self) -> dict[str, Any]:
-        """Get comprehensive cache statistics
-        
+        """Get comprehensive cache statistics.
+
         Returns:
             dict: Cache performance metrics
         """
@@ -439,7 +443,7 @@ class RedisCacheService:
                         "used_memory_human": info.get("used_memory_human"),
                         "connected_clients": info.get("connected_clients"),
                         "total_commands_processed": info.get("total_commands_processed"),
-                        "uptime_in_seconds": info.get("uptime_in_seconds")
+                        "uptime_in_seconds": info.get("uptime_in_seconds"),
                     }
         except Exception:
             pass
@@ -449,23 +453,23 @@ class RedisCacheService:
                 "connected": self._connected,
                 "compression_enabled": self.enable_compression,
                 "default_ttl_hours": self.default_ttl_seconds / 3600,
-                "key_prefix": self.key_prefix
+                "key_prefix": self.key_prefix,
             },
             "performance_stats": asdict(self.stats),
-            "redis_server": redis_info
+            "redis_server": redis_info,
         }
 
     def reset_stats(self) -> None:
-        """Reset cache statistics"""
+        """Reset cache statistics."""
         self.stats = CacheStats(last_reset=datetime.now(timezone.utc))
         logger.info("📊 Cache statistics reset")
 
     def warm_cache_for_recent_sessions(self, hours: int = 24) -> int:
-        """Warm cache with recently processed sessions (requires database integration)
-        
+        """Warm cache with recently processed sessions (requires database integration).
+
         Args:
             hours: Look back period in hours
-            
+
         Returns:
             int: Number of sessions warmed
         """
@@ -475,8 +479,8 @@ class RedisCacheService:
         return 0
 
     def get_cached_session_list(self) -> list[str]:
-        """Get list of all cached session IDs
-        
+        """Get list of all cached session IDs.
+
         Returns:
             list: Session IDs that have cached data
         """
@@ -501,13 +505,13 @@ class RedisCacheService:
                         session_ids.append(parts[2])  # session ID is 3rd part
 
         except Exception as e:
-            logger.error(f"Failed to retrieve cached session list: {e!s}")
+            logger.exception(f"Failed to retrieve cached session list: {e!s}")
 
         return session_ids
 
     def cleanup_expired_entries(self) -> int:
-        """Manual cleanup of expired entries (Redis handles this automatically with TTL)
-        
+        """Manual cleanup of expired entries (Redis handles this automatically with TTL).
+
         Returns:
             int: Number of entries cleaned (always 0 as Redis handles TTL)
         """
@@ -515,8 +519,8 @@ class RedisCacheService:
         return 0
 
     def health_check(self) -> dict[str, Any]:
-        """Perform health check on Redis cache service
-        
+        """Perform health check on Redis cache service.
+
         Returns:
             dict: Health status and diagnostics
         """
@@ -524,7 +528,7 @@ class RedisCacheService:
             "service": "RedisCacheService",
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "checks": {}
+            "checks": {},
         }
 
         # Test Redis connectivity
@@ -534,19 +538,16 @@ class RedisCacheService:
                     response = redis_client.ping()
                     health_status["checks"]["redis_connection"] = {
                         "status": "pass" if response else "fail",
-                        "response_time_ms": 0  # Could add timing here
+                        "response_time_ms": 0,  # Could add timing here
                     }
                 else:
                     health_status["checks"]["redis_connection"] = {
                         "status": "fail",
-                        "error": "Redis client not available"
+                        "error": "Redis client not available",
                     }
                     health_status["status"] = "degraded"
         except Exception as e:
-            health_status["checks"]["redis_connection"] = {
-                "status": "fail",
-                "error": str(e)
-            }
+            health_status["checks"]["redis_connection"] = {"status": "fail", "error": str(e)}
             health_status["status"] = "unhealthy"
 
         # Check cache performance
@@ -554,27 +555,28 @@ class RedisCacheService:
             health_status["checks"]["cache_performance"] = {
                 "status": "pass" if self.stats.hit_rate > 50.0 else "warn",
                 "hit_rate_percent": self.stats.hit_rate,
-                "total_requests": self.stats.total_requests
+                "total_requests": self.stats.total_requests,
             }
 
         return health_status
 
     def close(self) -> None:
-        """Cleanup Redis connections"""
+        """Cleanup Redis connections."""
         try:
             if self._connection_pool:
                 self._connection_pool.disconnect()
             logger.info("🔌 Redis cache service connections closed")
         except Exception as e:
-            logger.error(f"Error closing Redis connections: {e!s}")
+            logger.exception(f"Error closing Redis connections: {e!s}")
 
 
 # Global cache service instance (singleton pattern)
 _cache_service_instance: RedisCacheService | None = None
 
+
 def get_cache_service() -> RedisCacheService:
-    """Get singleton Redis cache service instance
-    
+    """Get singleton Redis cache service instance.
+
     Returns:
         RedisCacheService: Configured cache service instance
     """
@@ -585,23 +587,29 @@ def get_cache_service() -> RedisCacheService:
 
     return _cache_service_instance
 
+
 def reset_cache_service() -> None:
-    """Reset the singleton cache service (useful for testing)"""
+    """Reset the singleton cache service (useful for testing)."""
     global _cache_service_instance
 
     if _cache_service_instance:
         _cache_service_instance.close()
         _cache_service_instance = None
 
+
 # Backward compatibility helper functions
-def cache_session_analytics(session_id: str, analytics_data: dict[str, Any], ttl_hours: int = None) -> bool:
-    """Helper function for caching session analytics"""
+def cache_session_analytics(
+    session_id: str, analytics_data: dict[str, Any], ttl_hours: int | None = None
+) -> bool:
+    """Helper function for caching session analytics."""
     return get_cache_service().set_session_analytics(session_id, analytics_data, ttl_hours)
 
+
 def get_cached_session_analytics(session_id: str) -> dict[str, Any] | None:
-    """Helper function for retrieving cached session analytics"""
+    """Helper function for retrieving cached session analytics."""
     return get_cache_service().get_session_analytics(session_id)
 
+
 def delete_cached_session_analytics(session_id: str) -> bool:
-    """Helper function for deleting cached session analytics"""
+    """Helper function for deleting cached session analytics."""
     return get_cache_service().delete_session_analytics(session_id)

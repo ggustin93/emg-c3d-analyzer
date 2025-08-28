@@ -1,7 +1,7 @@
-"""Unified Threshold Service - Professional MVC & Duration Threshold Management
+"""Unified Threshold Service - Professional MVC & Duration Threshold Management.
 
 Senior Software Engineer Implementation:
-- Signal-agnostic threshold calculation 
+- Signal-agnostic threshold calculation
 - MVC zero-value intelligent fallback
 - Clinical minimum validation
 - Single source of truth pattern
@@ -18,9 +18,8 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
+from backend.services.analysis.mvc_service import MVCEstimation, MVCService
 from models import GameSessionParameters
-
-from .mvc_service import MVCEstimation, MVCService
 
 logger = logging.getLogger(__name__)
 
@@ -30,31 +29,32 @@ class UnifiedThresholds:
     """Unified threshold data structure for a single channel.
     Signal-agnostic: same thresholds apply to Raw, Activated, and RMS signals.
     """
-    channel: str                        # Base channel name (e.g., "CH1")
-    muscle_name: str                    # Human-readable muscle name
-    mvc_threshold_value: float          # Calculated MVC threshold in volts
-    mvc_base_value: float               # Base MVC value used for calculation
-    mvc_percentage: float               # Percentage used (typically 75%)
-    duration_threshold_ms: int          # Duration threshold in milliseconds
-    confidence_score: float             # MVC estimation confidence (0.0-1.0)
-    source: str                         # Data source: 'database'|'signal'|'session'|'fallback'
-    timestamp: datetime                 # Calculation timestamp
-    signal_agnostic: bool = True        # Always True - same for all signal types
+
+    channel: str  # Base channel name (e.g., "CH1")
+    muscle_name: str  # Human-readable muscle name
+    mvc_threshold_value: float  # Calculated MVC threshold in volts
+    mvc_base_value: float  # Base MVC value used for calculation
+    mvc_percentage: float  # Percentage used (typically 75%)
+    duration_threshold_ms: int  # Duration threshold in milliseconds
+    confidence_score: float  # MVC estimation confidence (0.0-1.0)
+    source: str  # Data source: 'database'|'signal'|'session'|'fallback'
+    timestamp: datetime  # Calculation timestamp
+    signal_agnostic: bool = True  # Always True - same for all signal types
 
 
 class UnifiedThresholdService:
     """Professional threshold management service implementing:
     - Single source of truth for all threshold calculations
-    - Intelligent MVC zero-value fallback hierarchy  
+    - Intelligent MVC zero-value fallback hierarchy
     - Signal-agnostic threshold application
     - Clinical minimum validation
-    - Comprehensive error handling and logging
+    - Comprehensive error handling and logging.
     """
 
     # Clinical Constants - Evidence-Based Values
-    CLINICAL_MINIMUM_MVC = 0.05         # 50μV - clinically meaningful minimum
-    FALLBACK_MVC_VALUE = 0.08           # 80μV - reasonable clinical fallback
-    CONFIDENCE_THRESHOLD = 0.3          # Minimum confidence for MVC estimation
+    CLINICAL_MINIMUM_MVC = 0.05  # 50μV - clinically meaningful minimum
+    FALLBACK_MVC_VALUE = 0.08  # 80μV - reasonable clinical fallback
+    CONFIDENCE_THRESHOLD = 0.3  # Minimum confidence for MVC estimation
 
     def __init__(self, mvc_service: MVCService | None = None):
         """Initialize with optional MVC service dependency injection."""
@@ -65,19 +65,19 @@ class UnifiedThresholdService:
         channel: str,
         session_params: GameSessionParameters,
         signal_data: np.ndarray | None = None,
-        sampling_rate: int | None = None
+        sampling_rate: int | None = None,
     ) -> UnifiedThresholds:
         """Calculate unified thresholds for a channel with intelligent fallback.
-        
+
         Args:
             channel: Base channel name (e.g., "CH1")
             session_params: Session configuration parameters
             signal_data: Optional EMG signal for estimation
             sampling_rate: Signal sampling rate (required if signal_data provided)
-            
+
         Returns:
             UnifiedThresholds: Comprehensive threshold data
-            
+
         Raises:
             ValueError: If channel is invalid or parameters are inconsistent
         """
@@ -113,7 +113,7 @@ class UnifiedThresholdService:
                 confidence_score=mvc_result.confidence_score,
                 source=mvc_result.estimation_method,
                 timestamp=datetime.now(),
-                signal_agnostic=True
+                signal_agnostic=True,
             )
 
             logger.info(
@@ -126,7 +126,7 @@ class UnifiedThresholdService:
             return unified_thresholds
 
         except Exception as e:
-            logger.error(f"Error calculating unified thresholds for {channel}: {e!s}")
+            logger.exception(f"Error calculating unified thresholds for {channel}: {e!s}")
             raise
 
     async def _get_mvc_with_fallback(
@@ -134,13 +134,13 @@ class UnifiedThresholdService:
         channel: str,
         session_params: GameSessionParameters,
         signal_data: np.ndarray | None,
-        sampling_rate: int | None
+        sampling_rate: int | None,
     ) -> MVCEstimation:
         """Intelligent MVC calculation with 5-priority fallback hierarchy.
-        
+
         Priority Order:
         1. Database MVC (if > clinical minimum)
-        2. Per-muscle session parameter  
+        2. Per-muscle session parameter
         3. Signal-based estimation (if data available)
         4. Global session MVC
         5. Clinical fallback default
@@ -150,16 +150,20 @@ class UnifiedThresholdService:
             db_mvc = await self.mvc_service.get_or_estimate_mvc(
                 channel=channel,
                 signal_data=None,  # Skip signal processing for DB check
-                sampling_rate=None
+                sampling_rate=None,
             )
 
-            if (db_mvc and
-                hasattr(db_mvc, "mvc_value") and
-                db_mvc.mvc_value >= self.CLINICAL_MINIMUM_MVC):
+            if (
+                db_mvc
+                and hasattr(db_mvc, "mvc_value")
+                and db_mvc.mvc_value >= self.CLINICAL_MINIMUM_MVC
+            ):
                 logger.info(f"Using database MVC for {channel}: {db_mvc.mvc_value}")
                 return db_mvc
             else:
-                logger.warning(f"Database MVC for {channel} too low: {db_mvc.mvc_value if db_mvc else 'None'}")
+                logger.warning(
+                    f"Database MVC for {channel} too low: {db_mvc.mvc_value if db_mvc else 'None'}"
+                )
 
         except Exception as e:
             logger.warning(f"Database MVC retrieval failed for {channel}: {e!s}")
@@ -175,21 +179,21 @@ class UnifiedThresholdService:
                 threshold_percentage=75.0,
                 estimation_method="session_per_muscle",
                 confidence_score=0.8,  # High confidence for user-configured values
-                metadata={"source": "session_parameters"}
+                metadata={"source": "session_parameters"},
             )
 
         # Priority 3: Signal-based estimation
         if signal_data is not None and sampling_rate is not None:
             try:
                 signal_mvc = await self.mvc_service.get_or_estimate_mvc(
-                    channel=channel,
-                    signal_data=signal_data,
-                    sampling_rate=sampling_rate
+                    channel=channel, signal_data=signal_data, sampling_rate=sampling_rate
                 )
 
-                if (signal_mvc and
-                    signal_mvc.mvc_value >= self.CLINICAL_MINIMUM_MVC and
-                    signal_mvc.confidence_score >= self.CONFIDENCE_THRESHOLD):
+                if (
+                    signal_mvc
+                    and signal_mvc.mvc_value >= self.CLINICAL_MINIMUM_MVC
+                    and signal_mvc.confidence_score >= self.CONFIDENCE_THRESHOLD
+                ):
                     logger.info(f"Using signal-estimated MVC for {channel}: {signal_mvc.mvc_value}")
                     return signal_mvc
 
@@ -207,7 +211,7 @@ class UnifiedThresholdService:
                 threshold_percentage=75.0,
                 estimation_method="session_global",
                 confidence_score=0.6,  # Medium confidence for global values
-                metadata={"source": "global_session_parameter"}
+                metadata={"source": "global_session_parameter"},
             )
 
         # Priority 5: Clinical fallback
@@ -222,11 +226,13 @@ class UnifiedThresholdService:
             metadata={
                 "source": "clinical_fallback",
                 "reason": "no_valid_mvc_found",
-                "clinical_minimum": self.CLINICAL_MINIMUM_MVC
-            }
+                "clinical_minimum": self.CLINICAL_MINIMUM_MVC,
+            },
         )
 
-    def _get_per_muscle_mvc(self, channel: str, session_params: GameSessionParameters) -> float | None:
+    def _get_per_muscle_mvc(
+        self, channel: str, session_params: GameSessionParameters
+    ) -> float | None:
         """Extract per-muscle MVC value from session parameters."""
         try:
             session_mvc_values = getattr(session_params, "session_mvc_values", {})
@@ -277,7 +283,7 @@ class UnifiedThresholdService:
         channel: str,
         session_params: GameSessionParameters,
         signal_data: np.ndarray | None,
-        sampling_rate: int | None
+        sampling_rate: int | None,
     ):
         """Comprehensive input validation with clear error messages."""
         if not channel or not isinstance(channel, str):
@@ -297,6 +303,7 @@ class UnifiedThresholdService:
 
 # Singleton instance for dependency injection
 _unified_threshold_service: UnifiedThresholdService | None = None
+
 
 def get_unified_threshold_service() -> UnifiedThresholdService:
     """Get singleton instance of UnifiedThresholdService."""
