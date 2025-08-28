@@ -1,4 +1,5 @@
 """User Repository Package.
+
 =========================
 
 Repository pattern implementation for user management domain.

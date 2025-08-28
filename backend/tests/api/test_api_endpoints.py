@@ -3,20 +3,19 @@
 Tests API layer functionality, authentication, validation, and error handling.
 """
 
+import os
 import sys
+import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
 
 # Add backend to sys.path for imports
 backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
-
-import os
-import tempfile
-from unittest.mock import MagicMock, patch
-
-import pytest
-from fastapi.testclient import TestClient
 
 # Import the main FastAPI app
 from api.main import app
@@ -57,7 +56,7 @@ class TestUploadEndpoints:
             tmp_file.flush()
 
             try:
-                with open(tmp_file.name, "rb") as f:
+                with Path(tmp_file.name).open("rb") as f:
                     files = {"file": ("test.c3d", f, "application/octet-stream")}
                     response = client.post("/upload", files=files)
 
@@ -69,7 +68,7 @@ class TestUploadEndpoints:
                     assert "message" in data
 
             finally:
-                os.unlink(tmp_file.name)
+                Path(tmp_file.name).unlink()
 
     def test_upload_invalid_file_type(self):
         """Test upload with invalid file type."""
@@ -78,7 +77,7 @@ class TestUploadEndpoints:
             tmp_file.flush()
 
             try:
-                with open(tmp_file.name, "rb") as f:
+                with Path(tmp_file.name).open("rb") as f:
                     files = {"file": ("test.txt", f, "text/plain")}
                     response = client.post("/upload", files=files)
 
@@ -86,7 +85,7 @@ class TestUploadEndpoints:
                 assert response.status_code in [400, 422]
 
             finally:
-                os.unlink(tmp_file.name)
+                Path(tmp_file.name).unlink()
 
 
 class TestWebhookEndpoints:

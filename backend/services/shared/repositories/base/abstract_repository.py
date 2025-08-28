@@ -324,8 +324,8 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
             response_model = self.get_response_model()
             return response_model.model_validate(data[0])
 
-        except Exception as e:
-            self.logger.exception(f"Failed to get {self.get_table_name()} by id {entity_id}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Failed to get {self.get_table_name()} by id {entity_id}")
             return None
 
     def get_many(
@@ -377,7 +377,7 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
 
         except Exception as e:
             error_msg = f"Failed to get {self.get_table_name()} records: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
+            self.logger.exception(error_msg)
             return []
 
     def update(self, entity_id: str | UUID, data: UpdateModelType) -> ResponseModelType | None:
@@ -426,14 +426,14 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
             response_model = self.get_response_model()
             updated_entity = response_model.model_validate(updated_data[0])
 
-            self.logger.info(f"✅ Updated {self.get_table_name()}: {entity_id}")
+            self.logger.info("Updated %s: %s", self.get_table_name(), entity_id)
             return updated_entity
 
         except ValidationError as e:
             raise RepositoryError(f"Validation error updating {self.get_table_name()}: {e}") from e
         except Exception as e:
             error_msg = f"Failed to update {self.get_table_name()} {entity_id}: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
+            self.logger.exception(error_msg)
             raise RepositoryError(error_msg) from e
 
     def delete(self, entity_id: str | UUID) -> bool:
@@ -456,13 +456,12 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
 
             success = deleted_data is not None and len(deleted_data) > 0
             if success:
-                self.logger.info(f"✅ Deleted {self.get_table_name()}: {entity_id}")
-
+                self.logger.info("Deleted %s: %s", self.get_table_name(), entity_id)
             return success
 
         except Exception as e:
             error_msg = f"Failed to delete {self.get_table_name()} {entity_id}: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
+            self.logger.exception(error_msg)
             return False
 
     def count(self, filters: dict[str, Any] | None = None) -> int:
@@ -486,9 +485,8 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
 
             result = query.execute()
             return result.count or 0
-
-        except Exception as e:
-            self.logger.exception(f"Failed to count {self.get_table_name()}: {e!s}")
+        except Exception:
+            self.logger.exception("Failed to count %s", self.get_table_name())
             return 0
 
     def bulk_create(self, data_list: list[CreateModelType]) -> list[ResponseModelType]:
@@ -538,7 +536,7 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
             created_entities = [response_model.model_validate(item) for item in created_data]
 
             self.logger.info(
-                f"✅ Bulk created {len(created_entities)} {self.get_table_name()} records"
+                "Bulk created %d %s records", len(created_entities), self.get_table_name()
             )
             return created_entities
 
@@ -548,5 +546,5 @@ class AbstractRepository(ABC, Generic[CreateModelType, UpdateModelType, Response
             ) from e
         except Exception as e:
             error_msg = f"Failed to bulk create {self.get_table_name()}: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
+            self.logger.exception(error_msg)
             raise RepositoryError(error_msg) from e

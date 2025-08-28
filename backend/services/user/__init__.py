@@ -1,4 +1,5 @@
 """User Domain Services.
+
 ====================
 
 Domain services for user management, authentication, and role-based access control.

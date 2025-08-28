@@ -1,4 +1,5 @@
 """User Repository.
+
 ===============
 
 🎯 PURPOSE: User profile and authentication management
@@ -18,7 +19,7 @@ Date: 2025-08-27
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 from uuid import UUID
 
 from backend.services.shared.repositories.base.abstract_repository import (
