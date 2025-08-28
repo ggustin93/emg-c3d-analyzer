@@ -3,7 +3,6 @@
 Tests API layer functionality, authentication, validation, and error handling.
 """
 
-import os
 import sys
 import tempfile
 from pathlib import Path
