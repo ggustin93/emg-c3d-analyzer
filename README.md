@@ -127,7 +127,7 @@ backend/
 │   └── main.py                    # FastAPI application and routing
 ├── database/
 │   └── supabase_client.py         # Database connection and operations
-├── services/                      # Domain-organized services
+├── services/                      # Domain-organized services (Domain-Driven Design)
 │   ├── analysis/                  # Analysis domain services
 │   │   ├── mvc_service.py         # MVC threshold estimation
 │   │   └── threshold_service.py   # Unified threshold management
@@ -138,10 +138,21 @@ backend/
 │   ├── cache/                     # Cache infrastructure
 │   │   ├── cache_patterns.py      # Advanced cache patterns
 │   │   ├── cache_service.py       # Cache service abstraction
-│   │   └── redis_cache.py         # Redis operations
+│   │   └── redis_cache_service.py # Redis operations
 │   ├── clinical/                  # Clinical domain services
-│   │   ├── performance_scoring_service.py # GHOSTLY+ performance analytics
-│   │   └── therapy_session_processor.py  # Session workflows
+│   │   ├── repositories/          # Clinical data access layer
+│   │   │   ├── patient_repository.py        # Patient profile management
+│   │   │   ├── therapy_session_repository.py # Session data access
+│   │   │   └── emg_data_repository.py       # EMG metrics storage
+│   │   ├── performance_scoring_service.py   # GHOSTLY+ performance analytics
+│   │   └── therapy_session_processor.py    # Session workflows
+│   ├── user/                      # User domain services (separated from clinical)
+│   │   └── repositories/          # User data access
+│   │       └── user_repository.py # User profiles and authentication
+│   ├── shared/                    # Common service components
+│   │   └── repositories/          # Shared repository base classes
+│   │       └── base/
+│   │           └── abstract_repository.py # Common repository patterns
 │   ├── data/                      # Data management domain
 │   │   ├── export_service.py      # Export and formatting
 │   │   └── metadata_service.py    # Metadata extraction
