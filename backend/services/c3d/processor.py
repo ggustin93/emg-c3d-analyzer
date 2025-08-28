@@ -70,7 +70,7 @@ from emg.signal_processing import (
     get_processing_metadata,
     preprocess_emg_signal,
 )
-from models.models import GameSessionParameters
+from models import GameSessionParameters
 
 
 class GHOSTLYC3DProcessor:

@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from models.models import GameSessionParameters
+from models import GameSessionParameters
 
 from .mvc_service import MVCEstimation, MVCService
 

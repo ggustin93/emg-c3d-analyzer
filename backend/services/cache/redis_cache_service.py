@@ -469,7 +469,7 @@ class RedisCacheService:
         Returns:
             int: Number of sessions warmed
         """
-        # This would integrate with database_operations.py to pre-load recent sessions
+        # This would integrate with repository services to pre-load recent sessions
         # Implementation depends on database service integration
         logger.info(f"🔥 Cache warming requested for sessions from last {hours} hours")
         return 0

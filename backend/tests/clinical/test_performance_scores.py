@@ -79,7 +79,7 @@ async def test_performance_scores():
                 DEFAULT_SMOOTHING_WINDOW,
                 DEFAULT_THRESHOLD_FACTOR,
             )
-            from models.models import GameSessionParameters, ProcessingOptions
+            from models import GameSessionParameters, ProcessingOptions
             from services.c3d.processor import GHOSTLYC3DProcessor
 
             c3d_processor = GHOSTLYC3DProcessor(tmp_file_path)

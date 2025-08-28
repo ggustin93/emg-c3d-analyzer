@@ -18,7 +18,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from models.models import EMGAnalysisResult, GameSessionParameters
+from models import EMGAnalysisResult, GameSessionParameters
 from services.analysis import mvc_service
 from services.c3d.processor import GHOSTLYC3DProcessor
 

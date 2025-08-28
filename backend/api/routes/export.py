@@ -21,7 +21,7 @@ from api.dependencies.validation import (
     get_processing_options,
     get_session_parameters,
 )
-from models.models import GameSessionParameters, ProcessingOptions
+from models import GameSessionParameters, ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
 
 logger = logging.getLogger(__name__)

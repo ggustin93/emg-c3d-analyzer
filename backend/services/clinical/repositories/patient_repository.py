@@ -17,15 +17,16 @@ Date: 2025-08-27
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from .base.abstract_repository import AbstractRepository, RepositoryError
+from models.clinical.patient import Patient, PatientCreate, PatientUpdate
+from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
 
 logger = logging.getLogger(__name__)
 
 
-class PatientRepository(AbstractRepository):
+class PatientRepository(AbstractRepository[PatientCreate, PatientUpdate, Patient]):
     """Repository for patient data management with PII separation
     
     Handles both pseudonymized patient profiles (public schema) and
@@ -36,6 +37,18 @@ class PatientRepository(AbstractRepository):
     def get_table_name(self) -> str:
         """Return primary table name for patients"""
         return "patients"
+
+    def get_create_model(self) -> Type[PatientCreate]:
+        """Return the Pydantic model class for create operations"""
+        return PatientCreate
+
+    def get_update_model(self) -> Type[PatientUpdate]:
+        """Return the Pydantic model class for update operations"""
+        return PatientUpdate
+
+    def get_response_model(self) -> Type[Patient]:
+        """Return the Pydantic model class for response operations"""
+        return Patient
 
     def create_patient(
         self,

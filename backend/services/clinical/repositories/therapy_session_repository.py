@@ -19,15 +19,16 @@ Date: 2025-08-27
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from .base.abstract_repository import AbstractRepository, RepositoryError
+from models.clinical.session import TherapySession, TherapySessionCreate, TherapySessionUpdate
+from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
 
 logger = logging.getLogger(__name__)
 
 
-class TherapySessionRepository(AbstractRepository):
+class TherapySessionRepository(AbstractRepository[TherapySessionCreate, TherapySessionUpdate, TherapySession]):
     """Repository for therapy session management and lifecycle tracking
     
     Handles session creation, status updates, metadata management,
@@ -37,6 +38,18 @@ class TherapySessionRepository(AbstractRepository):
     def get_table_name(self) -> str:
         """Return primary table name for therapy sessions"""
         return "therapy_sessions"
+
+    def get_create_model(self) -> Type[TherapySessionCreate]:
+        """Return the Pydantic model class for create operations"""
+        return TherapySessionCreate
+
+    def get_update_model(self) -> Type[TherapySessionUpdate]:
+        """Return the Pydantic model class for update operations"""
+        return TherapySessionUpdate
+
+    def get_response_model(self) -> Type[TherapySession]:
+        """Return the Pydantic model class for response operations"""
+        return TherapySession
 
     def create_therapy_session(self, session_data: dict[str, Any]) -> dict[str, Any]:
         """Create new therapy session with metadata

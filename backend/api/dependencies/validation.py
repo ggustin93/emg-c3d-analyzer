@@ -9,11 +9,13 @@ from typing import Optional
 
 from fastapi import Form
 
-from models.models import (
+from config import (
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_MVC_THRESHOLD_PERCENTAGE,
     DEFAULT_SMOOTHING_WINDOW,
     DEFAULT_THRESHOLD_FACTOR,
+)
+from models import (
     GameSessionParameters,
     ProcessingOptions,
 )

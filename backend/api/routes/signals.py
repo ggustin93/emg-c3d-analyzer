@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 from config import get_settings
 from database.supabase_client import get_supabase_client
-from models.models import GameSessionParameters, ProcessingOptions
+from models import GameSessionParameters, ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.data.metadata_service import MetadataService
 

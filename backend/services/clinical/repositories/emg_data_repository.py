@@ -18,15 +18,16 @@ Date: 2025-08-27
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from .base.abstract_repository import AbstractRepository, RepositoryError
+from models.clinical.session import EMGStatistics, EMGStatisticsCreate, EMGStatisticsUpdate
+from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
 
 logger = logging.getLogger(__name__)
 
 
-class EMGDataRepository(AbstractRepository):
+class EMGDataRepository(AbstractRepository[EMGStatisticsCreate, EMGStatisticsUpdate, EMGStatistics]):
     """Repository for EMG analysis data and processing parameters
     
     Handles bulk EMG statistics, C3D technical data, and processing
@@ -36,6 +37,18 @@ class EMGDataRepository(AbstractRepository):
     def get_table_name(self) -> str:
         """Return primary table name (EMG statistics)"""
         return "emg_statistics"
+
+    def get_create_model(self) -> Type[EMGStatisticsCreate]:
+        """Return the Pydantic model class for create operations"""
+        return EMGStatisticsCreate
+
+    def get_update_model(self) -> Type[EMGStatisticsUpdate]:
+        """Return the Pydantic model class for update operations"""
+        return EMGStatisticsUpdate
+
+    def get_response_model(self) -> Type[EMGStatistics]:
+        """Return the Pydantic model class for response operations"""
+        return EMGStatistics
 
     def bulk_insert_emg_statistics(self, stats_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Bulk insert EMG statistics for multiple channels

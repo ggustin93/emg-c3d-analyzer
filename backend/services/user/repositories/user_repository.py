@@ -18,15 +18,16 @@ Date: 2025-08-27
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from .base.abstract_repository import AbstractRepository, RepositoryError
+from models.user.models import UserProfile, UserProfileCreate, UserProfileUpdate
+from ...shared.repositories.base.abstract_repository import AbstractRepository, RepositoryError
 
 logger = logging.getLogger(__name__)
 
 
-class UserRepository(AbstractRepository):
+class UserRepository(AbstractRepository[UserProfileCreate, UserProfileUpdate, UserProfile]):
     """Repository for user profile and authentication management
     
     Handles unified user profiles with role-based access control,
@@ -36,6 +37,18 @@ class UserRepository(AbstractRepository):
     def get_table_name(self) -> str:
         """Return primary table name for user profiles"""
         return "user_profiles"
+
+    def get_create_model(self) -> Type[UserProfileCreate]:
+        """Return the Pydantic model class for create operations"""
+        return UserProfileCreate
+
+    def get_update_model(self) -> Type[UserProfileUpdate]:
+        """Return the Pydantic model class for update operations"""
+        return UserProfileUpdate
+
+    def get_response_model(self) -> Type[UserProfile]:
+        """Return the Pydantic model class for response operations"""
+        return UserProfile
 
     def get_user_profile(self, user_id: str | UUID) -> dict[str, Any] | None:
         """Get user profile by ID

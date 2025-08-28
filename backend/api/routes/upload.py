@@ -22,7 +22,7 @@ from api.dependencies.validation import (
     get_session_parameters,
 )
 from config import MAX_FILE_SIZE
-from models.models import (
+from models import (
     ChannelAnalytics,
     EMGAnalysisResult,
     GameMetadata,

@@ -21,9 +21,9 @@ Therapy Session Processor - Workflow Orchestrator
 For individual operations, use the specific services directly.
 
 🏗️ ARCHITECTURE: 
-- Uses centralized database_operations service (DRY principle)
-- Timestamps managed automatically by database service
-- SOLID principles with service composition over inheritance
+- Uses repository pattern for domain-separated data access (DDD principles)
+- Timestamps managed automatically by database triggers
+- SOLID principles with dependency injection and service composition
 
 Author: EMG C3D Analyzer Team
 Date: 2025-08-14 | Refactored: 2025-08-26
@@ -70,7 +70,7 @@ from config import (
     DevelopmentDefaults,
 )
 from database.supabase_client import get_supabase_client
-from models.models import GameSessionParameters, ProcessingOptions
+from models import GameSessionParameters, ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.c3d.reader import C3DReader
 from services.cache.redis_cache_service import get_cache_service
@@ -81,8 +81,8 @@ from .repositories import (
     PatientRepository,
     RepositoryError,
     TherapySessionRepository,
-    UserRepository,
 )
+from ..user.repositories import UserRepository
 
 # Note: All clinical constants now imported from config.py (Single Source of Truth)
 

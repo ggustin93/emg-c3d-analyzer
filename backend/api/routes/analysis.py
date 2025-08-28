@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from models.models import (
+from models import (
     ChannelAnalytics,
     EMGAnalysisResult,
     GameMetadata,
