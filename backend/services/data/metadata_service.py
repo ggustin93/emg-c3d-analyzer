@@ -80,13 +80,13 @@ class MetadataService:
         try:
             result = self.supabase.table("therapy_sessions").insert(entry).execute()
             logger.info(
-                f"✅ Created therapy session (Phase 1 - Metadata): {file_path} (session_id: {session_id})"
+                "✅ Created therapy session (Phase 1 - Metadata): %s (session_id: %s)", file_path, session_id
             )
             return session_id
 
         except Exception as e:
-            logger.exception(f"❌ Failed to create therapy session: {e!s}")
-            logger.exception(f"Entry data: {entry}")
+            logger.exception("❌ Failed to create therapy session: %s", e)
+            logger.exception("Entry data: %s", entry)
             raise
 
     async def extract_c3d_metadata(self, file_data: bytes) -> dict[str, Any]:
@@ -116,7 +116,7 @@ class MetadataService:
             }
 
         except Exception as e:
-            logger.exception(f"Failed to extract C3D metadata: {e!s}")
+            logger.exception("Failed to extract C3D metadata: %s", e)
             raise
 
     async def update_technical_metadata(self, session_id: UUID, file_data: bytes) -> None:
@@ -175,10 +175,10 @@ class MetadataService:
                 "id", str(session_id)
             ).execute()
 
-            logger.info(f"✅ Updated technical metadata (Phase 2): {session_id}")
+            logger.info("✅ Updated technical metadata (Phase 2): %s", session_id)
 
         except Exception as e:
-            logger.exception(f"❌ Failed to update technical metadata: {e!s}")
+            logger.exception("❌ Failed to update technical metadata: %s", e)
             # Update session status to failed
             self.supabase.table("therapy_sessions").update(
                 {
@@ -260,10 +260,10 @@ class MetadataService:
                 .execute()
             )
 
-            logger.info(f"Updated therapy session: {metadata_id}")
+            logger.info("Updated therapy session: %s", metadata_id)
 
         except Exception as e:
-            logger.exception(f"Failed to update therapy session: {e!s}")
+            logger.exception("Failed to update therapy session: %s", e)
             raise
 
     def _resolve_metadata_fields(
@@ -414,7 +414,7 @@ class MetadataService:
             )
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.exception(f"Failed to get session by hash: {e!s}")
+            logger.exception("Failed to get session by hash: %s", e)
             return None
 
     async def get_by_id(self, session_id: UUID) -> dict | None:
@@ -428,7 +428,7 @@ class MetadataService:
             )
             return result.data[0] if result.data else None
         except Exception as e:
-            logger.exception(f"Failed to get session by ID: {e!s}")
+            logger.exception("Failed to get session by ID: %s", e)
             return None
 
     async def update_processing_status(
@@ -454,8 +454,8 @@ class MetadataService:
                 "id", str(session_id)
             ).execute()
 
-            logger.info(f"Updated processing status to {status} for session: {session_id}")
+            logger.info("Updated processing status to %s for session: %s", status, session_id)
 
         except Exception as e:
-            logger.exception(f"Failed to update processing status: {e!s}")
+            logger.exception("Failed to update processing status: %s", e)
             raise

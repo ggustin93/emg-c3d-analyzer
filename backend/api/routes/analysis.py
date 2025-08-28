@@ -84,6 +84,6 @@ async def recalc_analysis(request: RecalcRequest):
     except Exception as e:
         import traceback
 
-        logger.exception(f"ERROR in /analysis/recalc: {e!s}")
+        logger.exception("ERROR in /analysis/recalc: %s", e)
         logger.exception(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {e!s}")

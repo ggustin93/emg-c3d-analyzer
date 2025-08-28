@@ -57,7 +57,7 @@ class MVCService:
         if user_id or session_id:
             db_result = await self._retrieve_from_database(channel, user_id, session_id)
             if db_result:
-                logger.info(f"Retrieved MVC for {channel} from database: {db_result.mvc_value}")
+                logger.info("Retrieved MVC for %s from database: %s", channel, db_result.mvc_value)
                 return db_result
 
         # Priority 2: Clinical estimation from signal
@@ -70,11 +70,11 @@ class MVCService:
             if user_id or session_id:
                 await self._store_to_database(estimation, user_id, session_id)
 
-            logger.info(f"Estimated MVC for {channel} from signal: {estimation.mvc_value}")
+            logger.info("Estimated MVC for %s from signal: %s", channel, estimation.mvc_value)
             return estimation
 
         # Priority 3: Fallback - no estimation possible
-        logger.warning(f"No MVC estimation available for {channel}")
+        logger.warning("No MVC estimation available for %s", channel)
         return MVCEstimation(
             channel=channel,
             mvc_value=0.001,  # Safe fallback
@@ -199,7 +199,7 @@ class MVCService:
         #                             threshold_percentage, estimation_method, confidence_score, metadata)
         # VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
-        logger.info(f"MVC estimation stored for {estimation.channel}: {estimation.mvc_value}")
+        logger.info("MVC estimation stored for %s: %s", estimation.channel, estimation.mvc_value)
 
     async def bulk_estimate_mvc(
         self,
@@ -225,7 +225,7 @@ class MVCService:
                 results[channel] = estimation
 
             except Exception as e:
-                logger.exception(f"MVC estimation failed for {channel}: {e}")
+                logger.exception("MVC estimation failed for %s: %s", channel, e)
                 # Provide fallback
                 results[channel] = MVCEstimation(
                     channel=channel,

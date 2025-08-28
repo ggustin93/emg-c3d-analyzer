@@ -47,7 +47,7 @@ async def get_cache_health():
         )
 
     except Exception as e:
-        logger.exception(f"Health check failed: {e!s}")
+        logger.exception("Health check failed: %s", e)
         return CacheHealthResponse(
             healthy=False,
             message="Health check failed",
@@ -79,7 +79,7 @@ async def get_cache_stats():
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"Failed to get cache stats: {e!s}")
+        logger.exception("Failed to get cache stats: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -100,7 +100,7 @@ async def invalidate_cache_pattern(
         }
 
     except Exception as e:
-        logger.exception(f"Cache invalidation failed: {e!s}")
+        logger.exception("Cache invalidation failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -130,5 +130,5 @@ async def get_cache_dashboard():
         }
 
     except Exception as e:
-        logger.exception(f"Dashboard error: {e!s}")
+        logger.exception("Dashboard error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))

@@ -67,7 +67,7 @@ async def calibrate_mvc_values(
         # Smart input detection: FormData (file) vs JSON (existing data)
         if file is not None:
             # Case 1: File upload - Initial calibration from C3D file
-            logger.info(f"🔄 Starting initial MVC calibration from file: {file.filename}")
+            logger.info("🔄 Starting initial MVC calibration from file: %s", file.filename)
             return await _calibrate_from_file(file, user_id, session_id, threshold_percentage)
 
         elif "application/json" in content_type:
@@ -86,7 +86,7 @@ async def calibrate_mvc_values(
     except Exception as e:
         import traceback
 
-        logger.exception(f"ERROR in /mvc/calibrate: {e!s}")
+        logger.exception("ERROR in /mvc/calibrate: %s", e)
         logger.exception(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error calibrating MVC: {e!s}")
 
@@ -126,11 +126,11 @@ async def _calibrate_from_file(
                     and processor.emg_data[channel]["rms_envelope"]
                 ):
                     emg_signals[channel] = np.array(processor.emg_data[channel]["rms_envelope"])
-                    logger.info(f"🏆 Using RMS envelope for MVC estimation: {channel}")
+                    logger.info("🏆 Using RMS envelope for MVC estimation: %s", channel)
                 else:
                     # Fallback to raw signal (will be processed to RMS in mvc_service)
                     emg_signals[channel] = processor.emg_data[channel]["raw"]
-                    logger.info(f"⚠️ Using raw signal (will calculate RMS): {channel}")
+                    logger.info("⚠️ Using raw signal (will calculate RMS): %s", channel)
 
                 if sampling_rate is None and "sampling_rate" in processor.emg_data[channel]:
                     sampling_rate = processor.emg_data[channel]["sampling_rate"]
@@ -164,7 +164,7 @@ async def _calibrate_from_file(
                 "timestamp": estimation.timestamp.isoformat(),
             }
 
-        logger.info(f"✅ Initial MVC calibration completed for {len(response_data)} channels")
+        logger.info("✅ Initial MVC calibration completed for %d channels", len(response_data))
         return {
             "status": "success",
             "calibration_type": "initial",
@@ -235,7 +235,7 @@ async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, 
             "timestamp": estimation.timestamp.isoformat(),
         }
 
-    logger.info(f"✅ MVC recalibration completed for {len(response_data)} channels")
+    logger.info("✅ MVC recalibration completed for %d channels", len(response_data))
 
     return {
         "status": "success",
