@@ -237,9 +237,45 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       
-      - name: Install security tools
+      - name: Install quality tools
         run: |
-          pip install bandit safety
+          pip install bandit safety ruff
+      
+      - name: Run Ruff linting (Critical Issues Only)
+        working-directory: backend
+        run: |
+          echo "🔍 Running Ruff linting for critical issues..."
+          echo ""
+          echo "Checking for critical runtime and security issues:"
+          echo "- F821: Undefined names (runtime crashes)"
+          echo "- F822: Undefined names in __all__"
+          echo "- F823: Local variable referenced before assignment"
+          echo "- S102: Use of exec (code injection risk)"
+          echo "- S301: Pickle usage (deserialization risk)"
+          echo "- S110: Try-except-pass (silent failures)"
+          echo ""
+          
+          # Critical runtime crashes and security issues
+          ruff check . --select "F821,F822,F823,S102,S301,S110" --output-format=full || {
+            echo "❌ Critical linting issues found!"
+            echo "These issues can cause runtime crashes or security vulnerabilities."
+            echo "Please fix them before merging."
+            exit 1
+          }
+          
+          echo "✅ No critical linting issues found!"
+        continue-on-error: false
+      
+      - name: Run Ruff linting (Full Report - Non-blocking)
+        working-directory: backend
+        run: |
+          echo ""
+          echo "📊 Full linting report (informational only):"
+          echo ""
+          ruff check . --statistics || true
+          echo ""
+          echo "Note: Only critical issues above will block the pipeline."
+        continue-on-error: true
       
       - name: Run security checks
         working-directory: backend
