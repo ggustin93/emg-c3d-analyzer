@@ -1,4 +1,4 @@
-"""Export Routes
+"""Export Routes.
 ============
 
 Data export endpoints.
@@ -37,14 +37,14 @@ async def export_analysis_data(
     file_metadata: dict = Depends(get_file_metadata),
     # Export options
     include_raw_signals: bool = Form(True),
-    include_debug_info: bool = Form(True)
+    include_debug_info: bool = Form(True),
 ):
     """Export comprehensive C3D analysis data as JSON.
-    
+
     This endpoint processes a C3D file and returns a comprehensive JSON structure
     containing all extracted data, analysis results, and debug information.
     Useful for debugging, data archival, and external analysis workflows.
-    
+
     Args:
         file: C3D file upload
         processing_opts: EMG processing configuration
@@ -52,10 +52,10 @@ async def export_analysis_data(
         file_metadata: File metadata (user_id, patient_id, session_id)
         include_raw_signals: Include raw signal data in export
         include_debug_info: Include debug information in export
-        
+
     Returns:
         JSONResponse: Comprehensive export data
-        
+
     Raises:
         HTTPException: 400 for invalid files, 500 for processing errors
     """
@@ -90,8 +90,8 @@ async def export_analysis_data(
             "file_info": {
                 "filename": file.filename,
                 "processing_options": processing_opts.dict(),
-                "session_parameters": session_params.dict()
-            }
+                "session_parameters": session_params.dict(),
+            },
         }
 
         # Add request metadata
@@ -101,7 +101,7 @@ async def export_analysis_data(
             "session_id": file_metadata["session_id"],
             "filename": file.filename,
             "export_timestamp": datetime.now().isoformat(),
-            "note": "Basic export - EMGDataExporter not yet implemented"
+            "note": "Basic export - EMGDataExporter not yet implemented",
         }
 
         return JSONResponse(content=comprehensive_export)

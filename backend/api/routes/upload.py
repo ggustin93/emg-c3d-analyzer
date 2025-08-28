@@ -1,4 +1,4 @@
-"""Upload Routes
+"""Upload Routes.
 ============
 
 C3D file upload and processing endpoints.
@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from config import MAX_FILE_SIZE
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
@@ -21,7 +22,6 @@ from api.dependencies.validation import (
     get_processing_options,
     get_session_parameters,
 )
-from config import MAX_FILE_SIZE
 from models import (
     ChannelAnalytics,
     EMGAnalysisResult,
@@ -44,19 +44,19 @@ async def upload_file(
     file: UploadFile = File(...),
     processing_opts: ProcessingOptions = Depends(get_processing_options),
     session_params: GameSessionParameters = Depends(get_session_parameters),
-    file_metadata: dict = Depends(get_file_metadata)
+    file_metadata: dict = Depends(get_file_metadata),
 ):
     """Upload and process a C3D file.
-    
+
     Args:
         file: C3D file upload
         processing_opts: EMG processing configuration
         session_params: Game session parameters
         file_metadata: File metadata (user_id, patient_id, session_id)
-        
+
     Returns:
         EMGAnalysisResult: Complete analysis results
-        
+
     Raises:
         HTTPException: 400 for invalid files, 413 for too large, 500 for processing errors
     """
@@ -66,11 +66,16 @@ async def upload_file(
     if not file.filename:
         raise HTTPException(status_code=400, detail="File must have a filename")
     if not file.filename.lower().endswith(".c3d"):
-        raise HTTPException(status_code=400, detail="File must be a C3D file (.c3d extension required)")
+        raise HTTPException(
+            status_code=400, detail="File must be a C3D file (.c3d extension required)"
+        )
 
     # Check file size (basic validation)
     if hasattr(file, "size") and file.size and file.size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {MAX_FILE_SIZE/1024/1024:.1f}MB")
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE / 1024 / 1024:.1f}MB",
+        )
 
     logger.info(f"Processing upload request for file: {file.filename}")
     tmp_path = ""
@@ -88,7 +93,7 @@ async def upload_file(
             session_processor.process_c3d_file_stateless,
             file_path=tmp_path,
             processing_opts=processing_opts,
-            session_params=session_params
+            session_params=session_params,
         )
 
         result_data = processing_result["processing_result"]
@@ -96,10 +101,7 @@ async def upload_file(
         # Create result object
         game_metadata = GameMetadata(**result_data["metadata"])
 
-        analytics = {
-            k: ChannelAnalytics(**v)
-            for k, v in result_data["analytics"].items()
-        }
+        analytics = {k: ChannelAnalytics(**v) for k, v in result_data["analytics"].items()}
 
         # Extract C3D parameters from processing result
         try:
@@ -110,27 +112,28 @@ async def upload_file(
                     "sampling_rate": result_data.get("sampling_rate"),
                     "duration": result_data.get("duration"),
                     "frame_count": result_data.get("frame_count"),
-                    "channel_count": len(result_data.get("analytics", {}))
+                    "channel_count": len(result_data.get("analytics", {})),
                 }
         except Exception as e:
             logger.warning(f"Failed to extract C3D parameters: {e!s}")
             c3d_params = {"error": f"Parameter extraction failed: {e!s}"}
 
         response_model = EMGAnalysisResult(
-            file_id=str(uuid.uuid4()), # Generate a new UUID for this stateless request
+            file_id=str(uuid.uuid4()),  # Generate a new UUID for this stateless request
             timestamp=datetime.now().strftime("%Y%m%d_%H%M%S"),
             source_filename=file.filename,
-            metadata=GameMetadata(**{
-                **game_metadata.model_dump(),
-                "session_parameters_used": session_params
-            }),
+            metadata=GameMetadata(
+                **{**game_metadata.model_dump(), "session_parameters_used": session_params}
+            ),
             analytics=analytics,
             available_channels=result_data["available_channels"],
-            emg_signals=result_data.get("emg_signals", {}), # EMG signal data (raw, activated, processed) from C3D processor
+            emg_signals=result_data.get(
+                "emg_signals", {}
+            ),  # EMG signal data (raw, activated, processed) from C3D processor
             c3d_parameters=c3d_params,  # Include comprehensive C3D parameters
             user_id=file_metadata["user_id"],
             patient_id=file_metadata["patient_id"],
-            session_id=file_metadata["session_id"]
+            session_id=file_metadata["session_id"],
         )
         return response_model
 

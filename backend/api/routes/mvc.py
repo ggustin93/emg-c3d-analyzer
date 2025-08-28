@@ -1,4 +1,4 @@
-"""MVC Routes
+"""MVC Routes.
 =========
 
 Maximum Voluntary Contraction calibration endpoint.
@@ -28,7 +28,8 @@ router = APIRouter(prefix="/mvc", tags=["mvc"])
 
 
 class MVCRecalibrateRequest(BaseModel):
-    """Request model for MVC recalibration from existing analysis"""
+    """Request model for MVC recalibration from existing analysis."""
+
     existing: EMGAnalysisResult
     session_params: GameSessionParameters
 
@@ -40,23 +41,23 @@ async def calibrate_mvc_values(
     file: UploadFile | None = File(None),
     user_id: str | None = Form(None),
     session_id: str | None = Form(None),
-    threshold_percentage: float = Form(75.0)
+    threshold_percentage: float = Form(75.0),
 ):
     """Single MVC calibration endpoint - handles both file uploads and recalibration.
-    
+
     Smart input detection:
     - FormData with file: Initial calibration from C3D file
     - JSON body: Recalibration from existing EMGAnalysisResult
-    
+
     Args:
         file: C3D file upload (for initial calibration)
         user_id: User identifier for tracking
         session_id: Session identifier for tracking
         threshold_percentage: MVC threshold percentage (default 75%)
-        
+
     Returns:
         Dict: MVC estimations for all channels with metadata
-        
+
     Raises:
         HTTPException: 400 for invalid inputs, 500 for processing errors
     """
@@ -79,23 +80,21 @@ async def calibrate_mvc_values(
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid request format. Send either FormData with file or JSON with existing analysis."
+                detail="Invalid request format. Send either FormData with file or JSON with existing analysis.",
             )
 
     except Exception as e:
         import traceback
-        logger.error(f"ERROR in /mvc/calibrate: {e!s}")
-        logger.error(traceback.format_exc())
+
+        logger.exception(f"ERROR in /mvc/calibrate: {e!s}")
+        logger.exception(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error calibrating MVC: {e!s}")
 
 
 async def _calibrate_from_file(
-    file: UploadFile,
-    user_id: str | None,
-    session_id: str | None,
-    threshold_percentage: float
+    file: UploadFile, user_id: str | None, session_id: str | None, threshold_percentage: float
 ) -> dict[str, dict]:
-    """Handle MVC calibration from uploaded C3D file"""
+    """Handle MVC calibration from uploaded C3D file."""
     if not file.filename.lower().endswith(".c3d"):
         raise HTTPException(status_code=400, detail="File must be a C3D file")
 
@@ -122,7 +121,10 @@ async def _calibrate_from_file(
         for channel in processor.emg_channels:
             if hasattr(processor, "emg_data") and channel in processor.emg_data:
                 # PRIORITY: Use RMS envelope if available (gold standard for MVC)
-                if "rms_envelope" in processor.emg_data[channel] and processor.emg_data[channel]["rms_envelope"]:
+                if (
+                    "rms_envelope" in processor.emg_data[channel]
+                    and processor.emg_data[channel]["rms_envelope"]
+                ):
                     emg_signals[channel] = np.array(processor.emg_data[channel]["rms_envelope"])
                     logger.info(f"🏆 Using RMS envelope for MVC estimation: {channel}")
                 else:
@@ -146,7 +148,7 @@ async def _calibrate_from_file(
             sampling_rate=int(sampling_rate),
             user_id=user_id,
             session_id=session_id,
-            threshold_percentage=threshold_percentage
+            threshold_percentage=threshold_percentage,
         )
 
         # Convert results to JSON-serializable format
@@ -159,7 +161,7 @@ async def _calibrate_from_file(
                 "estimation_method": estimation.estimation_method,
                 "confidence_score": estimation.confidence_score,
                 "metadata": estimation.metadata,
-                "timestamp": estimation.timestamp.isoformat()
+                "timestamp": estimation.timestamp.isoformat(),
             }
 
         logger.info(f"✅ Initial MVC calibration completed for {len(response_data)} channels")
@@ -169,9 +171,9 @@ async def _calibrate_from_file(
             "file_info": {
                 "filename": file.filename,
                 "channels_processed": list(emg_signals.keys()),
-                "sampling_rate": sampling_rate
+                "sampling_rate": sampling_rate,
             },
-            "mvc_estimations": response_data
+            "mvc_estimations": response_data,
         }
 
     finally:
@@ -182,7 +184,7 @@ async def _calibrate_from_file(
 
 
 async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, dict]:
-    """Handle MVC recalibration from existing analysis"""
+    """Handle MVC recalibration from existing analysis."""
     # Extract EMG signals from existing analysis
     if not request.existing.emg_signals:
         raise HTTPException(status_code=400, detail="No EMG signals found in existing analysis")
@@ -198,7 +200,9 @@ async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, 
                 sampling_rate = signal_data["sampling_rate"]
 
     if not emg_signals:
-        raise HTTPException(status_code=400, detail="No raw EMG signals available for MVC recalibration")
+        raise HTTPException(
+            status_code=400, detail="No raw EMG signals available for MVC recalibration"
+        )
 
     if sampling_rate is None:
         # Fallback to metadata or default
@@ -215,7 +219,7 @@ async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, 
         sampling_rate=int(sampling_rate),
         user_id=request.existing.user_id,
         session_id=request.existing.session_id,
-        threshold_percentage=threshold_percentage
+        threshold_percentage=threshold_percentage,
     )
 
     # Convert results to JSON-serializable format
@@ -228,7 +232,7 @@ async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, 
             "estimation_method": estimation.estimation_method,
             "confidence_score": estimation.confidence_score,
             "metadata": estimation.metadata,
-            "timestamp": estimation.timestamp.isoformat()
+            "timestamp": estimation.timestamp.isoformat(),
         }
 
     logger.info(f"✅ MVC recalibration completed for {len(response_data)} channels")
@@ -239,7 +243,7 @@ async def _calibrate_from_existing(request: MVCRecalibrateRequest) -> dict[str, 
         "file_info": {
             "filename": request.existing.source_filename,
             "channels_processed": list(emg_signals.keys()),
-            "sampling_rate": sampling_rate
+            "sampling_rate": sampling_rate,
         },
-        "mvc_estimations": response_data
+        "mvc_estimations": response_data,
     }

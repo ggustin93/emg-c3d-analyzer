@@ -1,4 +1,4 @@
-"""API Routes Module
+"""API Routes Module.
 ================
 
 Modular route definitions following SOLID principles.
@@ -16,5 +16,5 @@ __all__ = [
     "mvc",
     "signals",
     "upload",
-    "webhooks"
+    "webhooks",
 ]

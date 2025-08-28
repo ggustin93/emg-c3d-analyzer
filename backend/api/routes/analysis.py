@@ -1,4 +1,4 @@
-"""Analysis Routes
+"""Analysis Routes.
 ==============
 
 Analysis recalculation endpoints.
@@ -24,7 +24,8 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
 class RecalcRequest(BaseModel):
-    """Request model for analysis recalculation"""
+    """Request model for analysis recalculation."""
+
     existing: EMGAnalysisResult
     session_params: GameSessionParameters
 
@@ -34,13 +35,13 @@ async def recalc_analysis(request: RecalcRequest):
     """Recalculate analytics from an existing EMGAnalysisResult with updated session parameters.
     This avoids re-processing the entire C3D file and only updates counts/flags/thresholds
     based on the new parameters (e.g., duration threshold, MVC settings).
-    
+
     Args:
         request: Recalculation request with existing results and new parameters
-        
+
     Returns:
         EMGAnalysisResult: Updated analysis results
-        
+
     Raises:
         HTTPException: 500 for processing errors
     """
@@ -49,7 +50,9 @@ async def recalc_analysis(request: RecalcRequest):
         processor = GHOSTLYC3DProcessor(file_path="")
         updated = processor.recalculate_scores_from_data(
             existing_analytics={
-                "metadata": request.existing.metadata.model_dump() if request.existing.metadata else {},
+                "metadata": request.existing.metadata.model_dump()
+                if request.existing.metadata
+                else {},
                 "analytics": {k: v.model_dump() for k, v in request.existing.analytics.items()},
             },
             session_game_params=request.session_params,
@@ -80,6 +83,7 @@ async def recalc_analysis(request: RecalcRequest):
 
     except Exception as e:
         import traceback
-        logger.error(f"ERROR in /analysis/recalc: {e!s}")
-        logger.error(traceback.format_exc())
+
+        logger.exception(f"ERROR in /analysis/recalc: {e!s}")
+        logger.exception(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {e!s}")

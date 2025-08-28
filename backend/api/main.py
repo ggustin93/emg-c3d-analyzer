@@ -1,4 +1,4 @@
-"""GHOSTLY+ EMG Analysis API - Main Application
+"""GHOSTLY+ EMG Analysis API - Main Application.
 ===========================================
 
 FastAPI application factory with modular route organization.
@@ -20,12 +20,6 @@ import logging
 import os
 import sys
 
-# Third-party imports
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
 # Local imports - Configuration
 from config import (
     API_DESCRIPTION,
@@ -37,8 +31,14 @@ from config import (
     CORS_ORIGINS,
 )
 
+# Third-party imports
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 # Local imports - Route modules (SOLID principle: Single Responsibility)
-from .routes import (
+from backend.api.routes import (
     analysis,
     cache_monitoring,
     export,
@@ -48,14 +48,15 @@ from .routes import (
     upload,
     webhooks,
 )
-from .routes.scoring_config import router as scoring_router
+from backend.api.routes.scoring_config import router as scoring_router
 
 # Check cache monitoring availability
 CACHE_MONITORING_AVAILABLE = True
 
+
 # Configure logging
 def setup_logging():
-    """Setup consistent logging configuration"""
+    """Setup consistent logging configuration."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
     logging.basicConfig(
@@ -63,7 +64,7 @@ def setup_logging():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-        ]
+        ],
     )
 
     # Set specific logger levels
@@ -77,20 +78,20 @@ logger = logging.getLogger(__name__)
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """Handle HTTP exceptions with structured response"""
+    """Handle HTTP exceptions with structured response."""
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "error": "HTTP_ERROR",
             "message": exc.detail,
             "status_code": exc.status_code,
-            "path": str(request.url)
-        }
+            "path": str(request.url),
+        },
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle general exceptions with structured response"""
+    """Handle general exceptions with structured response."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -98,17 +99,17 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "error": "INTERNAL_SERVER_ERROR",
             "message": "An internal server error occurred",
             "status_code": 500,
-            "path": str(request.url)
-        }
+            "path": str(request.url),
+        },
     )
 
 
 def create_app() -> FastAPI:
     """FastAPI application factory.
-    
+
     Creates and configures the FastAPI application with all routes and middleware.
     Follows app factory pattern for clean initialization.
-    
+
     Returns:
         FastAPI: Configured application instance
     """

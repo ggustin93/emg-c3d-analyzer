@@ -1,10 +1,10 @@
-"""Clean Webhook System for C3D File Processing
+"""Clean Webhook System for C3D File Processing.
 ===========================================
 
 SOLID, DRY, KISS implementation for Supabase Storage webhooks.
 Works with actual database schema (therapy_sessions, emg_statistics, etc.)
 
-Author: EMG C3D Analyzer Team  
+Author: EMG C3D Analyzer Team
 Date: 2025-08-14
 """
 
@@ -13,10 +13,10 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional
 
+from config import get_settings
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from config import get_settings
 from database.supabase_client import get_supabase_client
 from services.clinical.repositories.patient_repository import PatientRepository
 from services.clinical.therapy_session_processor import TherapySessionProcessor
@@ -34,8 +34,10 @@ webhook_security = WebhookSecurity()
 
 # === REQUEST/RESPONSE MODELS ===
 
+
 class SupabaseStorageEvent(BaseModel):
-    """Supabase Storage webhook event payload"""
+    """Supabase Storage webhook event payload."""
+
     type: str
     table: str
     record: dict
@@ -44,17 +46,17 @@ class SupabaseStorageEvent(BaseModel):
 
     @property
     def object_name(self) -> str:
-        """Extract object name from record"""
+        """Extract object name from record."""
         return self.record.get("name", "")
 
     @property
     def bucket_id(self) -> str:
-        """Extract bucket ID from record"""
+        """Extract bucket ID from record."""
         return self.record.get("bucket_id", "")
 
     @property
     def patient_code(self) -> str | None:
-        """Extract patient code from object name path (e.g., P039/file.c3d -> P039)"""
+        """Extract patient code from object name path (e.g., P039/file.c3d -> P039)."""
         parts = self.object_name.split("/")
         if len(parts) >= 2 and parts[0].startswith("P"):
             return parts[0]
@@ -62,17 +64,18 @@ class SupabaseStorageEvent(BaseModel):
 
     @property
     def is_c3d_upload(self) -> bool:
-        """Check if this is a C3D file upload event"""
+        """Check if this is a C3D file upload event."""
         return (
-            self.type == "INSERT" and
-            self.table == "objects" and
-            self.object_name.lower().endswith(".c3d") and
-            self.bucket_id == "c3d-examples"
+            self.type == "INSERT"
+            and self.table == "objects"
+            and self.object_name.lower().endswith(".c3d")
+            and self.bucket_id == "c3d-examples"
         )
 
 
 class WebhookResponse(BaseModel):
-    """Standard webhook response"""
+    """Standard webhook response."""
+
     success: bool
     message: str
     session_id: str | None = None
@@ -81,19 +84,17 @@ class WebhookResponse(BaseModel):
 
 # === WEBHOOK ENDPOINTS ===
 
+
 @router.post("/storage/c3d-upload", response_model=WebhookResponse)
-async def handle_c3d_upload(
-    request: Request,
-    background_tasks: BackgroundTasks
-) -> WebhookResponse:
-    """🎯 Handle C3D file upload from Supabase Storage
-    
+async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks) -> WebhookResponse:
+    """🎯 Handle C3D file upload from Supabase Storage.
+
     Clean, efficient processing:
     1. Validate webhook signature and payload
     2. Create therapy_session record immediately
     3. Process C3D file in background
     4. Populate all related tables (emg_statistics, c3d_technical_data, etc.)
-    
+
     Returns:
         Fast webhook response with session_id for tracking
     """
@@ -119,8 +120,7 @@ async def handle_c3d_upload(
         # Filter: only process C3D uploads
         if not event.is_c3d_upload:
             return WebhookResponse(
-                success=True,
-                message=f"Ignored: {event.type} {event.table} {event.object_name}"
+                success=True, message=f"Ignored: {event.type} {event.table} {event.object_name}"
             )
 
         logger.info(f"📁 Processing C3D upload: {event.object_name}")
@@ -137,13 +137,13 @@ async def handle_c3d_upload(
                 else:
                     logger.warning(f"⚠️ Patient not found for code: {event.patient_code}")
             except Exception as e:
-                logger.error(f"Failed to lookup patient {event.patient_code}: {e!s}")
+                logger.exception(f"Failed to lookup patient {event.patient_code}: {e!s}")
 
         # Create therapy session record (immediate response)
         session_id = await session_processor.create_session(
             file_path=f"{event.bucket_id}/{event.object_name}",
             file_metadata=event.record.get("metadata", {}),
-            patient_id=patient_uuid
+            patient_id=patient_uuid,
         )
 
         # Process C3D file in background
@@ -151,7 +151,7 @@ async def handle_c3d_upload(
             _process_c3d_background,
             session_id=session_id,
             bucket=event.bucket_id,
-            object_path=event.object_name
+            object_path=event.object_name,
         )
 
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -162,7 +162,7 @@ async def handle_c3d_upload(
             success=True,
             message="C3D processing initiated",
             session_id=session_id,
-            processing_time_ms=processing_time
+            processing_time_ms=processing_time,
         )
 
     except json.JSONDecodeError:
@@ -177,11 +177,11 @@ async def handle_c3d_upload(
 
 @router.get("/storage/status/{session_id}")
 async def get_processing_status(session_id: str) -> dict:
-    """Get processing status for a therapy session
-    
+    """Get processing status for a therapy session.
+
     Args:
         session_id: Therapy session UUID
-        
+
     Returns:
         Session status and analysis results if available
     """
@@ -198,7 +198,7 @@ async def get_processing_status(session_id: str) -> dict:
             "created_at": status["created_at"],
             "processed_at": status.get("processed_at"),
             "error_message": status.get("processing_error_message"),
-            "has_analysis": bool(status.get("analytics_cache"))
+            "has_analysis": bool(status.get("analytics_cache")),
         }
 
     except HTTPException:
@@ -210,20 +210,17 @@ async def get_processing_status(session_id: str) -> dict:
 
 # === BACKGROUND PROCESSING ===
 
-async def _process_c3d_background(
-    session_id: str,
-    bucket: str,
-    object_path: str
-) -> None:
-    """Background task: Complete C3D file processing
-    
+
+async def _process_c3d_background(session_id: str, bucket: str, object_path: str) -> None:
+    """Background task: Complete C3D file processing.
+
     Populates all database tables:
     - therapy_sessions (update with results)
     - c3d_technical_data
     - emg_statistics (per channel)
     - performance_scores
     - processing_parameters
-    
+
     Args:
         session_id: Therapy session UUID
         bucket: Storage bucket name
@@ -237,9 +234,7 @@ async def _process_c3d_background(
 
         # Process C3D file completely
         result = await session_processor.process_c3d_file(
-            session_id=session_id,
-            bucket=bucket,
-            object_path=object_path
+            session_id=session_id, bucket=bucket, object_path=object_path
         )
 
         if result["success"]:
@@ -256,18 +251,15 @@ async def _process_c3d_background(
         logger.error(f"❌ Background processing failed: {e!s}", exc_info=True)
 
         # Update status to failed
-        await session_processor.update_session_status(
-            session_id,
-            "failed",
-            error_message=str(e)
-        )
+        await session_processor.update_session_status(session_id, "failed", error_message=str(e))
 
 
 # === HEALTH CHECK ===
 
+
 @router.get("/health")
 async def webhook_health() -> dict:
-    """Webhook service health check"""
+    """Webhook service health check."""
     return {
         "service": "C3D Webhook Processing",
         "status": "healthy",
@@ -275,7 +267,7 @@ async def webhook_health() -> dict:
             "therapy_sessions",
             "emg_statistics",
             "c3d_technical_data",
-            "performance_scores"
+            "performance_scores",
         ],
-        "features": ["background_processing", "signature_verification", "status_tracking"]
+        "features": ["background_processing", "signature_verification", "status_tracking"],
     }

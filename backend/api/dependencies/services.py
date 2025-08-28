@@ -1,4 +1,4 @@
-"""Service Dependencies
+"""Service Dependencies.
 ===================
 
 Service injection patterns for dependency inversion.
@@ -13,10 +13,10 @@ from services.c3d.processor import GHOSTLYC3DProcessor
 
 def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:
     """Factory for C3D processor instances.
-    
+
     Args:
         file_path: Path to C3D file (set later for upload endpoints)
-        
+
     Returns:
         GHOSTLYC3DProcessor: Configured processor instance
     """
@@ -25,7 +25,7 @@ def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:
 
 def get_mvc_service():
     """Get MVC service singleton.
-    
+
     Returns:
         MVCService: MVC estimation service instance
     """

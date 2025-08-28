@@ -1,6 +1,7 @@
 """Supabase client configuration for the EMG C3D Analyzer
-Provides centralized database connection management
+Provides centralized database connection management.
 """
+
 import logging
 import os
 
@@ -21,14 +22,14 @@ _supabase_client: Client | None = None
 
 
 def get_supabase_client(use_service_key: bool = False) -> Client:
-    """Get or create Supabase client instance
-    
+    """Get or create Supabase client instance.
+
     Args:
         use_service_key: If True, use service key for admin operations (bypasses RLS)
-    
+
     Returns:
         Configured Supabase client
-        
+
     Raises:
         ValueError: If environment variables are not set
     """
@@ -47,9 +48,7 @@ def get_supabase_client(use_service_key: bool = False) -> Client:
 
         if not supabase_url or not supabase_key:
             missing_key = "SUPABASE_SERVICE_KEY" if use_service_key else "SUPABASE_ANON_KEY"
-            raise ValueError(
-                f"SUPABASE_URL and {missing_key} environment variables must be set"
-            )
+            raise ValueError(f"SUPABASE_URL and {missing_key} environment variables must be set")
 
         try:
             client = create_client(supabase_url, supabase_key)
@@ -59,25 +58,25 @@ def get_supabase_client(use_service_key: bool = False) -> Client:
             return client
 
         except Exception as e:
-            logger.error(f"Failed to initialize Supabase client: {e!s}")
+            logger.exception(f"Failed to initialize Supabase client: {e!s}")
             raise
 
     return _supabase_client
 
 
 def reset_client():
-    """Reset the global client instance (mainly for testing)"""
+    """Reset the global client instance (mainly for testing)."""
     global _supabase_client
     _supabase_client = None
 
 
 class SupabaseConnectionError(Exception):
-    """Raised when Supabase connection fails"""
+    """Raised when Supabase connection fails."""
 
 
 def test_connection() -> bool:
-    """Test the Supabase connection
-    
+    """Test the Supabase connection.
+
     Returns:
         True if connection is successful, False otherwise
     """
@@ -91,5 +90,5 @@ def test_connection() -> bool:
         return True
 
     except Exception as e:
-        logger.error(f"Supabase connection test failed: {e!s}")
+        logger.exception(f"Supabase connection test failed: {e!s}")
         return False

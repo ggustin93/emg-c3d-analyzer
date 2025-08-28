@@ -1,6 +1,7 @@
 """Simple Cache Monitoring API
-Basic cache health, stats, and management endpoints
+Basic cache health, stats, and management endpoints.
 """
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -33,7 +34,7 @@ class CacheStatsResponse(BaseModel):
 
 @router.get("/health", response_model=CacheHealthResponse)
 async def get_cache_health():
-    """Check Redis cache health"""
+    """Check Redis cache health."""
     try:
         cache = await get_redis_cache()
         health = await cache.health_check()
@@ -42,22 +43,22 @@ async def get_cache_health():
             healthy=health["healthy"],
             message=health.get("message", "Health check completed"),
             error=health.get("error"),
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.utcnow().isoformat(),
         )
 
     except Exception as e:
-        logger.error(f"Health check failed: {e!s}")
+        logger.exception(f"Health check failed: {e!s}")
         return CacheHealthResponse(
             healthy=False,
             message="Health check failed",
             error=str(e),
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.utcnow().isoformat(),
         )
 
 
 @router.get("/stats", response_model=CacheStatsResponse)
 async def get_cache_stats():
-    """Get cache statistics"""
+    """Get cache statistics."""
     try:
         cache = await get_redis_cache()
         stats = await cache.get_stats()
@@ -72,21 +73,21 @@ async def get_cache_stats():
             hits=stats.get("hits", 0),
             misses=stats.get("misses", 0),
             total_requests=stats.get("total_requests", 0),
-            config=stats.get("config", {})
+            config=stats.get("config", {}),
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get cache stats: {e!s}")
+        logger.exception(f"Failed to get cache stats: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/invalidate")
 async def invalidate_cache_pattern(
-    pattern: str = Query(..., description="Cache key pattern to invalidate")
+    pattern: str = Query(..., description="Cache key pattern to invalidate"),
 ):
-    """Invalidate cache keys matching pattern"""
+    """Invalidate cache keys matching pattern."""
     try:
         patterns = await get_cache_patterns()
         count = await patterns.invalidate_by_pattern(pattern)
@@ -95,17 +96,17 @@ async def invalidate_cache_pattern(
             "status": "completed",
             "invalidated_keys": count,
             "pattern": pattern,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     except Exception as e:
-        logger.error(f"Cache invalidation failed: {e!s}")
+        logger.exception(f"Cache invalidation failed: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/dashboard")
 async def get_cache_dashboard():
-    """Get cache dashboard data"""
+    """Get cache dashboard data."""
     try:
         cache = await get_redis_cache()
         health = await cache.health_check()
@@ -116,18 +117,18 @@ async def get_cache_dashboard():
             "health": {
                 "status": "healthy" if health["healthy"] else "unhealthy",
                 "message": health.get("message", ""),
-                "error": health.get("error")
+                "error": health.get("error"),
             },
             "performance": {
                 "memory_mb": stats.get("memory_mb", 0),
                 "hit_rate": stats.get("hit_rate", 0),
                 "total_requests": stats.get("total_requests", 0),
                 "hits": stats.get("hits", 0),
-                "misses": stats.get("misses", 0)
+                "misses": stats.get("misses", 0),
             },
-            "config": stats.get("config", {})
+            "config": stats.get("config", {}),
         }
 
     except Exception as e:
-        logger.error(f"Dashboard error: {e!s}")
+        logger.exception(f"Dashboard error: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))

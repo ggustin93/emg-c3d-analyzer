@@ -1,1 +1,1 @@
-"""EMG signal processing"""
+"""EMG signal processing."""

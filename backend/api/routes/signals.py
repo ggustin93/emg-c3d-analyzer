@@ -1,4 +1,4 @@
-"""JIT Signal Generation API Routes
+"""JIT Signal Generation API Routes.
 ================================
 
 🎯 PURPOSE: Just-In-Time signal generation for frontend compatibility
@@ -7,7 +7,7 @@ generates signal data on-demand when needed for visualization.
 
 🚀 BENEFITS:
 - Frontend continues working seamlessly
-- 99% storage reduction maintained  
+- 99% storage reduction maintained
 - Signals generated only when needed
 - Memory efficient processing
 
@@ -22,12 +22,12 @@ import tempfile
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from config import get_settings
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from config import get_settings
 from database.supabase_client import get_supabase_client
 from models import GameSessionParameters, ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
@@ -40,7 +40,8 @@ router = APIRouter(prefix="/signals", tags=["signals"])
 
 
 class SignalDataResponse(BaseModel):
-    """JIT signal data response"""
+    """JIT signal data response."""
+
     success: bool
     channel_name: str
     data: list[float]
@@ -53,7 +54,8 @@ class SignalDataResponse(BaseModel):
 
 
 class SignalGenerationError(BaseModel):
-    """Signal generation error response"""
+    """Signal generation error response."""
+
     success: bool
     error: str
     session_id: str
@@ -65,22 +67,24 @@ async def get_signal_data_jit(
     session_id: str,
     channel_name: str,
     include_rms: bool = Query(default=True, description="Include RMS envelope in response"),
-    downsample_factor: int = Query(default=1, description="Downsample factor for performance (1=no downsampling)")
+    downsample_factor: int = Query(
+        default=1, description="Downsample factor for performance (1=no downsampling)"
+    ),
 ) -> SignalDataResponse:
-    """🚀 Just-In-Time Signal Generation
-    
+    """🚀 Just-In-Time Signal Generation.
+
     Generates signal data on-demand for frontend charts after 99% storage optimization.
     Downloads C3D file from storage and extracts only the requested channel.
-    
+
     Args:
         session_id: Session UUID to get signal data for
         channel_name: EMG channel name (e.g., "BicepsL", "BicepsR")
         include_rms: Whether to include RMS envelope calculation
         downsample_factor: Downsample for performance (2=half samples, 4=quarter samples)
-        
+
     Returns:
         SignalDataResponse with time series data for the requested channel
-        
+
     Raises:
         HTTPException: 404 if session not found, 400 if channel not found, 500 if processing fails
     """
@@ -124,12 +128,14 @@ async def get_signal_data_jit(
             channel_name=channel_name,
             include_rms=include_rms,
             downsample_factor=downsample_factor,
-            session_id=session_id
+            session_id=session_id,
         )
 
         if not signal_data:
             logger.warning(f"⚠️ Channel not found: {channel_name} in session {session_id}")
-            raise HTTPException(status_code=404, detail=f"Channel '{channel_name}' not found in C3D file")
+            raise HTTPException(
+                status_code=404, detail=f"Channel '{channel_name}' not found in C3D file"
+            )
 
         logger.info(f"✅ JIT signal generated: {channel_name} ({len(signal_data['data'])} samples)")
 
@@ -142,7 +148,7 @@ async def get_signal_data_jit(
             sampling_rate=signal_data["sampling_rate"],
             duration_seconds=signal_data["duration_seconds"],
             generated_at=signal_data["generated_at"],
-            cache_note="Generated on-demand - not cached (99% storage optimization active)"
+            cache_note="Generated on-demand - not cached (99% storage optimization active)",
         )
 
     except HTTPException:
@@ -154,14 +160,14 @@ async def get_signal_data_jit(
 
 @router.get("/jit/{session_id}/channels", response_model=dict[str, Any])
 async def get_available_channels(session_id: str) -> dict[str, Any]:
-    """🔍 Get available channel names for JIT signal generation
-    
+    """🔍 Get available channel names for JIT signal generation.
+
     Returns metadata about available channels without generating full signals.
     Useful for frontend to know which channels are available.
-    
+
     Args:
         session_id: Session UUID to get channel info for
-        
+
     Returns:
         Dict with available channel names and metadata
     """
@@ -189,7 +195,7 @@ async def get_available_channels(session_id: str) -> dict[str, Any]:
             "sampling_rate": sampling_rate,
             "duration_seconds": duration_seconds,
             "jit_enabled": True,
-            "note": "Channels available for JIT signal generation (99% storage optimized)"
+            "note": "Channels available for JIT signal generation (99% storage optimized)",
         }
 
     except HTTPException:
@@ -204,20 +210,20 @@ async def _extract_single_channel_jit(
     channel_name: str,
     include_rms: bool = True,
     downsample_factor: int = 1,
-    session_id: str = ""
+    session_id: str = "",
 ) -> dict[str, Any] | None:
-    """🧮 Extract single channel data with JIT processing
-    
+    """🧮 Extract single channel data with JIT processing.
+
     Memory-efficient extraction of only the requested channel.
     Processes in temporary memory and cleans up immediately.
-    
+
     Args:
         file_data: Raw C3D file bytes
         channel_name: Specific channel to extract
         include_rms: Whether to calculate RMS envelope
         downsample_factor: Downsample factor for performance
         session_id: Session ID for logging
-        
+
     Returns:
         Dict with signal data or None if channel not found
     """
@@ -242,13 +248,11 @@ async def _extract_single_channel_jit(
         processing_opts = ProcessingOptions(
             threshold_factor=DEFAULT_THRESHOLD_FACTOR,
             min_duration_ms=DEFAULT_MIN_DURATION_MS,
-            smoothing_window=DEFAULT_SMOOTHING_WINDOW
+            smoothing_window=DEFAULT_SMOOTHING_WINDOW,
         )
 
         # Extract EMG data for all channels first (needed to find the requested channel)
-        emg_data_result = await run_in_threadpool(
-            processor.extract_emg_data
-        )
+        emg_data_result = await run_in_threadpool(processor.extract_emg_data)
 
         # Find the requested channel
         target_channel_data = None
@@ -258,7 +262,9 @@ async def _extract_single_channel_jit(
                 break
 
         if not target_channel_data:
-            logger.warning(f"⚠️ Channel '{channel_name}' not found in available channels: {list(emg_data_result.keys())}")
+            logger.warning(
+                f"⚠️ Channel '{channel_name}' not found in available channels: {list(emg_data_result.keys())}"
+            )
             return None
 
         # Extract signal arrays
@@ -274,7 +280,9 @@ async def _extract_single_channel_jit(
         if downsample_factor > 1:
             signal_array = signal_array[::downsample_factor]
             time_array = time_array[::downsample_factor]
-            logger.info(f"📉 Applied downsampling factor {downsample_factor}: {len(signal_array)} samples")
+            logger.info(
+                f"📉 Applied downsampling factor {downsample_factor}: {len(signal_array)} samples"
+            )
 
         # Calculate RMS envelope if requested
         rms_envelope = None
@@ -288,7 +296,9 @@ async def _extract_single_channel_jit(
             "data": signal_array,
             "time_axis": time_array,
             "sampling_rate": float(sampling_rate),
-            "duration_seconds": float(len(time_array) / sampling_rate) if sampling_rate > 0 else 0.0,
+            "duration_seconds": float(len(time_array) / sampling_rate)
+            if sampling_rate > 0
+            else 0.0,
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -299,7 +309,7 @@ async def _extract_single_channel_jit(
         return result
 
     except Exception as e:
-        logger.error(f"❌ JIT extraction failed for {channel_name}: {e!s}")
+        logger.exception(f"❌ JIT extraction failed for {channel_name}: {e!s}")
         return None
 
     finally:
@@ -310,10 +320,10 @@ async def _extract_single_channel_jit(
 
 @router.get("/health")
 async def health_check() -> dict[str, Any]:
-    """Health check endpoint for JIT signal generation service"""
+    """Health check endpoint for JIT signal generation service."""
     return {
         "service": "JIT Signal Generation",
         "status": "healthy",
         "optimization": "99% storage reduction active",
-        "features": ["on-demand", "memory-efficient", "single-channel-extraction"]
+        "features": ["on-demand", "memory-efficient", "single-channel-extraction"],
     }
