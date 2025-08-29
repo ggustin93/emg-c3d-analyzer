@@ -26,6 +26,7 @@ import asyncio
 import json
 import os
 import tempfile
+import logging
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import patch
@@ -532,7 +533,7 @@ class TestWebhookPerformanceAndReliability:
                 assert isinstance(response_data, dict), f"Payload {i}: Response should be JSON dict"
             except Exception:
                 # If not JSON, that's also acceptable for malformed input
-                pass
+                logging.info(f"Payload {i}: Received non-JSON response, which is acceptable for malformed input.")
 
 
 # Test markers for different test categories

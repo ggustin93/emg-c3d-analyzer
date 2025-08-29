@@ -13,7 +13,7 @@ from pathlib import Path
 # Add backend path for imports
 sys.path.append(str(Path(__file__).resolve().parents[1] / "backend"))
 
-from services.clinical.performance_scoring_service import (  # ruff: noqa: E402
+from services.clinical.performance_scoring_service import (  # noqa: E402
     PerformanceScoringService,
     ScoringWeights,
     SessionMetrics,
