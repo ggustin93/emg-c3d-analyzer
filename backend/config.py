@@ -62,11 +62,36 @@ EXPECTED_CONTRACTIONS_PER_MUSCLE = 12  # GHOSTLY+ protocol
 
 
 class DevelopmentDefaults:
-    """Default values for development/testing. KISS/MVP approach."""
+    """Default values for development/testing. KISS/MVP approach.
+    
+    PRODUCTION NOTE: In production, these parameters will be discovered by reading 
+    the C3D file metadata. The C3D format will be extended to include:
+    - BFR pressure settings FOR BOTH CHANNELS/MUSCLES (target_pressure_aop, actual_pressure_aop, cuff_pressure_mmhg)
+    - Expected contractions per muscle  
+    - RPE (Rating of Perceived Exertion)
+    - Therapist identification code
+    
+    NOTE: Blood pressure monitoring (systolic_bp_mmhg, diastolic_bp_mmhg) is NOT 
+    extracted from C3D files - these remain as development defaults for BFR safety calculations.
+    
+    These defaults are only used during development/testing when C3D files
+    may not contain complete clinical metadata.
+    """
 
-    # Only the critical values that fix the immediate webhook issue
-    BFR_PRESSURE_AOP: float = 50.0  # Safe BFR default
+    # BFR (Blood Flow Restriction) parameters - from C3D in production
+    BFR_PRESSURE_AOP: float = 50.0  # Safe BFR default (% AOP - Arterial Occlusion Pressure)
+    CUFF_PRESSURE_MMHG: float = 150.0  # Calculated from AOP (50% * 3.0 conversion factor)
+    
+    # Blood pressure monitoring defaults for BFR safety - from C3D in production
+    SYSTOLIC_BP: int = 120  # Normal systolic blood pressure (mmHg)
+    DIASTOLIC_BP: int = 80  # Normal diastolic blood pressure (mmHg)
+    
+    # Clinical assessment parameters - from C3D in production
     RPE_POST_SESSION: int = 4  # Optimal RPE for development testing
+    EXPECTED_CONTRACTIONS_PER_MUSCLE: int = 12  # Target contractions per muscle
+    
+    # Therapist identification (production: from C3D metadata)
+    THERAPIST_CODE: str = "DEV001"  # Development therapist identifier
 
 
 # Advanced Contraction Detection Parameters
@@ -146,9 +171,21 @@ DEFAULT_PORT = 8080
 LOG_LEVEL = "info"
 
 # --- Database Configuration ---
+# Supabase connection settings - supports both hosted and self-hosted deployments
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+# Self-hosted Supabase configuration examples:
+# HOSTED: SUPABASE_URL=https://your-project.supabase.co
+# SELF-HOSTED: SUPABASE_URL=http://supabase-kong:8000 (internal Docker network)
+# SELF-HOSTED: SUPABASE_URL=https://your-supabase-domain.com (external access)
+
+# For self-hosted setup with Coolify:
+# 1. Use internal service names for backend-to-supabase communication
+# 2. Generate ANON_KEY and SERVICE_KEY using Supabase JWT generator
+# 3. Ensure JWT_SECRET matches between application and Supabase GoTrue service
+# 4. Configure RLS policies in self-hosted PostgreSQL database
 
 # --- Redis Cache Configuration ---
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
