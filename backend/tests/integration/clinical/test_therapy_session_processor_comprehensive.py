@@ -143,14 +143,13 @@ class TestTherapySessionProcessorComprehensive:
     async def test_complete_database_table_population(
         self, processor, sample_processing_result, sample_processing_options, sample_session_params
     ):
-        """Test that all 6 database tables are populated correctly."""
+        """Test that all 5 database tables are populated correctly (c3d_technical_data replaced by game_metadata)."""
         session_id = str(uuid.uuid4())
         file_data = b"mock_c3d_data"
         
-        # Mock all database operations and dependencies
+        # Mock all database operations and dependencies (updated for game_metadata migration)
         with patch.object(processor, '_upsert_table') as mock_upsert, \
              patch.object(processor, '_upsert_table_with_composite_key') as mock_upsert_composite, \
-             patch.object(processor, '_populate_c3d_technical_data') as mock_populate_c3d, \
              patch.object(processor, '_populate_processing_parameters') as mock_populate_params, \
              patch.object(processor, '_populate_emg_statistics') as mock_populate_emg, \
              patch.object(processor, '_calculate_and_save_performance_scores') as mock_populate_scores, \
@@ -166,8 +165,7 @@ class TestTherapySessionProcessorComprehensive:
                 session_params=sample_session_params
             )
             
-            # Verify all 6 table population methods were called with correct parameters
-            mock_populate_c3d.assert_called_once()
+            # Verify all 5 table population methods were called with correct parameters (c3d_technical_data replaced by game_metadata)
             mock_populate_params.assert_called_once()
             mock_populate_emg.assert_called_once()
             mock_populate_scores.assert_called_once()
@@ -410,8 +408,8 @@ class TestTherapySessionProcessorComprehensive:
         """Test error handling and recovery mechanisms."""
         session_id = str(uuid.uuid4())
         
-        # Test database population failure
-        with patch.object(processor, '_populate_c3d_technical_data') as mock_populate:
+        # Test database population failure (updated for game_metadata migration)
+        with patch.object(processor, '_populate_processing_parameters') as mock_populate:
             mock_populate.side_effect = Exception("Database connection failed")
             
             with pytest.raises(Exception, match="Database population failed"):

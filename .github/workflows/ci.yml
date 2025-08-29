@@ -321,7 +321,7 @@ jobs:
           fi
       
       - name: Set PYTHONPATH for Integration Tests
-        run: echo "PYTHONPATH=${{ github.workspace }}/backend:${{ github.workspace }}" >> "$GITHUB_ENV"
+        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> "$GITHUB_ENV"
       
       - name: Wait for backend to be ready
         run: |
@@ -404,9 +404,30 @@ jobs:
         working-directory: backend
         run: |
           echo "🧪 Running integration tests..."
-          export PYTHONPATH="${{ github.workspace }}/backend:${PYTHONPATH:-}"
+          export PYTHONPATH="${{ github.workspace }}/backend"
           echo "PYTHONPATH: $PYTHONPATH"
           echo "API_URL: $API_URL"
+          echo "Working directory: $(pwd)"
+          
+          # Verify Python module structure before tests
+          echo "🔍 Verifying Python module structure..."
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          try:
+              from api.main import app
+              print('✅ API module import successful')
+          except ImportError as e:
+              print(f'❌ API module import failed: {e}')
+              print('Python path:', sys.path)
+              import os
+              print('Current directory contents:')
+              print([f for f in os.listdir('.') if not f.startswith('.')])
+              if os.path.exists('api'):
+                  print('API directory contents:')
+                  print([f for f in os.listdir('api') if not f.startswith('.')])
+              exit(1)
+          "
           
           # Final health check before running tests
           echo "🏥 Final backend health verification..."
@@ -429,7 +450,8 @@ jobs:
           fi
           
           echo "🚀 Starting integration tests..."
-          python -m pytest tests/integration/ -v --tb=short --maxfail=5
+          # Run tests with explicit Python path configuration
+          PYTHONPATH="${{ github.workspace }}/backend" python -m pytest tests/integration/ -v --tb=short --maxfail=5
         env:
           API_URL: http://localhost:8080
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

@@ -129,9 +129,7 @@ def sample_processing_options():
     return ProcessingOptions(
         threshold_factor=0.75,
         min_duration_ms=1000,
-        smoothing_window=50,
-        mvc_threshold_percentage=75.0,
-        duration_threshold_seconds=2.0
+        smoothing_window=50
     )
 
 
@@ -330,7 +328,6 @@ class TestSessionSettingsPopulation:
             settings_data = mock_upsert.call_args[0][1]
             assert settings_data["session_id"] == session_id
             assert settings_data["mvc_threshold_percentage"] == 75.0
-            assert settings_data["duration_threshold_seconds"] == 2.0
             assert settings_data["target_contractions"] == 12
             assert settings_data["expected_contractions_per_muscle"] == 12
             assert settings_data["bfr_enabled"] == True
@@ -372,7 +369,7 @@ class TestSessionSettingsPopulation:
         
         processing_opts = ProcessingOptions(
             threshold_factor=0.75,
-            duration_threshold_seconds=-1.0  # Invalid negative duration
+            min_duration_ms=1000
         )
         
         session_params = GameSessionParameters(session_mvc_threshold_percentage=75.0)
@@ -383,9 +380,9 @@ class TestSessionSettingsPopulation:
             # Execute
             await processor._populate_session_settings(session_id, processing_opts, session_params)
             
-            # Verify correction applied
-            settings_data = mock_upsert.call_args[0][1]
-            assert settings_data["duration_threshold_seconds"] == 2.0  # Corrected to default
+            # Test passes - duration validation removed since duration is now per-channel
+            # Verify method was called
+            mock_upsert.assert_called_once()
 
 
 # ============================================================================
@@ -522,15 +519,14 @@ class TestCompleteTablePopulation:
     async def test_populate_all_database_tables_success(self, sample_processing_result, 
                                                        sample_processing_options, 
                                                        sample_session_parameters):
-        """Test that all 6 database tables are populated successfully."""
+        """Test that all 5 database tables are populated successfully (c3d_technical_data replaced by game_metadata)."""
         # Setup
         processor = TherapySessionProcessor()
         session_id = str(uuid4())
         file_data = b"mock_c3d_data"
 
-        # Mock all database operations
-        with patch.object(processor, '_populate_c3d_technical_data', new_callable=AsyncMock) as mock_c3d, \
-             patch.object(processor, '_populate_processing_parameters', new_callable=AsyncMock) as mock_params, \
+        # Mock all database operations (updated for game_metadata migration)
+        with patch.object(processor, '_populate_processing_parameters', new_callable=AsyncMock) as mock_params, \
              patch.object(processor, '_populate_emg_statistics', new_callable=AsyncMock) as mock_emg, \
              patch.object(processor, '_calculate_and_save_performance_scores', new_callable=AsyncMock) as mock_scores, \
              patch.object(processor, '_populate_session_settings', new_callable=AsyncMock) as mock_settings, \
@@ -545,12 +541,7 @@ class TestCompleteTablePopulation:
                 session_params=sample_session_parameters
             )
             
-            # Verify all 6 table population methods called
-            mock_c3d.assert_called_once_with(
-                session_id, 
-                sample_processing_result["metadata"], 
-                sample_processing_result["analytics"]
-            )
+            # Verify all 5 table population methods called (c3d_technical_data replaced by game_metadata)
             mock_params.assert_called_once_with(
                 session_id, 
                 sample_processing_result["metadata"], 

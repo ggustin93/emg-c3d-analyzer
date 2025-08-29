@@ -7,7 +7,15 @@ Tests the parts that matter and can be reliably tested.
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+# Import the FastAPI app directly from the API module
+try:
+    from api.main import app
+except ImportError:
+    # Fallback for different import contexts
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from api.main import app
 from api.routes.webhooks import SupabaseStorageEvent
 
 

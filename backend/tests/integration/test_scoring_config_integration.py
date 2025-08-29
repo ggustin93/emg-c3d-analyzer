@@ -16,7 +16,15 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+# Import the FastAPI app directly from the API module
+try:
+    from api.main import app
+except ImportError:
+    # Fallback for different import contexts
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from api.main import app
 
 # Skip all tests if no Supabase credentials are available
 pytestmark = pytest.mark.skipif(

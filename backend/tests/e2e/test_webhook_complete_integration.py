@@ -41,7 +41,15 @@ backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from main import app
+# Import the FastAPI app directly from the API module
+try:
+    from api.main import app
+except ImportError:
+    # Fallback for different import contexts
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from api.main import app
 from database.supabase_client import get_supabase_client
 
 
