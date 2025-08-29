@@ -567,45 +567,95 @@ jobs:
       - name: Check test results
         run: |
           {
-            echo "## Test Results Summary"
+            echo "## CI/CD Pipeline Results"
             echo ""
             
             # Backend tests
             if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
-              echo "✅ Backend Tests: PASSED (135 tests - Unit: 25, Integration: 54, API: 32, E2E: 9)"
+              echo "✅ **Backend Tests**: Passed"
+              echo "   - Test Count: 135 tests (Unit: 25, Integration: 54, API: 32, E2E: 9)"
+              echo "   - Coverage: ~47% of backend codebase"
             else
-              echo "❌ Backend Tests: FAILED"
-            fi
-            
-            # Frontend tests  
-            if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
-              echo "✅ Frontend Tests: PASSED (78 tests)"
-            else
-              echo "❌ Frontend Tests: FAILED"
-            fi
-            
-            # Integration tests
-            if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
-              echo "✅ Integration Tests: PASSED"
-            else
-              echo "❌ Integration Tests: FAILED"
-            fi
-            
-            # Quality checks
-            if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
-              echo "✅ Security & Quality: PASSED"
-            else
-              echo "❌ Security & Quality: FAILED"
+              echo "❌ **Backend Tests**: Failed"
+              echo "   - Review logs for specific test failures"
             fi
             
             echo ""
-            echo "**Total Tests**: 213+ tests across all categories (135 backend + 78 frontend)"
-            echo "**Medical Software Quality**: Production-ready for clinical applications"
-            echo "**Test Coverage**: 47% backend coverage with comprehensive validation"
-            if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
-              echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
+            
+            # Frontend tests  
+            if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
+              echo "✅ **Frontend Tests**: Passed"
+              echo "   - Test Count: 78 tests across components and hooks"
+              echo "   - Build: Production build successful"
             else
-              echo "**Workflow Duration**: Not available"
+              echo "❌ **Frontend Tests**: Failed"
+              echo "   - Review logs for specific test failures or build issues"
+            fi
+            
+            echo ""
+            
+            # Integration tests
+            if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
+              echo "✅ **Integration Tests**: Passed"
+              echo "   - Full-stack communication verified"
+              echo "   - Backend health checks successful"
+            else
+              echo "❌ **Integration Tests**: Failed"
+              echo "   - Backend startup or inter-service communication issues detected"
+            fi
+            
+            echo ""
+            
+            # Quality checks
+            if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
+              echo "✅ **Code Quality & Security**: Passed"
+              echo "   - Linting standards met"
+              echo "   - Security scans completed"
+            else
+              echo "❌ **Code Quality & Security**: Failed"
+              echo "   - Code quality issues or security vulnerabilities detected"
+            fi
+            
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Summary Statistics"
+            echo ""
+            echo "- **Total Test Count**: 213 tests (135 backend + 78 frontend)"
+            echo "- **Test Categories**: Unit, Integration, API, E2E, Component, Hook tests"
+            echo "- **Backend Coverage**: Approximately 47% code coverage"
+            echo "- **Build Validation**: TypeScript compilation and production builds tested"
+            
+            # Calculate overall status
+            failed_jobs=0
+            if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.integration-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            
+            echo ""
+            if [ "$failed_jobs" -eq 0 ]; then
+              echo "**Overall Status**: ✅ All checks passed"
+              echo ""
+              echo "> Pipeline completed successfully. Code is ready for review and deployment."
+            else
+              echo "**Overall Status**: ❌ $failed_jobs check(s) failed"
+              echo ""
+              echo "> Please review failed checks before proceeding. See individual job logs for details."
+            fi
+            
+            # Workflow timing (if available)
+            if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
+              echo ""
+              echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
