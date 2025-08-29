@@ -21,20 +21,20 @@ export const QUALITY_COLORS = {
 } as const;
 
 export function getContractionAreaColors(flags: ContractionQualityFlags): QualityColors {
-  logger.contractionAnalysis('🎯 getContractionAreaColors called', flags);
+  logger.debug(LogCategory.CONTRACTION_ANALYSIS, '🎯 getContractionAreaColors called', flags);
   
   if (flags.isGood) {
-    logger.contractionAnalysis('→ Returning GOOD colors (green)', { colorType: 'good' });
+    logger.debug(LogCategory.CONTRACTION_ANALYSIS, '→ Returning GOOD colors (green)', { colorType: 'good' });
     return QUALITY_COLORS.good;
   }
   if ((flags.meetsMvc && !flags.meetsDuration) || (!flags.meetsMvc && flags.meetsDuration)) {
-    logger.contractionAnalysis('→ Returning ADEQUATE colors (yellow)', { 
+    logger.debug(LogCategory.CONTRACTION_ANALYSIS, '→ Returning ADEQUATE colors (yellow)', { 
       colorType: 'adequate',
       reason: flags.meetsMvc && !flags.meetsDuration ? 'mvc-only' : 'duration-only'
     });
     return QUALITY_COLORS.adequate;
   }
-  logger.contractionAnalysis('→ Returning POOR colors (red)', { colorType: 'poor' });
+  logger.debug(LogCategory.CONTRACTION_ANALYSIS, '→ Returning POOR colors (red)', { colorType: 'poor' });
   return QUALITY_COLORS.poor;
 }
 

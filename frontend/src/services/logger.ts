@@ -40,12 +40,12 @@ const loggers = Object.values(LogCategory).reduce((acc, category) => {
  * logger.error(LogCategory.AUTH, "Authentication failed", error);
  */
 export const logger = {
-  silly: (category: LogCategory, ...args: unknown[]): void => loggers[category].silly(...args),
-  debug: (category: LogCategory, ...args: unknown[]): void => loggers[category].debug(...args),
-  info: (category: LogCategory, ...args: unknown[]): void => loggers[category].info(...args),
-  warn: (category: LogCategory, ...args: unknown[]): void => loggers[category].warn(...args),
-  error: (category: LogCategory, ...args: unknown[]): void => loggers[category].error(...args),
-  fatal: (category: LogCategory, ...args: unknown[]): void => loggers[category].fatal(...args),
+  silly: (category: LogCategory, ...args: unknown[]) => loggers[category].silly(...args),
+  debug: (category: LogCategory, ...args: unknown[]) => loggers[category].debug(...args),
+  info: (category: LogCategory, ...args: unknown[]) => loggers[category].info(...args),
+  warn: (category: LogCategory, ...args: unknown[]) => loggers[category].warn(...args),
+  error: (category: LogCategory, ...args: unknown[]) => loggers[category].error(...args),
+  fatal: (category: LogCategory, ...args: unknown[]) => loggers[category].fatal(...args),
 };
 
 export default logger;
