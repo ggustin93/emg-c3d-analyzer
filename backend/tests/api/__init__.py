@@ -1,1 +1,1 @@
-"""API Tests"""
+"""API Tests."""

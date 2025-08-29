@@ -127,7 +127,7 @@ backend/
 │   └── main.py                    # FastAPI application and routing
 ├── database/
 │   └── supabase_client.py         # Database connection and operations
-├── services/                      # Domain-organized services
+├── services/                      # Domain-organized services (Domain-Driven Design)
 │   ├── analysis/                  # Analysis domain services
 │   │   ├── mvc_service.py         # MVC threshold estimation
 │   │   └── threshold_service.py   # Unified threshold management
@@ -138,10 +138,21 @@ backend/
 │   ├── cache/                     # Cache infrastructure
 │   │   ├── cache_patterns.py      # Advanced cache patterns
 │   │   ├── cache_service.py       # Cache service abstraction
-│   │   └── redis_cache.py         # Redis operations
+│   │   └── redis_cache_service.py # Redis operations
 │   ├── clinical/                  # Clinical domain services
-│   │   ├── performance_scoring_service.py # GHOSTLY+ performance analytics
-│   │   └── therapy_session_processor.py  # Session workflows
+│   │   ├── repositories/          # Clinical data access layer
+│   │   │   ├── patient_repository.py        # Patient profile management
+│   │   │   ├── therapy_session_repository.py # Session data access
+│   │   │   └── emg_data_repository.py       # EMG metrics storage
+│   │   ├── performance_scoring_service.py   # GHOSTLY+ performance analytics
+│   │   └── therapy_session_processor.py    # Session workflows
+│   ├── user/                      # User domain services (separated from clinical)
+│   │   └── repositories/          # User data access
+│   │       └── user_repository.py # User profiles and authentication
+│   ├── shared/                    # Common service components
+│   │   └── repositories/          # Shared repository base classes
+│   │       └── base/
+│   │           └── abstract_repository.py # Common repository patterns
 │   ├── data/                      # Data management domain
 │   │   ├── export_service.py      # Export and formatting
 │   │   └── metadata_service.py    # Metadata extraction
@@ -246,14 +257,14 @@ Supabase provides **PostgreSQL database and secure file storage** with authentic
 
 The system includes a **comprehensive test suite achieving 100% validation success** with 111+ total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
 
-### 5.1 Current Test Results (January 2025) ✅
+### 5.1 Current Test Results (August 2025) ✅
 
 **Overall Test Summary: 111+ Tests Passing (100% Success Rate)**
-- **Backend Tests: 33/33 passing** with comprehensive EMG analysis coverage
+- **Backend Tests: 46/46 passing** with comprehensive EMG analysis coverage including production webhook integration
 - **API Tests: 19/19 passing** with FastAPI TestClient validation  
-- **E2E Tests: 3/3 passing** with real 2.74MB GHOSTLY clinical data
+- **E2E Tests: 9/9 passing** with real 2.74MB GHOSTLY clinical data and full integration workflows
 - **Frontend Tests: 78/78 passing** across all components and workflows
-- **Integration Tests: passing** with automated CI/CD validation
+- **Integration Tests: passing** with complete Supabase Storage webhook validation
 
 ### 5.2 Backend Testing Achievement ✅
 
@@ -274,9 +285,10 @@ The system includes a **comprehensive test suite achieving 100% validation succe
 **Real Clinical Data E2E Testing**
 - **Test File**: `Ghostly_Emg_20230321_17-50-17-0881.c3d` (2.74MB)
 - **Duration**: 175.1 seconds of EMG data at 990Hz sampling
-- **Results**: 20 CH1 contractions + 9 CH2 contractions detected
-- **Pipeline**: Complete upload → process → analyze → validate workflow
-- **Performance**: API response time benchmarks validated
+- **Results**: 20 CH1 contractions + 9 CH2 contractions detected with clinical-grade analysis
+- **Pipeline**: Complete upload → webhook → process → database → validate workflow
+- **Integration**: Full Supabase Storage webhook processing with therapist_id extraction
+- **Performance**: Real-time EMG processing with background task orchestration validated
 
 ### 5.3 Frontend Testing Achievement ✅
 
@@ -312,11 +324,12 @@ The system includes a **comprehensive test suite achieving 100% validation succe
 ### 5.5 Test Execution Commands
 
 ```bash
-# Backend Tests (33 tests) - In virtual environment  
+# Backend Tests (46 tests) - In virtual environment  
 cd backend
 source venv/bin/activate
 python -m pytest tests/ -v                    # All tests with verbose output
-python -m pytest tests/test_e2e* -v -s       # E2E tests with real C3D data
+python -m pytest tests/e2e/ -v -s            # E2E tests with complete integration workflows
+SKIP_E2E_TESTS=false python -m pytest tests/e2e/test_webhook_complete_integration.py -v  # Full Supabase integration
 python -m pytest tests/ --cov=backend        # Tests with coverage report
 
 # Frontend Tests (78 tests)
@@ -330,20 +343,23 @@ npm test -- --coverage                      # Tests with coverage report
 ./start_dev_simple.sh --test                # All 111+ tests with environment validation
 ```
 
-### 5.6 Production-Ready Webhook System ✅
+### 5.6 Production-Ready Webhook Integration ✅
 
-**Key Achievement: Complete Webhook Integration**
-- **Real Supabase Integration**: Handles actual `storage.objects` INSERT events from Supabase Database triggers
-- **Automated Processing**: C3D files uploaded to Supabase Storage are automatically processed without manual intervention
-- **Database Population**: Populates all simplified database tables (therapy_sessions, processing_parameters, analytics_cache)
-- **Error Recovery**: Robust handling of corrupted C3D files, network issues, and processing failures
-- **Duplicate Detection**: File hash-based deduplication prevents reprocessing identical files
-- **Security**: HMAC-SHA256 signature verification with configurable webhook secrets
+**Complete End-to-End Integration Achievement**
+- **Real Supabase Storage**: Handles actual file uploads to `c3d-examples` bucket with automatic webhook triggers
+- **Clinical Workflow**: Complete therapeutic session processing with patient/therapist relationship validation
+- **EMG Analysis Pipeline**: 20 contractions detected with amplitude (3.82e-04V peak) and duration analysis
+- **Database Population**: Session creation with proper UUID relationships and processing status tracking
+- **Background Processing**: Asynchronous C3D processing with immediate webhook response (<200ms)
+- **Therapist ID Extraction**: Production-ready patient lookup with therapist relationship validation
+- **Security**: HMAC-SHA256 signature verification with webhook payload validation
 
-**Validated with Real C3D File:**
-- Test file: `Ghostly_Emg_20230321_17-50-17-0881.c3d` (2.9MB)
-- Upload → Webhook trigger → Processing → Database population: **SUCCESSFUL** ✅
-- All 30 webhook integration tests passing with real Supabase format
+**Integration Test Results:**
+- **Test Session**: `b101a1a9-5c28-4c76-a6ce-06075d52998f` created successfully
+- **Patient/Therapist Link**: P001 → `e7b43581-743b-4211-979e-76196575ee99` validated
+- **Clinical Analysis**: Complete EMG pipeline with 20 contractions, 100% MVC compliance, therapeutic assessment
+- **File Processing**: Real upload to `c3d-examples/P001/test_session_9dda6813.c3d`
+- **Production Architecture**: Webhook → Session Creation → Background Processing → Clinical Output
 
 ### 5.7 Database Schema Simplification Achievement ✅
 
@@ -443,10 +459,11 @@ npm test -- --coverage            # Generate coverage report
 npm run build                     # Production build validation
 npm run type-check                # TypeScript validation
 
-# Backend Tests (33 tests)
+# Backend Tests (46 tests)
 cd backend  
 python -m pytest tests/ -v       # Full test suite
-python -m pytest tests/test_e2e* -v  # E2E tests with real data
+python -m pytest tests/e2e/ -v   # E2E tests with complete integration workflows
+SKIP_E2E_TESTS=false python -m pytest tests/e2e/ -v  # Full Supabase Storage integration
 python -m pytest tests/ --cov=backend  # Coverage report
 ```
 

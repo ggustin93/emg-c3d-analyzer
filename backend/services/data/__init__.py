@@ -1,11 +1,10 @@
-"""
-Data Management Domain Services
+"""Data Management Domain Services.
 ===============================
 
 Services for data persistence, export, and metadata management.
 """
 
-from .export_service import EMGDataExporter
-from .metadata_service import MetadataService
+from services.data.export_service import EMGDataExporter
+from services.data.metadata_service import MetadataService
 
 __all__ = ["EMGDataExporter", "MetadataService"]

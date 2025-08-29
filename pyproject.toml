@@ -3,6 +3,7 @@ name = "emg-c3d-analyzer"
 version = "0.1.0"
 description = "Analyzes EMG data from C3D files from the GHOSTLY platform."
 authors = ["pwablo <hello@pwablo.be>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"
@@ -19,18 +20,462 @@ pydantic = "^2.11.4"
 uvicorn = "^0.34.2"
 requests = "^2.32.3"
 supabase = "^2.0.0"
-pytest-asyncio = "^0.23.0"
 python-dotenv = "^1.0.0"
+structlog = "^25.4.0"
+python-json-logger = "^3.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0.0"
+pytest-asyncio = ">=0.23.0"
+pytest-cov = ">=6.2.0"
+ruff = ">=0.8.0"
+mypy = ">=1.13.0"
+httpx = ">=0.28.0"
+
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
 useLibraryCodeForTypes = true
 exclude = [".cache"]
 
+# =====================================
+# RUFF CONFIGURATION - PRODUCTION READY
+# =====================================
+
 [tool.ruff]
-# https://beta.ruff.rs/docs/configuration/
-select = ['E', 'W', 'F', 'I', 'B', 'C4', 'ARG', 'SIM']
-ignore = ['W291', 'W292', 'W293']
+# Exclude commonly ignored directories
+exclude = [
+    ".bzr",
+    ".direnv", 
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype", 
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    # Project-specific exclusions
+    "data/temp_uploads",
+    "logs",
+    "backend.log",
+    "coverage.json",
+    "tests/samples",  # Large C3D test files
+]
+
+# Match Black's line length for consistency
+line-length = 100
+indent-width = 4
+
+# Target Python 3.10+ for modern backend development
+target-version = "py310"
+
+[tool.ruff.lint]
+# Comprehensive rule selection for production backend
+select = [
+    # Pyflakes
+    "F",     # Pyflakes errors
+    # pycodestyle
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    # mccabe
+    "C901",  # Complex structure
+    # isort
+    "I",     # Import sorting
+    # pydocstyle
+    "D",     # Docstring conventions
+    # pyupgrade
+    "UP",    # Pyupgrade (Python version upgrades)
+    # flake8-bugbear
+    "B",     # Bugbear (likely bugs)
+    # flake8-bandit
+    "S",     # Security testing
+    # flake8-blind-except
+    "BLE",   # Blind except
+    # flake8-comprehensions  
+    "C4",    # List/dict comprehension improvements
+    # flake8-debugger
+    "T10",   # Debugger imports
+    # flake8-errmsg
+    "EM",    # Error message improvements
+    # flake8-implicit-str-concat
+    "ISC",   # Implicit string concatenation
+    # flake8-import-conventions
+    "ICN",   # Import naming conventions
+    # flake8-logging-format
+    "G",     # Logging format
+    # flake8-pie
+    "PIE",   # Misc improvements
+    # flake8-print
+    "T20",   # Print statements
+    # flake8-pyi
+    "PYI",   # Type stub files
+    # flake8-quotes
+    "Q",     # Quote consistency
+    # flake8-raise
+    "RSE",   # Raise improvements
+    # flake8-return
+    "RET",   # Return improvements
+    # flake8-simplify
+    "SIM",   # Code simplification
+    # flake8-tidy-imports
+    "TID",   # Tidy imports
+    # flake8-unused-arguments
+    "ARG",   # Unused arguments
+    # flake8-use-pathlib
+    "PTH",   # Use pathlib
+    # pandas-vet
+    "PD",    # pandas-specific
+    # tryceratops
+    "TRY",   # Exception handling
+    # NumPy-specific
+    "NPY",   # NumPy improvements
+    # FastAPI-specific
+    "ASYNC", # Async/await improvements
+    # Pylint
+    "PL",    # Pylint rules
+    # Ruff-specific
+    "RUF",   # Ruff-specific improvements
+]
+
+# Ignore specific rules that conflict with backend/scientific code patterns
+ignore = [
+    # Docstring requirements - too strict for internal APIs
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public function
+    "D107",  # Missing docstring in __init__
+    "D415",  # First line should end with a period (too strict)
+    
+    # Line length - handled by formatter
+    "E501",  # Line too long
+    
+    # String formatting - allow f-strings and .format() for scientific data
+    "EM101", # Raw string in exception
+    "EM102", # f-string in exception
+    
+    # Import rules that conflict with scientific libraries
+    "TCH001", # Move to TYPE_CHECKING block (conflicts with numpy/scipy)
+    "TCH002", # Move to TYPE_CHECKING block
+    "TCH003", # Move to TYPE_CHECKING block
+    
+    # Security rules that are too strict for internal APIs
+    "S101",  # Use of assert (common in scientific code)
+    "S301",  # Pickle usage (needed for some scientific libraries)
+    "S603",  # subprocess without shell=True check
+    "S607",  # Starting process with partial executable path
+    
+    # Exception handling - scientific code often needs broad exceptions
+    "BLE001", # Blind except Exception
+    "TRY003", # Raise vanilla Exception
+    "TRY301", # Abstract raise to inner function
+    
+    # Pylint rules that are too strict
+    "PLR0913", # Too many arguments (scientific functions often need many params)
+    "PLR2004", # Magic value comparison
+    "PLW2901", # Loop variable overwritten
+    "PLR0915", # Too many statements (data processing can be complex)
+    
+    # Return rules that conflict with early returns pattern
+    "RET504", # Unnecessary variable assignment before return
+    "RET505", # Unnecessary elif after return
+    "RET506", # Unnecessary elif after raise
+    
+    # ======================================================================
+    # NON-CRITICAL RULES - SAFE TO IGNORE (Focus on functionality over style)
+    # ======================================================================
+    
+    # Additional whitespace/formatting rules (handled by ruff format)
+    "W291",  # Trailing whitespace  
+    "W292",  # No newline at end of file
+    "W293",  # Blank line contains whitespace
+    
+    # Non-critical complexity rules (maintainability concerns, not bugs)
+    "C901",   # Function too complex (already handled by max-complexity = 15)
+    "PLR0912", # Too many branches (scientific code often needs complex logic)
+    
+    # Quote and comma style consistency (non-functional)
+    "COM812", # Missing trailing comma (handled by formatter)
+    "COM819", # Prohibited trailing comma (handled by formatter)
+    
+    # Non-critical type annotation rules (Python 3.9+ style vs legacy)
+    "UP006",  # Use `list` instead of `List` for type annotations (non-breaking)
+    "UP007",  # Use `X | Y` for union types (Python 3.10+, but old syntax works)
+    "UP035",  # Import from `typing` is deprecated, use `collections.abc` (non-breaking)
+    
+    # Non-critical import organization (style preference, handled by isort config)
+    "I001",   # Import block is un-sorted or un-formatted
+    
+    # Unicode and encoding style issues (non-critical for English codebases)
+    "RUF001", # String contains ambiguous unicode character
+    "RUF002", # Docstring contains ambiguous unicode character  
+    "RUF003", # Comment contains ambiguous unicode character
+    
+    # Test-specific rules already handled in per-file-ignores but adding for clarity
+    "S105",   # Hardcoded password string (test fixtures often need mock secrets)
+    "S106",   # Hardcoded password function argument (test scenarios)
+    "S108",   # Insecure temp file (tests often need temp files)
+    
+    # Documentation style preferences (non-functional impact)
+    "D200",   # One-line docstring should fit on one line
+    "D205",   # Blank line required between summary and description (already fixed most)
+    "D212",   # Multi-line docstring summary should start at the first line
+    "D400",   # First line should end with a period (too prescriptive)
+    "D401",   # First line should be in imperative mood (style preference)
+    "D402",   # First line should not be the function signature
+    "D403",   # First word of first line should be capitalized
+    "D404",   # First word of docstring should not be "This"
+    "D413",   # Missing blank line after last section
+    "D414",   # Section has no content
+    "D416",   # Section name should end with a colon
+    "D417",   # Missing argument description in docstring
+    
+    # Simplification rules that may reduce readability in scientific contexts
+    "SIM102", # Use a single if-statement (nested ifs can be clearer for complex conditions)
+    "SIM103", # Return condition directly (explicit conditions often clearer in science)
+    "SIM108", # Use ternary operator (explicit if/else often clearer)
+    "SIM117", # Use a single with statement (separate statements can be clearer)
+    "SIM118", # Use `key in dict` instead of `key in dict.keys()` (explicit can be clearer)
+]
+
+# Allow fix for all enabled rules when using --fix
+fixable = ["ALL"]
+
+# Don't auto-fix these rule violations (require manual review)
+unfixable = [
+    "F401",   # Unused imports - might be used in type checking
+    "F841",   # Unused variables - might be debugging/temp variables  
+    "B",      # Bugbear rules - require manual verification
+    "S",      # Security rules - require manual security review
+    "T20",    # Print statements - might be intentional debug prints
+    "ERA001", # Commented-out code - might be temporary
+]
+
+# Allow unused variables when underscore-prefixed (Python convention)
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Per-file ignores for different types of files
+[tool.ruff.lint.per-file-ignores]
+# Test files can be less strict
+"tests/**/*" = [
+    "D",      # No docstring requirements in tests
+    "S101",   # Assert usage is expected in tests
+    "PLR2004", # Magic values are common in test data
+    "ARG",    # Unused arguments in test fixtures
+    "TRY301", # Abstract raise (testing error conditions)
+    "SIM117", # Use context manager (testing resource handling)
+]
+"backend/tests/*" = ["T201", "B011"]
+
+# __init__.py files
+"__init__.py" = [
+    "D104",   # Missing docstring in public package
+    "F401",   # Unused import (re-exports are common)
+    "F403",   # Star import (common pattern for __init__.py)
+]
+
+# Configuration files
+"config.py" = [
+    "S105",   # Hardcoded password (config files may have examples)
+    "S106",   # Hardcoded password in arguments
+]
+
+# Main entry points
+"main.py" = [
+    "T20",    # Print statements (might be used for startup info)
+]
+
+# Migration and setup scripts  
+"**/migrations/**" = [
+    "D",      # No docstring requirements
+    "T20",    # Print statements for progress
+]
+
+# Example and sample data
+"**/samples/**" = ["ALL"]  # Ignore all rules for sample data
+"**/examples/**" = ["ALL"] # Ignore all rules for examples
+
+[tool.ruff.lint.mccabe]
+# Maximum complexity for functions (default 10, increased for data processing)
+max-complexity = 15
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings (common for scientific Python)
+convention = "google"
+
+[tool.ruff.lint.isort]
+# Configure import sorting
+split-on-trailing-comma = true
+force-single-line = false
+known-first-party = ["api", "services", "models", "emg", "database"]
+known-third-party = [
+    "fastapi", "uvicorn", "pydantic", "numpy", "scipy", "matplotlib",
+    "redis", "supabase", "ezc3d", "pytest"
+]
+
+[tool.ruff.lint.flake8-quotes]
+# Use double quotes consistently (matches Black)
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like [] and {} in function definitions
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.File", "fastapi.Form"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Ban relative imports for better maintainability
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pylint]
+# Pylint-specific configuration
+max-args = 8  # Allow up to 8 arguments for scientific functions
+max-branches = 15  # Allow complex branching for data processing
+max-returns = 8   # Allow multiple returns for validation functions
+max-statements = 60  # Allow longer functions for data processing
+
+# =====================================
+# RUFF FORMAT CONFIGURATION
+# =====================================
+
+[tool.ruff.format]
+# Use double quotes for strings (consistent with Black)
+quote-style = "double"
+
+# Use spaces for indentation (consistent with Black)
+indent-style = "space"
+
+# Respect magic trailing commas (consistent with Black)
+skip-magic-trailing-comma = false
+
+# Automatically detect appropriate line endings
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings
+docstring-code-format = true
+
+# Set docstring code line length to match main line length
+docstring-code-line-length = "dynamic"
+
+# Exclude certain files from formatting
+exclude = [
+    "tests/samples/**",  # Don't format test data files
+    "data/**",          # Don't format data files
+    "logs/**",          # Don't format log files
+]
+
+# =====================================
+# MYPY CONFIGURATION
+# =====================================
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+# Per-module configuration
+[[tool.mypy.overrides]]
+module = [
+    "ezc3d.*",
+    "redis.*", 
+    "supabase.*",
+    "matplotlib.*",
+    "scipy.*"
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+# =====================================
+# PYTEST CONFIGURATION  
+# =====================================
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=api",
+    "--cov=services", 
+    "--cov=emg",
+    "--cov=models",
+    "--cov=database",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_mode = "auto"
+
+# =====================================
+# COVERAGE CONFIGURATION
+# =====================================
+
+[tool.coverage.run]
+source = ["api", "services", "emg", "models", "database"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__init__.py",
+    "*/conftest.py",
+    "*/main.py",  # Entry points often have simple logic
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

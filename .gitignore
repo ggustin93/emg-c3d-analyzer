@@ -71,6 +71,7 @@ htmlcov/
 # Frontend coverage temporary files
 frontend/coverage/.tmp/
 frontend/coverage/**/*.json
+frontend/coverage/.tmp/coverage-*.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -158,8 +159,11 @@ logs/
 # Playwright test directory
 .playwright-mcp/
 
+coverage/
+
 # Temporary and urgent notes
 frontend/URGENT_BEFORE_DEMO_MVC.txt
 frontend/URGENT_TODO_GEMINI_BEFORE_DEMO
 memory-bank/URGENT-19-08.md
 memory-bank/tasks/19-aug-2025-single-source-of-truth-fixes.md
+frontend/coverage/.tmp

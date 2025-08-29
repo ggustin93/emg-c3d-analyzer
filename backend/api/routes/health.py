@@ -1,5 +1,4 @@
-"""
-Health Check Routes
+"""Health Check Routes.
 ==================
 
 System health monitoring endpoints.
@@ -7,6 +6,7 @@ Single responsibility: Application health status.
 """
 
 from datetime import datetime
+
 from fastapi import APIRouter
 
 router = APIRouter(tags=["health"])
@@ -35,7 +35,7 @@ async def root():
                 "update_rpe": "POST /scores/update-rpe - Update RPE for a session",
                 "update_game": "POST /scores/update-game - Update game scores for a session",
                 "adherence": "GET /scores/adherence - Get adherence score for a patient",
-                "synthetic": "POST /scores/synthetic - Generate synthetic scoring data"
-            }
-        }
+                "synthetic": "POST /scores/synthetic - Generate synthetic scoring data",
+            },
+        },
     }

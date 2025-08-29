@@ -1,5 +1,4 @@
-"""
-Analysis Routes
+"""Analysis Routes.
 ==============
 
 Analysis recalculation endpoints.
@@ -7,10 +6,16 @@ Single responsibility: EMG analysis recalculation without file re-upload.
 """
 
 import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from models.models import EMGAnalysisResult, ChannelAnalytics, GameMetadata, GameSessionParameters
+from models import (
+    ChannelAnalytics,
+    EMGAnalysisResult,
+    GameMetadata,
+    GameSessionParameters,
+)
 from services.c3d.processor import GHOSTLYC3DProcessor
 
 logger = logging.getLogger(__name__)
@@ -19,24 +24,24 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
 class RecalcRequest(BaseModel):
-    """Request model for analysis recalculation"""
+    """Request model for analysis recalculation."""
+
     existing: EMGAnalysisResult
     session_params: GameSessionParameters
 
 
 @router.post("/recalc", response_model=EMGAnalysisResult)
 async def recalc_analysis(request: RecalcRequest):
-    """
-    Recalculate analytics from an existing EMGAnalysisResult with updated session parameters.
+    """Recalculate analytics from an existing EMGAnalysisResult with updated session parameters.
     This avoids re-processing the entire C3D file and only updates counts/flags/thresholds
     based on the new parameters (e.g., duration threshold, MVC settings).
-    
+
     Args:
         request: Recalculation request with existing results and new parameters
-        
+
     Returns:
         EMGAnalysisResult: Updated analysis results
-        
+
     Raises:
         HTTPException: 500 for processing errors
     """
@@ -45,7 +50,9 @@ async def recalc_analysis(request: RecalcRequest):
         processor = GHOSTLYC3DProcessor(file_path="")
         updated = processor.recalculate_scores_from_data(
             existing_analytics={
-                "metadata": request.existing.metadata.model_dump() if request.existing.metadata else {},
+                "metadata": request.existing.metadata.model_dump()
+                if request.existing.metadata
+                else {},
                 "analytics": {k: v.model_dump() for k, v in request.existing.analytics.items()},
             },
             session_game_params=request.session_params,
@@ -73,9 +80,10 @@ async def recalc_analysis(request: RecalcRequest):
             session_id=request.existing.session_id,
         )
         return response_model
-        
+
     except Exception as e:
         import traceback
-        logger.error(f"ERROR in /analysis/recalc: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {str(e)}")
+
+        logger.exception("ERROR in /analysis/recalc: %s", e)
+        logger.exception(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error recalculating analytics: {e!s}")

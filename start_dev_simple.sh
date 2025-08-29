@@ -382,35 +382,40 @@ start_backend() {
     
     # Ensure logs directory exists
     mkdir -p "../logs"
-    local backend_log="../logs/backend.log"
-    local backend_err_log="../logs/backend.error.log"
+    local backend_console_log="../logs/backend_dev.log"
     
     # Check for venv and activate it
     if [ -d "venv" ]; then
         log_info "Activating Python virtual environment"
         source venv/bin/activate
         log_info "Using venv Python: $(which python)"
-        
-        # Verify key dependencies are installed
-        if ! python -c "import fastapi, ezc3d" 2>/dev/null; then
-            log_warning "Missing dependencies detected. Installing from requirements.txt..."
-            python -m pip install -r requirements.txt --upgrade
-        fi
+
+        log_info "Ensuring backend dependencies are up to date..."
+        ./venv/bin/python -m pip install -r requirements.txt --upgrade --quiet
+        log_success "Backend dependencies are synchronized."
     else
         log_error "No virtual environment found. Please run with --install first."
         exit 1
     fi
     
+    # Set PYTHONPATH for proper module resolution (same as CI/CD pipeline)
+    export PYTHONPATH="$(cd .. && pwd)/backend:$(cd .. && pwd)"
+    log_info "Set PYTHONPATH: $PYTHONPATH"
+    
     log_info "Starting Uvicorn server for the backend..."
-    # Start backend with proper logging
+    log_info "✅ Backend logs with timestamps: ../logs/backend.log"
+    log_info "✅ Error logs with timestamps: ../logs/backend.error.log"
+    log_info "📄 Console output also saved to: $backend_console_log"
+    
+    # Start backend - app handles internal file logging with timestamps
     if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
         log_info "Using Poetry to start backend"
         poetry run python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload \
-            >"$backend_log" 2>"$backend_err_log" &
+            >"$backend_console_log" 2>&1 &
     else
         log_info "Using uvicorn with activated venv"
-        python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload \
-            >"$backend_log" 2>"$backend_err_log" &
+        ./venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload \
+            >"$backend_console_log" 2>&1 &
     fi
     
     BACKEND_PID=$!
@@ -418,7 +423,9 @@ start_backend() {
     cd ..
     
     log_success "Backend server started with PID: $BACKEND_PID"
-    log_info "Logs: $backend_log (out), $backend_err_log (err)"
+    log_info "📊 Structured logs: logs/backend.log (timestamped)"
+    log_info "🚨 Error logs: logs/backend.error.log (errors only)"
+    log_info "🖥️  Console output: logs/backend_dev.log (from uvicorn)"
 }
 
 start_frontend() {
@@ -434,8 +441,8 @@ start_frontend() {
     
     # Ensure logs directory exists
     mkdir -p "../logs"
-    local frontend_log="../logs/frontend.log"
-    local frontend_err_log="../logs/frontend.error.log"
+    local frontend_console_log="../logs/frontend_dev.log"
+    local frontend_timestamped_log="../logs/frontend.log"
     
     # Set environment variables
     export REACT_APP_API_URL="http://localhost:$BACKEND_PORT"
@@ -463,17 +470,33 @@ start_frontend() {
     fi
     
     log_info "Starting frontend server with 'npm run $start_script'..."
+    log_info "✅ Frontend logs with timestamps: ../logs/frontend.log"
+    log_info "📄 Console output also saved to: $frontend_console_log"
+    
+    # Start frontend with timestamped logging using a wrapper
+    # First, start the process and capture output
     npm run "$start_script" -- --host 0.0.0.0 --port $FRONTEND_PORT \
-        >"$frontend_log" 2>"$frontend_err_log" &
+        > >(while IFS= read -r line; do echo "$(date '+%Y-%m-%d %H:%M:%S') [FRONTEND] $line"; done | tee -a "$frontend_timestamped_log") \
+        2> >(while IFS= read -r line; do echo "$(date '+%Y-%m-%d %H:%M:%S') [FRONTEND] $line"; done | tee -a "$frontend_timestamped_log" >&2) &
     FRONTEND_PID=$!
+    
+    # Also save raw output for compatibility
+    npm run "$start_script" -- --host 0.0.0.0 --port $FRONTEND_PORT \
+        >"$frontend_console_log" 2>&1 &
+    local RAW_FRONTEND_PID=$!
+    
+    # Kill the raw process and use only the timestamped one
+    sleep 1
+    kill "$RAW_FRONTEND_PID" 2>/dev/null || true
+    
     echo "$FRONTEND_PID" >> "$PID_FILE"  # Append to PID file
     
-    # Wait for frontend to be ready by polling the log file
+    # Wait for frontend to be ready by polling the timestamped log file
     log_info "Waiting for frontend server to be ready... (PID: $FRONTEND_PID)"
     local ready=false
     for _ in $(seq 1 30); do # Timeout after 30 seconds
-        # Look for URL patterns in the log
-        FRONTEND_URL=$(grep -o 'http://[0-9a-zA-Z.:-]*[0-9]\{4\}' "$frontend_log" | head -n 1 2>/dev/null || true)
+        # Look for URL patterns in both logs
+        FRONTEND_URL=$(grep -o 'http://[0-9a-zA-Z.:-]*[0-9]\{4\}' "$frontend_timestamped_log" "$frontend_console_log" 2>/dev/null | head -n 1 || true)
         if [[ -n "$FRONTEND_URL" ]]; then
             log_success "Frontend server is ready!"
             ready=true
@@ -484,15 +507,21 @@ start_frontend() {
     
     if [[ "$ready" == false ]]; then
         log_error "Frontend server failed to start or is taking too long."
-        log_error "Check logs for details: $frontend_err_log"
-        log_error "Last 10 lines of error log:"
-        tail -n 10 "$frontend_err_log" | sed "s/^/    ${RED}| ${NC}/"
+        log_error "Check timestamped logs: $frontend_timestamped_log"
+        log_error "Check console logs: $frontend_console_log"
+        log_error "Last 10 lines of timestamped log:"
+        if [ -f "$frontend_timestamped_log" ]; then
+            tail -n 10 "$frontend_timestamped_log" | sed "s/^/    ${RED}| ${NC}/"
+        else
+            tail -n 10 "$frontend_console_log" | sed "s/^/    ${RED}| ${NC}/"
+        fi
         cleanup
     fi
     
     cd ..
     log_success "Frontend started with PID: $FRONTEND_PID"
-    log_info "Logs: $frontend_log (out), $frontend_err_log (err)"
+    log_info "📊 Timestamped logs: logs/frontend.log"
+    log_info "🖥️  Console output: logs/frontend_dev.log"
 }
 
 run_tests() {
@@ -501,6 +530,10 @@ run_tests() {
     # Backend tests
     log_info "Running backend tests..."
     cd "$BACKEND_DIR"
+    
+    # Set PYTHONPATH for proper module resolution (same as CI/CD pipeline)
+    export PYTHONPATH="$(cd .. && pwd)/backend:$(cd .. && pwd)"
+    log_info "Set PYTHONPATH for tests: $PYTHONPATH"
     
     # Activate venv if it exists
     if [ -d "venv" ]; then
@@ -511,7 +544,7 @@ run_tests() {
     if [ -f "pyproject.toml" ] && command -v poetry >/dev/null 2>&1; then
         poetry run python -m pytest tests/ -v || true
     else
-        python -m pytest tests/ -v || true
+        ./venv/bin/python -m pytest tests/ -v || true
     fi
     
     # Deactivate venv if it was activated
@@ -545,9 +578,14 @@ wait_for_services() {
             # Check if backend process is still alive
             if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
                 log_error "Backend process died during startup!"
-                log_error "Check logs for details: logs/backend.error.log"
-                log_error "Last 10 lines of backend error log:"
-                tail -n 10 "logs/backend.error.log" | sed "s/^/    ${RED}| ${NC}/"
+                log_error "Check detailed logs: logs/backend.log and logs/backend.error.log"
+                log_error "Console log: logs/backend_dev.log"
+                log_error "Last 10 lines of error log:"
+                if [ -f "logs/backend.error.log" ]; then
+                    tail -n 10 "logs/backend.error.log" | sed "s/^/    ${RED}| ${NC}/"
+                else
+                    tail -n 10 "logs/backend_dev.log" | sed "s/^/    ${RED}| ${NC}/"
+                fi
                 cleanup
             fi
             
@@ -557,7 +595,7 @@ wait_for_services() {
         
         if [ $attempts -eq $max_attempts ]; then
             log_warning "Backend health check timed out, but process is running"
-            log_warning "Check logs if you experience issues: logs/backend.error.log"
+            log_warning "Check logs if you experience issues: logs/backend_dev.log"
         fi
     fi
     
@@ -645,6 +683,12 @@ cleanup() {
 }
 
 main() {
+    # Ensure logs directory exists early
+    mkdir -p "$BASE_DIR/logs"
+    
+    # Redirect all output of the script to a log file and the console
+    exec > >(tee -a "$BASE_DIR/logs/script_runner.log") 2>&1
+
     local BACKEND_ONLY=false
     local FRONTEND_ONLY=false
     local START_REDIS=true  # Default to starting Redis
@@ -676,7 +720,6 @@ main() {
     # Handle kill-only mode
     if [ "$KILL_ONLY" = true ]; then
         kill_servers
-        clear_logs
         exit 0
     fi
     
@@ -731,14 +774,14 @@ main() {
         # Check if backend is still running
         if [[ -n "$BACKEND_PID" ]] && ! kill -0 "$BACKEND_PID" 2>/dev/null; then
             log_error "Backend process (PID $BACKEND_PID) has died unexpectedly!"
-            log_error "Check logs for details: logs/backend.error.log"
+            log_error "Check logs for details: logs/backend_dev.log"
             break # Exit loop to trigger cleanup
         fi
         
         # Check if frontend is still running (if it was started)
         if [[ -n "$FRONTEND_PID" ]] && ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
             log_error "Frontend process (PID $FRONTEND_PID) has died unexpectedly!"
-            log_error "Check logs for details: logs/frontend.error.log"
+            log_error "Check logs for details: logs/frontend_dev.log"
             break # Exit loop to trigger cleanup
         fi
         

@@ -1,11 +1,10 @@
-"""
-EMG Analysis Domain Services
+"""EMG Analysis Domain Services.
 ============================
 
 Services for EMG signal analysis, MVC calculations, and threshold management.
 """
 
-from .mvc_service import MVCService, MVCEstimation
-from .threshold_service import UnifiedThresholdService, UnifiedThresholds
+from services.analysis.mvc_service import MVCEstimation, MVCService
+from services.analysis.threshold_service import UnifiedThresholds, UnifiedThresholdService
 
-__all__ = ["MVCService", "MVCEstimation", "UnifiedThresholdService", "UnifiedThresholds"]
+__all__ = ["MVCEstimation", "MVCService", "UnifiedThresholdService", "UnifiedThresholds"]
