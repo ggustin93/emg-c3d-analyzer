@@ -20,11 +20,21 @@ from fastapi.testclient import TestClient
 try:
     from api.main import app
 except ImportError:
-    # Fallback for different import contexts
+    # Fallback for different import contexts (CI environment)
     import sys
     import os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from api.main import app
+    # Get the backend directory (tests/integration -> backend)
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+    try:
+        from api.main import app
+    except ImportError as e:
+        # Final fallback - try importing main.py directly  
+        try:
+            from main import app
+        except ImportError:
+            raise ImportError(f"Could not import FastAPI app. Tried 'api.main' and 'main'. Backend dir: {backend_dir}, sys.path: {sys.path[:3]}") from e
 
 # Skip all tests if no Supabase credentials are available
 pytestmark = pytest.mark.skipif(
