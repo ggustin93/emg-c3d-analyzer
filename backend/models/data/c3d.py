@@ -13,7 +13,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from backend.models.shared.base import DatabaseBaseModel
+from models.shared.base import DatabaseBaseModel
 
 # =============================================================================
 # C3D TECHNICAL DATA MODELS

@@ -5,7 +5,7 @@ API models for request/response serialization in FastAPI endpoints.
 These models define the external interface for the EMG C3D Analyzer API.
 """
 
-from backend.models.api.request_response import *
+from models.api.request_response import *
 
 __all__ = [
     "ChannelAnalytics",

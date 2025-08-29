@@ -73,17 +73,17 @@ from config import (
     DevelopmentDefaults,
 )
 
-from backend.services.clinical.performance_scoring_service import (
+from services.clinical.performance_scoring_service import (
     PerformanceScoringService,
     SessionMetrics,
 )
-from backend.services.clinical.repositories import (
+from services.clinical.repositories import (
     EMGDataRepository,
     PatientRepository,
     RepositoryError,
     TherapySessionRepository,
 )
-from backend.services.user.repositories import UserRepository
+from services.user.repositories import UserRepository
 from database.supabase_client import get_supabase_client
 from models import GameSessionParameters, ProcessingOptions
 from services.c3d.processor import GHOSTLYC3DProcessor
@@ -641,10 +641,16 @@ class TherapySessionProcessor:
 
         # Batch insert using centralized database operations (DRY principle)
         if all_stats:
-            self.emg_repo.bulk_insert_emg_statistics(all_stats)
-            logger.debug(
-                f"📊 Inserted {len(all_stats)} EMG statistics records for session {session_id}"
-            )
+            try:
+                result = self.emg_repo.bulk_insert_emg_statistics(all_stats)
+                logger.info(
+                    f"📊 Successfully inserted {len(result)} EMG statistics records for session {session_id}"
+                )
+            except Exception as e:
+                logger.error(f"❌ Failed to insert EMG statistics for session {session_id}: {e!s}", exc_info=True)
+                raise
+        else:
+            logger.warning(f"⚠️ No EMG statistics to insert for session {session_id}")
 
     def _build_emg_stats_record(
         self,
@@ -685,9 +691,7 @@ class TherapySessionProcessor:
             "max_amplitude": channel_data.get("max_amplitude", 0.0),
             **temporal_stats,
             "signal_quality_score": channel_data.get("signal_quality_score", 0.0),
-            "processing_confidence": channel_data.get("processing_confidence", 0.0),
-            "median_frequency_slope": None,  # Future implementation
-            "estimated_fatigue_percentage": None,  # Future implementation
+            # Note: processing_confidence, median_frequency_slope and estimated_fatigue_percentage removed (not in schema)
             # Timestamp will be added automatically by database operations service
         }
 
@@ -735,13 +739,13 @@ class TherapySessionProcessor:
         }
 
         # Use centralized database operations (DRY principle)
-        await self.emg_repo.insert_processing_parameters(params_data)
+        self.emg_repo.insert_processing_parameters(params_data)
 
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling."""
         # Use domain-specific repository for generic upsert operations
         if table_name == "c3d_technical_data":
-            await self.emg_repo.upsert_c3d_technical_data(data, unique_key)
+            self.emg_repo.upsert_c3d_technical_data(data, unique_key)
         else:
             # Use generic upsert from session repository for session-related tables
             await self.session_repo.generic_upsert(table_name, data, unique_key)
@@ -1003,74 +1007,299 @@ class TherapySessionProcessor:
         session_params: GameSessionParameters,
         processing_result: dict[str, Any],
     ) -> None:
-        """Populate bfr_monitoring table with Blood Flow Restriction safety data.
+        """Populate bfr_monitoring table with per-channel Blood Flow Restriction safety data.
 
-        Schema v2.1 compliance - ensures BFR safety monitoring is properly recorded
+        Schema v2.1+ compliance - supports per-channel/per-muscle BFR monitoring
+        Creates one record per channel (CH1, CH2) for independent muscle BFR assessment
         """
         try:
-            # Extract BFR pressure values first
-            target_pressure_aop = getattr(
-                session_params, "target_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP
-            )
-            actual_pressure_aop = getattr(
-                session_params, "actual_pressure_aop", DevelopmentDefaults.BFR_PRESSURE_AOP
-            )
-
-            # Extract BFR data from session parameters or use clinical defaults
-            bfr_monitoring_data = {
-                "session_id": session_id,
-                # Pressure monitoring (% of AOP - Arterial Occlusion Pressure)
-                "target_pressure_aop": target_pressure_aop,
-                "actual_pressure_aop": actual_pressure_aop,
-                # Convert AOP percentage to mmHg if available (typical conversion: 50% AOP ≈ 120-150 mmHg)
-                "cuff_pressure_mmhg": getattr(
-                    session_params, "cuff_pressure_mmhg", actual_pressure_aop * 3.0
-                ),  # Realistic conversion
-                # Blood pressure monitoring for safety
-                "systolic_bp_mmhg": getattr(
-                    session_params, "systolic_bp_mmhg", DevelopmentDefaults.SYSTOLIC_BP
-                ),
-                "diastolic_bp_mmhg": getattr(
-                    session_params, "diastolic_bp_mmhg", DevelopmentDefaults.DIASTOLIC_BP
-                ),
-                # Safety compliance (BFR should be 40-60% AOP for safety)
-                "safety_compliant": (40.0 <= actual_pressure_aop <= 60.0),
-                # Measurement metadata
-                "measurement_timestamp": processing_result.get("metadata", {}).get("timestamp"),
-                "measurement_method": "automatic",  # C3D processing provides automatic measurement
-            }
-
-            # Validate BFR safety ranges
-            if bfr_monitoring_data["actual_pressure_aop"] > 60.0:
-                logger.warning(
-                    f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP exceeds safe range (≤60%), marking as non-compliant"
+            # Standard channels for GHOSTLY+ protocol
+            channels = ["CH1", "CH2"]
+            
+            # Extract metadata for timestamp reference
+            measurement_timestamp = processing_result.get("metadata", {}).get("timestamp")
+            
+            # Collect all BFR records for batch processing
+            bfr_records = []
+            
+            for channel_name in channels:
+                # Extract per-channel BFR pressure values 
+                target_pressure_aop = self._get_channel_bfr_pressure(
+                    session_params, channel_name, "target_pressure_aop"
                 )
-                bfr_monitoring_data["safety_compliant"] = False
-            elif bfr_monitoring_data["actual_pressure_aop"] < 40.0:
-                logger.warning(
-                    f"BFR pressure {bfr_monitoring_data['actual_pressure_aop']}% AOP below effective range (≥40%), marking as non-compliant"
+                actual_pressure_aop = self._get_channel_bfr_pressure(
+                    session_params, channel_name, "actual_pressure_aop"
                 )
-                bfr_monitoring_data["safety_compliant"] = False
+                cuff_pressure_mmhg = self._get_channel_bfr_pressure(
+                    session_params, channel_name, "cuff_pressure_mmhg"
+                )
+                
+                # Manual compliance assessment (for when sensors not available)
+                bfr_compliance_manual = self._get_channel_bfr_compliance(
+                    session_params, channel_name
+                )
+                
+                # Determine measurement method based on available data
+                measurement_method = "sensor" if (target_pressure_aop and actual_pressure_aop) else "manual"
+                
+                # Calculate safety compliance based on available data
+                safety_compliant = self._calculate_channel_safety_compliance(
+                    actual_pressure_aop, bfr_compliance_manual, measurement_method
+                )
+                
+                # Build per-channel BFR monitoring record
+                bfr_monitoring_data = {
+                    "session_id": session_id,
+                    "channel_name": channel_name,
+                    
+                    # BFR pressure settings (from C3D metadata or defaults)
+                    "target_pressure_aop": target_pressure_aop,
+                    "actual_pressure_aop": actual_pressure_aop,
+                    "cuff_pressure_mmhg": cuff_pressure_mmhg,
+                    
+                    # Blood pressure monitoring for safety (shared across channels)
+                    "systolic_bp_mmhg": getattr(
+                        session_params, "systolic_bp_mmhg", DevelopmentDefaults.SYSTOLIC_BP
+                    ),
+                    "diastolic_bp_mmhg": getattr(
+                        session_params, "diastolic_bp_mmhg", DevelopmentDefaults.DIASTOLIC_BP
+                    ),
+                    
+                    # Manual compliance assessment (per muscle)
+                    "bfr_compliance_manual": bfr_compliance_manual,
+                    
+                    # Safety compliance (computed from available data)
+                    "safety_compliant": safety_compliant,
+                    
+                    # Measurement metadata
+                    "measurement_timestamp": measurement_timestamp,
+                    "measurement_method": measurement_method,
+                }
+                
+                # Validate BFR safety ranges per channel
+                self._validate_channel_bfr_safety(channel_name, bfr_monitoring_data)
+                
+                bfr_records.append(bfr_monitoring_data)
 
-            # Validate blood pressure ranges
-            if not (80 <= bfr_monitoring_data.get("systolic_bp_mmhg", 120) <= 250):
-                logger.warning(
-                    f"Systolic BP {bfr_monitoring_data.get('systolic_bp_mmhg')} outside safe range (80-250 mmHg)"
+            # Insert all per-channel BFR records
+            for record in bfr_records:
+                # Use composite key for per-channel upserts
+                composite_key_fields = ["session_id", "channel_name"]
+                await self._upsert_table_with_composite_key(
+                    "bfr_monitoring", record, composite_key_fields
                 )
-            if not (40 <= bfr_monitoring_data.get("diastolic_bp_mmhg", 80) <= 150):
-                logger.warning(
-                    f"Diastolic BP {bfr_monitoring_data.get('diastolic_bp_mmhg')} outside safe range (40-150 mmHg)"
-                )
-
-            # Use upsert to handle potential duplicates
-            await self._upsert_table("bfr_monitoring", bfr_monitoring_data, "session_id")
 
             logger.info(
-                f"🔄 BFR monitoring populated for session {session_id}: {bfr_monitoring_data['actual_pressure_aop']}% AOP, {'compliant' if bfr_monitoring_data['safety_compliant'] else 'NON-COMPLIANT'}"
+                f"🔄 Per-channel BFR monitoring populated for session {session_id}: "
+                f"{len(bfr_records)} channels processed"
             )
+            
+            # Log per-channel compliance summary
+            for record in bfr_records:
+                channel = record["channel_name"]
+                method = record["measurement_method"]
+                compliant = record["safety_compliant"]
+                if method == "sensor" and record["actual_pressure_aop"]:
+                    logger.info(
+                        f"  {channel}: {record['actual_pressure_aop']}% AOP, "
+                        f"{'compliant' if compliant else 'NON-COMPLIANT'} ({method})"
+                    )
+                elif method == "manual" and record["bfr_compliance_manual"] is not None:
+                    logger.info(
+                        f"  {channel}: {'compliant' if record['bfr_compliance_manual'] else 'NON-COMPLIANT'} ({method})"
+                    )
 
         except Exception as e:
             logger.error(
-                f"Failed to populate bfr_monitoring for session {session_id}: {e!s}", exc_info=True
+                f"Failed to populate per-channel bfr_monitoring for session {session_id}: {e!s}", 
+                exc_info=True
             )
-            raise TherapySessionError(f"BFR monitoring population failed: {e!s}") from e
+            raise TherapySessionError(f"Per-channel BFR monitoring population failed: {e!s}") from e
+
+    def _get_channel_bfr_pressure(
+        self, 
+        session_params: GameSessionParameters, 
+        channel_name: str, 
+        pressure_type: str
+    ) -> float | None:
+        """Extract per-channel BFR pressure values from session parameters.
+        
+        Args:
+            session_params: Session configuration parameters
+            channel_name: Channel identifier ('CH1', 'CH2')
+            pressure_type: Type of pressure ('target_pressure_aop', 'actual_pressure_aop', 'cuff_pressure_mmhg')
+            
+        Returns:
+            Channel-specific pressure value or None if not available
+        """
+        try:
+            # Check for per-channel BFR pressure data first (production C3D metadata)
+            channel_pressure_data = getattr(session_params, f"bfr_pressure_per_channel", None)
+            if channel_pressure_data and channel_name in channel_pressure_data:
+                channel_data = channel_pressure_data[channel_name]
+                if isinstance(channel_data, dict) and pressure_type in channel_data:
+                    return channel_data[pressure_type]
+            
+            # Fallback to global session parameters (development/manual mode)
+            if pressure_type in ["target_pressure_aop", "actual_pressure_aop"]:
+                global_pressure = getattr(session_params, pressure_type, None)
+                if global_pressure is not None:
+                    return global_pressure
+                # Use development defaults if no session data
+                return DevelopmentDefaults.BFR_PRESSURE_AOP
+            
+            elif pressure_type == "cuff_pressure_mmhg":
+                # Calculate from actual_pressure_aop if available
+                actual_pressure = self._get_channel_bfr_pressure(
+                    session_params, channel_name, "actual_pressure_aop"
+                )
+                if actual_pressure is not None:
+                    return actual_pressure * 3.0  # Realistic AOP to mmHg conversion
+                return None
+                
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error extracting {pressure_type} for {channel_name}: {e!s}")
+            return None
+    
+    def _get_channel_bfr_compliance(
+        self, 
+        session_params: GameSessionParameters, 
+        channel_name: str
+    ) -> bool | None:
+        """Extract per-channel manual BFR compliance assessment.
+        
+        Args:
+            session_params: Session configuration parameters
+            channel_name: Channel identifier ('CH1', 'CH2')
+            
+        Returns:
+            Manual compliance assessment (True/False) or None if not available
+        """
+        try:
+            # Check for per-channel manual compliance data
+            compliance_data = getattr(session_params, "bfr_compliance_per_channel", None)
+            if compliance_data and channel_name in compliance_data:
+                return compliance_data[channel_name]
+            
+            # Fallback to global compliance if available
+            global_compliance = getattr(session_params, "bfr_compliance_manual", None)
+            return global_compliance
+            
+        except Exception as e:
+            logger.warning(f"Error extracting BFR compliance for {channel_name}: {e!s}")
+            return None
+    
+    def _calculate_channel_safety_compliance(
+        self, 
+        actual_pressure_aop: float | None, 
+        bfr_compliance_manual: bool | None,
+        measurement_method: str
+    ) -> bool:
+        """Calculate safety compliance based on available BFR data.
+        
+        Args:
+            actual_pressure_aop: Sensor-measured pressure (% AOP)
+            bfr_compliance_manual: Manual compliance assessment
+            measurement_method: 'sensor' or 'manual'
+            
+        Returns:
+            Safety compliance status
+        """
+        try:
+            # Sensor mode: validate pressure range (40-60% AOP for safety)
+            if measurement_method == "sensor" and actual_pressure_aop is not None:
+                return 40.0 <= actual_pressure_aop <= 60.0
+            
+            # Manual mode: use therapist/patient assessment
+            elif measurement_method == "manual" and bfr_compliance_manual is not None:
+                return bfr_compliance_manual
+            
+            # Default to compliant if no data available (conservative approach)
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Error calculating safety compliance: {e!s}")
+            return True  # Conservative default
+    
+    def _validate_channel_bfr_safety(
+        self, 
+        channel_name: str, 
+        bfr_data: dict[str, Any]
+    ) -> None:
+        """Validate BFR safety ranges for a specific channel.
+        
+        Args:
+            channel_name: Channel identifier for logging
+            bfr_data: BFR monitoring data dictionary (modified in place)
+        """
+        try:
+            # Validate sensor pressure ranges
+            actual_pressure = bfr_data.get("actual_pressure_aop")
+            if actual_pressure is not None:
+                if actual_pressure > 60.0:
+                    logger.warning(
+                        f"{channel_name} BFR pressure {actual_pressure}% AOP exceeds safe range (≤60%), "
+                        f"marking as non-compliant"
+                    )
+                    bfr_data["safety_compliant"] = False
+                elif actual_pressure < 40.0:
+                    logger.warning(
+                        f"{channel_name} BFR pressure {actual_pressure}% AOP below effective range (≥40%), "
+                        f"marking as non-compliant"
+                    )
+                    bfr_data["safety_compliant"] = False
+            
+            # Validate blood pressure ranges (shared safety parameters)
+            systolic_bp = bfr_data.get("systolic_bp_mmhg")
+            diastolic_bp = bfr_data.get("diastolic_bp_mmhg")
+            
+            if systolic_bp and not (80 <= systolic_bp <= 250):
+                logger.warning(
+                    f"{channel_name} Systolic BP {systolic_bp} outside safe range (80-250 mmHg)"
+                )
+            
+            if diastolic_bp and not (40 <= diastolic_bp <= 150):
+                logger.warning(
+                    f"{channel_name} Diastolic BP {diastolic_bp} outside safe range (40-150 mmHg)"
+                )
+                
+        except Exception as e:
+            logger.warning(f"Error validating BFR safety for {channel_name}: {e!s}")
+
+    async def _upsert_table_with_composite_key(
+        self, table_name: str, data: dict[str, Any], key_fields: list[str]
+    ) -> None:
+        """Upsert table record using composite key (multiple fields).
+        
+        Args:
+            table_name: Database table name
+            data: Record data to insert/update
+            key_fields: List of field names that form the composite key
+        """
+        try:
+            # Build composite key filter
+            key_filter = {field: data[field] for field in key_fields}
+            
+            # Check if record exists with composite key
+            existing = self.supabase.table(table_name).select("*").match(key_filter).execute()
+            
+            if existing.data:
+                # Update existing record
+                result = self.supabase.table(table_name).update(data).match(key_filter).execute()
+                logger.debug(f"Updated {table_name} with composite key {key_filter}")
+            else:
+                # Insert new record
+                result = self.supabase.table(table_name).insert(data).execute()
+                logger.debug(f"Inserted new {table_name} with composite key {key_filter}")
+                
+            if not result.data:
+                raise ValueError(f"No data returned from {table_name} upsert operation")
+                
+        except Exception as e:
+            logger.error(
+                f"Failed to upsert {table_name} with composite key {key_fields}: {e!s}", 
+                exc_info=True
+            )
+            raise

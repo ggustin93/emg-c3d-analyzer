@@ -21,7 +21,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from backend.services.shared.repositories.base.abstract_repository import (
+from services.shared.repositories.base.abstract_repository import (
     AbstractRepository,
     RepositoryError,
 )
@@ -165,7 +165,7 @@ class EMGDataRepository(
             unique_key: Field to use for upsert matching
 
         Returns:
-            Dict: Upserted technical data
+            Dict: Upserted technical data or empty dict if table doesn't exist
         """
         try:
             data = self._prepare_timestamps(technical_data.copy())
@@ -212,9 +212,17 @@ class EMGDataRepository(
             return upserted_data
 
         except Exception as e:
-            error_msg = f"Failed to upsert C3D technical data: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
-            raise RepositoryError(error_msg) from e
+            # Check if error is due to table not existing
+            error_str = str(e)
+            if "does not exist" in error_str or "42P01" in error_str:
+                # Table doesn't exist - this is acceptable, log and return empty dict
+                self.logger.warning(f"C3D technical data table doesn't exist - skipping: {error_str}")
+                return {}
+            else:
+                # Other error - re-raise
+                error_msg = f"Failed to upsert C3D technical data: {e!s}"
+                self.logger.error(error_msg, exc_info=True)
+                raise RepositoryError(error_msg) from e
 
     def get_processing_parameters_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
         """Get processing parameters for a session.

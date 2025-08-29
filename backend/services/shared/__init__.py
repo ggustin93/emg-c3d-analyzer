@@ -8,6 +8,6 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from backend.services.shared.repositories import AbstractRepository, RepositoryError
+from services.shared.repositories import AbstractRepository, RepositoryError
 
 __all__ = ["AbstractRepository", "RepositoryError"]

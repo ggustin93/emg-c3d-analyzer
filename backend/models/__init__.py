@@ -22,20 +22,20 @@ Date: 2025-08-28
 # =============================================================================
 # API MODELS (INTERFACE LAYER)
 # =============================================================================
-from backend.models.api import *
-from backend.models.clinical import *
-from backend.models.data import *
+from models.api import *
+from models.clinical import *
+from models.data import *
 
 # =============================================================================
 # RESPONSE MODELS (OUTPUT LAYER)
 # =============================================================================
-from backend.models.response import *
-from backend.models.shared import *
+from models.response import *
+from models.shared import *
 
 # =============================================================================
 # DOMAIN MODELS (BUSINESS LOGIC)
 # =============================================================================
-from backend.models.user import *
+from models.user import *
 
 # =============================================================================
 # BACKWARD COMPATIBILITY EXPORTS

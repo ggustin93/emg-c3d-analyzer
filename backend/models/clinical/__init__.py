@@ -5,10 +5,10 @@ Models for clinical workflow including patients, therapy sessions, scoring, and 
 Aligned with services/clinical/ domain architecture.
 """
 
-from backend.models.clinical.monitoring import *
-from backend.models.clinical.patient import *
-from backend.models.clinical.scoring import *
-from backend.models.clinical.session import *
+from models.clinical.monitoring import *
+from models.clinical.patient import *
+from models.clinical.scoring import *
+from models.clinical.session import *
 
 __all__ = [
     # Monitoring models

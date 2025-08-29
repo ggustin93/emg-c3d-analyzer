@@ -124,26 +124,39 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
 
         logger.info(f"📁 Processing C3D upload: {event.object_name}")
 
-        # Extract patient_code and lookup patient UUID
+        # Extract patient_code and lookup patient UUID + therapist_id
         patient_uuid = None
+        therapist_uuid = None
         if event.patient_code:
             try:
                 patient_repo = PatientRepository(get_supabase_client(use_service_key=True))
                 patient = patient_repo.get_patient_by_code(event.patient_code)
                 if patient:
                     patient_uuid = patient.get("id")
-                    logger.info(f"👤 Found patient {event.patient_code} -> UUID: {patient_uuid}")
+                    therapist_uuid = patient.get("therapist_id")
+                    logger.info(f"👤 Found patient {event.patient_code} -> UUID: {patient_uuid}, Therapist: {therapist_uuid}")
                 else:
                     logger.warning(f"⚠️ Patient not found for code: {event.patient_code}")
             except Exception as e:
                 logger.exception(f"Failed to lookup patient {event.patient_code}: {e!s}")
 
         # Create therapy session record (immediate response)
-        session_id = await session_processor.create_session(
-            file_path=f"{event.bucket_id}/{event.object_name}",
-            file_metadata=event.record.get("metadata", {}),
-            patient_id=patient_uuid,
-        )
+        try:
+            session_id = await session_processor.create_session(
+                file_path=f"{event.bucket_id}/{event.object_name}",
+                file_metadata=event.record.get("metadata", {}),
+                patient_id=patient_uuid,
+                therapist_id=therapist_uuid,
+            )
+        except Exception as e:
+            logger.error(f"Failed to create session for {event.object_name}: {e!s}", exc_info=True)
+            # Return success with error message rather than HTTP 500
+            return WebhookResponse(
+                success=False,
+                message=f"Session creation failed: {e!s}",
+                session_id=None,
+                processing_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
+            )
 
         # Process C3D file in background
         background_tasks.add_task(

@@ -8,7 +8,7 @@ Provides clean service instantiation and lifecycle management.
 from services.analysis import mvc_service
 from services.c3d.processor import GHOSTLYC3DProcessor
 
-# from services.data.export_service import EMGDataExporter  # TODO: Implement export service
+# Export service implementation pending - tracked in domain architecture
 
 
 def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:

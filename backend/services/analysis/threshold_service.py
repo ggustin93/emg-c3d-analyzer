@@ -7,7 +7,6 @@ Senior Software Engineer Implementation:
 - Single source of truth pattern
 - Comprehensive error handling
 
-Author: Senior Software Engineer (20+ years experience)
 Created: 2025-01-18
 """
 
@@ -17,7 +16,7 @@ from datetime import datetime
 
 import numpy as np
 
-from backend.services.analysis.mvc_service import MVCEstimation, MVCService
+from services.analysis.mvc_service import MVCEstimation, MVCService
 from models import GameSessionParameters
 
 logger = logging.getLogger(__name__)

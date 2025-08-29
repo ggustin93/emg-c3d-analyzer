@@ -13,8 +13,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, field_validator
 
-from backend.models.shared.base import DatabaseBaseModel, TimestampMixin
-from backend.models.shared.enums import AccessLevel, UserRole
+from models.shared.base import DatabaseBaseModel, TimestampMixin
+from models.shared.enums import AccessLevel, UserRole
 
 # =============================================================================
 # USER MANAGEMENT MODELS

@@ -13,8 +13,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from backend.models.shared.base import DatabaseBaseModel
-from backend.models.shared.enums import MeasurementMethod
+from models.shared.base import DatabaseBaseModel
+from models.shared.enums import MeasurementMethod
 
 # =============================================================================
 # BFR MONITORING MODELS

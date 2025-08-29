@@ -16,12 +16,12 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from backend.services.clinical.repositories.emg_data_repository import EMGDataRepository
-from backend.services.clinical.repositories.patient_repository import PatientRepository
-from backend.services.clinical.repositories.therapy_session_repository import (
+from services.clinical.repositories.emg_data_repository import EMGDataRepository
+from services.clinical.repositories.patient_repository import PatientRepository
+from services.clinical.repositories.therapy_session_repository import (
     TherapySessionRepository,
 )
-from backend.services.shared.repositories.base.abstract_repository import (
+from services.shared.repositories.base.abstract_repository import (
     AbstractRepository,
     RepositoryError,
 )

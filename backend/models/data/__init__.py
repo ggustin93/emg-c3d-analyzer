@@ -5,8 +5,8 @@ Models for data processing including C3D files and processing parameters.
 Aligned with services/data/ domain architecture.
 """
 
-from backend.models.data.c3d import *
-from backend.models.data.processing import *
+from models.data.c3d import *
+from models.data.processing import *
 
 __all__ = [
     # C3D models

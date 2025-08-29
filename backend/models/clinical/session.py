@@ -14,8 +14,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from backend.models.shared.base import DatabaseBaseModel, TimestampMixin
-from backend.models.shared.enums import ProcessingStatus
+from models.shared.base import DatabaseBaseModel, TimestampMixin
+from models.shared.enums import ProcessingStatus
 
 # =============================================================================
 # THERAPY SESSION MODELS

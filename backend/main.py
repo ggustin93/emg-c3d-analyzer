@@ -3,8 +3,12 @@ import sys
 import traceback
 from pathlib import Path
 
+import structlog
 import uvicorn
 from dotenv import load_dotenv
+
+from utils.logging_config import setup_logging
+from config import get_log_level
 
 # Load environment variables from .env file
 backend_dir = Path(__file__).parent
@@ -16,16 +20,9 @@ logs_dir = Path(__file__).parent.parent / "logs"
 logs_dir.mkdir(exist_ok=True)
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("backend.log"),  # Keep local backend.log
-        logging.FileHandler(logs_dir / "backend.log"),  # Also write to logs/ folder
-    ],
-)
-logger = logging.getLogger("backend")
+log_level = get_log_level()
+setup_logging(log_level)
+logger = structlog.get_logger("backend")
 
 # Try to import the app with proper error handling
 try:
@@ -34,7 +31,7 @@ try:
     logger.info("Successfully imported FastAPI application from modular structure")
 except ImportError as e:
     logger.exception(f"Failed to import API: {e}")
-    logger.exception(traceback.format_exc())
+    traceback.print_exc()
     sys.exit(1)
 
 # Check if temporary directory exists and create it if needed
@@ -44,10 +41,10 @@ try:
     from config import ensure_temp_dir
 
     temp_dir = ensure_temp_dir()
-    logger.info(f"Temporary upload directory verified: {temp_dir}")
+    logger.info(f"Temporary upload directory verified", temp_dir=str(temp_dir))
 except Exception as e:
     logger.exception(f"Failed to create temporary directory: {e}")
-    logger.exception(traceback.format_exc())
+    traceback.print_exc()
     sys.exit(1)
 
 # If running directly (for development)
@@ -60,10 +57,16 @@ if __name__ == "__main__":
         host = get_host()
         log_level = get_log_level()
 
-        logger.info(f"Starting uvicorn server on http://{host}:{port}")
+        logger.info(f"Starting uvicorn server", host=host, port=port)
         # Remove reload=True to avoid the warning in production
-        uvicorn.run("backend.api.main:app", host=host, port=port, log_level=log_level)
+        uvicorn.run(
+            "backend.api.main:app",
+            host=host,
+            port=port,
+            log_level=log_level.lower(),
+            log_config=None,  # We are managing logging, so uvicorn shouldn't
+        )
     except Exception as e:
         logger.exception(f"Failed to start uvicorn server: {e}")
-        logger.exception(traceback.format_exc())
+        traceback.print_exc()
         sys.exit(1)

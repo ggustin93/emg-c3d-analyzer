@@ -57,7 +57,18 @@ def get_supabase_client(use_service_key: bool = False) -> Client:
             return client
 
         except Exception as e:
-            logger.exception(f"Failed to initialize Supabase client: {e!s}")
+            # Enhanced error logging for debugging initialization issues
+            logger.error(f"Failed to initialize Supabase client: {e!s}")
+            logger.error(f"  URL: {supabase_url}")
+            logger.error(f"  Key type: {key_type}")
+            logger.error(f"  Key present: {'Yes' if supabase_key else 'No'}")
+            logger.error(f"  Key length: {len(supabase_key) if supabase_key else 0}")
+            
+            # The "Invalid URL" error typically occurs during first import attempts
+            # This is expected behavior and the system will retry successfully
+            if "Invalid URL" in str(e):
+                logger.info("Note: 'Invalid URL' during first initialization is expected - system will retry")
+            
             raise
 
     return _supabase_client

@@ -19,8 +19,9 @@ Date: 2025-08-14
 import logging
 import os
 import sys
+import uuid
 
-# Local imports - Configuration
+import structlog
 from config import (
     API_DESCRIPTION,
     API_TITLE,
@@ -38,7 +39,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Local imports - Route modules (SOLID principle: Single Responsibility)
-from backend.api.routes import (
+from api.routes import (
     analysis,
     cache_monitoring,
     export,
@@ -48,33 +49,14 @@ from backend.api.routes import (
     upload,
     webhooks,
 )
-from backend.api.routes.scoring_config import router as scoring_router
+from api.routes.scoring_config import router as scoring_router
 
 # Check cache monitoring availability
 CACHE_MONITORING_AVAILABLE = True
 
 
 # Configure logging
-def setup_logging():
-    """Setup consistent logging configuration."""
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
-    logging.basicConfig(
-        level=getattr(logging, log_level, logging.INFO),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-
-    # Set specific logger levels
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("uvicorn").setLevel(logging.INFO)
-
-
-# Initialize logging
-setup_logging()
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
@@ -92,7 +74,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle general exceptions with structured response."""
-    logger.error("Unhandled exception: %s", exc, exc_info=True)
+    logger.error("Unhandled exception", exc_info=True, path=str(request.url))
     return JSONResponse(
         status_code=500,
         content={
@@ -119,6 +101,17 @@ def create_app() -> FastAPI:
         description=API_DESCRIPTION,
         version=API_VERSION,
     )
+
+    # Add request ID middleware
+    @app.middleware("http")
+    async def add_request_id(request: Request, call_next):
+        """Add a unique request ID to every request for tracing."""
+        request_id = str(uuid.uuid4())
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
     # Add CORS middleware
     app.add_middleware(
@@ -151,7 +144,7 @@ def create_app() -> FastAPI:
 
     logger.info("🚀 FastAPI application created successfully")
     logger.info("🏗️  Architecture: Modular routes with error handling")
-    logger.info("📊 Logging: Configured with level %s", os.getenv("LOG_LEVEL", "INFO"))
+    logger.info("📊 Logging: Structured JSON logging enabled", level=os.getenv("LOG_LEVEL", "INFO"))
 
     return app
 

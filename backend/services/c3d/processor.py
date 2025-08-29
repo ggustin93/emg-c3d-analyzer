@@ -38,7 +38,7 @@ from typing import Any
 
 import numpy as np
 
-from backend.services.c3d.utils import C3DUtils
+from services.c3d.utils import C3DUtils
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -676,7 +676,7 @@ class GHOSTLYC3DProcessor:
                     )
                     logger.debug(f"  - Duration threshold: {duration_threshold_ms}ms")
 
-                    # PhD-Level Comprehensive Contraction Analysis
+                    # Comprehensive Contraction Analysis
                     contractions = contraction_stats.get("contractions", [])
                     if contractions:
                         # Signal processing context

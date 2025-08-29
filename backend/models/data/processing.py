@@ -13,7 +13,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from backend.models.shared.base import DatabaseBaseModel
+from models.shared.base import DatabaseBaseModel
 
 # =============================================================================
 # PROCESSING PARAMETERS MODELS

@@ -13,7 +13,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
-from backend.models.shared.base import DatabaseBaseModel, TimestampMixin
+from models.shared.base import DatabaseBaseModel, TimestampMixin
 
 # =============================================================================
 # SCORING CONFIGURATION MODELS

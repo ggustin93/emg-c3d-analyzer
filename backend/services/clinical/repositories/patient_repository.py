@@ -20,7 +20,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from backend.services.shared.repositories.base.abstract_repository import (
+from services.shared.repositories.base.abstract_repository import (
     AbstractRepository,
     RepositoryError,
 )

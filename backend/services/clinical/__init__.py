@@ -4,12 +4,12 @@
 Services for clinical workflows, performance scoring, and therapy sessions.
 """
 
-from backend.services.clinical.performance_scoring_service import (
+from services.clinical.performance_scoring_service import (
     PerformanceScoringService,
     ScoringWeights,
     SessionMetrics,
 )
-from backend.services.clinical.therapy_session_processor import TherapySessionProcessor
+from services.clinical.therapy_session_processor import TherapySessionProcessor
 
 __all__ = [
     "PerformanceScoringService",

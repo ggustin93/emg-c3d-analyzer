@@ -12,6 +12,6 @@ Author: EMG C3D Analyzer Team
 Date: 2025-08-27
 """
 
-from backend.services.user.repositories.user_repository import UserRepository
+from services.user.repositories.user_repository import UserRepository
 
 __all__ = ["UserRepository"]
