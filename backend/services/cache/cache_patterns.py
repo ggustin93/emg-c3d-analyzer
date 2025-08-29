@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from backend.services.cache.redis_cache import RedisCache, get_redis_cache
+from services.cache.redis_cache import RedisCache, get_redis_cache
 
 logger = logging.getLogger(__name__)
 
