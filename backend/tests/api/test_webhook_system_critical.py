@@ -7,25 +7,8 @@ Tests the parts that matter and can be reliably tested.
 import pytest
 from fastapi.testclient import TestClient
 
-# Import the FastAPI app directly from the API module
-try:
-    from api.main import app
-except ImportError:
-    # Fallback for different import contexts (CI environment)
-    import sys
-    import os
-    # Get the backend directory (tests/api -> backend)
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    if backend_dir not in sys.path:
-        sys.path.insert(0, backend_dir)
-    try:
-        from api.main import app
-    except ImportError as e:
-        # Final fallback - try importing main.py directly  
-        try:
-            from main import app
-        except ImportError:
-            raise ImportError(f"Could not import FastAPI app. Tried 'api.main' and 'main'. Backend dir: {backend_dir}, sys.path: {sys.path[:3]}") from e
+# Import FastAPI app from shared conftest
+from conftest import app
 from api.routes.webhooks import SupabaseStorageEvent
 
 
