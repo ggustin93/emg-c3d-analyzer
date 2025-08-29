@@ -16,7 +16,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from main import app
 
 # Skip all tests if no Supabase credentials are available
 pytestmark = pytest.mark.skipif(

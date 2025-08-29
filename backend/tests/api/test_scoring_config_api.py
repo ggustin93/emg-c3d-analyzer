@@ -16,7 +16,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 # Import the main FastAPI app
-from api.main import app
+from main import app
 
 
 class TestScoringConfigurationAPIFixed:

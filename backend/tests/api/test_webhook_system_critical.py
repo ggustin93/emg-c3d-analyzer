@@ -7,7 +7,7 @@ Tests the parts that matter and can be reliably tested.
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
+from main import app
 from api.routes.webhooks import SupabaseStorageEvent
 
 

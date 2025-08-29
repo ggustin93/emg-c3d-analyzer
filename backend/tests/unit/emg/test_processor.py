@@ -13,7 +13,8 @@ import unittest
 from pathlib import Path
 
 # Get the absolute path to the project root directory (emg-c3d-analyzer)
-PROJECT_ROOT = str(Path(__file__).resolve().parents[3])
+# From backend/tests/unit/emg/test_processor.py, we need to go up 4 levels
+PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
 
 # Add the project root to the Python path
 if PROJECT_ROOT not in sys.path:

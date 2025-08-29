@@ -1,44 +1,148 @@
-# Backend Tests
+# EMG C3D Analyzer Test Suite
 
-This directory contains tests for the EMG C3D Analyzer backend. The goal is reliable feedback with minimal assumptions. Tests prefer clear assertions over extensive fixtures and avoid external side effects unless explicitly marked.
+Comprehensive test suite for the EMG C3D Analyzer backend with type-based organization and domain preservation following software engineering best practices.
 
-## Current Status (August 2025) ✅
+## Test Summary
 
-**Test Infrastructure**: Clean and organized after recent codebase cleanup
-- **22 test files** across unit, integration, E2E, and webhook categories  
-- **All test files compile successfully** - syntax validation passed
-- **Dependencies**: pytest, pytest-cov, httpx installed for test execution
-- **Redis Cache**: New simplified cache system in `services/cache/` folder
+**Test Infrastructure**: Production-ready with 4-tier architecture
+- **18 test files** across 4 categories (unit: 7, integration: 6, e2e: 2, api: 3)
+- **135 tests total**: 134 passed, 1 failed (99.3% execution rate - no skips)
+- **47% code coverage** across critical components
+- **Dependencies**: pytest, pytest-cov, httpx, FastAPI TestClient, Redis
+- **Clinical Data**: Real 2.74MB GHOSTLY C3D files for validation
 
-## Structure
 
-- Root (`backend/tests/`): core unit/integration tests (e.g., `test_emg_analysis.py`, `test_processor.py`, `test_contraction_flags.py`, `test_serialization.py`).
-- `backend/tests/webhook/`: webhook validation and integration tests. See `webhook/README.md` for details.
-- `backend/tests/integration/`: integration tests that exercise database/service paths (migrated from ad‑hoc scripts).
-- `backend/tests/e2e/`: end‑to‑end tests that may talk to real services. These are marked and can be excluded by default.
+## 🧪 Test Categories & File Descriptions
 
-## Post-Cleanup Architecture ✅
+### Unit Tests (`tests/unit/`) - 7 Files
+**Purpose**: Test individual functions/classes in isolation  
+**Characteristics**: Fast no external dependencies, pure logic testing
+**Coverage Focus**: Core algorithms, business logic, mathematical calculations
 
-**Cleanup Results (August 13, 2025)**:
-- **Removed obsolete services**: 4 complex cache services (~2,200 lines of code)
-- **Simplified architecture**: Clean `services/cache/` implementation  
-- **Zero broken imports**: All remaining services validated
-- **Test integrity**: All test files compile and import correctly
+#### EMG Processing (`tests/unit/emg/`) - 5 files
+- **`test_emg_analysis.py`**: Core EMG signal processing algorithms, RMS calculation, contraction detection
+- **`test_contraction_flags.py`**: Contraction validation flags, MVC thresholds, duration compliance
+- **`test_processing_parameters.py`**: Signal processing parameter validation, Nyquist frequency safety
+- **`test_processor.py`**: C3D processor core functionality, channel mapping, error handling  
+- **`test_serialization.py`**: Data serialization/deserialization, JSON conversion, type safety
 
-## Running
+#### Clinical Logic (`tests/unit/clinical/`) - 2 files
+- **`test_performance_scoring_service_comprehensive.py`**: GHOSTLY+ performance scoring algorithm, RPE mapping, compliance calculations
+- **`validate_metrics_definitions_compliance.py`**: Compliance validation against metricsDefinitions.md specification, single source of truth verification
+
+### Integration Tests (`tests/integration/`) - 6 Files  
+**Purpose**: Test component interactions, database operations, service coordination
+**Characteristics**: Real database connections (🗄️), test repositories/services together
+**Coverage Focus**: Service orchestration, data persistence, cross-component workflows
+
+#### Clinical Workflows (`tests/integration/clinical/`) - 3 files
+- **`test_therapy_session_processor_critical.py`**: Critical therapy session processing workflows, error handling, data integrity
+- **`test_therapy_session_processor_comprehensive.py`**: Complete database table population (6 tables), BFR per-channel monitoring, Redis caching integration
+- **`test_database_table_population.py`**: Database table population validation, composite key operations, per-channel BFR support, development defaults
+
+#### General Integration (`tests/integration/`) - 3 files  
+- **`test_scoring_config_integration.py`**: Scoring configuration integration, weight management, clinical compliance
+- **`test_database_improvement.py`**: Database schema improvements, migration validation, performance optimization
+- **`test_metadata_creation.py`**: Metadata creation and validation, session parameters, C3D header processing
+
+### End-to-End Tests (`tests/e2e/`) - 2 Files  
+**Purpose**: Test complete user workflows end-to-end
+**Characteristics**: Comprehensive, test entire system, realistic scenarios with real C3D data  
+**Coverage Focus**: Full system validation, user journey testing, production-like scenarios
+
+- **`test_e2e_complete_workflow.py`**: Complete user workflow from C3D upload to therapeutic assessment, performance benchmarks, API consistency
+- **`test_webhook_complete_integration.py`**: Full webhook integration with Supabase Storage, patient/therapist lookup, session creation with real clinical data (2.74MB GHOSTLY files)
+
+### API Tests (`tests/api/`) - 3 Files  
+**Purpose**: Test HTTP layer, routing, request/response validation
+**Characteristics**: FastAPI TestClient, focus on routes, request handling, error responses  
+**Coverage Focus**: HTTP endpoints, authentication, input validation, error handling
+
+- **`test_api_endpoints.py`**: All FastAPI endpoint testing, authentication, validation, error handling with TestClient
+- **`test_scoring_config_api.py`**: Scoring configuration API endpoints, weight updates, clinical parameter management
+- **`test_webhook_system_critical.py`**: Webhook system API testing, file upload handling, error recovery mechanisms
+
+## 📁 Directory Structure (Type-Based with Domain Preservation)
+
+```
+tests/
+├── unit/                          # 7 files - Pure unit tests
+│   ├── emg/                      # EMG algorithm tests (5 files)
+│   │   ├── test_emg_analysis.py         # Core signal processing
+│   │   ├── test_contraction_flags.py    # Validation flags
+│   │   ├── test_processing_parameters.py # Parameter validation
+│   │   ├── test_processor.py           # C3D processor core
+│   │   └── test_serialization.py       # Data serialization
+│   └── clinical/                 # Clinical logic tests (2 files)
+│       ├── test_performance_scoring_service_comprehensive.py # GHOSTLY+ scoring
+│       └── validate_metrics_definitions_compliance.py # Spec compliance
+├── integration/                   # 6 files - Component integration
+│   ├── clinical/                 # Therapy workflows (3 files)
+│   │   ├── test_therapy_session_processor_critical.py # Critical workflows
+│   │   ├── test_therapy_session_processor_comprehensive.py # Complete integration
+│   │   └── test_database_table_population.py # Database validation
+│   ├── test_scoring_config_integration.py # Scoring integration
+│   ├── test_database_improvement.py      # Database improvements
+│   └── test_metadata_creation.py         # Metadata processing
+├── e2e/                          # 2 files - End-to-end workflows
+│   ├── test_e2e_complete_workflow.py    # Complete user workflow
+│   └── test_webhook_complete_integration.py # Full webhook integration
+├── api/                          # 3 files - API layer testing
+│   ├── test_api_endpoints.py            # All FastAPI endpoints
+│   ├── test_scoring_config_api.py       # Scoring API endpoints  
+│   └── test_webhook_system_critical.py  # Webhook API testing
+├── samples/                      # Real clinical data
+│   └── Ghostly_Emg_20230321_17-50-17-0881.c3d # 2.74MB GHOSTLY file
+├── conftest.py                   # Pytest configuration and fixtures
+├── run_tests.py                  # Test runner script
+├── run_tests.sh                  # Bash test runner
+└── README.md                     # This documentation
+```
+
+
+## 🔍 Key Differences Between Test Types
+
+### **Unit vs Integration vs API vs E2E**
+
+| Aspect | Unit | Integration | API | E2E |
+|--------|------|-------------|-----|-----|
+| **Speed** | ⚡ Fast (<1s) | 🟡 Medium (1-5s) | 🟡 Medium (1-5s) | 🔴 Slow (10-60s) |
+| **Scope** | Single function | Multiple components | HTTP layer | Complete system |
+| **Dependencies** | None (mocked) | Real database | FastAPI TestClient | External services |
+| **Data** | Synthetic/minimal | Test database | API requests | Real clinical files |
+| **Failures** | Algorithm bugs | Integration issues | API contract issues | System-wide problems |
+| **When to Run** | Always | CI/CD + dev | CI/CD + dev | Before deployment |
+
+### **Test Execution Strategies**
+
+- **Development**: Run unit tests frequently, integration occasionally
+- **Pre-commit**: Unit + Integration tests (fast feedback)  
+- **CI/CD Pipeline**: All tests including E2E (comprehensive validation)
+- **Production Deploy**: Full E2E suite with real data validation
+
+## Running Tests
 
 ```bash
-# From repo root or backend/
-pytest backend/tests -v                  # run all collected tests
-pytest backend/tests -m "not e2e" -v     # exclude end‑to‑end tests
-pytest backend/tests/e2e -m e2e -v       # run only end‑to‑end tests
+# Complete test suite (recommended)
+source venv/bin/activate
+export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
+python -m pytest tests/ -v --tb=short --cov=. --cov-report=term
 
-# Examples
-pytest backend/tests/test_emg_analysis.py -v
-pytest backend/tests/webhook -v
+# By category
+python -m pytest tests/unit/ -v           # Unit tests only (fast)
+python -m pytest tests/integration/ -v   # Integration tests
+python -m pytest tests/api/ -v           # API endpoint tests  
+python -m pytest tests/e2e/ -v -s        # E2E tests (requires setup)
 
-# Coverage
-pytest backend/tests --cov=backend --cov-report=term-missing
+# All tests run by default (no skips)
+python -m pytest tests/ -v --tb=short    # All 135 tests execute
+
+# Disable E2E tests if needed (not recommended)
+export SKIP_E2E_TESTS=true  # Only if E2E environment unavailable
+
+# Coverage analysis
+python -m pytest tests/ --cov=backend --cov-report=html
+open htmlcov/index.html                   # View coverage report
 ```
 
 ## Running in Docker

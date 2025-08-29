@@ -17,7 +17,7 @@ if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
 # Import the main FastAPI app
-from api.main import app
+from main import app
 
 client = TestClient(app)
 

@@ -13,8 +13,7 @@ This E2E test verifies:
 - API response consistency
 - Performance benchmarks
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-14
+Date: 2025-08-29
 """
 
 import asyncio
