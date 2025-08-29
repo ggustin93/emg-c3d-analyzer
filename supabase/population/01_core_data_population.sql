@@ -2,7 +2,6 @@
 -- EMG C3D Analyzer - Realistic Clinical Data Population
 -- ==============================================================================
 -- 🎯 PURPOSE: Populate database with comprehensive clinical rehabilitation data
--- 👨‍💻 Senior Engineer (PhD-level, 25+ years experience)
 -- 📅 Created: 2025-08-27
 -- 
 -- 🏥 CLINICAL SCENARIO: Multi-center rehabilitation research study

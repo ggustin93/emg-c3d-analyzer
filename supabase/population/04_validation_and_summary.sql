@@ -2,7 +2,6 @@
 -- EMG C3D ANALYZER - MASTER DATABASE POPULATION SCRIPT
 -- ==============================================================================
 -- 🎯 PURPOSE: Complete clinical rehabilitation database population
--- 👨‍💻 Senior Engineer (PhD-level, 25+ years experience)
 -- 📅 Created: 2025-08-27
 -- 
 -- 🏥 CLINICAL SCENARIO: Multi-center rehabilitation research study

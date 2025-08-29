@@ -228,7 +228,8 @@ CREATE TABLE public.c3d_technical_data (
     frame_count INTEGER,
     
     -- Metadata
-    extracted_at TIMESTAMPTZ DEFAULT NOW()
+    extracted_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- EMG Statistics (per channel)
@@ -280,6 +281,7 @@ CREATE TABLE public.emg_statistics (
     
     -- Metadata
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Unique constraint per session/channel
     UNIQUE(session_id, channel_name)
@@ -308,7 +310,8 @@ CREATE TABLE public.processing_parameters (
     processing_version TEXT NOT NULL DEFAULT '1.0',
     
     -- Metadata
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ==============================================================================
@@ -352,7 +355,8 @@ CREATE TABLE public.performance_scores (
     game_points_max INTEGER CHECK (game_points_max >= 0),
     
     -- Metadata
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
     
     -- REMOVED: All weight_* fields (now in scoring_configuration table)
 );
@@ -379,7 +383,8 @@ CREATE TABLE public.bfr_monitoring (
     measurement_method TEXT DEFAULT 'automatic' CHECK (measurement_method IN ('automatic', 'manual', 'estimated')),
     
     -- Metadata
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ==============================================================================
@@ -405,7 +410,8 @@ CREATE TABLE public.session_settings (
     bfr_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     
     -- Metadata
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Scoring Configuration (linked to therapists for personalized settings)
