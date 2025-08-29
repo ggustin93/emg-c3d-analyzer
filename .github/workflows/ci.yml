@@ -302,14 +302,14 @@ jobs:
           # Redirect both stdout and stderr to log files for debugging
           python -m uvicorn api.main:app --host 0.0.0.0 --port 8080 --log-level debug > /tmp/backend.log 2>&1 &
           backend_pid=$!
-          echo $backend_pid > backend_pid.txt
+          echo "$backend_pid" > backend_pid.txt
           
           echo "📊 Backend server started with PID: $backend_pid"
           echo "📋 Logs will be written to /tmp/backend.log"
           sleep 3
           
           # Verify process is running
-          if kill -0 $backend_pid 2>/dev/null; then
+          if kill -0 "$backend_pid" 2>/dev/null; then
             echo "✅ Backend process is running"
             echo "📄 Initial log output:"
             head -20 /tmp/backend.log || echo "No logs yet"
@@ -331,12 +331,12 @@ jobs:
           # Check if backend process is still running
           if [ -f backend/backend_pid.txt ]; then
             backend_pid=$(cat backend/backend_pid.txt)
-            if kill -0 $backend_pid 2>/dev/null; then
+            if kill -0 "$backend_pid" 2>/dev/null; then
               echo "✅ Backend process $backend_pid is still running"
             else
               echo "❌ Backend process $backend_pid has died"
               echo "🔍 Checking system processes..."
-              ps aux | grep -E "(uvicorn|python)" | grep -v grep || echo "No matching processes found"
+              pgrep -f "uvicorn.*api.main:app" || echo "No matching uvicorn processes found"
               exit 1
             fi
           else
@@ -369,11 +369,11 @@ jobs:
               echo "🔍 Attempting root endpoint..."
               curl -v -m 5 http://localhost:8080/ 2>&1 || echo "Root endpoint also failed"
               
-              if [ $attempt -eq 20 ]; then
+              if [ "$attempt" -eq 20 ]; then
                 echo "💥 Backend failed to become ready after 20 attempts"
                 echo "🔍 Final diagnostics..."
                 echo "Process status:"
-                ps aux | grep -E "(uvicorn|python)" | grep -v grep || echo "No backend processes found"
+                pgrep -f "uvicorn.*api.main:app" || echo "No backend processes found"
                 echo ""
                 echo "Open ports:"
                 netstat -tuln | grep ":80" || echo "No ports in 80xx range open"
@@ -417,7 +417,7 @@ jobs:
             echo "🔍 Backend process status:"
             if [ -f backend_pid.txt ]; then
               backend_pid=$(cat backend_pid.txt)
-              if kill -0 $backend_pid 2>/dev/null; then
+              if kill -0 "$backend_pid" 2>/dev/null; then
                 echo "Backend process $backend_pid is running"
               else
                 echo "Backend process $backend_pid has died"
@@ -449,14 +449,14 @@ jobs:
           # Stop the backend process
           if [ -f backend/backend_pid.txt ]; then
             backend_pid=$(cat backend/backend_pid.txt)
-            if kill -0 $backend_pid 2>/dev/null; then
+            if kill -0 "$backend_pid" 2>/dev/null; then
               echo "🔄 Stopping backend process $backend_pid..."
-              kill $backend_pid || true
+              kill "$backend_pid" || true
               sleep 2
               # Force kill if still running
-              if kill -0 $backend_pid 2>/dev/null; then
+              if kill -0 "$backend_pid" 2>/dev/null; then
                 echo "🔨 Force killing backend process..."
-                kill -9 $backend_pid || true
+                kill -9 "$backend_pid" || true
               fi
             else
               echo "ℹ️  Backend process $backend_pid was already stopped"
