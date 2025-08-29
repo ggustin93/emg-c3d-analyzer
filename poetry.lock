@@ -2010,6 +2010,21 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "python-json-logger"
+version = "3.3.0"
+description = "JSON Log Formatter for the Python Logging Package"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "python_json_logger-3.3.0-py3-none-any.whl", hash = "sha256:dd980fae8cffb24c13caf6e158d3d61c0d6d22342f932cb6e9deedab3d35eec7"},
+    {file = "python_json_logger-3.3.0.tar.gz", hash = "sha256:12b7e74b17775e7d565129296105bbe3910842d9d0eb083fc83a6a617aa8df84"},
+]
+
+[package.extras]
+dev = ["backports.zoneinfo ; python_version < \"3.9\"", "black", "build", "freezegun", "mdx_truly_sane_lists", "mike", "mkdocs", "mkdocs-awesome-pages-plugin", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-material (>=8.5)", "mkdocstrings[python]", "msgspec ; implementation_name != \"pypy\"", "mypy", "orjson ; implementation_name != \"pypy\"", "pylint", "pytest", "tzdata", "validate-pyproject[all]"]
+
+[[package]]
 name = "python-multipart"
 version = "0.0.9"
 description = "A streaming multipart parser for Python"
@@ -2278,6 +2293,21 @@ files = [
 docs = ["myst-parser[linkify]", "sphinx", "sphinx-rtd-theme"]
 release = ["twine"]
 test = ["pylint", "pytest", "pytest-black", "pytest-cov", "pytest-pylint"]
+
+[[package]]
+name = "structlog"
+version = "25.4.0"
+description = "Structured Logging for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "structlog-25.4.0-py3-none-any.whl", hash = "sha256:fe809ff5c27e557d14e613f45ca441aabda051d119ee5a0102aaba6ce40eed2c"},
+    {file = "structlog-25.4.0.tar.gz", hash = "sha256:186cd1b0a8ae762e29417095664adf1d6a31702160a46dacb7796ea82f7409e4"},
+]
+
+[package.dependencies]
+typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "supabase"
@@ -2636,4 +2666,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<3.12"
-content-hash = "f6f84626e01accd780b75641138590eb7e451c0a3fd66076053e72637f616968"
+content-hash = "722e5ea227ae46877a04f228e44280596aa25e07da779e4f9099293c4ea46281"
