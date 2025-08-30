@@ -25,6 +25,7 @@ Date: 2025-08-28
 import asyncio
 import json
 import os
+import sys
 import tempfile
 import logging
 from pathlib import Path
@@ -34,6 +35,11 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
 
 # Import FastAPI app from shared conftest
 from conftest import app
