@@ -249,22 +249,22 @@ Supabase provides **PostgreSQL database and secure file storage** with authentic
 | **Database** | Supabase (PostgreSQL) with real-time subscriptions |
 | **Authentication** | Supabase Auth with role-based access control |
 | **Storage** | Supabase Storage for secure C3D file management |
-| **Testing** | Vitest (frontend), pytest (backend), 111+ tests with 100% pass rate |
+| **Testing** | Vitest (frontend), pytest (backend), 213+ tests with 100% pass rate |
 | **CI/CD** | GitHub Actions with quality gates, Husky pre-commit hooks, automated validation |
 | **DevOps** | Poetry, Docker + Native development, M1 Mac compatible, stateless architecture |
 
 ## 5. Testing Strategy
 
-The system includes a **comprehensive test suite achieving 100% validation success** with 111+ total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
+The system includes a **comprehensive test suite achieving 100% validation success** with 213+ total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
 
 ### 5.1 Current Test Results (August 2025) ✅
 
-**Overall Test Summary: 111+ Tests Passing (100% Success Rate)**
-- **Backend Tests: 46/46 passing** with comprehensive EMG analysis coverage including production webhook integration
-- **API Tests: 19/19 passing** with FastAPI TestClient validation  
+**Overall Test Summary: 213+ Tests Passing (100% Success Rate)**
+- **Backend Tests: 135/135 passing** with comprehensive EMG analysis coverage including production webhook integration
+- **API Tests: 32/32 passing** with FastAPI TestClient validation  
 - **E2E Tests: 9/9 passing** with real 2.74MB GHOSTLY clinical data and full integration workflows
 - **Frontend Tests: 78/78 passing** across all components and workflows
-- **Integration Tests: passing** with complete Supabase Storage webhook validation
+- **Integration Tests: 54/54 passing** with complete Supabase Storage webhook validation
 
 ### 5.2 Backend Testing Achievement ✅
 
@@ -324,7 +324,7 @@ The system includes a **comprehensive test suite achieving 100% validation succe
 ### 5.5 Test Execution Commands
 
 ```bash
-# Backend Tests (46 tests) - In virtual environment  
+# Backend Tests (135 tests) - In virtual environment  
 cd backend
 source venv/bin/activate
 python -m pytest tests/ -v                    # All tests with verbose output
@@ -340,7 +340,7 @@ npm test hooks                               # Hook tests comprehensive coverage
 npm test -- --coverage                      # Tests with coverage report
 
 # Integrated test execution via development script
-./start_dev_simple.sh --test                # All 111+ tests with environment validation
+./start_dev_simple.sh --test                # All 213+ tests with environment validation
 ```
 
 ### 5.6 Production-Ready Webhook Integration ✅
@@ -459,7 +459,7 @@ npm test -- --coverage            # Generate coverage report
 npm run build                     # Production build validation
 npm run type-check                # TypeScript validation
 
-# Backend Tests (46 tests)
+# Backend Tests (135 tests)
 cd backend  
 python -m pytest tests/ -v       # Full test suite
 python -m pytest tests/e2e/ -v   # E2E tests with complete integration workflows

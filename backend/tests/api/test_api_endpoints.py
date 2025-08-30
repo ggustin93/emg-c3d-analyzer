@@ -3,13 +3,25 @@
 Tests API layer functionality, authentication, validation, and error handling.
 """
 
+import sys
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-# Import FastAPI app from shared conftest
+# Add backend to sys.path for imports
+backend_dir = Path(__file__).resolve().parents[2]
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
+
+# Import FastAPI app from conftest which handles all import complexities
 from conftest import app
 
 client = TestClient(app)

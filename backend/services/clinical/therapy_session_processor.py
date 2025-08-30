@@ -11,7 +11,7 @@ Therapy Session Processor - Workflow Orchestrator.
 - Create therapy session database records
 - Download C3D files from Supabase Storage
 - Orchestrate EMG analysis via c3d_processor.py
-- Populate ALL related database tables (emg_statistics, c3d_technical_data, etc.)
+- Populate ALL related database tables (emg_statistics, processing_parameters, etc.)
 - Update session status and analytics cache
 - Extract and store session timestamps (C3D TIME field)
 
@@ -101,7 +101,7 @@ class TherapySessionProcessor:
     Manages the complete lifecycle:
     1. Create therapy_sessions record
     2. Process C3D file
-    3. Populate related tables (emg_statistics, c3d_technical_data, etc.)
+    3. Populate related tables (emg_statistics, processing_parameters, etc.)
     4. Calculate performance scores
     5. Update session with results
     """
@@ -562,10 +562,10 @@ class TherapySessionProcessor:
         """Populate all related database tables using specialized methods with transaction-like error handling.
 
         Tables populated:
-        - c3d_technical_data
         - emg_statistics (per channel) - batch insert
         - processing_parameters
         - performance_scores
+        - game_metadata (stored in therapy_sessions)
         - session_settings (Schema v2.1 compliance)
         - bfr_monitoring (Schema v2.1 compliance)
         """
@@ -580,7 +580,6 @@ class TherapySessionProcessor:
 
         try:
             # Populate tables with optimized order for performance
-            await self._populate_c3d_technical_data(session_id, metadata, analytics)
             await self._populate_processing_parameters(session_id, metadata, processing_opts)
             await self._populate_emg_statistics(
                 session_id, analytics, session_params
@@ -605,23 +604,23 @@ class TherapySessionProcessor:
                 f"Database population failed for session {session_id}: {e!s}"
             ) from e
 
-    async def _populate_c3d_technical_data(
+    async def _populate_game_metadata(
         self, session_id: str, metadata: dict[str, Any], analytics: dict[str, Any]
     ) -> None:
-        """Populate C3D technical data table."""
-        technical_data = {
-            "session_id": session_id,
-            "original_sampling_rate": metadata.get("sampling_rate", 1000.0),
-            "original_duration_seconds": metadata.get("duration_seconds", 0.0),
-            "original_sample_count": metadata.get("frame_count", 0),
-            "channel_count": len(analytics),
-            "channel_names": list(analytics.keys()),
-            "sampling_rate": metadata.get("sampling_rate", 1000.0),
-            "duration_seconds": metadata.get("duration_seconds", 0.0),
-            "frame_count": metadata.get("frame_count", 0),
-            # Timestamp will be added automatically by database operations service
+        """Populate game metadata in therapy_sessions table (replaces c3d_technical_data)."""
+        game_metadata = {
+            "technical_data": {
+                "original_sampling_rate": metadata.get("sampling_rate", 1000.0),
+                "original_duration_seconds": metadata.get("duration_seconds", 0.0),
+                "original_sample_count": metadata.get("frame_count", 0),
+                "channel_count": len(analytics),
+                "channel_names": list(analytics.keys()),
+                "sampling_rate": metadata.get("sampling_rate", 1000.0),
+                "duration_seconds": metadata.get("duration_seconds", 0.0),
+                "frame_count": metadata.get("frame_count", 0),
+            }
         }
-        await self._upsert_table("c3d_technical_data", technical_data, "session_id")
+        await self.session_repo.update_session_game_metadata(session_id, game_metadata)
 
     async def _populate_emg_statistics(
         self, session_id: str, analytics: dict[str, Any], session_params: GameSessionParameters
@@ -744,8 +743,8 @@ class TherapySessionProcessor:
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling."""
         # Use domain-specific repository for generic upsert operations
-        if table_name == "c3d_technical_data":
-            self.emg_repo.upsert_c3d_technical_data(data, unique_key)
+        if table_name == "game_metadata":
+            await self.session_repo.update_session_game_metadata(data["session_id"], data)
         else:
             # Use generic upsert from session repository for session-related tables
             await self.session_repo.generic_upsert(table_name, data, unique_key)

@@ -200,7 +200,7 @@ class TherapySessionWithDetails(TherapySession):
     # Import types will be resolved at runtime to avoid circular imports
     patient: Any | None = None  # Patient
     therapist: Any | None = None  # UserProfile
-    c3d_technical_data: Any | None = None  # C3DTechnicalData
+    # c3d_technical_data moved to game_metadata.technical_data
     emg_statistics: list[EMGStatistics] = Field(default_factory=list)
     performance_scores: Any | None = None  # PerformanceScores
     session_settings: SessionSettings | None = None

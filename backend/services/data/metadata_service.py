@@ -9,7 +9,7 @@
 🔗 RESPONSIBILITIES:
 - Create/update therapy session database records
 - Extract and resolve patient/therapist IDs from file paths
-- Store C3D technical metadata in database
+- Store C3D technical metadata in therapy_sessions.game_metadata
 - Bridge between file storage and database persistence
 
 📊 OUTPUT: Database session IDs and metadata persistence
@@ -122,7 +122,7 @@ class MetadataService:
     async def update_technical_metadata(self, session_id: UUID, file_data: bytes) -> None:
         """Phase 2: Add technical C3D data to existing therapy session.
 
-        Creates entry in c3d_technical_data table with extracted technical metadata.
+        Updates therapy_sessions.game_metadata with extracted technical metadata.
         This implements the two-phase pattern from DATABASE_IMPROVEMENT_PROPOSAL.md
 
         Args:
@@ -146,8 +146,11 @@ class MetadataService:
                 "frame_count": c3d_metadata.get("frame_count"),
             }
 
-            # Insert technical data into separate table
-            result = self.supabase.table("c3d_technical_data").insert(technical_entry).execute()
+            # Update therapy_sessions with technical metadata
+            game_metadata = {"technical_data": technical_entry}
+            result = self.supabase.table("therapy_sessions").update(
+                {"game_metadata": game_metadata}
+            ).eq("id", session_id).execute()
 
             # Update session metadata with resolved information
             resolved_fields = self._resolve_metadata_fields(

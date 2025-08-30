@@ -92,7 +92,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
     1. Validate webhook signature and payload
     2. Create therapy_session record immediately
     3. Process C3D file in background
-    4. Populate all related tables (emg_statistics, c3d_technical_data, etc.)
+    4. Populate all related tables (emg_statistics, processing_parameters, etc.)
 
     Returns:
         Fast webhook response with session_id for tracking
@@ -227,8 +227,7 @@ async def _process_c3d_background(session_id: str, bucket: str, object_path: str
     """Background task: Complete C3D file processing.
 
     Populates all database tables:
-    - therapy_sessions (update with results)
-    - c3d_technical_data
+    - therapy_sessions (update with results and game_metadata)
     - emg_statistics (per channel)
     - performance_scores
     - processing_parameters
@@ -277,9 +276,9 @@ async def webhook_health() -> dict:
         "status": "healthy",
         "database_tables": [
             "therapy_sessions",
-            "emg_statistics",
-            "c3d_technical_data",
+            "emg_statistics", 
             "performance_scores",
+            "processing_parameters",
         ],
         "features": ["background_processing", "signature_verification", "status_tracking"],
     }

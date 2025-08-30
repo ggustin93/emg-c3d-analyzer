@@ -1,0 +1,20 @@
+╭─────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                       │
+│                                                                 │
+│   /help for help, /status for your current setup                │
+│                                                                 │
+│   cwd: /Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend  │
+╰─────────────────────────────────────────────────────────────────╯
+⏺ Compact summary (ctrl+r to expand)
+  ⎿ Read 
+    tests/integration/clinical/test_therapy_session_processor_comprehensive.py 
+    (451 lines)
+  ⎿  Read tests/integration/clinical/test_database_table_population.py (623 lines)
+  ⎿  Read models/api/request_response.py (189 lines)
+  ⎿  Read scripts/README.md (199 lines)
+  ⎿  Read scripts/cleanup_sessions.py (480 lines)
+  ⎿  Todo list read (8 items)
+  ⎿  Claude usage limit reached. Your limit will reset at 7pm (Europe/Brussels).
+
+      • /upgrade to increase your usage limit.
+

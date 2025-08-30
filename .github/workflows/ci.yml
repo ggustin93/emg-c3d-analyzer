@@ -58,7 +58,7 @@ jobs:
           export PYTHONPATH="${{ github.workspace }}/backend:${PYTHONPATH:-}"
           echo "🧪 Running 135 tests across 4 categories (unit/integration/api/e2e)"
           echo "📊 Test structure: Unit (25), Integration (54), API (32), E2E (9 tests skipped)"
-          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
+          python -m pytest -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
