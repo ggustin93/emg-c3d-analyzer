@@ -29,8 +29,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-POPULATION_DIR="$PROJECT_ROOT/supabase/population"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+POPULATION_DIR="$SCRIPT_DIR/population"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 
 # Parse arguments

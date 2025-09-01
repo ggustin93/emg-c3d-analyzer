@@ -22,6 +22,10 @@ if ! command -v psql &> /dev/null; then
     exit 1
 fi
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+POPULATION_DIR="$SCRIPT_DIR/population"
+
 # Get database URL
 if [ -z "$DATABASE_URL" ]; then
     echo -e "${YELLOW}⚠️  DATABASE_URL not set. Please provide database connection string:${NC}"
@@ -40,7 +44,7 @@ execute_script() {
     echo -e "${BLUE}🚀 Executing: ${script_name}${NC}"
     echo -e "${YELLOW}   ${description}${NC}"
     
-    if psql "$DATABASE_URL" -f "$script_name" > /tmp/sql_output.log 2>&1; then
+    if psql "$DATABASE_URL" -f "$POPULATION_DIR/$script_name" > /tmp/sql_output.log 2>&1; then
         echo -e "${GREEN}✅ Success: ${script_name}${NC}"
         
         # Show summary from script output
@@ -71,8 +75,8 @@ SCRIPTS=(
 )
 
 for script in "${SCRIPTS[@]}"; do
-    if [ ! -f "$script" ]; then
-        echo -e "${RED}❌ Script not found: $script${NC}"
+    if [ ! -f "$POPULATION_DIR/$script" ]; then
+        echo -e "${RED}❌ Script not found: $POPULATION_DIR/$script${NC}"
         echo -e "${YELLOW}Please ensure you're running this from the database/population/ directory${NC}"
         exit 1
     fi

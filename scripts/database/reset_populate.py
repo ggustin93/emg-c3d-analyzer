@@ -193,6 +193,7 @@ class DatabaseManager:
         
         try:
             # Delete data in reverse dependency order
+            # Note: Must clear dependent tables before parent tables
             tables_to_clear = [
                 ("performance_scores", None),
                 ("emg_statistics", None),
@@ -200,9 +201,9 @@ class DatabaseManager:
                 ("session_settings", None),
                 ("bfr_monitoring", None),
                 ("therapy_sessions", None),
-                ("patients", None),
+                ("patients", None),  # Must be before user_profiles due to FK
                 ("scoring_configuration", "is_global = false"),
-                ("user_profiles", "role != 'admin'")
+                # user_profiles cleared last due to foreign key dependencies
             ]
             
             for table, condition in tables_to_clear:
@@ -216,6 +217,9 @@ class DatabaseManager:
                         elif "=" in condition:
                             field, value = condition.split(" = ")
                             query = query.eq(field, value.strip("'") == 'true' if value in ['true', 'false'] else value.strip("'"))
+                    else:
+                        # Supabase requires a WHERE clause - use a condition that matches all
+                        query = query.neq('id', '00000000-0000-0000-0000-000000000000')
                     
                     result = query.execute()
                     logger.info(f"  ✅ Cleared table: {table}")
