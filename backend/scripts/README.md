@@ -1,6 +1,16 @@
-# EMG C3D Analyzer - Management Scripts
+# EMG C3D Analyzer - Backend Scripts
 
-Database management and population scripts for therapy sessions.
+## ⚠️ Script Organization Update
+
+As part of improving project organization, database scripts are being reorganized:
+
+### New Recommended Location
+- **Database Operations**: `/scripts/database/`
+  - `reset_populate.py` - Database reset with Storage integration ✨
+  - `reset_populate.sh` - Bash wrapper for reset operations
+  
+### Current Scripts (Maintained for Compatibility)
+Backend-specific utilities and management scripts for therapy sessions.
 
 ## 📁 Available Scripts
 

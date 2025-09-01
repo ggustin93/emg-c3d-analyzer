@@ -33,10 +33,10 @@ Core performance score calculated after each **Game Session**:
 $$P_{overall} = w_c \cdot S_{compliance} + w_s \cdot S_{symmetry} + w_e \cdot S_{effort} + w_g \cdot S_{game}$$
 
 **Default Weights** (research-determined, $\sum w_i = 1$):
-- $w_c = 0.40$ (Therapeutic Compliance)
+- $w_c = 0.5$ (Therapeutic Compliance)
 - $w_s = 0.25$ (Muscle Symmetry) 
-- $w_e = 0.20$ (Subjective Effort)
-- $w_g = 0.15$ (Game Performance) *Default weight = 0.00 when game data unavailable*
+- $w_e = 0.25$ (Subjective Effort)
+- $w_g = 0.0$ (Game Performance) *Default weight = 0.00 because it dependse*
 
 ### 3.1 Therapeutic Compliance Score
 
@@ -111,6 +111,16 @@ $$S_{effort} = \begin{cases}
 $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points (current difficulty)}} \times 100$$
 
 *Note: Game performance score is optional and highly game-dependent. Default weight is 0.00 when game scoring data is unavailable or unreliable. Maximum achievable points adapt via Dynamic Difficulty Adjustment (DDA) system.*
+Description
+Measures patient performance in the gamified environment, normalized
+against the max possible score, which is adapted by DDA system.
+Important Consideration
+This score is an optional proxy for patient engagement. Its clinical
+relevance is highly game-dependent. The score in the Maze game
+reflects performance smoothness, while in other games it is not
+directly linked to therapeutic execution.
+Therefore, by default, its weight (wg) in the Overall Performance
+Score is set to zero.
 
 ---
 
@@ -167,79 +177,90 @@ This framework requires experimental validation to determine:
 
 ---
 
-## 7. MVC Threshold Calculation Priority System
+## 7. MVC Workflow and Priority System
 
-**Technical Specification**: The system implements a priority-based hierarchy for MVC threshold determination, ensuring clinical accuracy and data-driven validation.
+**Technical Specification**: The system implements a 3-tier priority cascade for MVC threshold determination, ensuring clinical accuracy through personalized assessment workflows.
 
-### 7.1 MVC Calculation Hierarchy
+### 7.1 MVC Priority Cascade
 
-**Priority 1 - Backend-Calculated MVC (Recommended)**:
-- **Source**: `analytics.mvc_threshold_actual_value`
-- **Method**: Clinical estimation using 95th percentile analysis
+**Priority 1 - C3D Metadata (Highest Priority)**:
+- **Source**: Pre-session MVC assessment recorded in C3D file metadata
+- **Data Fields**: `mvc_ch1`, `mvc_ch2` from baseline session
+- **Clinical Method**: Dedicated MVC assessment session before therapeutic intervention
+- **Personalization**: Patient-specific values from controlled assessment conditions
+- **Reliability**: Gold standard - direct measurement from patient under standardized conditions
+
+**Priority 2 - Patient Database (Future Implementation)**:
+- **Source**: Historical MVC values from patient's previous sessions
+- **Method**: Database lookup using patient UUID
+- **Use Cases**: Continuity across multiple therapy sessions, trending analysis
+- **Status**: Planned for future implementation with patient baseline management
+
+**Priority 3 - Self-Calibration (Current Session Analysis)**:
+- **Source**: Backend-calculated from current session EMG analysis
+- **Method**: Clinical estimation using peak detection from processed EMG signals
 - **Signal Processing Pipeline**:
   ```
-  Raw EMG → High-pass Filter (20Hz) → Rectification → Low-pass Filter (10Hz) → RMS Envelope → 95th Percentile
+  Raw EMG → High-pass Filter (20Hz) → Rectification → Low-pass Filter (10Hz) → RMS Envelope → Peak Detection
   ```
-- **Clinical Validation**: RMS envelope method is physiologically superior to linear envelope for MVC quantification
-- **Confidence Scoring**: Includes statistical confidence assessment based on signal characteristics
-- **Patient-Specific**: Calculated from actual patient data during session
+- **Calculation**: `mvc_threshold_actual_value / 0.75` (reverse-engineer from 75% threshold)
+- **Use Cases**: Fallback when no pre-session assessment available
 
-**Priority 2 - User-Defined MVC (Fallback)**:
-- **Source**: `sessionParams.session_mvc_values` + threshold percentages
-- **Method**: Manual values × threshold percentage (typically 75%)
-- **Use Cases**: Backup when signal analysis unavailable, clinical override scenarios
-- **Limitations**: Not patient-specific, potential inaccuracy
+**Fallback - Session Defaults**:
+- **Source**: Development/testing defaults (`SessionDefaults.MVC_CH1/CH2`)
+- **Values**: 150μV per channel (1.5e-4 mV)
+- **Use Cases**: Development, testing, or when all other sources unavailable
 
-### 7.2 Scientific Rationale
+### 7.2 Clinical Rationale
 
-**RMS vs Linear Envelope** (validated via literature review):
-- **RMS Envelope**: Captures signal power, robust to noise, physiologically meaningful
-- **Linear Envelope**: Simple rectification + filtering, more noise-sensitive
-- **Clinical Consensus**: RMS envelope preferred for EMG MVC calculations
+**Pre-Session MVC Assessment Priority**:
+Each C3D file contains a pre-session MVC assessment recorded before the therapeutic game session. This assessment provides the most accurate personalized MVC values because:
 
-**Peak and RMS Methods (Standard Clinical Practice)**:
-- **Peak Value**: Highest amplitude of rectified EMG during MVC - captures maximum instantaneous activation
-- **RMS/ARV**: Root Mean Square or Average Rectified Value - more stable and reliable measure of sustained activation
-- **Clinical Consensus**: Both peak and RMS should be reported together for comprehensive MVC assessment
-- **Normalization Standard**: Task-related EMG expressed as %MVC for cross-subject comparison
+- **Controlled Conditions**: Standardized assessment protocol without game distractions
+- **Fresh State**: Patient not fatigued from therapeutic exercise
+- **Clinical Supervision**: Therapist-guided maximum voluntary contractions
+- **Bilateral Assessment**: Independent CH1 and CH2 measurements for asymmetry detection
 
-### 7.3 MVC Detection from C3D Baseline Sessions
+**Signal Processing Standards**:
+- **High-pass Filter (20Hz)**: Eliminates baseline drift and motion artifacts
+- **Full-wave Rectification**: Converts bipolar EMG to unipolar amplitude signal
+- **Low-pass Filter (10Hz)**: Creates smooth envelope suitable for peak detection
+- **RMS Smoothing (50ms)**: Clinical standard for EMG envelope processing
 
-MVC detection from C3D files follows a standardized scientific process to ensure therapeutic personalization. The system first extracts raw EMG signals from GHOSTLY+ "baseline" game sessions, then applies a clinically validated processing pipeline. This pipeline includes high-pass filtering at 20Hz to eliminate baseline drift, rectification to convert bipolar signals to unipolar amplitude, low-pass filtering at 10Hz to create a smooth envelope, and 50ms RMS smoothing for final envelope extraction.
+**Therapeutic Threshold Calculation**:
+- **Standard Protocol**: 75% of determined MVC value
+- **Clinical Basis**: Optimal balance between therapeutic challenge and patient safety
+- **Personalization**: Adapts to individual patient capabilities and muscle condition
 
-MVC estimation follows standard clinical practice by calculating both peak values and RMS measurements from the processed signal. The system primarily uses the peak value method (maximum amplitude of rectified EMG) as the gold standard for MVC determination, which represents the highest instantaneous muscle activation capacity. Additionally, RMS values are calculated to provide a stable measure of sustained activation. This dual approach ensures comprehensive MVC assessment following established clinical guidelines while maintaining compatibility with therapeutic gaming environments.
+### 7.3 Implementation Details
 
-The final therapeutic threshold is calculated as 75% of the estimated MVC value, creating personalized targets adapted to each patient's real physiological condition. This approach ensures therapeutic exercises are calibrated to individual capabilities measured during baseline sessions, unlike generic manual values that do not reflect inter-individual variations.
+**Database Storage**:
+- **MVC Source Tracking**: `processing_parameters.mvc_source` field records priority level used
+- **Algorithm Configuration**: `processing_parameters.algorithm_config` stores immutable processing parameters
+- **Session Traceability**: Full audit trail of MVC determination method for each session
 
-```mermaid
-flowchart TD
-    A[C3D Baseline File] --> B[Raw EMG Signal Extraction]
-    B --> C[Signal Quality Validation]
-    C --> D{Valid Signal?}
-    D -->|No| E[Fallback MVC = 0.001]
-    D -->|Yes| F[High-pass Filter 20Hz]
-    F --> G[Full-wave Rectification]
-    G --> H[Low-pass Filter 10Hz]
-    H --> I[RMS Smoothing 50ms]
-    I --> J[Peak MVC Calculation]
-    J --> K[RMS/ARV Calculation]
-    K --> L[MVC Estimation Complete]
-    L --> M[Therapeutic Threshold = MVC × 0.75]
-    M --> N[Patient-Specific Training Target]
-    
-    style A fill:#e1f5fe
-    style J fill:#f3e5f5
-    style M fill:#e8f5e8
-    style N fill:#fff3e0
-```
+**Source Values**:
+- `"c3d_metadata"` - Priority 1: Pre-session assessment from C3D file
+- `"patient_database"` - Priority 2: Historical patient values (future)
+- `"self_calibration"` - Priority 3: Backend-calculated from current session
+- `"session_defaults"` - Fallback: Development/testing defaults
 
-### 7.4 Current Implementation Status
+**Per-Channel Flexibility**:
+- **Independent Assessment**: CH1 and CH2 can have different MVC values
+- **Muscle-Specific**: Accounts for bilateral strength differences
+- **Therapeutic Targeting**: Enables asymmetry-aware rehabilitation protocols
 
-- ✅ **Priority System Active**: Backend-calculated MVC takes precedence over manual values
-- ✅ **RMS Pipeline Implemented**: Uses scientifically validated signal processing chain
-- ✅ **Clinical Parameters**: 20Hz high-pass, 10Hz low-pass, 50ms smoothing window
-- ✅ **C3D Baseline Detection**: Automated MVC estimation from game session data
-- ✅ **Fallback Protection**: System gracefully handles missing backend calculations
+### 7.4 Workflow Integration
+
+The MVC priority cascade integrates seamlessly with the therapeutic targeting system:
+
+1. **Session Initialization**: Determine MVC values using priority cascade
+2. **Therapeutic Targets**: Apply per-channel contraction targets (flexible CH1 ≠ CH2)
+3. **Real-time Analysis**: Use determined MVC values for contraction quality assessment
+4. **Performance Scoring**: Calculate compliance metrics using personalized thresholds
+5. **Session Documentation**: Record MVC source and values for clinical tracking
+
+This workflow ensures that therapeutic interventions are personalized to each patient's actual capabilities while maintaining clinical rigor and traceability.
 
 ---
 
