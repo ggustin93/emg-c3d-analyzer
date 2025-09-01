@@ -603,24 +603,6 @@ class TherapySessionProcessor:
                 f"Database population failed for session {session_id}: {e!s}"
             ) from e
 
-    async def _populate_game_metadata(
-        self, session_id: str, metadata: dict[str, Any], analytics: dict[str, Any]
-    ) -> None:
-        """Populate game metadata in therapy_sessions table (replaces c3d_technical_data)."""
-        game_metadata = {
-            "technical_data": {
-                "original_sampling_rate": metadata.get("sampling_rate", 1000.0),
-                "original_duration_seconds": metadata.get("duration_seconds", 0.0),
-                "original_sample_count": metadata.get("frame_count", 0),
-                "channel_count": len(analytics),
-                "channel_names": list(analytics.keys()),
-                "sampling_rate": metadata.get("sampling_rate", 1000.0),
-                "duration_seconds": metadata.get("duration_seconds", 0.0),
-                "frame_count": metadata.get("frame_count", 0),
-            }
-        }
-        await self.session_repo.update_session_game_metadata(session_id, game_metadata)
-
     async def _populate_emg_statistics(
         self, session_id: str, analytics: dict[str, Any], session_params: GameSessionParameters
     ) -> None:
@@ -767,12 +749,24 @@ class TherapySessionProcessor:
 
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling."""
-        # Use domain-specific repository for generic upsert operations
-        if table_name == "game_metadata":
-            await self.session_repo.update_session_game_metadata(data["session_id"], data)
-        else:
-            # Use generic upsert from session repository for session-related tables
-            await self.session_repo.generic_upsert(table_name, data, unique_key)
+        # Direct Supabase upsert since repository doesn't have these methods yet
+        try:
+            # Check if record exists
+            existing = self.supabase.table(table_name).select("*").eq(unique_key, data[unique_key]).execute()
+            
+            if existing.data:
+                # Update existing record
+                result = self.supabase.table(table_name).update(data).eq(unique_key, data[unique_key]).execute()
+            else:
+                # Insert new record
+                result = self.supabase.table(table_name).insert(data).execute()
+                
+            if not result.data:
+                raise ValueError(f"Upsert failed for table {table_name}")
+                
+        except Exception as e:
+            logger.error(f"Failed to upsert {table_name}: {e!s}", exc_info=True)
+            raise
 
     async def _calculate_and_save_performance_scores(
         self, session_id: str, analytics: dict[str, Any], processing_result: dict[str, Any]
@@ -902,7 +896,7 @@ class TherapySessionProcessor:
                 logger.info(f"📅 Extracted session timestamp: {session_timestamp}")
 
             # Use domain-specific repository for therapy session updates
-            await self.session_repo.update_therapy_session(session_id, update_data)
+            self.session_repo.update_therapy_session(session_id, update_data)
 
             logger.info(f"📊 Updated session metadata for: {session_id}")
 

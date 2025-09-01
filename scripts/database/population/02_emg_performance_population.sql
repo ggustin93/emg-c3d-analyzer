@@ -186,11 +186,11 @@ BEGIN
     -- Get default GHOSTLY+ scoring configuration
     SELECT id INTO scoring_config_id 
     FROM public.scoring_configuration 
-    WHERE configuration_name = 'GHOSTLY+ Default' AND is_global = true
+    WHERE configuration_name = 'GHOSTLY+ Global Scoring v2.0' AND is_global = true
     LIMIT 1;
     
     IF scoring_config_id IS NULL THEN
-        RAISE EXCEPTION 'GHOSTLY+ Default scoring configuration not found';
+        RAISE EXCEPTION 'GHOSTLY+ Global Scoring v2.0 scoring configuration not found';
     END IF;
     
     FOR session_rec IN 

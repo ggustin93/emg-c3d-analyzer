@@ -94,31 +94,32 @@ WHERE ts.processing_status = 'completed';
 
 -- Step 6: Global Scoring Configuration
 INSERT INTO public.scoring_configuration (
-    config_name, is_global, weights, thresholds,
-    parameters, active, created_at
+    configuration_name, 
+    description,
+    is_global, 
+    weight_compliance,
+    weight_symmetry,
+    weight_effort,
+    weight_game,
+    weight_completion,
+    weight_intensity,
+    weight_duration,
+    active, 
+    created_at
 ) VALUES (
     'GHOSTLY+ Global Scoring v2.0',
+    'Default global scoring configuration for GHOSTLY+ protocol',
     true,
-    jsonb_build_object(
-        'compliance', 0.35,
-        'strength', 0.25,
-        'endurance', 0.25,
-        'consistency', 0.15
-    ),
-    jsonb_build_object(
-        'min_compliance', 70,
-        'min_strength', 60,
-        'min_endurance', 50,
-        'target_score', 75
-    ),
-    jsonb_build_object(
-        'scoring_algorithm', 'weighted_average_v2',
-        'outlier_handling', 'winsorize',
-        'confidence_intervals', true
-    ),
+    0.40,  -- weight_compliance (40%)
+    0.25,  -- weight_symmetry (25%)
+    0.20,  -- weight_effort (20%)
+    0.15,  -- weight_game (15%)
+    0.333, -- weight_completion (sub-weight)
+    0.333, -- weight_intensity (sub-weight)
+    0.334, -- weight_duration (sub-weight)
     true,
     NOW()
-) ON CONFLICT (config_name) DO NOTHING;
+) ON CONFLICT (configuration_name) DO NOTHING;
 
 COMMIT;
 
