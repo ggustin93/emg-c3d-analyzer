@@ -57,20 +57,19 @@ from config import (
     DEFAULT_MIN_DURATION_MS,
     DEFAULT_MVC_THRESHOLD_PERCENTAGE,
     # Clinical Constants
-    DEFAULT_MVC_THRESHOLD_VALUE,
     DEFAULT_RMS_WINDOW_MS,
     DEFAULT_SMOOTHING_WINDOW,
     DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS,
     DEFAULT_THRESHOLD_FACTOR,
+    DEFAULT_TARGET_CONTRACTIONS_CH1,
+    DEFAULT_TARGET_CONTRACTIONS_CH2,
     EMG_HIGH_PASS_CUTOFF,
-    EXPECTED_CONTRACTIONS_PER_MUSCLE,
-    MVC_PERCENTAGE_DIVISOR,
     MVC_WINDOW_SECONDS,
     NYQUIST_SAFETY_FACTOR,
     PROCESSING_VERSION,
     RMS_OVERLAP_PERCENTAGE,
-    # Development Defaults
-    DevelopmentDefaults,
+    # Session Defaults (unified development & C3D metadata structure)
+    SessionDefaults,
 )
 
 from services.clinical.performance_scoring_service import (
@@ -659,10 +658,9 @@ class TherapySessionProcessor:
         session_params: GameSessionParameters,
     ) -> dict[str, Any]:
         """Build EMG statistics record for a single channel."""
-        # Use clinical constants for consistent values
-        default_mvc_value = (
-            channel_data.get("mvc_threshold", DEFAULT_MVC_THRESHOLD_VALUE) / MVC_PERCENTAGE_DIVISOR
-        )
+        # Use SessionDefaults for consistent fallback MVC values
+        channel_mvc_default = SessionDefaults.MVC_CH1 if channel_name == "CH1" else SessionDefaults.MVC_CH2
+        default_mvc_value = channel_data.get("mvc_value", channel_mvc_default)
 
         # Extract temporal statistics
         temporal_stats = self._extract_temporal_stats(channel_data)
@@ -675,11 +673,8 @@ class TherapySessionProcessor:
             "mvc_contraction_count": channel_data.get("mvc_contraction_count", 0),
             "duration_contraction_count": channel_data.get("duration_contraction_count", 0),
             "compliance_rate": channel_data.get("compliance_rate", 0.0),
-            "mvc_value": channel_data.get("mvc_value", default_mvc_value),
-            "mvc_threshold": max(
-                channel_data.get("mvc_threshold", DEFAULT_MVC_THRESHOLD_VALUE),
-                DEFAULT_MVC_THRESHOLD_VALUE,
-            ),
+            "mvc_value": default_mvc_value,
+            "mvc_threshold": channel_data.get("mvc_threshold", channel_mvc_default * DEFAULT_MVC_THRESHOLD_PERCENTAGE / 100.0),
             "mvc_threshold_actual_value": DEFAULT_MVC_THRESHOLD_PERCENTAGE,
             "duration_threshold_actual_value": session_params.contraction_duration_threshold,
             "total_time_under_tension_ms": channel_data.get("total_time_under_tension_ms", 0.0),
@@ -719,11 +714,18 @@ class TherapySessionProcessor:
     async def _populate_processing_parameters(
         self, session_id: str, metadata: dict[str, Any], processing_opts: ProcessingOptions
     ) -> None:
-        """Populate processing parameters table with error handling."""
+        """Populate processing parameters table with MVC priority cascade integration."""
         sampling_rate = metadata.get("sampling_rate", 1000.0)
         nyquist_freq = sampling_rate / 2
         safe_high_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * NYQUIST_SAFETY_FACTOR)
 
+        # Determine MVC values using 4-level priority cascade  
+        c3d_metadata = getattr(processing_opts, 'c3d_metadata', None) or metadata.get('c3d_metadata')
+        patient_id = metadata.get('patient_id')
+        analytics = metadata.get('analytics', {})
+        
+        mvc_values, mvc_source = self._determine_mvc_values(c3d_metadata, patient_id, analytics)
+        
         params_data = {
             "session_id": session_id,
             "sampling_rate_hz": sampling_rate,
@@ -735,6 +737,29 @@ class TherapySessionProcessor:
             "mvc_window_seconds": MVC_WINDOW_SECONDS,
             "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
             "processing_version": PROCESSING_VERSION,
+            # MVC workflow alignment with 4-level priority cascade
+            "mvc_source": mvc_source,  # Determined by priority cascade
+            "algorithm_config": {
+                "signal_processing": {
+                    "sampling_rate_hz": sampling_rate,
+                    "filter_low_cutoff_hz": EMG_HIGH_PASS_CUTOFF,
+                    "filter_high_cutoff_hz": safe_high_cutoff,
+                    "filter_order": DEFAULT_FILTER_ORDER,
+                    "rms_window_ms": DEFAULT_RMS_WINDOW_MS,
+                    "rms_overlap_percent": RMS_OVERLAP_PERCENTAGE,
+                },
+                "mvc_analysis": {
+                    "mvc_window_seconds": MVC_WINDOW_SECONDS,
+                    "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
+                    "mvc_values_determined": mvc_values,  # Store determined MVC values for traceability
+                    "mvc_source": mvc_source,  # Store source for audit trail
+                    # Note: MVC percentage divisor removed - redundant with threshold_percentage
+                },
+                "version_info": {
+                    "processing_version": PROCESSING_VERSION,
+                    "algorithm_timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            },  # Immutable snapshot for session traceability
         }
 
         # Use centralized database operations (DRY principle)
@@ -776,15 +801,15 @@ class TherapySessionProcessor:
                 right_mvc_contractions=right_data.get("mvc_contraction_count", 0),
                 right_duration_contractions=right_data.get("duration_contraction_count", 0),
                 # Default clinical values using centralized configuration
-                bfr_pressure_aop=DevelopmentDefaults.BFR_PRESSURE_AOP,
+                bfr_pressure_aop=SessionDefaults.TARGET_PRESSURE_AOP,
                 bfr_compliant=True,
-                rpe_post_session=DevelopmentDefaults.RPE_POST_SESSION,
+                rpe_post_session=SessionDefaults.RPE_POST_SESSION,
                 # Game data from C3D metadata (if available)
                 game_points_achieved=processing_result.get("metadata", {}).get(
                     "game_points_achieved"
                 ),
                 game_points_max=processing_result.get("metadata", {}).get("game_points_max"),
-                expected_contractions_per_muscle=EXPECTED_CONTRACTIONS_PER_MUSCLE,
+                expected_contractions_per_muscle=DEFAULT_TARGET_CONTRACTIONS_CH1,  # Using CH1 default (12 contractions)
             )
 
             # Use the dedicated service to calculate scores
@@ -951,9 +976,35 @@ class TherapySessionProcessor:
         Schema v2.1 compliance - ensures all session configuration is properly stored
         """
         try:
+            # Get therapist ID from C3D metadata or session parameters
+            therapist_id = getattr(session_params, 'therapist_id', None)
+            if hasattr(session_params, 'c3d_metadata') and session_params.c3d_metadata:
+                therapist_id = session_params.c3d_metadata.get('therapist_id') or therapist_id
+                
+            # Determine therapeutic targets with per-channel flexibility
+            # Priority: C3D metadata > session parameters > development defaults
+            target_ch1 = DEFAULT_TARGET_CONTRACTIONS_CH1
+            target_ch2 = DEFAULT_TARGET_CONTRACTIONS_CH2
+            
+            if hasattr(session_params, 'c3d_metadata') and session_params.c3d_metadata:
+                metadata = session_params.c3d_metadata
+                target_ch1 = metadata.get('target_contractions_ch1') or target_ch1
+                target_ch2 = metadata.get('target_contractions_ch2') or target_ch2
+            
+            # Session parameters can override C3D defaults
+            if hasattr(session_params, 'target_contractions_ch1'):
+                target_ch1 = session_params.target_contractions_ch1 or target_ch1
+            if hasattr(session_params, 'target_contractions_ch2'):
+                target_ch2 = session_params.target_contractions_ch2 or target_ch2
+
             session_settings_data = {
                 "session_id": session_id,
-                # MVC configuration from processing options or session parameters
+                # Therapeutic targets (flexible per-channel)
+                "target_contractions_ch1": target_ch1,
+                "target_contractions_ch2": target_ch2,
+                # Therapist identification from C3D metadata
+                "therapist_id": therapist_id,
+                # MVC configuration from processing options
                 "mvc_threshold_percentage": getattr(
                     processing_opts, "mvc_threshold_percentage", 75.0
                 ),
@@ -961,11 +1012,9 @@ class TherapySessionProcessor:
                 "duration_threshold_seconds": getattr(
                     processing_opts, "duration_threshold_seconds", 2.0
                 ),
-                # Target contractions from session parameters
-                "target_contractions": getattr(session_params, "target_contractions", 12),
-                "expected_contractions_per_muscle": getattr(
-                    session_params, "expected_contractions_per_muscle", 12
-                ),
+                # Legacy fields for backward compatibility
+                "target_contractions": target_ch1 + target_ch2,  # Total target
+                "expected_contractions_per_muscle": (target_ch1 + target_ch2) // 2,  # Average
                 # BFR settings - enabled by default for GHOSTLY+ protocol
                 "bfr_enabled": getattr(session_params, "bfr_enabled", True),
             }
@@ -1056,13 +1105,7 @@ class TherapySessionProcessor:
                     "actual_pressure_aop": actual_pressure_aop,
                     "cuff_pressure_mmhg": cuff_pressure_mmhg,
                     
-                    # Blood pressure monitoring for safety (shared across channels)
-                    "systolic_bp_mmhg": getattr(
-                        session_params, "systolic_bp_mmhg", DevelopmentDefaults.SYSTOLIC_BP
-                    ),
-                    "diastolic_bp_mmhg": getattr(
-                        session_params, "diastolic_bp_mmhg", DevelopmentDefaults.DIASTOLIC_BP
-                    ),
+                    # Blood pressure fields removed - not computed in this system
                     
                     # Manual compliance assessment (per muscle)
                     "bfr_compliance_manual": bfr_compliance_manual,
@@ -1115,6 +1158,72 @@ class TherapySessionProcessor:
             )
             raise TherapySessionError(f"Per-channel BFR monitoring population failed: {e!s}") from e
 
+    def _determine_mvc_values(
+        self, 
+        c3d_metadata: dict[str, Any] | None, 
+        patient_id: str | None,
+        analytics: dict[str, Any]
+    ) -> tuple[dict[str, float], str]:
+        """Determine MVC values using 4-level priority cascade.
+        
+        Priority 1: C3D metadata (from pre-session assessment)
+        Priority 2: Patient database (historical values)  
+        Priority 3: Self-calibration (backend-calculated from current session)
+        Priority 4: SessionDefaults (development/testing fallbacks)
+        
+        Args:
+            c3d_metadata: Metadata from C3D file
+            patient_id: Patient UUID for database lookup
+            analytics: Current session analytics with MVC calculations
+            
+        Returns:
+            Tuple of (mvc_values_dict, source_name)
+        """
+        mvc_values = {}
+        
+        # Priority 1: C3D metadata (highest priority)
+        if c3d_metadata:
+            mvc_ch1 = c3d_metadata.get("mvc_ch1") or c3d_metadata.get("MVC_CH1")
+            mvc_ch2 = c3d_metadata.get("mvc_ch2") or c3d_metadata.get("MVC_CH2")
+            
+            if mvc_ch1 is not None and mvc_ch2 is not None:
+                mvc_values = {"CH1": float(mvc_ch1), "CH2": float(mvc_ch2)}
+                logger.info(f"🎯 MVC Priority 1: Using C3D metadata - CH1: {mvc_ch1:.3e}, CH2: {mvc_ch2:.3e}")
+                return mvc_values, "c3d_metadata"
+        
+        # Priority 2: Patient database (future implementation)
+        if patient_id:
+            # TODO: Implement patient database MVC lookup
+            # patient_mvc = await self.patient_repo.get_patient_mvc_values(patient_id)
+            # if patient_mvc:
+            #     logger.info(f"🎯 MVC Priority 2: Using patient database values")
+            #     return patient_mvc, "patient_database"
+            logger.debug(f"Patient database MVC lookup not yet implemented for patient {patient_id}")
+        
+        # Priority 3: Self-calibration (backend-calculated from current session)
+        if analytics:
+            for channel_name, channel_data in analytics.items():
+                # Extract backend-calculated MVC from analytics
+                mvc_threshold_actual = channel_data.get("mvc_threshold_actual_value")
+                if mvc_threshold_actual and mvc_threshold_actual > 0.00001:  # 10μV minimum
+                    # Convert threshold back to MVC value (threshold = MVC * 0.75)
+                    mvc_value = mvc_threshold_actual / 0.75
+                    mvc_values[channel_name] = mvc_value
+            
+            if mvc_values:
+                logger.info(f"🎯 MVC Priority 3: Using backend-calculated values from current session")
+                for channel, value in mvc_values.items():
+                    logger.info(f"  {channel}: {value:.3e} mV (calculated from threshold)")
+                return mvc_values, "self_calibration"
+        
+        # Fallback: Session defaults
+        mvc_values = {
+            "CH1": SessionDefaults.MVC_CH1,
+            "CH2": SessionDefaults.MVC_CH2
+        }
+        logger.warning(f"🎯 MVC Fallback: Using session defaults - CH1: {mvc_values['CH1']:.3e}, CH2: {mvc_values['CH2']:.3e}")
+        return mvc_values, "session_defaults"
+
     def _get_channel_bfr_pressure(
         self, 
         session_params: GameSessionParameters, 
@@ -1145,7 +1254,7 @@ class TherapySessionProcessor:
                 if global_pressure is not None:
                     return global_pressure
                 # Use development defaults if no session data
-                return DevelopmentDefaults.BFR_PRESSURE_AOP
+                return SessionDefaults.TARGET_PRESSURE_AOP
             
             elif pressure_type == "cuff_pressure_mmhg":
                 # Calculate from actual_pressure_aop if available
