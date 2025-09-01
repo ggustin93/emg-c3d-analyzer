@@ -336,9 +336,9 @@ class TestWebhookCompleteIntegration:
                 try:
                     result = supabase_client.table(table_name).delete().eq("session_id", session_id).execute()
                     print(f"🧹 Cleaned {table_name}: {len(result.data) if result.data else 0} records")
-                except Exception:
-                    # Table might not exist - that's OK
-                    pass
+                except Exception as e:
+                    # Table might not exist during test cleanup - that's OK
+                    print(f"ℹ️ Could not clean {table_name}: {e}")
             
             # 7. Finally, the main therapy session record
             result = supabase_client.table("therapy_sessions").delete().eq("id", session_id).execute()
