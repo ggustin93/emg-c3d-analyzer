@@ -1,80 +1,72 @@
-import logging
+"""Backend entry point for GHOSTLY+ EMG C3D Analyzer.
+
+This module serves as the application entry point, handling:
+- Environment configuration
+- Logging setup
+- FastAPI app initialization
+- Development server launch
+"""
+
 import sys
-import traceback
 from pathlib import Path
 
 import structlog
 import uvicorn
 from dotenv import load_dotenv
 
+from config import ensure_temp_dir, get_host, get_log_level, get_port
 from utils.logging_config import setup_logging
-from config import get_log_level
 
-# Load environment variables from .env file
-backend_dir = Path(__file__).parent
-env_path = backend_dir / ".env"
+# Load environment variables
+env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# Ensure logs directory exists
-logs_dir = Path(__file__).parent.parent / "logs"
-logs_dir.mkdir(exist_ok=True)
-
-# Configure logging
+# Setup logging
 log_level = get_log_level()
 setup_logging(log_level)
-logger = structlog.get_logger("backend")
+logger = structlog.get_logger(__name__)
 
-# Simple app import with test-aware error handling
+# Import FastAPI application
 try:
     from api.main import app
-    logger.info("✅ Successfully imported FastAPI app from api.main")
+    logger.info("FastAPI app imported successfully")
 except ImportError as e:
-    # Check if we're in a test context - if so, don't exit
+    # Allow tests to run without FastAPI app
     if "pytest" in sys.modules or "test" in sys.argv[0].lower():
-        logger.warning(f"⚠️ Running in test context - FastAPI app import failed but continuing: {e}")
+        logger.warning(f"Test context detected - continuing without app: {e}")
         app = None
     else:
-        # In production context, this is a real error
-        logger.error(f"❌ Failed to import FastAPI app: {e}")
-        traceback.print_exc()
+        logger.error(f"Failed to import FastAPI app: {e}")
         sys.exit(1)
 
-if app is not None:
-    logger.info("🚀 FastAPI application ready for use")
-
-# Check if temporary directory exists and create it if needed
+# Verify temporary directory for file uploads
 try:
-    # In the stateless architecture, we only need a temporary directory for file uploads during processing
-    # These files will not persist between requests
-    from config import ensure_temp_dir
-
     temp_dir = ensure_temp_dir()
-    logger.info(f"Temporary upload directory verified", temp_dir=str(temp_dir))
+    logger.info(f"Temporary directory ready: {temp_dir}")
 except Exception as e:
-    logger.exception(f"Failed to create temporary directory: {e}")
-    traceback.print_exc()
+    logger.error(f"Failed to setup temporary directory: {e}")
     sys.exit(1)
 
-# If running directly (for development)
-if __name__ == "__main__":
-    try:
-        # Get configuration from config module
-        from config import get_host, get_log_level, get_port
 
-        port = get_port()
-        host = get_host()
-        log_level = get_log_level()
-
-        logger.info(f"Starting uvicorn server", host=host, port=port)
-        # Remove reload=True to avoid the warning in production
-        uvicorn.run(
-            "backend.api.main:app",
-            host=host,
-            port=port,
-            log_level=log_level.lower(),
-            log_config=None,  # We are managing logging, so uvicorn shouldn't
-        )
-    except Exception as e:
-        logger.exception(f"Failed to start uvicorn server: {e}")
-        traceback.print_exc()
+def main():
+    """Start the uvicorn server for development."""
+    if app is None:
+        logger.error("No FastAPI app available")
         sys.exit(1)
+    
+    host = get_host()
+    port = get_port()
+    
+    logger.info(f"Starting server on {host}:{port}")
+    
+    uvicorn.run(
+        "api.main:app",
+        host=host,
+        port=port,
+        log_level=log_level.lower(),
+        log_config=None  # Use our custom logging configuration
+    )
+
+
+if __name__ == "__main__":
+    main()

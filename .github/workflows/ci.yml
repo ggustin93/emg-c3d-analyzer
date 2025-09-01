@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.11']  # Changed from 3.12 to 3.11 for better compatibility
     
     steps:
       - name: Checkout repository
@@ -56,8 +56,8 @@ jobs:
         working-directory: backend
         run: |
           export PYTHONPATH="${{ github.workspace }}/backend:${PYTHONPATH:-}"
-          echo "🧪 Running 135 tests across 4 categories (unit/integration/api/e2e)"
-          echo "📊 Test structure: Unit (25), Integration (54), API (32), E2E (9 tests skipped)"
+          echo "🧪 Running backend tests (excluding E2E)"
+          echo "📊 Test categories: Unit, Integration, API"
           python -m pytest -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -147,10 +147,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set up Python 3.12
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
       
@@ -498,10 +498,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set up Python 3.12
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
           cache: 'pip'
       
       - name: Install quality tools
@@ -573,7 +573,7 @@ jobs:
             # Backend tests
             if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
               echo "✅ **Backend Tests**: Passed"
-              echo "   - Test Count: 135 tests (Unit: 25, Integration: 54, API: 32, E2E: 9)"
+              echo "   - Test Count: 135 tests across unit, integration, API, and E2E categories"
               echo "   - Coverage: ~47% of backend codebase"
             else
               echo "❌ **Backend Tests**: Failed"
@@ -621,7 +621,7 @@ jobs:
             echo ""
             echo "### Summary Statistics"
             echo ""
-            echo "- **Total Test Count**: 213 tests (135 backend + 78 frontend)"
+            echo "- **Total Test Count**: 213+ tests (135 backend + 78 frontend)"
             echo "- **Test Categories**: Unit, Integration, API, E2E, Component, Hook tests"
             echo "- **Backend Coverage**: Approximately 47% code coverage"
             echo "- **Build Validation**: TypeScript compilation and production builds tested"

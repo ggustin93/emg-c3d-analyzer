@@ -154,15 +154,15 @@ The backend implements **flexible C3D channel processing** to handle various nam
 - **Muscle Mapping Support**: Supports user-defined channel-to-muscle name mappings for display purposes
 - **Fallback Mechanisms**: Gracefully handles missing or differently named channels
 
-## Advanced EMG Analysis
+## EMG Analysis
 
-The system includes **clinically validated EMG metrics**:
+The system includes EMG metrics:
 
-- **Amplitude Analysis**: RMS, MAV with temporal windowing and statistical analysis
-- **Frequency Analysis**: Mean Power Frequency (MPF), Median Frequency (MDF)
-- **Fatigue Assessment**: Dimitrov's Fatigue Index with sliding window analysis
-- **Temporal Statistics**: Mean, standard deviation, coefficient of variation for all metrics
-- **Dual Signal Contraction Detection**: Hybrid approach using activated signals for temporal detection and RMS envelope for amplitude assessment
+- **Amplitude**: RMS, MAV with temporal windowing
+- **Frequency**: Mean Power Frequency (MPF), Median Frequency (MDF)
+- **Fatigue**: Dimitrov's Fatigue Index
+- **Statistics**: Mean, standard deviation, coefficient of variation
+- **Detection**: Dual signal approach using activated signals for timing and RMS for amplitude
 
 ## GHOSTLY+ Performance Scoring
 
@@ -242,15 +242,13 @@ For detailed technical documentation, see [`docs/signal-processing/`](../docs/si
 
 ## Testing & Quality Assurance
 
-### Comprehensive Test Suite (135 Tests - 95% Success Rate ✅)
+### Test Suite (135 Tests)
 
-The backend includes a **production-ready test suite** with comprehensive coverage across multiple testing layers:
-
-**Test Categories (Type-Based Organization):**
-- **Unit Tests**: 7 files, 25 tests - Core EMG algorithms and business logic (⚡ fast)
-- **Integration Tests**: 6 files, 54 tests - Component interactions, database operations (🗄️)  
-- **API Tests**: 3 files, 32 tests - FastAPI endpoint validation with TestClient (🌐)
-- **E2E Tests**: 2 files, 9 tests - Complete integration workflows with real clinical data (🌐)
+**Test Categories:**
+- **Unit Tests**: 7 files, 25 tests - EMG algorithms and business logic
+- **Integration Tests**: 6 files, 54 tests - Component interactions, database operations  
+- **API Tests**: 3 files, 32 tests - FastAPI endpoint validation
+- **E2E Tests**: 2 files, 9 tests - Complete workflows with real clinical data
 
 **Test Execution:**
 ```bash
@@ -273,9 +271,9 @@ python -m pytest tests/ -v --tb=short    # All 139 tests (132 passed, 7 skipped 
 ```
 
 **Quality Metrics:**
-- **47% code coverage** with comprehensive validation of critical components
-- **Real Clinical Data Testing**: Uses actual 2.74MB GHOSTLY C3D files
-- **Type-Based Organization**: Clear separation of concerns with domain preservation
-- **Production Parity**: Integration tests match production workflows exactly
+- 47% code coverage on critical components
+- Real clinical data testing (2.74MB GHOSTLY C3D files)
+- Type-based test organization
+- Integration tests matching production workflows
 
 For detailed test documentation with visual diagrams, see [`tests/README.md`](tests/README.md). 

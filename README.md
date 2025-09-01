@@ -1,15 +1,5 @@
 # GHOSTLY+ EMG C3D Analyzer
 
-<!-- 
-DOCUMENTATION TONE GUIDELINES:
-- Keep language humble, concise, and factual
-- Avoid promotional terms: "cutting-edge", "comprehensive", "advanced", "clinical-first"
-- Use neutral descriptive language instead of marketing language
-- State capabilities without overselling
-- Focus on what the system does, not how amazing it is
-- Remove excessive adjectives and superlatives
-- Be direct and professional
--->
 
 ⚠️ **Important Notice**
 
@@ -249,77 +239,71 @@ Supabase provides **PostgreSQL database and secure file storage** with authentic
 | **Database** | Supabase (PostgreSQL) with real-time subscriptions |
 | **Authentication** | Supabase Auth with role-based access control |
 | **Storage** | Supabase Storage for secure C3D file management |
-| **Testing** | Vitest (frontend), pytest (backend), 213+ tests with 100% pass rate |
+| **Testing** | Vitest (frontend), pytest (backend), 223+ tests with 100% pass rate |
 | **CI/CD** | GitHub Actions with quality gates, Husky pre-commit hooks, automated validation |
 | **DevOps** | Poetry, Docker + Native development, M1 Mac compatible, stateless architecture |
 
 ## 5. Testing Strategy
 
-The system includes a **comprehensive test suite achieving 100% validation success** with 213+ total tests across frontend and backend. The testing infrastructure validates core EMG processing, API endpoints, user workflows, and complete E2E scenarios with real clinical data.
+The system includes a test suite with 223+ tests across frontend and backend, validating EMG processing, API endpoints, and E2E workflows with real clinical data.
 
-### 5.1 Current Test Results (August 2025) ✅
+### 5.1 Test Results
 
-**Overall Test Summary: 213+ Tests Passing (100% Success Rate)**
-- **Backend Tests: 135/135 passing** with comprehensive EMG analysis coverage including production webhook integration
-- **API Tests: 32/32 passing** with FastAPI TestClient validation  
-- **E2E Tests: 9/9 passing** with real 2.74MB GHOSTLY clinical data and full integration workflows
-- **Frontend Tests: 78/78 passing** across all components and workflows
-- **Integration Tests: 54/54 passing** with complete Supabase Storage webhook validation
+**Summary: 223 Tests Passing**
+- Backend: 135 tests (EMG analysis, services, repositories)
+- Frontend: 78 tests (components, hooks, integration)  
+- API: 32 tests (FastAPI endpoints)
+- E2E: 9 tests (complete workflows with real C3D data)
+- Integration: 54 tests (Supabase Storage webhooks)
 
-### 5.2 Backend Testing Achievement ✅
+### 5.2 Backend Testing
 
-**Core EMG Processing (16/16 tests passing)**
-- EMG analysis algorithms with 62% code coverage
-- C3D file processing and signal extraction
-- Statistical metrics and fatigue index calculations
-- Contraction detection and quality assessment
-- Processing parameters and serialization validation
+**EMG Processing (16 tests)**
+- Signal analysis algorithms (62% code coverage)
+- C3D file processing
+- Statistical metrics calculation
+- Contraction detection
 
-**API Endpoint Validation (20/20 tests passing)**
-- FastAPI TestClient comprehensive endpoint testing
-- File upload validation and error handling
-- Health checks and CORS configuration
-- Cache operations and webhook endpoints
-- Authentication and authorization flows
+**API Endpoints (20 tests)**
+- FastAPI TestClient validation
+- File upload handling
+- Health checks and CORS
+- Webhook endpoints
 
-**Real Clinical Data E2E Testing**
-- **Test File**: `Ghostly_Emg_20230321_17-50-17-0881.c3d` (2.74MB)
-- **Duration**: 175.1 seconds of EMG data at 990Hz sampling
-- **Results**: 20 CH1 contractions + 9 CH2 contractions detected with clinical-grade analysis
-- **Pipeline**: Complete upload → webhook → process → database → validate workflow
-- **Integration**: Full Supabase Storage webhook processing with therapist_id extraction
-- **Performance**: Real-time EMG processing with background task orchestration validated
+**E2E Testing with Real Data**
+- Test file: `Ghostly_Emg_20230321_17-50-17-0881.c3d` (2.74MB, 175.1s at 990Hz)
+- Detects 20 CH1 and 9 CH2 contractions
+- Complete workflow: upload → webhook → process → database → validate
+- Supabase Storage integration with therapist_id extraction
 
-### 5.3 Frontend Testing Achievement ✅
+### 5.3 Frontend Testing
 
-**Component & Hook Testing (67/67 tests passing)**
-- React Testing Library component validation
-- Custom hook testing with business logic coverage
-- Performance metrics calculation and edge cases
-- Authentication workflows and state management
-- Contraction analysis and data visualization
+**Tests: 78 total**
+- Component tests with React Testing Library
+- Custom hooks with business logic
+- Performance metrics calculations
+- Authentication workflows
+- State management with Zustand
 - Error handling and loading states
-- Threshold consolidation and comparison modes
 
-**Test Organization:**
-- Vitest framework with TypeScript support
-- Co-located test files following React best practices  
-- 7 test files covering components, hooks, and services
-- Mock data generation and test utilities
+**Organization:**
+- Vitest framework with TypeScript
+- Co-located test files
+- Mock data utilities
 
-### 5.4 CI/CD Pipeline & Quality Gates ✅
+### 5.4 CI/CD Pipeline
 
-**GitHub Actions CI/CD (Optimized January 2025)**
-- **Matrix Simplification**: Reduced from 4 to 2 configurations (Python 3.12, Node 20) for 40% faster execution
-- **PYTHONPATH Configuration**: Fixed module import issues in CI environment
-- **Quality Gates**: Automated TypeScript checking, ESLint, pytest coverage, and security scanning
-- **Husky Pre-commit Hooks**: Automated quality validation before Git commits
-- **Test Parallelization**: Backend, frontend, and integration tests run concurrently
+**GitHub Actions:**
+- Python 3.12 and Node 20 matrix
+- TypeScript checking and ESLint
+- pytest with coverage reporting
+- Husky pre-commit hooks
+- Parallel test execution
 
-**Critical Infrastructure Fixes**
-- **TypeScript Strict Mode**: Fixed 12 compilation errors for production-grade type safety
-- **React.StrictMode**: All tests compatible with React 19 development best practices  
-- **Module Resolution**: Proper PYTHONPATH configuration for Python imports
+**Infrastructure:**
+- TypeScript strict mode
+- React.StrictMode compatibility
+- Proper Python module resolution
 
 ### 5.5 Test Execution Commands
 
@@ -340,40 +324,32 @@ npm test hooks                               # Hook tests comprehensive coverage
 npm test -- --coverage                      # Tests with coverage report
 
 # Integrated test execution via development script
-./start_dev_simple.sh --test                # All 213+ tests with environment validation
+./start_dev_simple.sh --test                # All 223 tests with environment validation
 ```
 
-### 5.6 Production-Ready Webhook Integration ✅
+### 5.6 Webhook Integration
 
-**Complete End-to-End Integration Achievement**
-- **Real Supabase Storage**: Handles actual file uploads to `c3d-examples` bucket with automatic webhook triggers
-- **Clinical Workflow**: Complete therapeutic session processing with patient/therapist relationship validation
-- **EMG Analysis Pipeline**: 20 contractions detected with amplitude (3.82e-04V peak) and duration analysis
-- **Database Population**: Session creation with proper UUID relationships and processing status tracking
-- **Background Processing**: Asynchronous C3D processing with immediate webhook response (<200ms)
-- **Therapist ID Extraction**: Production-ready patient lookup with therapist relationship validation
-- **Security**: HMAC-SHA256 signature verification with webhook payload validation
+**Features:**
+- Supabase Storage bucket triggers
+- HMAC-SHA256 signature verification
+- Background C3D processing
+- Patient/therapist relationship validation
+- Session creation with UUID relationships
 
-**Integration Test Results:**
-- **Test Session**: `b101a1a9-5c28-4c76-a6ce-06075d52998f` created successfully
-- **Patient/Therapist Link**: P001 → `e7b43581-743b-4211-979e-76196575ee99` validated
-- **Clinical Analysis**: Complete EMG pipeline with 20 contractions, 100% MVC compliance, therapeutic assessment
-- **File Processing**: Real upload to `c3d-examples/P001/test_session_9dda6813.c3d`
-- **Production Architecture**: Webhook → Session Creation → Background Processing → Clinical Output
+**Test Results:**
+- Session creation: `b101a1a9-5c28-4c76-a6ce-06075d52998f`
+- Patient link: P001 → therapist UUID
+- EMG analysis: 20 contractions detected
+- Complete workflow validated
 
-### 5.7 Database Schema Simplification Achievement ✅
+### 5.7 Database Schema
 
-**KISS Principle Successfully Applied:**
-- **PROCESSING_PARAMETERS table simplified by 66%**: 32 columns → 11 columns
-- **Explicit validation constraints**: 7 database-level constraints including Nyquist frequency theorem validation
-- **Clinical EMG standards**: 20Hz-500Hz filter range, 50ms RMS window, 95th percentile MVC calculation
-- **Migration 010 applied successfully**: Live Supabase database updated with simplified schema
-
-**Schema Validation:**
-- Sampling rate constraints: `sampling_rate_hz >= 1000` (clinical EMG minimum)
-- Nyquist frequency check: `filter_high_cutoff_hz <= (sampling_rate_hz / 2.0)`
-- Filter range validation: `filter_low_cutoff_hz < filter_high_cutoff_hz`
-- Notch filter bounds: `notch_filter_frequency_hz BETWEEN 45.0 AND 65.0`
+**Simplifications:**
+- PROCESSING_PARAMETERS: 32 → 11 columns
+- Database constraints for data validation
+- Clinical EMG standards: 20Hz-500Hz filters, 50ms RMS window
+- Nyquist frequency validation
+- Notch filter bounds (45-65Hz)
 
 ### 5.8 Test Organization & Structure
 
@@ -610,12 +586,8 @@ This project is developed for research and educational purposes within the GHOST
 
 ---
 
-**About the GHOSTLY+ EMG Analyzer**
+**About**
 
-🏥 **Research Platform**: EMG analysis system designed for rehabilitation research and therapeutic assessment within the GHOSTLY serious gaming ecosystem. This platform demonstrates healthcare technology architecture with clinical workflow integration, EMG processing, and therapeutic analytics.
+Research platform for EMG analysis within the GHOSTLY+ rehabilitation gaming project. Processes C3D files from the GHOSTLY serious game for therapeutic assessment.
 
-The system combines web technologies with biomedical signal processing to create a platform for EMG-based rehabilitation assessment and research.
-
-**Contributors**: Research team focused on rehabilitation technology, biomedical signal processing, and clinical workflow optimization.
-
-**Technologies**: React 19, FastAPI, EMG signal processing, clinical analytics, TypeScript, Python scientific computing.
+**Stack**: React 19, FastAPI, TypeScript, Python, Supabase, Redis

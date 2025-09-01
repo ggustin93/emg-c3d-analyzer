@@ -12,9 +12,7 @@ This directory contains project-level utility scripts organized by purpose.
 │   ├── cleanup_demo_data.sql   # SQL cleanup scripts
 │   └── validate_schema.sql     # Schema validation queries
 │
-├── migration/                   # Database migration scripts
-│   ├── migrate_to_stats_schema.py
-│   └── migrate_to_redis_cache.py
+├── migration/                   # Database migration scripts (currently empty)
 │
 └── docs/                        # Documentation
     ├── demo_database_replication.md

@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
+.Python
+*.so
 
 # Python virtualenv
 .venv/
@@ -61,6 +65,13 @@ data/plots/
 
 # Pyright cache
 .pyright_cache*/
+
+# Backend specific
+backend/*.log
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.mypy_cache/
 
 # Coverage reports
 .coverage
