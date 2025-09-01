@@ -124,14 +124,15 @@ class EMGDataRepository(
             self.logger.exception(f"Failed to get EMG statistics for session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get EMG statistics: {e!s}") from e
 
-    def insert_processing_parameters(self, params_data: dict[str, Any]) -> dict[str, Any]:
-        """Insert processing parameters for a session.
+    def upsert_processing_parameters(self, params_data: dict[str, Any]) -> dict[str, Any]:
+        """Insert or update processing parameters for a session.
+        Uses upsert to handle duplicate session_id gracefully.
 
         Args:
             params_data: Processing parameters data
 
         Returns:
-            Dict: Inserted processing parameters
+            Dict: Inserted or updated processing parameters
         """
         try:
             data = self._prepare_timestamps(params_data.copy())
@@ -140,17 +141,17 @@ class EMGDataRepository(
             if "session_id" in data:
                 data["session_id"] = self._validate_uuid(data["session_id"], "session_id")
 
-            result = self.client.table("processing_parameters").insert(data).execute()
+            result = self.client.table("processing_parameters").upsert(data).execute()
 
-            inserted_data = self._handle_supabase_response(
-                result, "insert", "processing parameters"
+            upserted_data = self._handle_supabase_response(
+                result, "upsert", "processing parameters"
             )[0]
 
-            self.logger.info(f"✅ Inserted processing parameters for session: {data['session_id']}")
-            return inserted_data
+            self.logger.info(f"✅ Upserted processing parameters for session: {data['session_id']}")
+            return upserted_data
 
         except Exception as e:
-            error_msg = f"Failed to insert processing parameters: {e!s}"
+            error_msg = f"Failed to upsert processing parameters: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 

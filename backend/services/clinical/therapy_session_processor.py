@@ -745,7 +745,7 @@ class TherapySessionProcessor:
         }
 
         # Use centralized database operations (DRY principle)
-        self.emg_repo.insert_processing_parameters(params_data)
+        self.emg_repo.upsert_processing_parameters(params_data)
 
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling."""

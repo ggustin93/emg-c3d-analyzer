@@ -176,7 +176,7 @@ class TestProcessingParametersPopulation:
         )
 
         # Mock EMG repository
-        with patch.object(processor.emg_repo, 'insert_processing_parameters', new_callable=AsyncMock) as mock_insert:
+        with patch.object(processor.emg_repo, 'upsert_processing_parameters', new_callable=AsyncMock) as mock_insert:
             
             # Execute
             await processor._populate_processing_parameters(session_id, metadata, processing_opts)
@@ -212,7 +212,7 @@ class TestProcessingParametersPopulation:
         processing_opts = ProcessingOptions(threshold_factor=0.8)
 
         # Mock EMG repository
-        with patch.object(processor.emg_repo, 'insert_processing_parameters', new_callable=AsyncMock) as mock_insert:
+        with patch.object(processor.emg_repo, 'upsert_processing_parameters', new_callable=AsyncMock) as mock_insert:
             
             # Execute
             await processor._populate_processing_parameters(session_id, metadata, processing_opts)
