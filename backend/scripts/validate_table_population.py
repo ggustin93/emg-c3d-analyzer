@@ -47,7 +47,7 @@ def validate_session_tables(session_id: str = None) -> dict:
     
     # Required tables with expected counts
     required_tables = {
-        'c3d_technical_data': {'expected': 1, 'description': 'C3D file metadata'},
+        # 'c3d_technical_data' moved to therapy_sessions.game_metadata.technical_data
         'processing_parameters': {'expected': 1, 'description': 'EMG processing config'},
         'emg_statistics': {'expected': 2, 'description': 'Per-channel EMG statistics (CH1, CH2)'},  
         'performance_scores': {'expected': 1, 'description': 'GHOSTLY+ scores'},

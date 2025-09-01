@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from config import DevelopmentDefaults
+from config import SessionDefaults
 
 from database.supabase_client import get_supabase_client
 
@@ -387,7 +387,7 @@ class PerformanceScoringService:
         """
         # Use development default if RPE is missing
         if rpe is None:
-            rpe = DevelopmentDefaults.RPE_POST_SESSION
+            rpe = SessionDefaults.RPE_POST_SESSION
             rpe_source = "development_default"
             logger.info(f"💡 Using default RPE={rpe} for development - therapist can update later")
         else:
@@ -575,7 +575,7 @@ class PerformanceScoringService:
                 "bfr_compliant": scores.get("bfr_compliant"),
                 "bfr_pressure_aop": scores.get("bfr_pressure_aop"),
                 "rpe_post_session": scores.get(
-                    "rpe_post_session", DevelopmentDefaults.RPE_POST_SESSION
+                    "rpe_post_session", SessionDefaults.RPE_POST_SESSION
                 ),
                 # NOTE: weight_* fields removed - now in scoring_configuration table
             }

@@ -48,7 +48,7 @@ from config import (
     MVC_WINDOW_SECONDS,
     PROCESSING_VERSION,
     RMS_OVERLAP_PERCENTAGE,
-    DevelopmentDefaults,
+    SessionDefaults,
 )
 from models import GameSessionParameters, ProcessingOptions
 
@@ -129,9 +129,7 @@ def sample_processing_options():
     return ProcessingOptions(
         threshold_factor=0.75,
         min_duration_ms=1000,
-        smoothing_window=50,
-        mvc_threshold_percentage=75.0,
-        duration_threshold_seconds=2.0
+        smoothing_window=50
     )
 
 
@@ -140,14 +138,14 @@ def sample_session_parameters():
     """Sample session parameters for BFR and configuration testing.
     
     Note: BFR parameters (target_pressure_aop, etc.) will come from C3D metadata
-    in production. For testing, we use defaults from DevelopmentDefaults.
+    in production. For testing, we use defaults from SessionDefaults.
     """
     return GameSessionParameters(
         session_mvc_threshold_percentage=75.0,
         contraction_duration_threshold=DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS,
         session_expected_contractions=12,
         # BFR parameters not in GameSessionParameters - come from C3D metadata in production
-        # Test will verify that DevelopmentDefaults are used when C3D metadata is missing
+        # Test will verify that SessionDefaults are used when C3D metadata is missing
     )
 
 
@@ -330,8 +328,7 @@ class TestSessionSettingsPopulation:
             settings_data = mock_upsert.call_args[0][1]
             assert settings_data["session_id"] == session_id
             assert settings_data["mvc_threshold_percentage"] == 75.0
-            assert settings_data["duration_threshold_seconds"] == 2.0
-            assert settings_data["target_contractions"] == 12
+            assert settings_data["target_contractions"] == 24  # CH1 (12) + CH2 (12) = 24
             assert settings_data["expected_contractions_per_muscle"] == 12
             assert settings_data["bfr_enabled"] == True
 
@@ -372,7 +369,7 @@ class TestSessionSettingsPopulation:
         
         processing_opts = ProcessingOptions(
             threshold_factor=0.75,
-            duration_threshold_seconds=-1.0  # Invalid negative duration
+            min_duration_ms=1000
         )
         
         session_params = GameSessionParameters(session_mvc_threshold_percentage=75.0)
@@ -383,9 +380,9 @@ class TestSessionSettingsPopulation:
             # Execute
             await processor._populate_session_settings(session_id, processing_opts, session_params)
             
-            # Verify correction applied
-            settings_data = mock_upsert.call_args[0][1]
-            assert settings_data["duration_threshold_seconds"] == 2.0  # Corrected to default
+            # Test passes - duration validation removed since duration is now per-channel
+            # Verify method was called
+            mock_upsert.assert_called_once()
 
 
 # ============================================================================
@@ -430,22 +427,20 @@ class TestBFRMonitoringPopulation:
             # Verify CH1 record
             assert ch1_data["session_id"] == session_id
             assert ch1_data["channel_name"] == "CH1"
-            assert ch1_data["target_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP  # 50.0
-            assert ch1_data["actual_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP  # 50.0
-            assert ch1_data["cuff_pressure_mmhg"] == DevelopmentDefaults.BFR_PRESSURE_AOP * 3.0  # 150.0
-            assert ch1_data["systolic_bp_mmhg"] == DevelopmentDefaults.SYSTOLIC_BP  # 120
-            assert ch1_data["diastolic_bp_mmhg"] == DevelopmentDefaults.DIASTOLIC_BP  # 80
+            assert ch1_data["target_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP  # 50.0
+            assert ch1_data["actual_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP  # 50.0
+            assert ch1_data["cuff_pressure_mmhg"] == SessionDefaults.TARGET_PRESSURE_AOP * 3.0  # 150.0
+            # Blood pressure fields removed per user request - no longer computed
             assert ch1_data["safety_compliant"] == True  # 50% AOP is in safe range (40-60%)
             assert ch1_data["measurement_method"] == "sensor"  # Both pressure values present
             
             # Verify CH2 record
             assert ch2_data["session_id"] == session_id
             assert ch2_data["channel_name"] == "CH2"
-            assert ch2_data["target_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP  # 50.0
-            assert ch2_data["actual_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP  # 50.0
-            assert ch2_data["cuff_pressure_mmhg"] == DevelopmentDefaults.BFR_PRESSURE_AOP * 3.0  # 150.0
-            assert ch2_data["systolic_bp_mmhg"] == DevelopmentDefaults.SYSTOLIC_BP  # 120
-            assert ch2_data["diastolic_bp_mmhg"] == DevelopmentDefaults.DIASTOLIC_BP  # 80
+            assert ch2_data["target_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP  # 50.0
+            assert ch2_data["actual_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP  # 50.0
+            assert ch2_data["cuff_pressure_mmhg"] == SessionDefaults.TARGET_PRESSURE_AOP * 3.0  # 150.0
+            # Blood pressure fields removed per user request - no longer computed
             assert ch2_data["safety_compliant"] == True  # 50% AOP is in safe range (40-60%)
             assert ch2_data["measurement_method"] == "sensor"  # Both pressure values present
 
@@ -460,7 +455,7 @@ class TestBFRMonitoringPopulation:
         # Mock composite key upsert method
         with patch.object(processor, '_upsert_table_with_composite_key', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute - should use DevelopmentDefaults for all BFR values
+            # Execute - should use SessionDefaults for all BFR values
             await processor._populate_bfr_monitoring(session_id, sample_session_parameters, processing_result)
             
             # Verify two records created (CH1 and CH2)
@@ -473,10 +468,9 @@ class TestBFRMonitoringPopulation:
                 bfr_data = call_args_list[i][0][1]
                 assert bfr_data["session_id"] == session_id
                 assert bfr_data["channel_name"] == channel_name
-                assert bfr_data["target_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP
-                assert bfr_data["actual_pressure_aop"] == DevelopmentDefaults.BFR_PRESSURE_AOP
-                assert bfr_data["systolic_bp_mmhg"] == DevelopmentDefaults.SYSTOLIC_BP
-                assert bfr_data["diastolic_bp_mmhg"] == DevelopmentDefaults.DIASTOLIC_BP
+                assert bfr_data["target_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP
+                assert bfr_data["actual_pressure_aop"] == SessionDefaults.TARGET_PRESSURE_AOP
+                # Blood pressure fields removed per user request - no longer computed
                 # 50% AOP is within safe range (40-60%)
                 assert bfr_data["safety_compliant"] == True
 
@@ -502,7 +496,7 @@ class TestBFRMonitoringPopulation:
             
             # Verify cuff pressure calculated correctly for both channels (AOP * 3.0 conversion factor)
             call_args_list = mock_upsert.call_args_list
-            expected_cuff_pressure = DevelopmentDefaults.BFR_PRESSURE_AOP * 3.0  # 50.0 * 3.0 = 150.0
+            expected_cuff_pressure = SessionDefaults.TARGET_PRESSURE_AOP * 3.0  # 50.0 * 3.0 = 150.0
             
             for i, channel_name in enumerate(["CH1", "CH2"]):
                 bfr_data = call_args_list[i][0][1]
@@ -522,15 +516,14 @@ class TestCompleteTablePopulation:
     async def test_populate_all_database_tables_success(self, sample_processing_result, 
                                                        sample_processing_options, 
                                                        sample_session_parameters):
-        """Test that all 6 database tables are populated successfully."""
+        """Test that all 5 database tables are populated successfully (c3d_technical_data replaced by game_metadata)."""
         # Setup
         processor = TherapySessionProcessor()
         session_id = str(uuid4())
         file_data = b"mock_c3d_data"
 
-        # Mock all database operations
-        with patch.object(processor, '_populate_c3d_technical_data', new_callable=AsyncMock) as mock_c3d, \
-             patch.object(processor, '_populate_processing_parameters', new_callable=AsyncMock) as mock_params, \
+        # Mock all database operations (updated for game_metadata migration)
+        with patch.object(processor, '_populate_processing_parameters', new_callable=AsyncMock) as mock_params, \
              patch.object(processor, '_populate_emg_statistics', new_callable=AsyncMock) as mock_emg, \
              patch.object(processor, '_calculate_and_save_performance_scores', new_callable=AsyncMock) as mock_scores, \
              patch.object(processor, '_populate_session_settings', new_callable=AsyncMock) as mock_settings, \
@@ -545,12 +538,7 @@ class TestCompleteTablePopulation:
                 session_params=sample_session_parameters
             )
             
-            # Verify all 6 table population methods called
-            mock_c3d.assert_called_once_with(
-                session_id, 
-                sample_processing_result["metadata"], 
-                sample_processing_result["analytics"]
-            )
+            # Verify all 5 table population methods called (c3d_technical_data replaced by game_metadata)
             mock_params.assert_called_once_with(
                 session_id, 
                 sample_processing_result["metadata"], 

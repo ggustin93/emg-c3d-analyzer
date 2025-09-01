@@ -4,16 +4,16 @@ This directory contains the React TypeScript frontend for the GHOSTLY+ EMG C3D A
 
 ## Architecture
 
-The frontend follows a **React architecture** with TypeScript, component-based design, and state management optimized for EMG data visualization.
+React application with TypeScript, component-based design, and state management for EMG data visualization.
 
 ### Key Technologies
 
-- **React 19**: Latest React features with concurrent rendering
-- **TypeScript**: Full type safety throughout the application
-- **Tailwind CSS**: Utility-first CSS framework for responsive design
-- **shadcn/ui**: High-quality, accessible UI components
-- **Recharts**: Interactive charts for EMG signal visualization
-- **Zustand**: Lightweight state management for session parameters
+- **React 19**: Concurrent rendering and hooks
+- **TypeScript**: Type safety throughout
+- **Tailwind CSS**: Utility-first CSS
+- **shadcn/ui**: Accessible UI components
+- **Recharts**: EMG signal visualization
+- **Zustand**: State management
 
 ### Primary Components
 
@@ -28,7 +28,7 @@ The frontend follows a **React architecture** with TypeScript, component-based d
 
 ## Client-Side Data Processing
 
-The frontend implements **comprehensive client-side processing** to eliminate server round-trips:
+The frontend processes data locally to eliminate server round-trips:
 
 ### Bundled Data Pattern
 - Receives all EMG signal data in a single API response
@@ -42,9 +42,9 @@ The frontend implements **comprehensive client-side processing** to eliminate se
 - **Performance Metrics**: Real-time calculation of analysis statistics
 - **Responsive Design**: Optimized for both desktop and mobile viewing
 
-## Resilient Channel Management
+## Channel Management
 
-The frontend implements **flexible channel handling** to accommodate various C3D naming conventions:
+Flexible channel handling for various C3D naming conventions:
 
 ### Channel Logic Architecture
 - **Raw Channel Names**: Uses original C3D channel names as internal identifiers

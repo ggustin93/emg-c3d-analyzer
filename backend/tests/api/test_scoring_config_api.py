@@ -7,16 +7,16 @@ which is more aligned with the Supabase architecture.
 import sys
 from pathlib import Path
 
-# Add the backend directory to the Python path
-backend_dir = Path(__file__).resolve().parents[2]
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
-
 import pytest
 from fastapi.testclient import TestClient
 
-# Import the main FastAPI app
-from main import app
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
+
+# Import FastAPI app from shared conftest
+from conftest import app
 
 
 class TestScoringConfigurationAPIFixed:

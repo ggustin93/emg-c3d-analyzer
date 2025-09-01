@@ -25,7 +25,9 @@ Date: 2025-08-28
 import asyncio
 import json
 import os
+import sys
 import tempfile
+import logging
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import patch
@@ -34,13 +36,13 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-# Add backend directory to path
-import sys
-backend_dir = Path(__file__).resolve().parents[2]
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
 
-from main import app
+# Import FastAPI app from shared conftest
+from conftest import app
 from database.supabase_client import get_supabase_client
 
 
@@ -95,7 +97,11 @@ class TestWebhookCompleteIntegration:
             pytest.skip("E2E tests disabled - set SKIP_E2E_TESTS=false to enable")
         
         # Step 1: Upload sample C3D file to Supabase Storage (if configured)
-        test_object_path = f"{test_patient_code}/test_session_{uuid4().hex[:8]}.c3d"
+        # Use timestamp + UUID to ensure unique paths and prevent duplicate processing
+        import time
+        timestamp = int(time.time())
+        unique_id = uuid4().hex[:8]
+        test_object_path = f"{test_patient_code}/test_session_{timestamp}_{unique_id}.c3d"
         
         try:
             # Attempt to upload test file to storage
@@ -148,11 +154,14 @@ class TestWebhookCompleteIntegration:
         self._verify_emg_statistics_populated(supabase_client, session_id)
         self._verify_c3d_technical_data_populated(supabase_client, session_id)
         
-        # Step 6: Cleanup - remove test file from storage
+        # Step 6: Cleanup - remove test file from storage AND database records
         try:
             supabase_client.storage.from_("c3d-examples").remove([test_object_path])
         except Exception as e:
             print(f"Warning: Could not cleanup test file {test_object_path}: {e}")
+        
+        # Clean up database records to prevent duplicate key errors in subsequent runs
+        self._cleanup_database_records(supabase_client, session_id)
     
     def _verify_therapy_session_created(
         self, 
@@ -286,6 +295,60 @@ class TestWebhookCompleteIntegration:
         # Webhook should respond within reasonable time (30 seconds)
         assert response_time < 30.0, f"Webhook response too slow: {response_time}s"
         assert response.status_code == 200
+    
+    def _cleanup_database_records(self, supabase_client, session_id: str):
+        """Clean up database records to prevent duplicate key errors in subsequent test runs.
+        
+        This method removes all database records associated with a test session ID
+        to ensure tests can be run multiple times without constraint violations.
+        """
+        try:
+            # Clean up in reverse dependency order to avoid foreign key constraint errors
+            
+            # 1. Performance scores (may reference session_id)
+            result = supabase_client.table("performance_scores").delete().eq("session_id", session_id).execute()
+            print(f"🧹 Cleaned performance_scores: {len(result.data) if result.data else 0} records")
+            
+            # 2. EMG statistics (has unique constraint we're trying to avoid)
+            result = supabase_client.table("emg_statistics").delete().eq("session_id", session_id).execute()
+            print(f"🧹 Cleaned emg_statistics: {len(result.data) if result.data else 0} records")
+            
+            # 3. Processing parameters
+            result = supabase_client.table("processing_parameters").delete().eq("session_id", session_id).execute()
+            print(f"🧹 Cleaned processing_parameters: {len(result.data) if result.data else 0} records")
+            
+            # 4. BFR monitoring per channel (table might not exist in some schemas)
+            try:
+                result = supabase_client.table("bfr_monitoring_per_channel").delete().eq("session_id", session_id).execute()
+                print(f"🧹 Cleaned bfr_monitoring_per_channel: {len(result.data) if result.data else 0} records")
+            except Exception:
+                print("🧹 Skipped bfr_monitoring_per_channel (table does not exist)")
+            
+            # 5. Session settings (table might not exist in some schemas)
+            try:
+                result = supabase_client.table("session_settings").delete().eq("session_id", session_id).execute()
+                print(f"🧹 Cleaned session_settings: {len(result.data) if result.data else 0} records")
+            except Exception:
+                print("🧹 Skipped session_settings (table does not exist)")
+            
+            # 6. C3D technical data tables (optional)
+            for table_name in ["c3d_metadata", "c3d_technical_data"]:
+                try:
+                    result = supabase_client.table(table_name).delete().eq("session_id", session_id).execute()
+                    print(f"🧹 Cleaned {table_name}: {len(result.data) if result.data else 0} records")
+                except Exception as e:
+                    # Table might not exist during test cleanup - that's OK
+                    print(f"ℹ️ Could not clean {table_name}: {e}")
+            
+            # 7. Finally, the main therapy session record
+            result = supabase_client.table("therapy_sessions").delete().eq("id", session_id).execute()
+            print(f"🧹 Cleaned therapy_sessions: {len(result.data) if result.data else 0} records")
+            
+            print(f"✅ Database cleanup completed for session {session_id}")
+            
+        except Exception as e:
+            # Don't fail the test if cleanup fails - just warn
+            print(f"⚠️ Database cleanup warning for session {session_id}: {e}")
 
 
 @pytest.fixture(scope="module")
@@ -532,7 +595,7 @@ class TestWebhookPerformanceAndReliability:
                 assert isinstance(response_data, dict), f"Payload {i}: Response should be JSON dict"
             except Exception:
                 # If not JSON, that's also acceptable for malformed input
-                pass
+                logging.info(f"Payload {i}: Received non-JSON response, which is acceptable for malformed input.")
 
 
 # Test markers for different test categories

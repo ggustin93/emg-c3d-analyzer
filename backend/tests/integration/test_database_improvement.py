@@ -14,8 +14,8 @@ backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from database.supabase_client import get_supabase_client  # ruff: noqa: E402
-from services.data.metadata_service import MetadataService  # ruff: noqa: E402
+from database.supabase_client import get_supabase_client  # noqa: E402
+from services.data.metadata_service import MetadataService  # noqa: E402
 
 
 async def test_two_phase_creation():

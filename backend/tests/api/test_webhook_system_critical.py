@@ -4,10 +4,19 @@ Focus on testable business logic rather than fighting the architecture.
 Tests the parts that matter and can be reliably tested.
 """
 
+import sys
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
+
+# Import FastAPI app from shared conftest
+from conftest import app
 from api.routes.webhooks import SupabaseStorageEvent
 
 

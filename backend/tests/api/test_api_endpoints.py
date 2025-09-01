@@ -16,8 +16,13 @@ backend_dir = Path(__file__).resolve().parents[2]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-# Import the main FastAPI app
-from main import app
+# Add tests directory to path for conftest import
+test_dir = Path(__file__).parent.parent
+if str(test_dir) not in sys.path:
+    sys.path.insert(0, str(test_dir))
+
+# Import FastAPI app from conftest which handles all import complexities
+from conftest import app
 
 client = TestClient(app)
 

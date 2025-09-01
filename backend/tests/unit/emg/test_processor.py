@@ -20,8 +20,8 @@ PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from models import GameSessionParameters, ProcessingOptions  # ruff: noqa: E402
-from services.c3d.processor import GHOSTLYC3DProcessor  # ruff: noqa: E402
+from models import GameSessionParameters, ProcessingOptions  # noqa: E402
+from services.c3d.processor import GHOSTLYC3DProcessor  # noqa: E402
 
 
 class TestGHOSTLYC3DProcessor(unittest.TestCase):

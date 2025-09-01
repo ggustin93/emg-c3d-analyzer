@@ -11,7 +11,7 @@
  */
 
 import { ChannelAnalyticsData } from '@/types/emg';
-import { logger } from '@/services/logger';
+import { logger, LogCategory } from '@/services/logger';
 
 export interface AcceptanceRates {
   // Good Rate (combined metric)
@@ -42,7 +42,7 @@ export function computeAcceptanceRates(
   };
   
   if (!analytics) {
-    logger.acceptanceRates('No analytics data provided');
+    logger.debug(LogCategory.DATA_PROCESSING, 'No analytics data provided');
     return result;
   }
   
@@ -57,14 +57,14 @@ export function computeAcceptanceRates(
   let avgDurationThreshold: number | null = null;
   let channelCount = 0;
   
-  logger.acceptanceRates('Computing acceptance rates', {
+  logger.debug(LogCategory.DATA_PROCESSING, 'Computing acceptance rates', {
     channels: Object.keys(analytics),
     strategy: 'backend-flags-first'
   });
   
   Object.entries(analytics).forEach(([channelName, channelData]) => {
     if (!channelData.contractions || channelData.contractions.length === 0) {
-      logger.acceptanceRates(`Skipping ${channelName} - no contractions`);
+      logger.debug(LogCategory.DATA_PROCESSING, `Skipping ${channelName} - no contractions`);
       return;
     }
     
@@ -82,32 +82,32 @@ export function computeAcceptanceRates(
     if (hasMvcThreshold && hasDurationThreshold) {
       // Strict BOTH-criteria good count from backend flags
       channelGood = contractions.filter(c => c.meets_mvc === true && c.meets_duration === true).length;
-      logger.acceptanceRates(`${channelName}: Good (both) counted from flags = ${channelGood}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Good (both) counted from flags = ${channelGood}`);
       totalContractionCountBothCriteria += channelTotal;
     } else {
       // Threshold(s) missing: do NOT include in Good Rate denominator; still log for transparency
       // For display in other places, we derive a best-effort good using backend count/flag but exclude from denominator
       const bestEffortGood = channelData.good_contraction_count ?? contractions.filter(c => c.is_good === true).length;
-      logger.acceptanceRates(`${channelName}: Thresholds incomplete (mvc:${hasMvcThreshold}, dur:${hasDurationThreshold}). Best-effort good = ${bestEffortGood} (excluded from denominator)`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Thresholds incomplete (mvc:${hasMvcThreshold}, dur:${hasDurationThreshold}). Best-effort good = ${bestEffortGood} (excluded from denominator)`);
     }
     
     // For MVC and Duration counts, prefer backend counts but usually need to count flags
     if (channelData.mvc_contraction_count !== undefined && channelData.mvc_contraction_count !== null) {
       channelMvc = channelData.mvc_contraction_count;
-      logger.acceptanceRates(`${channelName}: Using backend mvc_contraction_count = ${channelMvc}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend mvc_contraction_count = ${channelMvc}`);
     } else {
       // Count meets_mvc flags (NEVER re-apply mvc_threshold_actual_value)
       channelMvc = contractions.filter(c => c.meets_mvc === true).length;
-      logger.acceptanceRates(`${channelName}: Counted meets_mvc flags = ${channelMvc}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Counted meets_mvc flags = ${channelMvc}`);
     }
     
     if (channelData.duration_contraction_count !== undefined && channelData.duration_contraction_count !== null) {
       channelDuration = channelData.duration_contraction_count;
-      logger.acceptanceRates(`${channelName}: Using backend duration_contraction_count = ${channelDuration}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend duration_contraction_count = ${channelDuration}`);
     } else {
       // Count meets_duration flags (NEVER re-apply duration_threshold_actual_value)
       channelDuration = contractions.filter(c => c.meets_duration === true).length;
-      logger.acceptanceRates(`${channelName}: Counted meets_duration flags = ${channelDuration}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Counted meets_duration flags = ${channelDuration}`);
     }
     
     // Accumulate totals
@@ -116,13 +116,13 @@ export function computeAcceptanceRates(
     if (hasMvcThreshold) {
       totalMvcTotal += channelTotal;
     } else {
-      logger.acceptanceRates(`${channelName}: MVC threshold missing, excluding ${channelTotal} from mvcTotal denominator`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: MVC threshold missing, excluding ${channelTotal} from mvcTotal denominator`);
     }
     totalDurationCount += channelDuration;
     if (hasDurationThreshold) {
       totalDurationTotal += channelTotal;
     } else {
-      logger.acceptanceRates(`${channelName}: Duration threshold missing, excluding ${channelTotal} from durationTotal denominator`);
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Duration threshold missing, excluding ${channelTotal} from durationTotal denominator`);
     }
     
     // Collect thresholds for averaging (backend thresholds are authoritative)
@@ -140,7 +140,7 @@ export function computeAcceptanceRates(
     
     channelCount++;
     
-    logger.acceptanceRates(`${channelName} summary`, {
+    logger.debug(LogCategory.DATA_PROCESSING, `${channelName} summary`, {
       total: channelTotal,
       good: channelGood,
       mvc: channelMvc, 
@@ -165,7 +165,7 @@ export function computeAcceptanceRates(
   result.durationPct = totalDurationTotal > 0 ? (totalDurationCount / totalDurationTotal) * 100 : 0;
   result.durationThreshold = avgDurationThreshold;
   
-  logger.acceptanceRates('Final acceptance rates', {
+  logger.debug(LogCategory.DATA_PROCESSING, 'Final acceptance rates', {
     goodRate: `${result.goodPct.toFixed(1)}% (${result.good}/${result.total})`,
     mvcRate: `${result.mvcPct.toFixed(1)}% (${result.mvc}/${result.mvcTotal})`,
     durationRate: `${result.durationPct.toFixed(1)}% (${result.duration}/${result.durationTotal})`,

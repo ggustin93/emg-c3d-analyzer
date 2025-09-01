@@ -4,12 +4,11 @@
 🎯 PURPOSE: EMG analysis data and processing parameters management
 - EMG statistics bulk operations (channel data)
 - Processing parameters storage
-- C3D technical metadata
 - Performance optimized batch operations
 
 📊 SUPABASE PATTERNS:
 - Bulk insert operations for EMG statistics
-- Upsert patterns for technical data
+- Game metadata operations
 - Indexed queries by session_id and channel_name
 - Batch processing with proper error handling
 
@@ -39,8 +38,8 @@ class EMGDataRepository(
 ):
     """Repository for EMG analysis data and processing parameters.
 
-    Handles bulk EMG statistics, C3D technical data, and processing
-    parameters with optimized batch operations for performance.
+    Handles bulk EMG statistics and processing parameters with
+    optimized batch operations for performance.
     """
 
     def get_table_name(self) -> str:
@@ -158,71 +157,12 @@ class EMGDataRepository(
     def upsert_c3d_technical_data(
         self, technical_data: dict[str, Any], unique_key: str = "session_id"
     ) -> dict[str, Any]:
-        """Upsert C3D technical data (insert or update if exists).
-
-        Args:
-            technical_data: C3D technical metadata
-            unique_key: Field to use for upsert matching
-
-        Returns:
-            Dict: Upserted technical data or empty dict if table doesn't exist
+        """DEPRECATED: C3D technical data now stored in therapy_sessions.game_metadata.
+        
+        Use session_repository.update_session_game_metadata() instead.
         """
-        try:
-            data = self._prepare_timestamps(technical_data.copy())
-
-            # Validate session_id
-            if "session_id" in data:
-                data["session_id"] = self._validate_uuid(data["session_id"], "session_id")
-
-            # Check if record exists
-            unique_value = data[unique_key]
-            existing_result = (
-                self.client.table("c3d_technical_data")
-                .select("id")
-                .eq(unique_key, unique_value)
-                .limit(1)
-                .execute()
-            )
-
-            existing_data = self._handle_supabase_response(
-                existing_result, "check existing", "C3D technical data"
-            )
-
-            if existing_data:
-                # Update existing record
-                result = (
-                    self.client.table("c3d_technical_data")
-                    .update(self._prepare_timestamps(data, update=True))
-                    .eq(unique_key, unique_value)
-                    .execute()
-                )
-                operation = "update"
-            else:
-                # Insert new record
-                result = self.client.table("c3d_technical_data").insert(data).execute()
-                operation = "insert"
-
-            upserted_data = self._handle_supabase_response(result, operation, "C3D technical data")[
-                0
-            ]
-
-            self.logger.info(
-                f"✅ {operation.title()}ed C3D technical data for session: {data['session_id']}"
-            )
-            return upserted_data
-
-        except Exception as e:
-            # Check if error is due to table not existing
-            error_str = str(e)
-            if "does not exist" in error_str or "42P01" in error_str:
-                # Table doesn't exist - this is acceptable, log and return empty dict
-                self.logger.warning(f"C3D technical data table doesn't exist - skipping: {error_str}")
-                return {}
-            else:
-                # Other error - re-raise
-                error_msg = f"Failed to upsert C3D technical data: {e!s}"
-                self.logger.error(error_msg, exc_info=True)
-                raise RepositoryError(error_msg) from e
+        self.logger.warning("upsert_c3d_technical_data is deprecated - use therapy_sessions.game_metadata")
+        return {}
 
     def get_processing_parameters_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
         """Get processing parameters for a session.
@@ -254,28 +194,9 @@ class EMGDataRepository(
             raise RepositoryError(f"Failed to get processing parameters: {e!s}") from e
 
     def get_c3d_technical_data_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
-        """Get C3D technical data for a session.
-
-        Args:
-            session_id: Session UUID
-
-        Returns:
-            Optional[Dict]: C3D technical data or None if not found
+        """DEPRECATED: C3D technical data now in therapy_sessions.game_metadata.technical_data.
+        
+        Use session_repository to get game_metadata instead.
         """
-        try:
-            validated_id = self._validate_uuid(session_id, "session_id")
-
-            result = (
-                self.client.table("c3d_technical_data")
-                .select("*")
-                .eq("session_id", validated_id)
-                .limit(1)
-                .execute()
-            )
-
-            data = self._handle_supabase_response(result, "get", "C3D technical data")
-            return data[0] if data else None
-
-        except Exception as e:
-            self.logger.exception(f"Failed to get C3D technical data for session {session_id}: {e!s}")
-            raise RepositoryError(f"Failed to get C3D technical data: {e!s}") from e
+        self.logger.warning("get_c3d_technical_data_by_session is deprecated - use game_metadata.technical_data")
+        return None

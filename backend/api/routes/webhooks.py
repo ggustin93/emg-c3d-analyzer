@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime
 
-from config import get_settings
+from config import WEBHOOK_SECRET
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,6 @@ from services.clinical.therapy_session_processor import TherapySessionProcessor
 from services.infrastructure.webhook_security import WebhookSecurity
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -92,7 +91,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
     1. Validate webhook signature and payload
     2. Create therapy_session record immediately
     3. Process C3D file in background
-    4. Populate all related tables (emg_statistics, c3d_technical_data, etc.)
+    4. Populate all related tables (emg_statistics, processing_parameters, etc.)
 
     Returns:
         Fast webhook response with session_id for tracking
@@ -105,9 +104,9 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
         payload_data = json.loads(body)
 
         # Validate webhook signature (only if secret is configured)
-        if settings.WEBHOOK_SECRET and settings.WEBHOOK_SECRET.strip():
+        if WEBHOOK_SECRET and WEBHOOK_SECRET.strip():
             signature = request.headers.get("x-supabase-signature", "")
-            if not webhook_security.verify_signature(body, signature, settings.WEBHOOK_SECRET):
+            if not webhook_security.verify_signature(body, signature, WEBHOOK_SECRET):
                 logger.warning("Invalid webhook signature")
                 raise HTTPException(status_code=401, detail="Invalid signature")
         else:
@@ -227,8 +226,7 @@ async def _process_c3d_background(session_id: str, bucket: str, object_path: str
     """Background task: Complete C3D file processing.
 
     Populates all database tables:
-    - therapy_sessions (update with results)
-    - c3d_technical_data
+    - therapy_sessions (update with results and game_metadata)
     - emg_statistics (per channel)
     - performance_scores
     - processing_parameters
@@ -277,9 +275,9 @@ async def webhook_health() -> dict:
         "status": "healthy",
         "database_tables": [
             "therapy_sessions",
-            "emg_statistics",
-            "c3d_technical_data",
+            "emg_statistics", 
             "performance_scores",
+            "processing_parameters",
         ],
         "features": ["background_processing", "signature_verification", "status_tracking"],
     }

@@ -49,39 +49,31 @@ BEGIN
             ELSE 180.0 + (random() * 100.0)                                                        -- 3-4.5 min
         END;
         
-        INSERT INTO public.c3d_technical_data (
-            session_id,
-            original_sampling_rate,
-            original_duration_seconds,
-            original_sample_count,
-            channel_count,
-            channel_names,
-            sampling_rate,
-            duration_seconds,
-            frame_count
-        ) VALUES (
-            session_rec.id,
-            
-            -- Original file properties (from C3D)
-            sampling_rate, -- Same as processed for simplicity
-            duration_seconds,
-            (duration_seconds * sampling_rate)::INTEGER,
-            
-            -- Processing properties  
-            channel_count,
-            CASE channel_count
+        -- Update therapy_sessions with game_metadata JSONB
+        UPDATE public.therapy_sessions
+        SET game_metadata = jsonb_build_object(
+            'original_sampling_rate', sampling_rate,
+            'original_duration_seconds', duration_seconds,
+            'original_sample_count', (duration_seconds * sampling_rate)::INTEGER,
+            'channel_count', channel_count,
+            'channel_names', CASE channel_count
                 WHEN 1 THEN ARRAY['CH1']
                 WHEN 2 THEN ARRAY['CH1', 'CH2']
                 ELSE ARRAY['CH1']
             END,
-            sampling_rate,
-            duration_seconds,
-            (duration_seconds * sampling_rate / 10.0)::INTEGER -- Frame rate ~100Hz typical
-        );
+            'sampling_rate', sampling_rate,
+            'duration_seconds', duration_seconds,
+            'frame_count', (duration_seconds * sampling_rate / 10.0)::INTEGER,
+            'acquisition_date', NOW() - INTERVAL '30 days' + (random() * INTERVAL '25 days'),
+            'c3d_version', '3.0',
+            'device_name', 'GHOSTLY+ EMG System',
+            'software_version', 'v2.1.0'
+        )
+        WHERE id = session_rec.id;
     END LOOP;
     
-    RAISE NOTICE 'C3D technical data populated for % sessions', 
-        (SELECT COUNT(*) FROM public.c3d_technical_data);
+    RAISE NOTICE 'Game metadata populated for % sessions', 
+        (SELECT COUNT(*) FROM public.therapy_sessions WHERE game_metadata IS NOT NULL);
 END $$;
 
 -- Populate Processing Parameters (EMG analysis configuration)
@@ -91,9 +83,9 @@ DECLARE
     session_sampling_rate REAL;
 BEGIN
     FOR session_rec IN 
-        SELECT ts.id, ctd.sampling_rate
+        SELECT ts.id, 
+               COALESCE((ts.game_metadata->>'sampling_rate')::REAL, 1000.0) as sampling_rate
         FROM public.therapy_sessions ts
-        JOIN public.c3d_technical_data ctd ON ctd.session_id = ts.id
         WHERE ts.processing_status = 'completed'
         AND NOT EXISTS (SELECT 1 FROM public.processing_parameters WHERE session_id = ts.id)
         ORDER BY ts.created_at
@@ -179,7 +171,9 @@ BEGIN
             duration_threshold_seconds,
             target_contractions,
             expected_contractions_per_muscle,
-            bfr_enabled
+            bfr_enabled,
+            target_contractions_ch1,
+            target_contractions_ch2
         ) VALUES (
             session_rec.id,
             
@@ -221,7 +215,21 @@ BEGIN
             END,
             
             -- BFR enabled (90% of sessions use BFR)
-            random() < 0.90
+            random() < 0.90,
+            
+            -- Target contractions per channel (CH1)
+            CASE 
+                WHEN session_rec.pathology_category LIKE '%Stroke%' THEN (6 + random() * 6)::INTEGER
+                WHEN session_rec.pathology_category LIKE '%Sclerosis%' THEN (5 + random() * 5)::INTEGER
+                ELSE (10 + random() * 4)::INTEGER
+            END,
+            
+            -- Target contractions per channel (CH2)
+            CASE 
+                WHEN session_rec.pathology_category LIKE '%Stroke%' THEN (6 + random() * 6)::INTEGER
+                WHEN session_rec.pathology_category LIKE '%Sclerosis%' THEN (5 + random() * 5)::INTEGER
+                ELSE (10 + random() * 4)::INTEGER
+            END
         );
     END LOOP;
     
@@ -236,6 +244,7 @@ DECLARE
     target_aop REAL;
     measurement_count INTEGER;
     i INTEGER;
+    channel INTEGER;
 BEGIN
     FOR session_rec IN 
         SELECT ts.id, ss.bfr_enabled, p.age_group, p.pathology_category
@@ -262,19 +271,23 @@ BEGIN
         
         -- Create multiple measurements for this session
         FOR i IN 1..measurement_count LOOP
-            INSERT INTO public.bfr_monitoring (
-                session_id,
-                target_pressure_aop,
-                actual_pressure_aop,
-                cuff_pressure_mmhg,
-                systolic_bp_mmhg,
-                diastolic_bp_mmhg,
-                safety_compliant,
-                measurement_timestamp,
-                measurement_method
-            ) VALUES (
-                session_rec.id,
-                target_aop,
+            -- Insert BFR monitoring for both channels (CH1 and CH2)
+            FOR channel IN 1..2 LOOP
+                INSERT INTO public.bfr_monitoring (
+                    session_id,
+                    channel_name,
+                    target_pressure_aop,
+                    actual_pressure_aop,
+                    cuff_pressure_mmhg,
+                    systolic_bp_mmhg,
+                    diastolic_bp_mmhg,
+                    safety_compliant,
+                    measurement_timestamp,
+                    measurement_method
+                ) VALUES (
+                    session_rec.id,
+                    'CH' || channel::TEXT,  -- CH1 or CH2
+                    target_aop,
                 
                 -- Actual AOP with realistic variation (±5%)
                 target_aop + (random() * 10.0 - 5.0),
@@ -308,6 +321,7 @@ BEGIN
                     ELSE 'estimated'
                 END
             );
+            END LOOP;  -- End channel loop
         END LOOP;
     END LOOP;
     

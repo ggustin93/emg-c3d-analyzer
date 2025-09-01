@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.11']  # Changed from 3.12 to 3.11 for better compatibility
     
     steps:
       - name: Checkout repository
@@ -56,9 +56,9 @@ jobs:
         working-directory: backend
         run: |
           export PYTHONPATH="${{ github.workspace }}/backend:${PYTHONPATH:-}"
-          echo "🧪 Running 135 tests across 4 categories (unit/integration/api/e2e)"
-          echo "📊 Test structure: Unit (25), Integration (54), API (32), E2E (9 tests skipped)"
-          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
+          echo "🧪 Running backend tests (excluding E2E)"
+          echo "📊 Test categories: Unit, Integration, API"
+          python -m pytest -v --tb=short --cov=. --cov-report=term --ignore=tests/e2e/
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -147,10 +147,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set up Python 3.12
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
       
@@ -165,9 +165,42 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: |
+          echo "🔧 Installing backend dependencies..."
           python -m pip install --upgrade pip
+          
+          echo "📦 Installing core requirements..."
           pip install -r requirements.txt
+          
+          echo "🧪 Installing dev requirements..."  
           pip install -r requirements-dev.txt
+          
+          echo "✅ Verifying critical dependencies..."
+          python -c "
+          import sys
+          critical_deps = [
+              ('fastapi', 'FastAPI web framework'),
+              ('uvicorn', 'ASGI server'),  
+              ('ezc3d', 'C3D file processing'),
+              ('pydantic', 'Data validation'),
+              ('numpy', 'Numerical computing'),
+              ('structlog', 'Structured logging')
+          ]
+          
+          missing_deps = []
+          for dep, desc in critical_deps:
+              try:
+                  __import__(dep)
+                  print(f'✅ {dep}: {desc}')
+              except ImportError as e:
+                  print(f'❌ {dep}: {desc} - MISSING ({e})')
+                  missing_deps.append(dep)
+          
+          if missing_deps:
+              print(f'💥 Missing critical dependencies: {missing_deps}')
+              sys.exit(1)
+          else:
+              print('🎉 All critical dependencies are available')
+          "
       
       - name: Configure npm registry for integration
         run: |
@@ -191,30 +224,234 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          HOST: "0.0.0.0"
+          PORT: "8080"
+          LOG_LEVEL: "debug"
         run: |
-          echo "Checking environment variables..."
+          echo "🔍 Debugging backend startup..."
+          echo "Working directory: $(pwd)"
+          echo "Python version: $(python --version)"
+          echo "PYTHONPATH: $PYTHONPATH"
+          
+          echo "📋 Checking Python module structure..."
+          find . -name "__init__.py" | head -10
+          
+          echo "🔐 Checking environment variables..."
           if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SERVICE_KEY" ]; then
-            echo "Supabase environment variables are set"
+            echo "✅ Supabase environment variables are set"
+            echo "SUPABASE_URL length: ${#SUPABASE_URL}"
           else
-            echo "ERROR: Supabase environment variables are missing"
+            echo "❌ ERROR: Supabase environment variables are missing"
             exit 1
           fi
-          python main.py &
-          echo $! > backend_pid.txt
+          
+          echo "📦 Checking critical dependencies..."
+          python -c "import fastapi; print(f'✅ FastAPI: {fastapi.__version__}')" || echo "❌ FastAPI import failed"
+          python -c "import uvicorn; print(f'✅ Uvicorn: {uvicorn.__version__}')" || echo "❌ Uvicorn import failed"
+          python -c "import ezc3d; print(f'✅ ezc3d: {ezc3d.__version__}')" || echo "❌ ezc3d import failed"
+          
+          echo "🧪 Testing backend imports..."
+          python -c "
+          import sys
+          import os
+          
+          # Add current directory to Python path for imports
+          sys.path.insert(0, os.getcwd())
+          
+          try:
+              print('Testing basic imports...')
+              import fastapi
+              print(f'✅ FastAPI {fastapi.__version__} imported')
+              
+              import uvicorn  
+              print(f'✅ Uvicorn {uvicorn.__version__} imported')
+              
+              print('Testing application imports...')
+              from api.main import app
+              print('✅ Backend application imported successfully')
+              
+              # Test if the app is a FastAPI instance
+              if isinstance(app, fastapi.FastAPI):
+                  print('✅ App is a valid FastAPI instance')
+              else:
+                  print(f'❌ App is not a FastAPI instance: {type(app)}')
+                  exit(1)
+                  
+          except Exception as e:
+              print(f'❌ Backend import failed: {e}')
+              import traceback
+              traceback.print_exc()
+              exit(1)
+          "
+          
+          echo "🚀 Starting backend server..."
+          echo "Host: $HOST, Port: $PORT"
+          
+          # Check if port 8080 is already in use
+          if netstat -tuln | grep -q ":8080 "; then
+            echo "⚠️  Port 8080 is already in use:"
+            netstat -tuln | grep ":8080"
+            echo "🔧 Attempting to free port 8080..."
+            lsof -ti:8080 | xargs kill -9 2>/dev/null || echo "No processes to kill on port 8080"
+            sleep 2
+          else
+            echo "✅ Port 8080 is available"
+          fi
+          
+          # Use uvicorn directly with explicit module path for better reliability
+          # Redirect both stdout and stderr to log files for debugging
+          python -m uvicorn api.main:app --host 0.0.0.0 --port 8080 --log-level debug > /tmp/backend.log 2>&1 &
+          backend_pid=$!
+          echo "$backend_pid" > backend_pid.txt
+          
+          echo "📊 Backend server started with PID: $backend_pid"
+          echo "📋 Logs will be written to /tmp/backend.log"
+          sleep 3
+          
+          # Verify process is running
+          if kill -0 "$backend_pid" 2>/dev/null; then
+            echo "✅ Backend process is running"
+            echo "📄 Initial log output:"
+            head -20 /tmp/backend.log || echo "No logs yet"
+          else
+            echo "❌ Backend process failed to start"
+            echo "📄 Error logs:"
+            cat /tmp/backend.log || echo "No logs available"
+            exit 1
+          fi
       
       - name: Set PYTHONPATH for Integration Tests
-        run: echo "PYTHONPATH=${{ github.workspace }}/backend:${{ github.workspace }}" >> "$GITHUB_ENV"
+        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> "$GITHUB_ENV"
       
       - name: Wait for backend to be ready
         run: |
-          timeout 60 bash -c 'until curl -f http://localhost:8080/health; do sleep 3; echo "Waiting for backend to be ready..."; done'
-        timeout-minutes: 2
+          echo "🏥 Waiting for backend health check..."
+          echo "Target URL: http://localhost:8080/health"
+          
+          # Check if backend process is still running
+          if [ -f backend/backend_pid.txt ]; then
+            backend_pid=$(cat backend/backend_pid.txt)
+            if kill -0 "$backend_pid" 2>/dev/null; then
+              echo "✅ Backend process $backend_pid is still running"
+            else
+              echo "❌ Backend process $backend_pid has died"
+              echo "🔍 Checking system processes..."
+              pgrep -f "uvicorn.*api.main:app" || echo "No matching uvicorn processes found"
+              exit 1
+            fi
+          else
+            echo "❌ Backend PID file not found"
+            exit 1
+          fi
+          
+          # Enhanced health check with detailed debugging
+          for attempt in {1..20}; do
+            echo "🔄 Health check attempt $attempt/20..."
+            
+            # Check if port is open
+            if netstat -tuln | grep -q ":8080 "; then
+              echo "✅ Port 8080 is listening"
+            else
+              echo "⚠️  Port 8080 is not listening yet"
+              netstat -tuln | grep ":80" || echo "No ports in 80xx range"
+            fi
+            
+            # Try health check with detailed curl output
+            if curl -f -s -m 5 http://localhost:8080/health; then
+              echo ""
+              echo "🎉 Backend is healthy and ready!"
+              break
+            else
+              curl_exit_code=$?
+              echo "❌ Health check failed (exit code: $curl_exit_code)"
+              
+              # Try to get more information about the failure
+              echo "🔍 Attempting root endpoint..."
+              curl -v -m 5 http://localhost:8080/ 2>&1 || echo "Root endpoint also failed"
+              
+              if [ "$attempt" -eq 20 ]; then
+                echo "💥 Backend failed to become ready after 20 attempts"
+                echo "🔍 Final diagnostics..."
+                echo "Process status:"
+                pgrep -f "uvicorn.*api.main:app" || echo "No backend processes found"
+                echo ""
+                echo "Open ports:"
+                netstat -tuln | grep ":80" || echo "No ports in 80xx range open"
+                echo ""
+                echo "Network connectivity test:"
+                curl -v --connect-timeout 5 http://localhost:8080/ 2>&1 || echo "Connection test failed"
+                echo ""
+                echo "Backend logs (if available):"
+                if [ -f /tmp/backend.log ]; then
+                  echo "Log file size: $(wc -l < /tmp/backend.log) lines"
+                  tail -100 /tmp/backend.log
+                else
+                  echo "No backend logs found at /tmp/backend.log"
+                fi
+                echo ""
+                echo "System resources:"
+                echo "Memory: $(free -h | grep Mem || echo 'free command not available')"
+                echo "Disk: $(df -h . | tail -1 || echo 'df command not available')"
+                exit 1
+              fi
+            fi
+            
+            sleep 3
+          done
+        timeout-minutes: 3
       
       - name: Run comprehensive integration tests
         working-directory: backend
         run: |
-          export PYTHONPATH="${{ github.workspace }}/backend:${PYTHONPATH:-}"
-          python -m pytest tests/integration/ -v --tb=short
+          echo "🧪 Running integration tests..."
+          export PYTHONPATH="${{ github.workspace }}/backend"
+          echo "PYTHONPATH: $PYTHONPATH"
+          echo "API_URL: $API_URL"
+          echo "Working directory: $(pwd)"
+          
+          # Verify Python module structure before tests
+          echo "🔍 Verifying Python module structure..."
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          try:
+              from api.main import app
+              print('✅ API module import successful')
+          except ImportError as e:
+              print(f'❌ API module import failed: {e}')
+              print('Python path:', sys.path)
+              import os
+              print('Current directory contents:')
+              print([f for f in os.listdir('.') if not f.startswith('.')])
+              if os.path.exists('api'):
+                  print('API directory contents:')
+                  print([f for f in os.listdir('api') if not f.startswith('.')])
+              exit(1)
+          "
+          
+          # Final health check before running tests
+          echo "🏥 Final backend health verification..."
+          if curl -f -s http://localhost:8080/health; then
+            echo "✅ Backend is healthy before tests"
+          else
+            echo "❌ Backend is not healthy before tests"
+            echo "🔍 Backend process status:"
+            if [ -f backend_pid.txt ]; then
+              backend_pid=$(cat backend_pid.txt)
+              if kill -0 "$backend_pid" 2>/dev/null; then
+                echo "Backend process $backend_pid is running"
+              else
+                echo "Backend process $backend_pid has died"
+              fi
+            fi
+            echo "📄 Recent backend logs:"
+            tail -20 /tmp/backend.log || echo "No backend logs available"
+            exit 1
+          fi
+          
+          echo "🚀 Starting integration tests..."
+          # Run tests with explicit Python path configuration
+          PYTHONPATH="${{ github.workspace }}/backend" python -m pytest tests/integration/ -v --tb=short --maxfail=5
         env:
           API_URL: http://localhost:8080
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -223,9 +460,35 @@ jobs:
       - name: Stop backend server
         if: always()
         run: |
-          if [ -f backend/backend_pid.txt ]; then
-            kill "$(cat backend/backend_pid.txt)" || true
+          echo "🛑 Stopping backend server and collecting logs..."
+          
+          # Show recent backend logs for debugging
+          if [ -f /tmp/backend.log ]; then
+            echo "📄 Recent backend logs:"
+            tail -50 /tmp/backend.log || echo "Could not read backend logs"
           fi
+          
+          # Stop the backend process
+          if [ -f backend/backend_pid.txt ]; then
+            backend_pid=$(cat backend/backend_pid.txt)
+            if kill -0 "$backend_pid" 2>/dev/null; then
+              echo "🔄 Stopping backend process $backend_pid..."
+              kill "$backend_pid" || true
+              sleep 2
+              # Force kill if still running
+              if kill -0 "$backend_pid" 2>/dev/null; then
+                echo "🔨 Force killing backend process..."
+                kill -9 "$backend_pid" || true
+              fi
+            else
+              echo "ℹ️  Backend process $backend_pid was already stopped"
+            fi
+          else
+            echo "ℹ️  No backend PID file found"
+          fi
+          
+          # Clean up any remaining uvicorn processes
+          pkill -f "uvicorn.*api.main:app" || echo "No uvicorn processes to clean up"
 
   quality-checks:
     name: Code Quality & Security
@@ -235,10 +498,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set up Python 3.12
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
           cache: 'pip'
       
       - name: Install quality tools
@@ -304,45 +567,95 @@ jobs:
       - name: Check test results
         run: |
           {
-            echo "## Test Results Summary"
+            echo "## CI/CD Pipeline Results"
             echo ""
             
             # Backend tests
             if [[ "${{ needs.backend-test.result }}" == "success" ]]; then
-              echo "✅ Backend Tests: PASSED (135 tests - Unit: 25, Integration: 54, API: 32, E2E: 9)"
+              echo "✅ **Backend Tests**: Passed"
+              echo "   - Test Count: 135 tests across unit, integration, API, and E2E categories"
+              echo "   - Coverage: ~47% of backend codebase"
             else
-              echo "❌ Backend Tests: FAILED"
-            fi
-            
-            # Frontend tests  
-            if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
-              echo "✅ Frontend Tests: PASSED (78 tests)"
-            else
-              echo "❌ Frontend Tests: FAILED"
-            fi
-            
-            # Integration tests
-            if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
-              echo "✅ Integration Tests: PASSED"
-            else
-              echo "❌ Integration Tests: FAILED"
-            fi
-            
-            # Quality checks
-            if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
-              echo "✅ Security & Quality: PASSED"
-            else
-              echo "❌ Security & Quality: FAILED"
+              echo "❌ **Backend Tests**: Failed"
+              echo "   - Review logs for specific test failures"
             fi
             
             echo ""
-            echo "**Total Tests**: 213+ tests across all categories (135 backend + 78 frontend)"
-            echo "**Medical Software Quality**: Production-ready for clinical applications"
-            echo "**Test Coverage**: 47% backend coverage with comprehensive validation"
-            if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
-              echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
+            
+            # Frontend tests  
+            if [[ "${{ needs.frontend-test.result }}" == "success" ]]; then
+              echo "✅ **Frontend Tests**: Passed"
+              echo "   - Test Count: 78 tests across components and hooks"
+              echo "   - Build: Production build successful"
             else
-              echo "**Workflow Duration**: Not available"
+              echo "❌ **Frontend Tests**: Failed"
+              echo "   - Review logs for specific test failures or build issues"
+            fi
+            
+            echo ""
+            
+            # Integration tests
+            if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
+              echo "✅ **Integration Tests**: Passed"
+              echo "   - Full-stack communication verified"
+              echo "   - Backend health checks successful"
+            else
+              echo "❌ **Integration Tests**: Failed"
+              echo "   - Backend startup or inter-service communication issues detected"
+            fi
+            
+            echo ""
+            
+            # Quality checks
+            if [[ "${{ needs.quality-checks.result }}" == "success" ]]; then
+              echo "✅ **Code Quality & Security**: Passed"
+              echo "   - Linting standards met"
+              echo "   - Security scans completed"
+            else
+              echo "❌ **Code Quality & Security**: Failed"
+              echo "   - Code quality issues or security vulnerabilities detected"
+            fi
+            
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Summary Statistics"
+            echo ""
+            echo "- **Total Test Count**: 213+ tests (135 backend + 78 frontend)"
+            echo "- **Test Categories**: Unit, Integration, API, E2E, Component, Hook tests"
+            echo "- **Backend Coverage**: Approximately 47% code coverage"
+            echo "- **Build Validation**: TypeScript compilation and production builds tested"
+            
+            # Calculate overall status
+            failed_jobs=0
+            if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.integration-test.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            if [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
+              ((failed_jobs++))
+            fi
+            
+            echo ""
+            if [ "$failed_jobs" -eq 0 ]; then
+              echo "**Overall Status**: ✅ All checks passed"
+              echo ""
+              echo "> Pipeline completed successfully. Code is ready for review and deployment."
+            else
+              echo "**Overall Status**: ❌ $failed_jobs check(s) failed"
+              echo ""
+              echo "> Please review failed checks before proceeding. See individual job logs for details."
+            fi
+            
+            # Workflow timing (if available)
+            if [ -n "$GITHUB_RUN_DURATION" ] && [ "$GITHUB_RUN_DURATION" -gt 0 ] 2>/dev/null; then
+              echo ""
+              echo "**Workflow Duration**: $((GITHUB_RUN_DURATION / 60)) minutes"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
