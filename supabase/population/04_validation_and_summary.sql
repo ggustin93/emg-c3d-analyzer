@@ -12,7 +12,7 @@
 -- EXECUTION ORDER:
 -- 1. Run realistic_data_population.sql (Users, Patients, Sessions)
 -- 2. Run performance_scores_generation_fixed.sql (EMG Stats + Performance Scores)
--- 3. Run c3d_technical_data_generation.sql (Technical metadata)
+-- 3. Run 03_technical_metadata_population.sql (Technical metadata)
 -- 4. Run this master script for validation and summary
 -- ==============================================================================
 
@@ -148,13 +148,13 @@ WITH population_stats AS (
            END
     FROM public.performance_scores
     UNION ALL
-    SELECT 'C3D Technical Data', COUNT(*)::TEXT,
+    SELECT 'Game Metadata (C3D)', COUNT(*)::TEXT,
            CASE 
                WHEN COUNT(*) >= 200 THEN '✅ Complete technical metadata'
                WHEN COUNT(*) >= 100 THEN '✅ Good technical coverage'
                ELSE '⚠️  Limited technical data'
            END
-    FROM public.c3d_technical_data
+    FROM public.therapy_sessions WHERE game_metadata IS NOT NULL
     UNION ALL
     SELECT 'Processing Parameters', COUNT(*)::TEXT,
            CASE 
