@@ -39,7 +39,7 @@ class SupabaseStorageEvent(BaseModel):
     type: str
     table: str
     record: dict
-    schema: str = Field(alias="schema")
+    schema_: str = Field(alias="schema")
     old_record: dict | None = None
 
     @property

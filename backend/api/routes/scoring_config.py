@@ -8,7 +8,7 @@ Allows therapists and researchers to customize scoring algorithms.
 import logging
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from database.supabase_client import get_supabase_client
 
@@ -41,25 +41,29 @@ class ScoringConfigurationRequest(BaseModel):
     therapist_id: str | None = Field(None, description="Therapist ID for custom configuration")
     patient_id: str | None = Field(None, description="Patient ID for custom configuration")
 
-    @validator("weight_game")  # Only validate on the last weight field
-    def validate_main_weights(cls, v, values):
+    @field_validator("weight_game")  # Only validate on the last weight field
+    @classmethod
+    def validate_main_weights(cls, v, info):
         """Validate that main weights sum to 1.0."""
         # Calculate total including the current weight being validated
+        data = info.data if hasattr(info, 'data') else {}
         total = (
-            values.get("weight_compliance", 0)
-            + values.get("weight_symmetry", 0)
-            + values.get("weight_effort", 0)
+            data.get("weight_compliance", 0)
+            + data.get("weight_symmetry", 0)
+            + data.get("weight_effort", 0)
             + v
         )
         if abs(total - 1.0) > 0.001:
             raise ValueError(f"Main weights must sum to 1.0, got {total}")
         return v
 
-    @validator("weight_duration")
-    def validate_compliance_weights(cls, v, values):
+    @field_validator("weight_duration")
+    @classmethod
+    def validate_compliance_weights(cls, v, info):
         """Validate that compliance sub-weights sum to 1.0."""
-        completion = values.get("weight_completion", 0)
-        intensity = values.get("weight_intensity", 0)
+        data = info.data if hasattr(info, 'data') else {}
+        completion = data.get("weight_completion", 0)
+        intensity = data.get("weight_intensity", 0)
         total = completion + intensity + v
 
         if abs(total - 1.0) > 0.001:

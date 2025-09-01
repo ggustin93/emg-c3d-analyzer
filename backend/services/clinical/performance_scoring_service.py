@@ -303,6 +303,30 @@ class PerformanceScoringService:
 
         return result
 
+    def _normalize_completion_rate(self, rate: float | None) -> float | None:
+        """Normalize completion rate to 0.0-1.0 range for database storage.
+        
+        Caps completion rates at 100% to comply with database check constraints.
+        Clinical interpretation: patients who exceed targets (>100%) are 
+        considered to have achieved maximum compliance (100%).
+        
+        Args:
+            rate: Raw completion rate (can exceed 1.0)
+            
+        Returns:
+            Normalized rate capped at 1.0, or None if input is None
+        """
+        if rate is None:
+            return None
+        
+        normalized_rate = min(float(rate), 1.0)  # Cap at 100% completion
+        
+        # Log when capping occurs for clinical awareness
+        if rate > 1.0:
+            logger.debug(f"📊 Completion rate normalized: {rate:.3f} → {normalized_rate:.3f} (exceeded target)")
+        
+        return normalized_rate
+
     def _calculate_compliance_components(self, metrics: SessionMetrics) -> dict:
         """Calculate per-muscle compliance and sub-components.
 
@@ -556,6 +580,7 @@ class PerformanceScoringService:
             )
 
             # Prepare data for database - Schema v2.1 compliant
+            # Apply normalization to completion and rate fields to comply with DB constraints
             db_data = {
                 "session_id": scores["session_id"],
                 "scoring_config_id": scoring_config_id,  # Required FK to scoring_configuration
@@ -566,12 +591,13 @@ class PerformanceScoringService:
                 "game_score": scores.get("game_score"),
                 "left_muscle_compliance": scores.get("left_muscle_compliance"),
                 "right_muscle_compliance": scores.get("right_muscle_compliance"),
-                "completion_rate_left": scores.get("completion_rate_left"),
-                "completion_rate_right": scores.get("completion_rate_right"),
-                "intensity_rate_left": scores.get("intensity_rate_left"),
-                "intensity_rate_right": scores.get("intensity_rate_right"),
-                "duration_rate_left": scores.get("duration_rate_left"),
-                "duration_rate_right": scores.get("duration_rate_right"),
+                # Normalize completion rates to comply with database check constraints (cap at 100%)
+                "completion_rate_left": self._normalize_completion_rate(scores.get("completion_rate_left")),
+                "completion_rate_right": self._normalize_completion_rate(scores.get("completion_rate_right")),
+                "intensity_rate_left": self._normalize_completion_rate(scores.get("intensity_rate_left")),
+                "intensity_rate_right": self._normalize_completion_rate(scores.get("intensity_rate_right")),
+                "duration_rate_left": self._normalize_completion_rate(scores.get("duration_rate_left")),
+                "duration_rate_right": self._normalize_completion_rate(scores.get("duration_rate_right")),
                 "bfr_compliant": scores.get("bfr_compliant"),
                 "bfr_pressure_aop": scores.get("bfr_pressure_aop"),
                 "rpe_post_session": scores.get(
