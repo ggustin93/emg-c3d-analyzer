@@ -1,257 +1,265 @@
-"""GHOSTLY+ Backend Configuration.
-==============================
+"""
+GHOSTLY+ Backend Configuration
+=============================
 
-Centralized configuration for the GHOSTLY+ EMG C3D Analyzer backend.
+Configuration file for the GHOSTLY+ backend system.
+Contains parameters and settings organized by functional areas.
+
 """
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
-# --- EMG Processing Parameters ---
-DEFAULT_SAMPLING_RATE = 2000  # Hz (updated)
-DEFAULT_LOWPASS_CUTOFF = 500  # Hz
+
+# =============================================================================
+# 1. EMG SIGNAL PROCESSING PARAMETERS
+# =============================================================================
+# Core signal processing configuration
+DEFAULT_SAMPLING_RATE = 2000  # Hz (updated for GHOSTLY+ protocol)
+DEFAULT_LOWPASS_CUTOFF = 500  # Hz  
 DEFAULT_FILTER_ORDER = 4
 DEFAULT_RMS_WINDOW_MS = 50  # milliseconds
 
-# Optimized Contraction Detection Parameters (Research-Based 2024)
-DEFAULT_THRESHOLD_FACTOR = 0.10  # 10% of max amplitude for RMS envelope
-# Clinical rationale: 2024-2025 research supports 5-20% range for EMG detection
-# 10% provides optimal balance between sensitivity and specificity for rehabilitation therapy
-# Lower than previous 20% to detect physiologically relevant submaximal contractions
-# Range: 5-8% (high sensitivity), 10-12% (balanced), 15-20% (high selectivity)
-
-# Dual Signal Detection - Activated Signal Threshold
-ACTIVATED_THRESHOLD_FACTOR = 0.05  # 5% of max amplitude for clean Activated signal
-# Lower threshold for pre-processed Activated signals to detect smaller contractions
-# Activated signals are cleaner (2x less noise) so can use higher sensitivity
-DEFAULT_MIN_DURATION_MS = 100  # Minimum contraction duration in ms
-DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
-DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # Default MVC threshold percentage
-DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # milliseconds (for detection)
-DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = 2000  # milliseconds (patient-specific therapeutic goal)
-
-# Temporal Analysis Configuration (used for mean ± std over time)
-DEFAULT_TEMPORAL_WINDOW_SIZE_MS = 1000  # 1 second windows
-DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE = 50.0  # 50% overlap
-MIN_TEMPORAL_WINDOWS_REQUIRED = 3  # Minimum windows required for valid stats
-
-# --- File Processing ---
-SUPPORTED_FILE_EXTENSIONS = [".c3d"]
-
-# --- Clinical Constants ---
-BORG_CR10_SCALE_MAX = 10
-BFR_PRESSURE_RANGE = (40, 80)  # % AOP
-THERAPEUTIC_COMPLIANCE_THRESHOLD = 0.8
-
-# EMG Signal Processing Constants
-DEFAULT_MVC_THRESHOLD_VALUE = 1e-5  # 10μV - reasonable EMG threshold
-MVC_PERCENTAGE_DIVISOR = 0.75  # 75% MVC threshold divisor
-EMG_HIGH_PASS_CUTOFF = 20.0  # Standard EMG high-pass filter (Hz)
-RMS_OVERLAP_PERCENTAGE = 50.0  # RMS window overlap
-MVC_WINDOW_SECONDS = 3.0  # MVC calculation window
+# EMG-specific filtering
+EMG_HIGH_PASS_CUTOFF = 20.0  # Hz - Standard EMG high-pass filter
+RMS_OVERLAP_PERCENTAGE = 50.0  # RMS window overlap percentage
 NYQUIST_SAFETY_FACTOR = 0.9  # 90% of Nyquist frequency for safety
 
-# Clinical Protocol Constants
-EXPECTED_CONTRACTIONS_PER_MUSCLE = 12  # GHOSTLY+ protocol
+# Contraction detection thresholds (research-based 2024)
+DEFAULT_THRESHOLD_FACTOR = 0.10  # 10% of max amplitude for RMS envelope
+ACTIVATED_THRESHOLD_FACTOR = 0.05  # 5% for clean Activated signals
+DEFAULT_MIN_DURATION_MS = 100  # Minimum contraction duration
+DEFAULT_SMOOTHING_WINDOW = 100  # Smoothing window size in samples
+
+# Temporal analysis configuration
+DEFAULT_TEMPORAL_WINDOW_SIZE_MS = 1000  # 1 second windows
+DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE = 50.0  # 50% overlap
+MIN_TEMPORAL_WINDOWS_REQUIRED = 3  # Minimum windows for valid statistics
+
+# Duration thresholds
+DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # Detection threshold
+DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = 2000  # Therapeutic goal (patient-specific)
+
+# Advanced contraction detection
+MERGE_THRESHOLD_MS = 150  # Maximum gap to merge contractions
+REFRACTORY_PERIOD_MS = 50  # Minimum time between contractions
+MAX_CONTRACTION_DURATION_MS = 10000  # Maximum contraction duration (10s)
+
+# MVC analysis
+MVC_WINDOW_SECONDS = 3.0  # MVC calculation window
+
 
 # =============================================================================
-# DEVELOPMENT DEFAULTS (MVP - Only Critical Values)
+# 2. CLINICAL PROTOCOL PARAMETERS
 # =============================================================================
-# Simple fallback values for development when C3D metadata is incomplete.
-# Production C3D files will have complete data.
+# Maximum Voluntary Contraction (MVC) workflow - 4-level priority cascade
+DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0  # 75% MVC for therapeutic exercise
+
+# Per-channel therapeutic targets (asymmetric rehabilitation support)
+DEFAULT_TARGET_CONTRACTIONS_CH1 = 12  # Left muscle target
+DEFAULT_TARGET_CONTRACTIONS_CH2 = 12  # Right muscle target
+
+# Clinical assessment scales
+BORG_CR10_SCALE_MAX = 10  # Rating of Perceived Exertion (0-10 scale)
 
 
-class DevelopmentDefaults:
-    """Default values for development/testing. KISS/MVP approach.
-    
-    PRODUCTION NOTE: In production, these parameters will be discovered by reading 
-    the C3D file metadata. The C3D format will be extended to include:
-    - BFR pressure settings FOR BOTH CHANNELS/MUSCLES (target_pressure_aop, actual_pressure_aop, cuff_pressure_mmhg)
-    - Expected contractions per muscle  
-    - RPE (Rating of Perceived Exertion)
-    - Therapist identification code
-    
-    NOTE: Blood pressure monitoring (systolic_bp_mmhg, diastolic_bp_mmhg) is NOT 
-    extracted from C3D files - these remain as development defaults for BFR safety calculations.
-    
-    These defaults are only used during development/testing when C3D files
-    may not contain complete clinical metadata.
+# =============================================================================
+# 3. SESSION DEFAULTS & FALLBACKS
+# =============================================================================
+@dataclass(frozen=True)
+class SessionDefaults:
     """
-
-    # BFR (Blood Flow Restriction) parameters - from C3D in production
-    BFR_PRESSURE_AOP: float = 50.0  # Safe BFR default (% AOP - Arterial Occlusion Pressure)
-    CUFF_PRESSURE_MMHG: float = 150.0  # Calculated from AOP (50% * 3.0 conversion factor)
+    Session defaults for C3D metadata structure and development fallbacks.
     
-    # Blood pressure monitoring defaults for BFR safety - from C3D in production
-    SYSTOLIC_BP: int = 120  # Normal systolic blood pressure (mmHg)
-    DIASTOLIC_BP: int = 80  # Normal diastolic blood pressure (mmHg)
+    Thread-safe, immutable configuration for consistent session parameters.
+    In production: C3D files provide these values
+    In development: These defaults used when C3D metadata incomplete
+    """
     
-    # Clinical assessment parameters - from C3D in production
-    RPE_POST_SESSION: int = 4  # Optimal RPE for development testing
-    EXPECTED_CONTRACTIONS_PER_MUSCLE: int = 12  # Target contractions per muscle
+    # MVC values (development fallback, production from C3D/database)
+    MVC_CH1: float = 1.5e-4  # 150μV development default
+    MVC_CH2: float = 1.5e-4  # 150μV development default
     
-    # Therapist identification (production: from C3D metadata)
-    THERAPIST_CODE: str = "DEV001"  # Development therapist identifier
+    # Therapeutic targets (per-channel flexibility for asymmetric rehabilitation)
+    TARGET_CONTRACTIONS_CH1: int = 12
+    TARGET_CONTRACTIONS_CH2: int = 12
+    
+    # Clinical assessment
+    RPE_POST_SESSION: int = 4  # Optimal RPE on 0-10 scale
+    
+    # BFR (Blood Flow Restriction) pressure defaults
+    TARGET_PRESSURE_AOP: float = 50.0  # 50% AOP (middle of 40-60% safe range)
+    
+    # Therapist identification (from C3D metadata in production)
+    THERAPIST_ID: Optional[str] = None
+    THERAPIST_CODE: str = "DEV001"  # Development fallback
 
 
-# Advanced Contraction Detection Parameters
-MERGE_THRESHOLD_MS = 150  # Maximum time gap between contractions to merge them (ms)
-# Optimized at 150ms: balance between merging physiologically related contractions
-# and maintaining good temporal resolution for rehabilitation assessment
-REFRACTORY_PERIOD_MS = 50  # Minimum time after contraction before detecting new one (ms)
-# Physiologically-based: 5-50ms range for EMG processing (Perplexity research)
-# 50ms prevents double-detection while allowing rapid contractions
-# Merge threshold (150ms) handles physiological burst grouping separately
+# =============================================================================
+# 4. TECHNICAL INFRASTRUCTURE
+# =============================================================================
+# File processing
+SUPPORTED_FILE_EXTENSIONS = [".c3d"]
+TEMP_DIR = "data/temp_uploads"
+ALLOWED_EXTENSIONS = SUPPORTED_FILE_EXTENSIONS
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
-# Physiological Limits for Contraction Detection
-MAX_CONTRACTION_DURATION_MS = 10000  # Maximum allowable contraction duration (10 seconds)
-# Research-based: Conservative limit for sustained muscle contractions
-# Prevents merging of separate contractions into physiologically impossible durations
-# Contractions exceeding this limit will be split at natural valleys
+# API configuration
+API_TITLE = "GHOSTLY+ EMG C3D Analyzer"
+API_VERSION = "2.1.0"
+API_DESCRIPTION = "EMG analysis and therapeutic assessment for C3D files"
 
-# --- Visualization Settings ---
-EMG_COLOR = "#1abc9c"  # Teal color for EMG signal
-CONTRACTION_COLOR = "#3498db"  # Blue color for contractions
-ACTIVITY_COLORS = {
-    "jumping": "#1abc9c",  # Teal
-    "shooting": "#e67e22",  # Orange
-}
-
-# Contraction Quality Visual Cues
-CONTRACTION_QUALITY_COLORS = {
-    "good": {
-        "background": "rgba(34, 197, 94, 0.15)",  # Green with transparency
-        "border": "#22c55e",
-        "badge": "#16a34a",
-    },
-    "poor": {
-        "background": "rgba(239, 68, 68, 0.15)",  # Red with transparency
-        "border": "#ef4444",
-        "badge": "#dc2626",
-    },
-    "subthreshold": {
-        "background": "rgba(156, 163, 175, 0.1)",  # Gray with transparency
-        "border": "#9ca3af",
-        "badge": "#6b7280",
-    },
-}
-
-# Contraction Visualization Settings
-CONTRACTION_HIGHLIGHT_OPACITY = 0.15  # Default opacity for contraction highlights
-CONTRACTION_BADGE_SIZE = 4  # Radius of quality badges in pixels
-
-# --- File Processing ---
-# For stateless architecture, we only need temporary directories
-TEMP_DIR = Path("data/temp_uploads")
-ALLOWED_EXTENSIONS = {".c3d"}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-
-# --- API Configuration ---
-API_TITLE = "GHOSTLY+ EMG Analysis API"
-API_VERSION = "1.0.0"
-API_DESCRIPTION = (
-    "API for processing C3D files containing EMG data from the GHOSTLY rehabilitation game"
-)
-
-# --- CORS Configuration ---
-# Development CORS settings - more restrictive than wildcard
-CORS_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-]
+# CORS configuration
+CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 CORS_CREDENTIALS = True
-CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+CORS_METHODS = ["GET", "POST", "PUT", "DELETE"]
 CORS_HEADERS = ["*"]
 
-# --- Server Configuration ---
-DEFAULT_HOST = "0.0.0.0"  # nosec B104 - Intentional bind to all interfaces for containerized deployment
+# Server configuration
+DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8080
-LOG_LEVEL = "info"
+LOG_LEVEL = "INFO"
 
-# --- Database Configuration ---
-# Supabase connection settings - supports both hosted and self-hosted deployments
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
-SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+# Database configuration (loaded from environment)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-# Self-hosted Supabase configuration examples:
-# HOSTED: SUPABASE_URL=https://your-project.supabase.co
-# SELF-HOSTED: SUPABASE_URL=http://supabase-kong:8000 (internal Docker network)
-# SELF-HOSTED: SUPABASE_URL=https://your-supabase-domain.com (external access)
+# Redis cache configuration
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_SSL = os.getenv("REDIS_SSL", "false").lower() == "true"
 
-# For self-hosted setup with Coolify:
-# 1. Use internal service names for backend-to-supabase communication
-# 2. Generate ANON_KEY and SERVICE_KEY using Supabase JWT generator
-# 3. Ensure JWT_SECRET matches between application and Supabase GoTrue service
-# 4. Configure RLS policies in self-hosted PostgreSQL database
+# Redis performance settings
+REDIS_SOCKET_TIMEOUT = 5.0
+REDIS_CONNECTION_POOL_SIZE = 10
+REDIS_RETRY_ON_TIMEOUT = True
+DEFAULT_CACHE_TTL_HOURS = 24
+ENABLE_REDIS_COMPRESSION = True
+REDIS_MAX_MEMORY_POLICY = "allkeys-lru"
+REDIS_KEY_PREFIX = "ghostly:"
+REDIS_CACHE_TTL_SECONDS = 3600
+REDIS_MAX_CACHE_SIZE_MB = 256
 
-# --- Redis Cache Configuration ---
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
-REDIS_DB = int(os.environ.get("REDIS_DB", "0"))
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
-REDIS_SSL = os.environ.get("REDIS_SSL", "false").lower() == "true"
-
-# Redis Connection Pool Settings
-REDIS_SOCKET_TIMEOUT = float(os.environ.get("REDIS_SOCKET_TIMEOUT", "5.0"))
-REDIS_CONNECTION_POOL_SIZE = int(os.environ.get("REDIS_CONNECTION_POOL_SIZE", "10"))
-REDIS_RETRY_ON_TIMEOUT = os.environ.get("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
-
-# Cache Settings
-DEFAULT_CACHE_TTL_HOURS = int(os.environ.get("DEFAULT_CACHE_TTL_HOURS", "24"))
-ENABLE_REDIS_COMPRESSION = os.environ.get("ENABLE_REDIS_COMPRESSION", "true").lower() == "true"
-REDIS_MAX_MEMORY_POLICY = os.environ.get("REDIS_MAX_MEMORY_POLICY", "allkeys-lru")
-REDIS_KEY_PREFIX = os.environ.get("REDIS_KEY_PREFIX", "emg_c3d_analyzer")
-
-# Legacy Redis settings (backward compatibility)
-REDIS_CACHE_TTL_SECONDS = int(os.environ.get("REDIS_CACHE_TTL_SECONDS", "3600"))  # 1 hour
-REDIS_MAX_CACHE_SIZE_MB = int(os.environ.get("REDIS_MAX_CACHE_SIZE_MB", "100"))  # 100MB per entry
-
-# --- Webhook Configuration ---
-WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", None)
-PROCESSING_VERSION = "v2.1.0"
+# Webhook configuration
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+PROCESSING_VERSION = "2.1.0"
 
 
-# --- Environment Variables ---
-def get_host():
+# =============================================================================
+# 5. ENVIRONMENT-SPECIFIC FUNCTIONS
+# =============================================================================
+def get_host() -> str:
     """Get server host from environment or default."""
-    return os.environ.get("HOST", DEFAULT_HOST)
+    return os.getenv("HOST", DEFAULT_HOST)
 
 
-def get_port():
+def get_port() -> int:
     """Get server port from environment or default."""
-    return int(os.environ.get("PORT", DEFAULT_PORT))
+    return int(os.getenv("PORT", DEFAULT_PORT))
 
 
-def get_log_level():
+def get_log_level() -> str:
     """Get log level from environment or default."""
-    return os.environ.get("LOG_LEVEL", LOG_LEVEL)
+    return os.getenv("LOG_LEVEL", LOG_LEVEL)
 
 
-def get_settings():
+def get_settings() -> dict:
     """Get application settings as a simple object."""
-
-    class Settings:
-        SUPABASE_URL = SUPABASE_URL
-        SUPABASE_ANON_KEY = SUPABASE_ANON_KEY
-        SUPABASE_SERVICE_KEY = SUPABASE_SERVICE_KEY
-        WEBHOOK_SECRET = WEBHOOK_SECRET
-        PROCESSING_VERSION = PROCESSING_VERSION
-
-        # Redis Cache Settings
-        REDIS_URL = REDIS_URL
-        REDIS_CACHE_TTL_SECONDS = REDIS_CACHE_TTL_SECONDS
-        REDIS_MAX_CACHE_SIZE_MB = REDIS_MAX_CACHE_SIZE_MB
-        REDIS_KEY_PREFIX = REDIS_KEY_PREFIX
-
-    return Settings()
+    return {
+        "host": get_host(),
+        "port": get_port(),
+        "log_level": get_log_level(),
+        "api_title": API_TITLE,
+        "api_version": API_VERSION,
+    }
 
 
-# --- Ensure temp directory exists ---
-def ensure_temp_dir():
+def ensure_temp_dir() -> Path:
     """Ensure temporary directory exists."""
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    return TEMP_DIR
+    temp_path = Path(TEMP_DIR)
+    temp_path.mkdir(parents=True, exist_ok=True)
+    return temp_path
+
+
+# =============================================================================
+# VALIDATION & UTILITIES
+# =============================================================================
+def validate_configuration() -> bool:
+    """Validate entire configuration for consistency."""
+    try:
+        # Validate SessionDefaults
+        defaults = SessionDefaults()
+        
+        # Validate MVC values are physiologically reasonable
+        min_emg, max_emg = 1e-6, 1e-2  # 1μV to 10mV
+        if not (min_emg <= defaults.MVC_CH1 <= max_emg):
+            raise ValueError(f"Invalid MVC_CH1: {defaults.MVC_CH1}")
+        if not (min_emg <= defaults.MVC_CH2 <= max_emg):
+            raise ValueError(f"Invalid MVC_CH2: {defaults.MVC_CH2}")
+            
+        # Validate therapeutic targets
+        min_contractions, max_contractions = 5, 20
+        if not (min_contractions <= defaults.TARGET_CONTRACTIONS_CH1 <= max_contractions):
+            raise ValueError(f"Invalid TARGET_CONTRACTIONS_CH1: {defaults.TARGET_CONTRACTIONS_CH1}")
+        if not (min_contractions <= defaults.TARGET_CONTRACTIONS_CH2 <= max_contractions):
+            raise ValueError(f"Invalid TARGET_CONTRACTIONS_CH2: {defaults.TARGET_CONTRACTIONS_CH2}")
+        
+        # Validate required environment variables in production
+        env = os.getenv("ENVIRONMENT", "development").lower()
+        if env == "production":
+            required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"]
+            missing = [var for var in required_vars if not os.getenv(var)]
+            if missing:
+                raise ValueError(f"Missing production environment variables: {missing}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Configuration validation failed: {e}")
+        return False
+
+
+def get_configuration_info() -> dict:
+    """Get information about the current configuration structure."""
+    return {
+        "architecture": "single_file_clean",
+        "sections": [
+            "emg_signal_processing", 
+            "clinical_protocol", 
+            "session_defaults", 
+            "technical_infrastructure", 
+            "environment_functions"
+        ],
+        "validation": "built_in",
+        "environment_support": True,
+        "thread_safe": True,
+        "total_constants": len([k for k in globals() if k.isupper() and not k.startswith('_')]),
+    }
+
+
+# =============================================================================
+# CONFIGURATION SUMMARY
+# =============================================================================
+# Automatically validate configuration on import
+if __name__ != "__main__":
+    if not validate_configuration():
+        import warnings
+        warnings.warn("Configuration validation failed - check settings", UserWarning)
+
+# For debugging/introspection
+if __name__ == "__main__":
+    print("🔧 GHOSTLY+ Configuration Summary")
+    print("=" * 50)
+    info = get_configuration_info()
+    for key, value in info.items():
+        print(f"{key}: {value}")
+    
+    print(f"\n✅ Validation: {'PASSED' if validate_configuration() else 'FAILED'}")
+    print(f"📊 Total constants: {info['total_constants']}")
+    print(f"🏗️ Architecture: {info['architecture']}")
