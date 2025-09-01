@@ -574,26 +574,44 @@ class TherapySessionProcessor:
         # Validate required data
         if not metadata:
             raise ValueError(f"No metadata found in processing result for session {session_id}")
+        
+        # Analytics are optional - some C3D files may have insufficient signal data
         if not analytics:
-            raise ValueError(f"No analytics found in processing result for session {session_id}")
+            logger.warning(
+                f"⚠️ No analytics found for session {session_id} - "
+                f"C3D file may have insufficient signal data for EMG analysis. "
+                f"Proceeding with partial processing (metadata and parameters only)."
+            )
 
         try:
-            # Populate tables with optimized order for performance
+            # Always populate processing parameters and metadata
             await self._populate_processing_parameters(session_id, metadata, processing_opts)
-            await self._populate_emg_statistics(
-                session_id, analytics, session_params
-            )  # Batch insert
-            await self._calculate_and_save_performance_scores(
-                session_id, analytics, processing_result
-            )
+
+            # Only populate analytics-dependent tables if analytics are available
+            tables_populated = 1  # processing_parameters
+            if analytics:
+                await self._populate_emg_statistics(
+                    session_id, analytics, session_params
+                )  # Batch upsert (idempotent)
+                await self._calculate_and_save_performance_scores(
+                    session_id, analytics, processing_result
+                )
+                tables_populated += 2  # emg_statistics + performance_scores
 
             # Schema v2.1 compliance - populate missing tables
             await self._populate_session_settings(session_id, processing_opts, session_params)
             await self._populate_bfr_monitoring(session_id, session_params, processing_result)
+            tables_populated += 2  # session_settings + bfr_monitoring
 
-            logger.info(
-                f"📊 Successfully populated all database tables (6 total) for session: {session_id}"
-            )
+            if analytics:
+                logger.info(
+                    f"📊 Successfully populated all database tables ({tables_populated} total) for session: {session_id}"
+                )
+            else:
+                logger.info(
+                    f"📊 Successfully populated partial database tables ({tables_populated} total) for session: {session_id} "
+                    f"(no analytics - insufficient EMG signal data)"
+                )
 
         except Exception as e:
             logger.error(

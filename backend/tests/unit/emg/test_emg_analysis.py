@@ -45,8 +45,8 @@ class TestEMGAnalysis(unittest.TestCase):
             0.5  # 50ms contraction (below min_duration if set to >50ms)
         )
 
-        # Short signal (too short for spectral analysis)
-        self.short_signal = np.sin(2 * np.pi * 10 * self.t[:100])
+        # Short signal (too short for spectral analysis - less than 30 samples)
+        self.short_signal = np.sin(2 * np.pi * 10 * self.t[:25])
 
         # Constant signal
         self.constant_signal = np.ones(1000)

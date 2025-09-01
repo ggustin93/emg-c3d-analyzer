@@ -317,13 +317,15 @@ class TestPerformanceScoringService:
         """Test compliance calculation with realistic clinical data"""
         components = scoring_service._calculate_compliance_components(sample_session_metrics)
 
-        # Left muscle: 167% completion, 75% intensity, 80% duration
-        # Compliance = (0.333 * 1.67 + 0.333 * 0.75 + 0.334 * 0.80) * 100
-        expected_left = (0.333 * (20/12) + 0.333 * (15/20) + 0.334 * (16/20)) * 100
+        # Left muscle: 100% completion (capped), 75% intensity, 80% duration
+        # Completion rate is capped at 1.0 even though actual is 20/12 = 1.67
+        # Compliance = (0.333 * 1.0 + 0.333 * 0.75 + 0.334 * 0.80) * 100
+        expected_left = (0.333 * 1.0 + 0.333 * (15/20) + 0.334 * (16/20)) * 100
         assert abs(components["left_muscle_compliance"] - expected_left) < 0.1
 
-        # Right muscle: 150% completion, 78% intensity, 83% duration
-        expected_right = (0.333 * (18/12) + 0.333 * (14/18) + 0.334 * (15/18)) * 100
+        # Right muscle: 100% completion (capped), 78% intensity, 83% duration
+        # Completion rate is capped at 1.0 even though actual is 18/12 = 1.5
+        expected_right = (0.333 * 1.0 + 0.333 * (14/18) + 0.334 * (15/18)) * 100
         assert abs(components["right_muscle_compliance"] - expected_right) < 0.1
 
         # Overall compliance should be average of left and right
@@ -606,6 +608,115 @@ class TestSingleSourceOfTruthValidation:
         assert default_weights.w_symmetry == 0.25, "Symmetry weight: 25%"
         assert default_weights.w_effort == 0.20, "Effort weight: 20%"
         assert default_weights.w_game == 0.15, "Game weight: 15%"
+
+
+class TestEvidenceBasedRPEMapping:
+    """Critical tests for evidence-based RPE mapping system.
+    
+    Tests the new JSONB-based RPE configuration with clinical validation.
+    Follows SOLID principles: focused, testable, maintainable.
+    """
+
+    def test_config_rpe_mapping_loads_correctly(self):
+        """Test that RPE configuration loads from config.py correctly."""
+        from config import RPE_MAPPING
+        
+        # Test configuration loads without error
+        assert RPE_MAPPING is not None, "RPE_MAPPING must be available"
+        assert hasattr(RPE_MAPPING, 'DEFAULT_MAPPING'), "Must have DEFAULT_MAPPING"
+        assert hasattr(RPE_MAPPING, 'OPTIMAL_THERAPEUTIC_RANGE'), "Must have clinical ranges"
+        
+        # Test clinical evidence-based ranges
+        assert RPE_MAPPING.OPTIMAL_THERAPEUTIC_RANGE == (4, 5), "Evidence: RPE 4-5 optimal for elderly"
+        assert RPE_MAPPING.ACCEPTABLE_THERAPEUTIC_RANGE == (3, 6), "Evidence: RPE 3-6 acceptable"
+
+    def test_detailed_rpe_mapping_structure(self):
+        """Test detailed RPE mapping has correct structure and clinical context."""
+        from config import RPE_MAPPING
+        
+        mapping = RPE_MAPPING.DEFAULT_MAPPING
+        
+        # Test all RPE levels 0-10 are defined
+        for rpe in range(11):  # 0-10 inclusive
+            assert str(rpe) in mapping, f"RPE {rpe} must be defined"
+            rpe_data = mapping[str(rpe)]
+            
+            # Test required fields
+            assert "score" in rpe_data, f"RPE {rpe} must have score"
+            assert "category" in rpe_data, f"RPE {rpe} must have category"
+            assert "clinical" in rpe_data, f"RPE {rpe} must have clinical context"
+            
+            # Test score is valid percentage
+            score = rpe_data["score"]
+            assert 0 <= score <= 100, f"RPE {rpe} score must be 0-100, got {score}"
+
+    def test_optimal_therapeutic_rpe_scores(self):
+        """Test optimal therapeutic RPE levels have highest scores."""
+        from config import RPE_MAPPING
+        
+        mapping = RPE_MAPPING.DEFAULT_MAPPING
+        
+        # RPE 4-5 should be optimal (100% score)
+        assert mapping["4"]["score"] == 100, "RPE 4 should be 100% (ideal therapeutic)"
+        assert mapping["5"]["score"] == 100, "RPE 5 should be 100% (peak therapeutic)"
+        
+        # Test clinical descriptions are evidence-based
+        assert "ideal_therapeutic" in mapping["4"]["clinical"], "RPE 4 clinical context"
+        assert "peak_therapeutic" in mapping["5"]["clinical"], "RPE 5 clinical context"
+
+    def test_dangerous_rpe_levels_have_low_scores(self):
+        """Test dangerous RPE levels have appropriately low scores."""
+        from config import RPE_MAPPING
+        
+        mapping = RPE_MAPPING.DEFAULT_MAPPING
+        
+        # Dangerous levels should have low scores
+        dangerous_rpes = [0, 1, 9, 10]
+        for rpe in dangerous_rpes:
+            score = mapping[str(rpe)]["score"]
+            assert score <= 25, f"Dangerous RPE {rpe} should have low score, got {score}%"
+            
+        # Test clinical warnings are present
+        assert "emergency" in mapping["10"]["clinical"].lower(), "RPE 10 should indicate emergency"
+        assert "intervention" in mapping["9"]["clinical"].lower(), "RPE 9 should require intervention"
+
+    @patch('services.clinical.performance_scoring_service.get_supabase_client')
+    def test_rpe_database_fallback_to_config(self, mock_supabase):
+        """Test RPE mapping falls back to config.py when database unavailable."""
+        # Mock database failure
+        mock_client = Mock()
+        mock_client.table().select().eq().eq().limit().execute.side_effect = Exception("DB Error")
+        mock_supabase.return_value = mock_client
+        
+        service = PerformanceScoringService()
+        rpe_mapping = service._create_default_rpe_mapping()
+        
+        # Should fall back to config defaults
+        assert rpe_mapping is not None, "Should create fallback RPE mapping"
+        assert hasattr(rpe_mapping, 'get_effort_score'), "Should have scoring method"
+        
+        # Test that optimal range works from config fallback
+        optimal_score = rpe_mapping.get_effort_score(4)
+        assert optimal_score >= 95, f"RPE 4 should be optimal score, got {optimal_score}"
+
+    def test_rpe_mapping_conversion_preserves_clinical_intent(self):
+        """Test conversion from detailed mapping preserves clinical evidence."""
+        from config import RPE_MAPPING
+        
+        service = PerformanceScoringService()
+        converted = service._create_rpe_mapping_from_detailed_data(RPE_MAPPING.DEFAULT_MAPPING)
+        
+        # Test optimal therapeutic range preserved
+        assert 4 in converted.optimal_range, "RPE 4 must be in optimal range"
+        assert 5 in converted.optimal_range, "RPE 5 must be in optimal range"
+        
+        # Test dangerous levels properly categorized
+        assert 9 in converted.poor_range, "RPE 9 must be in poor range"
+        assert 10 in converted.poor_range, "RPE 10 must be in poor range"
+        
+        # Test clinical scoring works
+        assert converted.get_effort_score(4) == 100.0, "RPE 4 should score 100%"
+        assert converted.get_effort_score(9) <= 20.0, "RPE 9 should score ≤20%"
 
 
 if __name__ == "__main__":

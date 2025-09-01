@@ -59,16 +59,16 @@ class EMGDataRepository(
         return EMGStatistics
 
     def bulk_insert_emg_statistics(self, stats_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Bulk insert EMG statistics for multiple channels.
+        """Bulk upsert EMG statistics for multiple channels (idempotent for webhook retries).
 
         Args:
             stats_data: List of EMG statistics data
 
         Returns:
-            List[Dict]: Inserted EMG statistics
+            List[Dict]: Upserted EMG statistics
 
         Raises:
-            RepositoryError: If bulk insert fails
+            RepositoryError: If bulk upsert fails
         """
         try:
             if not stats_data:
@@ -85,16 +85,21 @@ class EMGDataRepository(
 
                 prepared_data.append(data)
 
-            # Bulk insert
-            result = self.client.table("emg_statistics").insert(prepared_data).execute()
+            # Bulk upsert with unique constraint on (session_id, channel_name)
+            # This makes webhook processing idempotent
+            result = (
+                self.client.table("emg_statistics")
+                .upsert(prepared_data, on_conflict="session_id,channel_name")
+                .execute()
+            )
 
-            inserted_data = self._handle_supabase_response(result, "bulk insert", "EMG statistics")
+            upserted_data = self._handle_supabase_response(result, "bulk upsert", "EMG statistics")
 
-            self.logger.info(f"✅ Bulk inserted {len(inserted_data)} EMG statistics records")
-            return inserted_data
+            self.logger.info(f"✅ Bulk upserted {len(upserted_data)} EMG statistics records (idempotent)")
+            return upserted_data
 
         except Exception as e:
-            error_msg = f"Failed to bulk insert EMG statistics: {e!s}"
+            error_msg = f"Failed to bulk upsert EMG statistics: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
@@ -125,13 +130,13 @@ class EMGDataRepository(
             raise RepositoryError(f"Failed to get EMG statistics: {e!s}") from e
 
     def insert_processing_parameters(self, params_data: dict[str, Any]) -> dict[str, Any]:
-        """Insert processing parameters for a session.
+        """Upsert processing parameters for a session (idempotent for webhook retries).
 
         Args:
             params_data: Processing parameters data
 
         Returns:
-            Dict: Inserted processing parameters
+            Dict: Upserted processing parameters
         """
         try:
             data = self._prepare_timestamps(params_data.copy())
@@ -140,17 +145,22 @@ class EMGDataRepository(
             if "session_id" in data:
                 data["session_id"] = self._validate_uuid(data["session_id"], "session_id")
 
-            result = self.client.table("processing_parameters").insert(data).execute()
+            # Use upsert to handle webhook retries gracefully
+            result = (
+                self.client.table("processing_parameters")
+                .upsert(data, on_conflict="session_id")
+                .execute()
+            )
 
-            inserted_data = self._handle_supabase_response(
-                result, "insert", "processing parameters"
+            upserted_data = self._handle_supabase_response(
+                result, "upsert", "processing parameters"
             )[0]
 
-            self.logger.info(f"✅ Inserted processing parameters for session: {data['session_id']}")
-            return inserted_data
+            self.logger.info(f"✅ Upserted processing parameters for session: {data['session_id']} (idempotent)")
+            return upserted_data
 
         except Exception as e:
-            error_msg = f"Failed to insert processing parameters: {e!s}"
+            error_msg = f"Failed to upsert processing parameters: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 

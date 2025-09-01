@@ -1,102 +1,70 @@
 # Project Scripts
 
-This directory contains project-level utility scripts organized by purpose.
+Utility scripts for database operations and project maintenance.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
-/scripts/
-├── database/                    # Database operations
-│   ├── reset_populate.py       # Database reset with Storage integration ✨
-│   ├── reset_populate.sh       # Bash wrapper for reset operations
-│   ├── cleanup_demo_data.sql   # SQL cleanup scripts
-│   └── validate_schema.sql     # Schema validation queries
+scripts/
+├── database/                    # Database management
+│   ├── schema/                 # Schema definitions
+│   ├── population/             # Data population scripts
+│   ├── utilities/              # Helper scripts
+│   └── archives/               # Deprecated scripts
 │
-├── migration/                   # Database migration scripts (currently empty)
+├── migration/                   # Database migrations
 │
 └── docs/                        # Documentation
-    ├── demo_database_replication.md
-    └── schema_alignment_report.md
 ```
 
-## 🚀 Key Features
+## Database Scripts
 
-### Database Reset & Population (`database/reset_populate.py`)
+### Population Scripts (`database/population/`)
 
-**New Feature**: Extracts patient codes directly from Supabase Storage folders!
+Three approaches for populating test data:
+
+1. **smart_populate.sql** - Dynamically retrieves files from Supabase Storage
+   - Queries actual Storage bucket for real C3D files
+   - Maps files to patients using patient codes
+   - Creates realistic clinical data
+
+2. **01-04_*.sql** - Four-step static population
+   - Comprehensive test data with hardcoded paths
+   - Used for CI/CD pipelines
+
+3. **simple_populate.sql** - Minimal test data
+   - Quick testing with basic scenarios
+
+### Utilities (`database/utilities/`)
+
+- **reset_populate.sh** - Main reset and populate script
+- **reset_populate.py** - Python version with Storage integration
+- **cleanup_demo_data.sql** - Remove test data only
+- **run_all_population.sh** - Execute all population scripts
+
+### Usage
 
 ```bash
-# Reset and populate database with Storage-based patient codes
-python scripts/database/reset_populate.py
+# Recommended: Use smart population with actual Storage files
+psql $DATABASE_URL -f scripts/database/population/smart_populate.sql
 
-# Dry run to preview operations
-python scripts/database/reset_populate.py --dry-run
+# For CI/CD: Use static 4-step population
+./scripts/database/utilities/run_all_population.sh
 
-# Skip confirmations (use with caution!)
-python scripts/database/reset_populate.py --force
+# For quick testing: Use simple population
+psql $DATABASE_URL -f scripts/database/population/simple_populate.sql
 
-# Only reset or only populate
-python scripts/database/reset_populate.py --reset-only
-python scripts/database/reset_populate.py --populate-only
+# Complete reset and populate
+./scripts/database/utilities/reset_populate.sh
 ```
 
-**What it does:**
-1. 🔍 Scans Supabase Storage `c3d-examples` bucket for patient folders (P001, P039, etc.)
-2. 👥 Extracts actual patient codes from Storage structure
-3. 🗑️ Safely resets database with confirmation prompts
-4. 📊 Populates with demo data matching Storage structure
-5. ✅ Validates consistency between database and Storage
+### Schema (`database/schema/`)
 
-**Storage Integration Benefits:**
-- No hardcoded patient lists - always in sync with Storage
-- Automatic discovery of new patient folders
-- Test fallback (P001, P039, P040) if Storage is empty
-- Detailed reporting of Storage contents
+- **remote_schema_01-09-2025.sql** - Current production schema
+- **validate_schema.sql** - Schema validation queries
 
-### Migration Scripts (`migration/`)
+## Related Documentation
 
-Scripts for database schema migrations and cache setup:
-- **migrate_to_stats_schema.py**: Migrate to optimized statistics schema
-- **migrate_to_redis_cache.py**: Set up Redis caching layer
-
-## 🔄 Backward Compatibility
-
-For historical reasons, some scripts may also exist in `/backend/scripts/`. The scripts in this `/scripts/` directory are the recommended versions with the latest features.
-
-### Migration Path
-- **Old**: `/backend/scripts/populate_realistic_sessions.py`
-- **New**: `/scripts/database/reset_populate.py` (with Storage integration)
-
-## 📝 Usage Examples
-
-### Complete Database Reset and Population
-```bash
-# From project root
-python scripts/database/reset_populate.py --force
-
-# Output:
-# 🔍 Extracting patient codes from Supabase Storage...
-# 📁 P001: 5 C3D files
-# 📁 P039: 3 C3D files
-# 📁 P040: 2 C3D files
-# ✅ Found 3 patient codes in Storage
-# 🧹 Database reset complete
-# 📊 Database population complete
-# ✅ Perfect consistency between database and Storage!
-```
-
-### Validation Only
-```bash
-# Check consistency without changes
-python scripts/database/reset_populate.py --dry-run
-```
-
-## 🧪 Testing
-
-Patient codes P001, P039, and P040 are preserved as test defaults to ensure backward compatibility with existing tests.
-
-## 📚 Related Documentation
-
-- `/backend/scripts/README.md` - Backend-specific scripts
-- `/supabase/population/` - SQL population scripts
-- `/docs/` - Project documentation
+- `/scripts/database/README.md` - Detailed database scripts documentation
+- `/backend/CLAUDE.md` - Backend development guidelines
+- `/frontend/CLAUDE.md` - Frontend development guidelines

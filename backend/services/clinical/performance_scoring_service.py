@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from config import SessionDefaults
+from config import SessionDefaults, SCORING_CONFIG
 
 from database.supabase_client import get_supabase_client
 
@@ -169,42 +169,76 @@ class PerformanceScoringService:
             return self.weights
 
     def _load_rpe_mapping_from_database(self, session_id: str) -> RPEMapping:
-        """Load configurable RPE mapping from database (researcher role only)
-        Fallback to defaults if not found.
+        """Load configurable RPE mapping from scoring_configuration table.
+        Priority: Database JSONB → Application defaults from config.py
         """
         try:
-            # Check for researcher-configured RPE mapping
-            rpe_query = (
-                self.client.table("rpe_mapping_configuration")
-                .select("*")
+            # Get scoring configuration for this session (includes RPE mapping)
+            config_query = (
+                self.client.table("scoring_configuration")
+                .select("rpe_mapping")
                 .eq("active", True)
-                .order("created_at", desc=True)
+                .eq("is_global", True)  # Use global configuration
                 .limit(1)
                 .execute()
             )
 
-            if rpe_query.data:
-                config = rpe_query.data[0]
-                logger.info("📊 Loading custom RPE mapping from researcher configuration")
-
-                return RPEMapping(
-                    optimal_range=config.get("optimal_range", [4, 5, 6]),
-                    acceptable_range=config.get("acceptable_range", [3, 7]),
-                    suboptimal_range=config.get("suboptimal_range", [2, 8]),
-                    poor_range=config.get("poor_range", [0, 1, 9, 10]),
-                    optimal_score=config.get("optimal_score", 100.0),
-                    acceptable_score=config.get("acceptable_score", 80.0),
-                    suboptimal_score=config.get("suboptimal_score", 60.0),
-                    poor_score=config.get("poor_score", 20.0),
-                    default_score=config.get("default_score", 50.0),
-                )
+            if config_query.data and config_query.data[0].get("rpe_mapping"):
+                rpe_data = config_query.data[0]["rpe_mapping"]
+                logger.info("📊 Loading evidence-based RPE mapping from scoring_configuration")
+                
+                # Create RPEMapping using individual level mapping from database
+                return self._create_rpe_mapping_from_detailed_data(rpe_data)
             else:
-                logger.info("📊 No custom RPE mapping found, using metricsDefinitions.md defaults")
-                return self.rpe_mapping
+                logger.info("📊 No RPE mapping in database, using evidence-based config.py defaults")
+                return self._create_default_rpe_mapping()
 
         except Exception as e:
-            logger.warning(f"Failed to load RPE mapping from database: {e}, using defaults")
-            return self.rpe_mapping
+            logger.warning(f"Failed to load RPE mapping from database: {e}, using config.py defaults")
+            return self._create_default_rpe_mapping()
+    
+    def _create_rpe_mapping_from_detailed_data(self, rpe_data: dict) -> RPEMapping:
+        """Convert detailed RPE mapping (individual 0-10 levels) to legacy RPEMapping format."""
+        from config import RPEMappingConfiguration
+        
+        # Extract scores by category for backward compatibility
+        optimal_scores = []
+        acceptable_scores = []
+        suboptimal_scores = []
+        poor_scores = []
+        
+        # Parse individual RPE levels into category ranges
+        for rpe_str, rpe_info in rpe_data.items():
+            rpe_level = int(rpe_str)
+            score = rpe_info.get("score", 50)
+            
+            if score >= 95:  # Optimal range (RPE 4-5)
+                optimal_scores.append(rpe_level)
+            elif score >= 75:  # Acceptable range (RPE 3, 6)
+                acceptable_scores.append(rpe_level)
+            elif score >= 45:  # Suboptimal range (RPE 2, 7, 8)
+                suboptimal_scores.append(rpe_level)
+            else:  # Poor range (RPE 0, 1, 9, 10)
+                poor_scores.append(rpe_level)
+        
+        return RPEMapping(
+            optimal_range=optimal_scores,
+            acceptable_range=acceptable_scores,
+            suboptimal_range=suboptimal_scores,
+            poor_range=poor_scores,
+            optimal_score=100.0,
+            acceptable_score=80.0,
+            suboptimal_score=60.0,
+            poor_score=20.0,
+            default_score=50.0,
+        )
+    
+    def _create_default_rpe_mapping(self) -> RPEMapping:
+        """Create RPEMapping using application defaults from config.py."""
+        from config import RPE_MAPPING
+        
+        # Convert evidence-based detailed mapping to legacy format
+        return self._create_rpe_mapping_from_detailed_data(RPE_MAPPING.DEFAULT_MAPPING)
 
     def calculate_performance_scores(
         self, session_id: str, session_metrics: SessionMetrics | None = None
@@ -309,8 +343,9 @@ class PerformanceScoringService:
         S_comp^muscle = w_comp * R_comp + w_int * R_int + w_dur * R_dur
         """
         # Left muscle compliance
-        left_completion_rate = (
-            metrics.left_total_contractions / metrics.expected_contractions_per_muscle
+        left_completion_rate = min(
+            metrics.left_total_contractions / metrics.expected_contractions_per_muscle,
+            1.0
         )
         left_intensity_rate = (
             metrics.left_mvc_contractions / metrics.left_total_contractions
@@ -329,9 +364,10 @@ class PerformanceScoringService:
             + self.weights.w_duration * left_duration_rate
         ) * 100  # Convert to percentage
 
-        # Right muscle compliance
-        right_completion_rate = (
-            metrics.right_total_contractions / metrics.expected_contractions_per_muscle
+        # Right muscle compliance  
+        right_completion_rate = min(
+            metrics.right_total_contractions / metrics.expected_contractions_per_muscle,
+            1.0
         )
         right_intensity_rate = (
             metrics.right_mvc_contractions / metrics.right_total_contractions
@@ -530,6 +566,29 @@ class PerformanceScoringService:
                 return scoring_config_id
             else:
                 logger.error("GHOSTLY+ Default scoring configuration not found in database")
+                # Fallback: Create default configuration from config.py
+                logger.info("Creating default scoring configuration from config...")
+                try:
+                    new_config = {
+                        "configuration_name": SCORING_CONFIG.NAME,
+                        "description": SCORING_CONFIG.DESCRIPTION,
+                        "weight_compliance": SCORING_CONFIG.WEIGHT_COMPLIANCE,
+                        "weight_symmetry": SCORING_CONFIG.WEIGHT_SYMMETRY,
+                        "weight_effort": SCORING_CONFIG.WEIGHT_EFFORT,
+                        "weight_game": SCORING_CONFIG.WEIGHT_GAME,
+                        "weight_completion": SCORING_CONFIG.WEIGHT_COMPLETION,
+                        "weight_intensity": SCORING_CONFIG.WEIGHT_INTENSITY,
+                        "weight_duration": SCORING_CONFIG.WEIGHT_DURATION,
+                        "active": SCORING_CONFIG.ACTIVE,
+                        "is_global": SCORING_CONFIG.IS_GLOBAL
+                    }
+                    
+                    result = self.client.table("scoring_configuration").insert(new_config).execute()
+                    if result.data and len(result.data) > 0:
+                        logger.info(f"Created default scoring configuration: {result.data[0]['id']}")
+                        return result.data[0]["id"]
+                except Exception as e:
+                    logger.error(f"Failed to create default scoring configuration: {e}")
                 return None
 
         except Exception as e:
@@ -546,14 +605,6 @@ class PerformanceScoringService:
             if not scoring_config_id:
                 logger.error("No default scoring configuration found")
                 return False
-
-            # Check if record exists
-            existing = (
-                self.client.table("performance_scores")
-                .select("id")
-                .eq("session_id", scores["session_id"])
-                .execute()
-            )
 
             # Prepare data for database - Schema v2.1 compliant
             db_data = {
@@ -580,17 +631,12 @@ class PerformanceScoringService:
                 # NOTE: weight_* fields removed - now in scoring_configuration table
             }
 
-            if existing.data:
-                # Update existing record
-                result = (
-                    self.client.table("performance_scores")
-                    .update(db_data)
-                    .eq("session_id", scores["session_id"])
-                    .execute()
-                )
-            else:
-                # Insert new record
-                result = self.client.table("performance_scores").insert(db_data).execute()
+            # Use upsert for idempotent webhook processing
+            result = (
+                self.client.table("performance_scores")
+                .upsert(db_data, on_conflict="session_id")
+                .execute()
+            )
 
             return bool(result.data)
 
