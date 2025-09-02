@@ -1186,8 +1186,8 @@ class TherapySessionProcessor:
                 "target_contractions_ch1": target_ch1,
                 "target_contractions_ch2": target_ch2,
                 # Per-channel duration targets in milliseconds
-                "target_duration_ch1": float(target_duration_ch1),
-                "target_duration_ch2": float(target_duration_ch2),
+                "target_duration_ch1_seconds": float(target_duration_ch1),
+                "target_duration_ch2_seconds": float(target_duration_ch2),
                 # Therapist identification from C3D metadata
                 "therapist_id": therapist_id,
                 # MVC configuration from processing options
@@ -1213,17 +1213,17 @@ class TherapySessionProcessor:
                 session_settings_data["mvc_threshold_percentage"] = 75.0
 
             # Validate duration targets
-            if session_settings_data["target_duration_ch1"] <= 0:
+            if session_settings_data["target_duration_ch1_seconds"] <= 0:
                 logger.warning(
-                    f"Invalid CH1 duration target {session_settings_data['target_duration_ch1']}ms, using default 2000ms"
+                    f"Invalid CH1 duration target {session_settings_data['target_duration_ch1_seconds']}ms, using default 2000ms"
                 )
-                session_settings_data["target_duration_ch1"] = 2000.0
+                session_settings_data["target_duration_ch1_seconds"] = 2000.0
             
-            if session_settings_data["target_duration_ch2"] <= 0:
+            if session_settings_data["target_duration_ch2_seconds"] <= 0:
                 logger.warning(
-                    f"Invalid CH2 duration target {session_settings_data['target_duration_ch2']}ms, using default 2000ms"
+                    f"Invalid CH2 duration target {session_settings_data['target_duration_ch2_seconds']}ms, using default 2000ms"
                 )
-                session_settings_data["target_duration_ch2"] = 2000.0
+                session_settings_data["target_duration_ch2_seconds"] = 2000.0
 
             # Use upsert to handle potential duplicates
             await self._upsert_table("session_settings", session_settings_data, "session_id")
@@ -1231,7 +1231,7 @@ class TherapySessionProcessor:
             logger.info(
                 f"📊 Session settings populated for session {session_code}: "
                 f"MVC {session_settings_data['mvc_threshold_percentage']}%, "
-                f"Duration CH1={session_settings_data['target_duration_ch1']}ms CH2={session_settings_data['target_duration_ch2']}ms, "
+                f"Duration CH1={session_settings_data['target_duration_ch1_seconds']}ms CH2={session_settings_data['target_duration_ch2_seconds']}ms, "
                 f"BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}"
             )
 
