@@ -47,8 +47,8 @@ def sample_processing_result():
                 "compliance_rate": 0.87,
                 "contraction_count": 15,
                 "good_contraction_count": 13,
-                "mvc_contraction_count": 11,
-                "duration_contraction_count": 12,
+                "mvc75_compliance_rate": 11,
+                "duration_compliance_rate": 12,
                 "mvc_value": 0.245,
                 "mvc_threshold": 75.0,
                 "total_time_under_tension_ms": 45000.0,
@@ -70,8 +70,8 @@ def sample_processing_result():
                 "compliance_rate": 0.92,
                 "contraction_count": 16,
                 "good_contraction_count": 15,
-                "mvc_contraction_count": 14,
-                "duration_contraction_count": 13,
+                "mvc75_compliance_rate": 14,
+                "duration_compliance_rate": 13,
                 "mvc_value": 0.289,
                 "mvc_threshold": 75.0,
                 "total_time_under_tension_ms": 48000.0,
@@ -354,8 +354,8 @@ class TestTherapySessionProcessorComprehensive:
             "compliance_rate": 0.87,
             "contraction_count": 15,
             "good_contraction_count": 13,
-            "mvc_contraction_count": 11,
-            "duration_contraction_count": 12,
+            "mvc75_compliance_rate": 11,
+            "duration_compliance_rate": 12,
             "mvc_value": 0.245,
             "mvc_threshold": 75.0,
             "total_time_under_tension_ms": 45000.0,
@@ -383,7 +383,7 @@ class TestTherapySessionProcessorComprehensive:
         assert stats_record["channel_name"] == channel_name
         assert stats_record["total_contractions"] == 15
         assert stats_record["good_contractions"] == 13
-        assert stats_record["mvc_contraction_count"] == 11
+        assert stats_record["mvc75_compliance_rate"] == 11
         assert stats_record["compliance_rate"] == 0.87
         
         # Verify temporal statistics
@@ -400,7 +400,7 @@ class TestTherapySessionProcessorComprehensive:
         assert stats_record["fatigue_index_fi_nsm5"] == 0.18
         
         # Verify threshold values
-        assert stats_record["mvc_threshold_actual_value"] == 75.0
+        assert stats_record["mvc75_threshold"] == 75.0
         assert stats_record["duration_threshold_actual_value"] == 2000.0
 
     @pytest.mark.asyncio

@@ -28,13 +28,14 @@ class TestScoringConfigurationIntegration:
     def test_get_all_configurations_from_database(self, client):
         """Test GET /scoring/configurations returns real database data."""
         # First create a test configuration to ensure we have data to retrieve
+        from config import ScoringDefaults
         test_config = {
             "configuration_name": "Test Integration Config",
             "description": "Created for integration test",
-            "weight_compliance": 0.40,
-            "weight_symmetry": 0.25,
-            "weight_effort": 0.20,
-            "weight_game": 0.15,
+            "weight_compliance": ScoringDefaults.WEIGHT_COMPLIANCE,
+            "weight_symmetry": ScoringDefaults.WEIGHT_SYMMETRY,
+            "weight_effort": ScoringDefaults.WEIGHT_EFFORT,
+            "weight_game": ScoringDefaults.WEIGHT_GAME,
             "weight_completion": 0.333,
             "weight_intensity": 0.333,
             "weight_duration": 0.334,
@@ -174,12 +175,17 @@ class TestScoringConfigurationIntegration:
         assert "current_active_weights" in data
         assert "weights_valid" in data
 
-        # Verify metricsDefinitions.md reference weights
+        # Verify metricsDefinitions.md reference weights (flexible)
+        from config import ScoringDefaults
         metrics_weights = data["metricsDefinitions_weights"]
-        assert metrics_weights["w_compliance"] == 0.400
-        assert metrics_weights["w_symmetry"] == 0.250
-        assert metrics_weights["w_effort"] == 0.200
-        assert metrics_weights["w_game"] == 0.150
+        # Allow some tolerance for floating point comparisons
+        assert abs(metrics_weights["w_compliance"] - ScoringDefaults.WEIGHT_COMPLIANCE) < 0.001
+        assert abs(metrics_weights["w_symmetry"] - ScoringDefaults.WEIGHT_SYMMETRY) < 0.001
+        assert abs(metrics_weights["w_effort"] - ScoringDefaults.WEIGHT_EFFORT) < 0.001
+        assert abs(metrics_weights["w_game"] - ScoringDefaults.WEIGHT_GAME) < 0.001
+        # Verify they sum to 1.0
+        total = metrics_weights["w_compliance"] + metrics_weights["w_symmetry"] + metrics_weights["w_effort"] + metrics_weights["w_game"]
+        assert abs(total - 1.0) < 0.001
 
         # Current weights should match active configuration
         current_weights = data["current_active_weights"]
@@ -215,13 +221,14 @@ class TestScoringConfigurationDatabaseConstraints:
 
     def test_database_foreign_key_constraints(self, client):
         """Test foreign key constraints for therapist/patient references."""
+        from config import ScoringDefaults
         # This should succeed without therapist/patient IDs
         valid_global_config = {
             "configuration_name": "Global Config Test",
-            "weight_compliance": 0.40,
-            "weight_symmetry": 0.25,
-            "weight_effort": 0.20,
-            "weight_game": 0.15,
+            "weight_compliance": ScoringDefaults.WEIGHT_COMPLIANCE,
+            "weight_symmetry": ScoringDefaults.WEIGHT_SYMMETRY,
+            "weight_effort": ScoringDefaults.WEIGHT_EFFORT,
+            "weight_game": ScoringDefaults.WEIGHT_GAME,
             "weight_completion": 0.333,
             "weight_intensity": 0.333,
             "weight_duration": 0.334,

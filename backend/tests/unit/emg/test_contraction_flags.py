@@ -39,8 +39,8 @@ def test_flags_duration_only():
         mvc_amplitude_threshold=None,
         contraction_duration_threshold_ms=2000,
     )
-    assert res["duration_contraction_count"] >= 1
-    assert res["mvc_contraction_count"] == 0
+    assert res["duration_compliance_rate"] >= 1
+    assert res["mvc75_compliance_rate"] == 0
     assert (
         res["good_contraction_count"] >= 1
     )  # is_good == meets_duration when only duration provided
@@ -57,6 +57,6 @@ def test_flags_both_thresholds():
         mvc_amplitude_threshold=0.05,  # below burst amplitude
         contraction_duration_threshold_ms=2000,
     )
-    assert res["duration_contraction_count"] >= 1
-    assert res["mvc_contraction_count"] >= 1
+    assert res["duration_compliance_rate"] >= 1
+    assert res["mvc75_compliance_rate"] >= 1
     assert res["good_contraction_count"] >= 1

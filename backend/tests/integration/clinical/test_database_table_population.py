@@ -73,8 +73,8 @@ def sample_processing_result():
             "CH1": {
                 "contraction_count": 20,
                 "good_contraction_count": 18,
-                "mvc_contraction_count": 15,
-                "duration_contraction_count": 17,
+                "mvc75_compliance_rate": 15,
+                "duration_compliance_rate": 17,
                 "compliance_rate": 0.85,
                 "mvc_value": 0.75,
                 "mvc_threshold": 562.5,
@@ -97,8 +97,8 @@ def sample_processing_result():
             "CH2": {
                 "contraction_count": 18,
                 "good_contraction_count": 16,
-                "mvc_contraction_count": 13,
-                "duration_contraction_count": 15,
+                "mvc75_compliance_rate": 13,
+                "duration_compliance_rate": 15,
                 "compliance_rate": 0.78,
                 "mvc_value": 0.72,
                 "mvc_threshold": 540.0,
@@ -254,9 +254,10 @@ class TestPerformanceScoresPopulation:
         with patch.object(processor.scoring_service, 'calculate_performance_scores', return_value=mock_scores) as mock_calc, \
              patch.object(processor.scoring_service, 'save_performance_scores', return_value=True) as mock_save:
             
-            # Execute
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
             await processor._calculate_and_save_performance_scores(
-                session_id, sample_processing_result["analytics"], sample_processing_result
+                session_code, session_id, sample_processing_result["analytics"], sample_processing_result
             )
             
             # Verify calculation called with proper metrics
@@ -292,8 +293,9 @@ class TestPerformanceScoresPopulation:
         with patch.object(processor.scoring_service, 'calculate_performance_scores', return_value={"error": "No analytics data"}):
             
             # Execute - should not raise exception
+            session_code = "P001S001"
             await processor._calculate_and_save_performance_scores(
-                session_id, empty_analytics, processing_result
+                session_code, session_id, empty_analytics, processing_result
             )
             
             # Test passes if no exception raised (graceful degradation)
@@ -316,9 +318,10 @@ class TestSessionSettingsPopulation:
         # Mock upsert method
         with patch.object(processor, '_upsert_table', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
             await processor._populate_session_settings(
-                session_id, sample_processing_options, sample_session_parameters
+                session_code, session_id, sample_processing_options, sample_session_parameters
             )
             
             # Verify upsert called

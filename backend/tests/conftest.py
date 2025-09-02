@@ -9,6 +9,10 @@ import sys
 import importlib.util
 from pathlib import Path
 
+# Configure test environment settings before any imports
+# Disable file hash deduplication for testing to allow repeatable E2E tests
+os.environ.setdefault("ENABLE_FILE_HASH_DEDUPLICATION", "false")
+
 
 def get_fastapi_app():
     """Get FastAPI app with robust import handling.
