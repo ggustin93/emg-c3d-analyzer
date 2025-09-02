@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from config import SessionDefaults
+from config import SessionDefaults, ScoringDefaults
 
 from database.supabase_client import get_supabase_client
 
@@ -72,15 +72,16 @@ class RPEMapping:
 class ScoringWeights:
     """Configurable weights for performance scoring (must sum to 1.0)."""
 
-    w_compliance: float = 0.40  # Therapeutic Compliance
-    w_symmetry: float = 0.25  # Muscle Symmetry
-    w_effort: float = 0.20  # Subjective Effort (RPE)
-    w_game: float = 0.15  # Game Performance
+    # Use defaults from config.py (from metricsDefinitions.md)
+    w_compliance: float = ScoringDefaults.WEIGHT_COMPLIANCE  # 0.50 - Therapeutic Compliance
+    w_symmetry: float = ScoringDefaults.WEIGHT_SYMMETRY  # 0.25 - Muscle Symmetry
+    w_effort: float = ScoringDefaults.WEIGHT_EFFORT  # 0.25 - Subjective Effort (RPE)
+    w_game: float = ScoringDefaults.WEIGHT_GAME  # 0.00 - Game Performance
 
     # Sub-component weights for compliance (must sum to 1.0)
-    w_completion: float = 0.333  # Completion rate weight
-    w_intensity: float = 0.333  # Intensity rate weight
-    w_duration: float = 0.334  # Duration rate weight
+    w_completion: float = ScoringDefaults.WEIGHT_COMPLETION  # 0.333 - Completion rate weight
+    w_intensity: float = ScoringDefaults.WEIGHT_INTENSITY  # 0.333 - Intensity rate weight
+    w_duration: float = ScoringDefaults.WEIGHT_DURATION  # 0.334 - Duration rate weight
 
     def validate(self) -> bool:
         """Validate that weights sum to 1.0 (within tolerance)."""
@@ -563,13 +564,23 @@ class PerformanceScoringService:
     def save_performance_scores(self, scores: dict) -> bool:
         """Save calculated scores to performance_scores table
         Schema v2.1 compliance - uses scoring_config_id instead of individual weight fields.
+        
+        Fallback hierarchy:
+        1. Use existing scoring configuration from database if available
+        2. If no database config exists, log warning and save without scoring_config_id
+           (using defaults from config.py ScoringDefaults)
         """
         try:
-            # Get default global scoring configuration ID
+            # Try to get default global scoring configuration ID
             scoring_config_id = self._get_default_scoring_config_id()
             if not scoring_config_id:
-                logger.error("No default scoring configuration found")
-                return False
+                logger.warning(
+                    "No default scoring configuration found in database. "
+                    "Saving performance scores without scoring_config_id. "
+                    "System will use fallback defaults from config.py"
+                )
+                # Set to None to save without the FK reference
+                scoring_config_id = None
 
             # Check if record exists
             existing = (
@@ -583,7 +594,6 @@ class PerformanceScoringService:
             # Apply normalization to completion and rate fields to comply with DB constraints
             db_data = {
                 "session_id": scores["session_id"],
-                "scoring_config_id": scoring_config_id,  # Required FK to scoring_configuration
                 "overall_score": scores.get("overall_score"),
                 "compliance_score": scores.get("compliance_score"),
                 "symmetry_score": scores.get("symmetry_score"),
@@ -605,6 +615,10 @@ class PerformanceScoringService:
                 ),
                 # NOTE: weight_* fields removed - now in scoring_configuration table
             }
+            
+            # Only add scoring_config_id if it exists (not None)
+            if scoring_config_id is not None:
+                db_data["scoring_config_id"] = scoring_config_id
 
             if existing.data:
                 # Update existing record

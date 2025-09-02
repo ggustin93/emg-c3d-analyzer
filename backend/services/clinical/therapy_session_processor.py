@@ -511,6 +511,50 @@ class TherapySessionProcessor:
             )
             return float(DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS)
 
+    async def _get_patient_duration_targets(self, patient_id: str) -> tuple[float | None, float | None] | None:
+        """Get patient-specific per-channel duration targets from database.
+
+        Args:
+            patient_id: Patient UUID
+
+        Returns:
+            Tuple of (duration_ch1, duration_ch2) in milliseconds or None if not found
+        """
+        try:
+            # Use centralized database operations (DRY principle)
+            profile = self.patient_repo.get_patient_profile(patient_id)
+
+            if profile:
+                # Check for per-channel duration targets
+                duration_ch1 = profile.get("current_duration_ch1")
+                duration_ch2 = profile.get("current_duration_ch2")
+                
+                # Also check for legacy field as fallback
+                if duration_ch1 is None and duration_ch2 is None:
+                    # Try legacy therapeutic_duration_threshold_ms for both channels
+                    legacy_duration = profile.get("therapeutic_duration_threshold_ms")
+                    if legacy_duration is not None:
+                        logger.info(
+                            f"📊 Using legacy patient duration threshold for both channels: {legacy_duration}ms"
+                        )
+                        return (float(legacy_duration), float(legacy_duration))
+                
+                # Return per-channel values if at least one is found
+                if duration_ch1 is not None or duration_ch2 is not None:
+                    logger.info(
+                        f"📊 Found patient-specific duration targets: CH1={duration_ch1}ms, CH2={duration_ch2}ms"
+                    )
+                    return (
+                        float(duration_ch1) if duration_ch1 is not None else None,
+                        float(duration_ch2) if duration_ch2 is not None else None
+                    )
+
+            return None
+
+        except Exception as e:
+            logger.exception(f"Error retrieving patient duration targets: {e!s}")
+            return None
+
     async def _calculate_file_hash_from_path(self, file_path: str) -> str:
         """Calculate SHA-256 hash of file from storage path."""
         try:
@@ -991,26 +1035,68 @@ class TherapySessionProcessor:
             if hasattr(session_params, 'target_contractions_ch2'):
                 target_ch2 = session_params.target_contractions_ch2 or target_ch2
 
+            # Determine per-channel duration targets with priority cascade
+            # Priority 1: C3D metadata
+            # Priority 2: Patient profile from database
+            # Priority 3: Config default (2000ms)
+            target_duration_ch1 = None
+            target_duration_ch2 = None
+            
+            # Priority 1: Check C3D metadata for duration targets
+            if hasattr(session_params, 'c3d_metadata') and session_params.c3d_metadata:
+                metadata = session_params.c3d_metadata
+                target_duration_ch1 = metadata.get('target_duration_ch1')
+                target_duration_ch2 = metadata.get('target_duration_ch2')
+                if target_duration_ch1 or target_duration_ch2:
+                    logger.info(f"📊 Using duration targets from C3D metadata: CH1={target_duration_ch1}ms, CH2={target_duration_ch2}ms")
+            
+            # Priority 2: Check patient profile if not found in C3D
+            patient_id = getattr(session_params, 'patient_id', None)
+            if not patient_id:
+                # Try to get patient_id from session
+                session_info = await self.get_session_status(session_id)
+                if session_info:
+                    patient_id = session_info.get('patient_id')
+            
+            if patient_id and (target_duration_ch1 is None or target_duration_ch2 is None):
+                patient_durations = await self._get_patient_duration_targets(patient_id)
+                if patient_durations:
+                    duration_ch1_from_patient, duration_ch2_from_patient = patient_durations
+                    if target_duration_ch1 is None and duration_ch1_from_patient is not None:
+                        target_duration_ch1 = duration_ch1_from_patient
+                        logger.info(f"📊 Using CH1 duration from patient profile: {target_duration_ch1}ms")
+                    if target_duration_ch2 is None and duration_ch2_from_patient is not None:
+                        target_duration_ch2 = duration_ch2_from_patient
+                        logger.info(f"📊 Using CH2 duration from patient profile: {target_duration_ch2}ms")
+            
+            # Priority 3: Use config defaults for any missing values
+            if target_duration_ch1 is None:
+                target_duration_ch1 = DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
+                logger.info(f"📊 Using default CH1 duration from config: {target_duration_ch1}ms")
+            if target_duration_ch2 is None:
+                target_duration_ch2 = DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
+                logger.info(f"📊 Using default CH2 duration from config: {target_duration_ch2}ms")
+
             session_settings_data = {
                 "session_id": session_id,
                 # Therapeutic targets (flexible per-channel)
                 "target_contractions_ch1": target_ch1,
                 "target_contractions_ch2": target_ch2,
+                # Per-channel duration targets in milliseconds
+                "target_duration_ch1": float(target_duration_ch1),
+                "target_duration_ch2": float(target_duration_ch2),
                 # Therapist identification from C3D metadata
                 "therapist_id": therapist_id,
                 # MVC configuration from processing options
                 "mvc_threshold_percentage": getattr(
                     processing_opts, "mvc_threshold_percentage", 75.0
                 ),
-                # Duration thresholds from processing configuration
-                "duration_threshold_seconds": getattr(
-                    processing_opts, "duration_threshold_seconds", 2.0
-                ),
-                # Legacy fields for backward compatibility
-                "target_contractions": target_ch1 + target_ch2,  # Total target
-                "expected_contractions_per_muscle": (target_ch1 + target_ch2) // 2,  # Average
                 # BFR settings - enabled by default for GHOSTLY+ protocol
                 "bfr_enabled": getattr(session_params, "bfr_enabled", True),
+                # Note: Removed deprecated fields:
+                # - duration_threshold_seconds (replaced by per-channel targets)
+                # - target_contractions (redundant sum)
+                # - expected_contractions_per_muscle (redundant average)
             }
 
             # Validate critical thresholds
@@ -1023,17 +1109,27 @@ class TherapySessionProcessor:
                 )
                 session_settings_data["mvc_threshold_percentage"] = 75.0
 
-            if session_settings_data["duration_threshold_seconds"] <= 0:
+            # Validate duration targets
+            if session_settings_data["target_duration_ch1"] <= 0:
                 logger.warning(
-                    f"Invalid duration threshold {session_settings_data['duration_threshold_seconds']}s, using default 2.0s"
+                    f"Invalid CH1 duration target {session_settings_data['target_duration_ch1']}ms, using default 2000ms"
                 )
-                session_settings_data["duration_threshold_seconds"] = 2.0
+                session_settings_data["target_duration_ch1"] = 2000.0
+            
+            if session_settings_data["target_duration_ch2"] <= 0:
+                logger.warning(
+                    f"Invalid CH2 duration target {session_settings_data['target_duration_ch2']}ms, using default 2000ms"
+                )
+                session_settings_data["target_duration_ch2"] = 2000.0
 
             # Use upsert to handle potential duplicates
             await self._upsert_table("session_settings", session_settings_data, "session_id")
 
             logger.info(
-                f"📊 Session settings populated for session {session_id}: MVC {session_settings_data['mvc_threshold_percentage']}%, Duration {session_settings_data['duration_threshold_seconds']}s, BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}"
+                f"📊 Session settings populated for session {session_id}: "
+                f"MVC {session_settings_data['mvc_threshold_percentage']}%, "
+                f"Duration CH1={session_settings_data['target_duration_ch1']}ms CH2={session_settings_data['target_duration_ch2']}ms, "
+                f"BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}"
             )
 
         except Exception as e:

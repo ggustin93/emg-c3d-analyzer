@@ -66,7 +66,49 @@ BORG_CR10_SCALE_MAX = 10  # Rating of Perceived Exertion (0-10 scale)
 
 
 # =============================================================================
-# 3. SESSION DEFAULTS & FALLBACKS
+# 3. SCORING CONFIGURATION DEFAULTS
+# =============================================================================
+from dataclasses import field
+
+@dataclass(frozen=True)
+class ScoringDefaults:
+    """
+    Default scoring configuration from metricsDefinitions.md - Single Source of Truth.
+    
+    These values represent the clinically validated weights and RPE mapping
+    for the GHOSTLY+ performance scoring system.
+    """
+    
+    # Main component weights (must sum to 1.0) - from metricsDefinitions.md Section 3
+    WEIGHT_COMPLIANCE: float = 0.50   # 50% - Therapeutic Compliance
+    WEIGHT_SYMMETRY: float = 0.25     # 25% - Muscle Symmetry  
+    WEIGHT_EFFORT: float = 0.25       # 25% - Subjective Effort (RPE)
+    WEIGHT_GAME: float = 0.00         # 0% - Game Performance (optional, game-dependent)
+    
+    # Sub-component weights for compliance (must sum to 1.0)
+    WEIGHT_COMPLETION: float = 0.333  # Equal weight for completion rate
+    WEIGHT_INTENSITY: float = 0.333   # Equal weight for intensity rate
+    WEIGHT_DURATION: float = 0.334    # Equal weight for duration rate (adjusted for sum)
+    
+    # Default RPE mapping matching database schema - clinically validated
+    # Based on Borg CR-10 scale (0-10) for elderly rehabilitation
+    DEFAULT_RPE_MAPPING: dict = field(default_factory=lambda: {
+        "0": {"score": 10, "category": "no_exertion", "clinical": "concerning_lack_of_effort"},
+        "1": {"score": 25, "category": "very_light", "clinical": "below_therapeutic_minimum"},
+        "2": {"score": 50, "category": "light", "clinical": "warm_up_intensity"},
+        "3": {"score": 85, "category": "moderate_low", "clinical": "therapeutic_entry_range"},
+        "4": {"score": 100, "category": "optimal_moderate", "clinical": "ideal_therapeutic_intensity"},
+        "5": {"score": 100, "category": "optimal_moderate", "clinical": "peak_therapeutic_intensity"},
+        "6": {"score": 75, "category": "somewhat_hard", "clinical": "approaching_upper_limit"},
+        "7": {"score": 50, "category": "hard", "clinical": "excessive_for_elderly"},
+        "8": {"score": 25, "category": "very_hard", "clinical": "dangerous_overexertion"},
+        "9": {"score": 15, "category": "extremely_hard", "clinical": "immediate_intervention_needed"},
+        "10": {"score": 10, "category": "maximum", "clinical": "emergency_stop_protocol"}
+    })
+
+
+# =============================================================================
+# 4. SESSION DEFAULTS & FALLBACKS
 # =============================================================================
 @dataclass(frozen=True)
 class SessionDefaults:

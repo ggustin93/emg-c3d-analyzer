@@ -177,9 +177,9 @@ export const useEnhancedPerformanceMetrics = (
     // Note: databaseWeights already includes proper fallback values from useScoringConfiguration
     const weights = databaseWeights || sessionParams.enhanced_scoring?.weights || {
       compliance: 0.50,  // 50% - Therapeutic Compliance  
-      symmetry: 0.20,    // 20% - Muscle Symmetry
-      effort: 0.30,      // 30% - Subjective Effort (RPE)
-      gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
+      symmetry: 0.25,    // 25% - Muscle Symmetry (from metricsDefinitions.md)
+      effort: 0.25,      // 25% - Subjective Effort (RPE) (from metricsDefinitions.md)
+      gameScore: 0.00,   // 0% - Game Performance (optional, game-dependent)
       compliance_completion: 0.333,
       compliance_intensity: 0.333,
       compliance_duration: 0.334,

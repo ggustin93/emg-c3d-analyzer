@@ -758,7 +758,7 @@ main() {
         start_ngrok || log_warning "Continuing without ngrok (webhook testing disabled)"
     fi
     
-    if [ "$BACKEND_ONLY" != true ] && [ "$WEBHOOK_MODE" != true ]; then
+    if [ "$BACKEND_ONLY" != true ]; then
         start_frontend
     fi
     
