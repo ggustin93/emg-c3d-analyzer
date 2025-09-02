@@ -2,6 +2,14 @@
  * Production-grade logger for the frontend.
  * In production: Silently captures all logs to file
  * In development: Shows in console + saves to file
+ * 
+ * Improvements:
+ * - Configurable settings
+ * - Type-safe interfaces
+ * - Memory protection
+ * - Retry logic for network failures
+ * - Performance optimizations
+ * - Health monitoring
  */
 import { Logger, ILogObj } from "tslog";
 
@@ -18,46 +26,185 @@ export enum LogCategory {
   LIFECYCLE = "lifecycle",
 }
 
-const isDevelopment = import.meta.env.DEV;
+// Configuration interface for type safety
+interface LoggerConfig {
+  flushIntervalMs: number;
+  maxBufferSize: number;
+  maxRetries: number;
+  retryDelayMs: number;
+  enableLocalStorage: boolean;
+  apiEndpoint: string;
+  isDevelopment: boolean;
+}
 
-// Simple file transport for browser
+// Logger health metrics for monitoring
+interface LoggerMetrics {
+  totalLogsGenerated: number;
+  totalLogsFlushed: number;
+  totalLogsDropped: number;
+  flushFailures: number;
+  lastFlushTime: Date | null;
+  lastFlushError: string | null;
+}
+
+// Type-safe log entry
+interface LogEntry {
+  timestamp: string;
+  level: string;
+  category: string;
+  message: string;
+}
+
+// Default configuration
+const DEFAULT_CONFIG: LoggerConfig = {
+  flushIntervalMs: 1000,
+  maxBufferSize: 100,
+  maxRetries: 3,
+  retryDelayMs: 1000,
+  enableLocalStorage: true,
+  apiEndpoint: '/api/logs/frontend',
+  isDevelopment: import.meta.env.DEV,
+};
+
+// Global configuration (can be overridden)
+const config: LoggerConfig = { ...DEFAULT_CONFIG };
+
+// Date formatter cache for performance
+const formatTimestamp = (() => {
+  let lastTimestamp = 0;
+  let lastFormatted = '';
+  
+  return (): string => {
+    const now = Date.now();
+    // Cache timestamp for same second
+    if (Math.floor(now / 1000) === Math.floor(lastTimestamp / 1000)) {
+      return lastFormatted;
+    }
+    lastTimestamp = now;
+    lastFormatted = new Date(now).toISOString().replace('T', ' ').substring(0, 19);
+    return lastFormatted;
+  };
+})();
+
+// Enhanced file transport with retry logic and monitoring
 class BrowserFileTransport {
-  private logBuffer: string[] = [];
+  private logBuffer: LogEntry[] = [];
   private flushInterval: number;
+  private retryCount: Map<string, number> = new Map();
+  private metrics: LoggerMetrics = {
+    totalLogsGenerated: 0,
+    totalLogsFlushed: 0,
+    totalLogsDropped: 0,
+    flushFailures: 0,
+    lastFlushTime: null,
+    lastFlushError: null,
+  };
 
-  constructor(flushIntervalMs = 1000) {
-    this.flushInterval = window.setInterval(() => this.flush(), flushIntervalMs);
+  constructor() {
+    this.flushInterval = window.setInterval(() => this.flush(), config.flushIntervalMs);
     window.addEventListener('beforeunload', () => this.flush());
+    
+    // Expose metrics for monitoring
+    if (config.isDevelopment) {
+      (window as any).__loggerMetrics = this.metrics;
+    }
   }
 
-  log(timestamp: string, level: string, category: string, message: string): void {
-    const logEntry = `${timestamp}\t${level}\t[${category}] ${message}`;
+  log(level: string, category: string, message: string): void {
+    const logEntry: LogEntry = {
+      timestamp: formatTimestamp(),
+      level,
+      category,
+      message
+    };
+    
+    this.metrics.totalLogsGenerated++;
+    
+    // Memory protection: drop oldest logs if buffer is too large
+    if (this.logBuffer.length >= config.maxBufferSize * 2) {
+      const dropped = this.logBuffer.splice(0, config.maxBufferSize);
+      this.metrics.totalLogsDropped += dropped.length;
+      
+      if (config.isDevelopment) {
+        console.warn(`[Logger] Dropped ${dropped.length} logs due to buffer overflow`);
+      }
+    }
+    
     this.logBuffer.push(logEntry);
 
-    if (this.logBuffer.length > 100) {
+    if (this.logBuffer.length >= config.maxBufferSize) {
       this.flush();
     }
   }
 
+  private formatLogEntry(entry: LogEntry): string {
+    return `${entry.timestamp}\t${entry.level}\t[${entry.category}] ${entry.message}`;
+  }
+
   async flush(): Promise<void> {
     if (this.logBuffer.length === 0) return;
+    
     const logs = this.logBuffer.splice(0);
+    const formattedLogs = logs.map(entry => this.formatLogEntry(entry));
     
     try {
-      await fetch('/api/logs/frontend', {
+      await this.sendLogsWithRetry(formattedLogs);
+      this.metrics.totalLogsFlushed += logs.length;
+      this.metrics.lastFlushTime = new Date();
+      this.metrics.lastFlushError = null;
+    } catch (error) {
+      this.metrics.flushFailures++;
+      this.metrics.lastFlushError = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Fallback to localStorage if enabled
+      if (config.enableLocalStorage) {
+        this.saveToLocalStorage(formattedLogs);
+      }
+    }
+  }
+
+  private async sendLogsWithRetry(logs: string[], attempt = 0): Promise<void> {
+    try {
+      const response = await fetch(config.apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logs }),
       });
-    } catch {
-      // Fallback to localStorage if backend unavailable
-      try {
-        const existing = localStorage.getItem('frontend_logs') || '';
-        localStorage.setItem('frontend_logs', existing + '\n' + logs.join('\n'));
-      } catch {
-        // Silent fail in production
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+    } catch (error) {
+      if (attempt < config.maxRetries - 1) {
+        // Exponential backoff
+        const delay = config.retryDelayMs * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.sendLogsWithRetry(logs, attempt + 1);
+      }
+      throw error;
     }
+  }
+
+  private saveToLocalStorage(logs: string[]): void {
+    try {
+      const key = 'frontend_logs';
+      const existing = localStorage.getItem(key) || '';
+      const combined = existing + '\n' + logs.join('\n');
+      
+      // Limit localStorage size (keep last 10KB)
+      const maxSize = 10 * 1024;
+      const trimmed = combined.length > maxSize 
+        ? combined.substring(combined.length - maxSize)
+        : combined;
+      
+      localStorage.setItem(key, trimmed);
+    } catch {
+      // Silent fail - localStorage might be full or disabled
+    }
+  }
+
+  getMetrics(): LoggerMetrics {
+    return { ...this.metrics };
   }
 
   destroy(): void {
@@ -71,8 +218,8 @@ const fileTransport = new BrowserFileTransport();
 // Base logger configuration
 const baseLogger = new Logger<ILogObj>({
   name: "frontend",
-  minLevel: isDevelopment ? 2 : 3, // 2: info+ in dev, 3: warn+ in prod (reduced verbosity)
-  type: isDevelopment ? "pretty" : "hidden", // Show in console only in dev
+  minLevel: config.isDevelopment ? 2 : 3, // 2: info+ in dev, 3: warn+ in prod
+  type: config.isDevelopment ? "pretty" : "hidden", // Show in console only in dev
 });
 
 // Create categorized loggers
@@ -81,54 +228,67 @@ const loggers = Object.values(LogCategory).reduce((acc, category) => {
   return acc;
 }, {} as Record<LogCategory, Logger<ILogObj>>);
 
-// Attach file transport for all log levels
-baseLogger.attachTransport((logObj) => {
-  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  const level = (logObj._meta as any)?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
-  const category = (logObj._meta as any)?.name || 'frontend';
+// Type-safe log object interface
+interface LogMeta {
+  logLevelName?: string;
+  name?: string;
+}
+
+interface LogMessage {
+  msg?: unknown[];
+  _meta?: LogMeta;
+  [key: string]: unknown;
+}
+
+// Attach file transport with better type safety
+baseLogger.attachTransport((logObj: LogMessage) => {
+  const level = logObj._meta?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
+  const category = logObj._meta?.name || 'frontend';
   
   let message = '';
-  if ((logObj as any).msg && Array.isArray((logObj as any).msg)) {
-    message = (logObj as any).msg.map((arg: unknown) => 
-      typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  if (logObj.msg && Array.isArray(logObj.msg)) {
+    message = logObj.msg.map((arg: unknown) => 
+      typeof arg === 'object' && arg !== null 
+        ? JSON.stringify(arg) 
+        : String(arg)
     ).join(' ');
   }
   
-  fileTransport.log(timestamp, level, category, message);
+  fileTransport.log(level, category, message);
 });
 
-// In production, intercept console to prevent leaks
-if (!isDevelopment) {
+// Console interception for production (fixed bug)
+if (!config.isDevelopment) {
   const noop = () => undefined;
-  console.log = noop;
-  console.info = noop;
-  console.debug = noop;
-  // Keep warn and error in production for critical issues
   const originalWarn = console.warn.bind(console);
   const originalError = console.error.bind(console);
   
+  // Silence non-critical console methods
+  console.log = noop;
+  console.info = noop;
+  console.debug = noop;
+  
+  // Capture warn and error to file transport
   console.warn = (...args: unknown[]) => {
     fileTransport.log(
-      new Date().toISOString().replace('T', ' ').substring(0, 19),
       'WARN',
       'console',
-      args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+      args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)).join(' ')
     );
-    if (isDevelopment) originalWarn(...args);
+    // Don't call originalWarn in production to prevent console output
   };
   
   console.error = (...args: unknown[]) => {
     fileTransport.log(
-      new Date().toISOString().replace('T', ' ').substring(0, 19),
       'ERROR',
       'console',
-      args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+      args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)).join(' ')
     );
-    if (isDevelopment) originalError(...args);
+    // Don't call originalError in production to prevent console output
   };
 }
 
-// Global error handlers
+// Global error handlers with better error details
 window.addEventListener('error', (event) => {
   loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Error:', {
     message: event.message,
@@ -136,6 +296,8 @@ window.addEventListener('error', (event) => {
     line: event.lineno,
     column: event.colno,
     stack: event.error?.stack,
+    userAgent: navigator.userAgent,
+    url: window.location.href,
   });
 });
 
@@ -143,6 +305,8 @@ window.addEventListener('unhandledrejection', (event) => {
   loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Promise Rejection:', {
     reason: event.reason,
     stack: event.reason?.stack,
+    promise: event.promise,
+    url: window.location.href,
   });
 });
 
@@ -151,6 +315,10 @@ window.addEventListener('unhandledrejection', (event) => {
  * @example
  * logger.info(LogCategory.API, "Fetching data", { url: "/api/data" });
  * logger.error(LogCategory.AUTH, "Login failed", error);
+ * 
+ * // Get logger health metrics
+ * const metrics = logger.getMetrics();
+ * console.log('Logs flushed:', metrics.totalLogsFlushed);
  */
 export const logger = {
   debug: (category: LogCategory, ...args: unknown[]) => loggers[category].debug(...args),
@@ -159,6 +327,12 @@ export const logger = {
   error: (category: LogCategory, ...args: unknown[]) => loggers[category].error(...args),
   flush: () => fileTransport.flush(),
   destroy: () => fileTransport.destroy(),
+  getMetrics: () => fileTransport.getMetrics(),
+  
+  // Configuration update method
+  configure: (updates: Partial<LoggerConfig>) => {
+    Object.assign(config, updates);
+  },
 };
 
 export default logger;
