@@ -20,6 +20,7 @@ from api.routes import (
     cache_monitoring,
     export,
     health,
+    logs,
     mvc,
     signals,
     upload,
@@ -112,8 +113,9 @@ def create_app() -> FastAPI:
     app.include_router(webhooks.router)  # Supabase webhooks
     app.include_router(scoring_router)  # Scoring configuration
     app.include_router(cache_monitoring.router)  # Cache monitoring
+    app.include_router(logs.router)  # Frontend log collection
     
-    logger.info("FastAPI application configured", routes=9)
+    logger.info("FastAPI application configured", routes=10)
     return app
 
 

@@ -14,7 +14,15 @@ export default defineConfig({
   server: {
     // Match the port that was previously used with CRACO
     port: 3000,
-    open: true // Automatically open browser on start
+    open: true, // Automatically open browser on start
+    // Proxy API calls to backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     // This sets the output directory to 'build' to match CRA's default
