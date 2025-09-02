@@ -59,11 +59,11 @@ class ChannelAnalytics(BaseModel):
     errors: dict[str, str] | None = None
 
     # New fields for game stats and enhanced quality assessment
-    mvc_threshold_actual_value: float | None = None
+    mvc75_threshold: float | None = None
     duration_threshold_actual_value: float | None = None
     good_contraction_count: int | None = None  # Meets both MVC and duration criteria
-    mvc_contraction_count: int | None = None  # Meets MVC criteria only
-    duration_contraction_count: int | None = None  # Meets duration criteria only
+    mvc75_compliance_rate: int | None = None  # Meets MVC criteria only
+    duration_compliance_rate: int | None = None  # Meets duration criteria only
 
     # Temporal analysis fields
     rms_temporal_stats: TemporalAnalysisStats | None = None

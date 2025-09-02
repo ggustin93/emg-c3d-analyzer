@@ -38,7 +38,7 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 session_processor = TherapySessionProcessor()
 
 
-@router.post("/", response_model=EMGAnalysisResult)
+@router.post("", response_model=EMGAnalysisResult)  # No slash = exact match on /upload
 async def upload_file(
     file: UploadFile = File(...),
     processing_opts: ProcessingOptions = Depends(get_processing_options),
