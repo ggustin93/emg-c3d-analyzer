@@ -14,13 +14,22 @@ export default defineConfig({
   server: {
     // Match the port that was previously used with CRACO
     port: 3000,
+    strictPort: false, // Allow using 3001 if 3000 is taken
     open: true, // Automatically open browser on start
     // Proxy API calls to backend
     proxy: {
-      '/api': {
+      // Special handling for logs endpoint - don't rewrite path
+      '/api/logs': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false
+      },
+      // All other API routes - strip /api prefix
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },

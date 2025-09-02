@@ -73,7 +73,6 @@ export function useContractionAnalysis({
       ? Math.round(effectiveDurations.reduce((a, b) => a + b, 0) / effectiveDurations.length)
       : (sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS);
     
-    logger.debug(LogCategory.CONTRACTION_ANALYSIS, 'Analyzing contraction quality summary', {
       defaultDurationThreshold,
       sessionParams_contraction_duration_threshold: sessionParams.contraction_duration_threshold,
       sessionParams_session_duration_thresholds_per_muscle: sessionParams.session_duration_thresholds_per_muscle,
@@ -108,7 +107,6 @@ export function useContractionAnalysis({
          // Use centralized duration threshold logic with proper backend priority
          const durationThreshold = getEffectiveDurationThreshold(channelName, sessionParams, channelData);
         
-        logger.debug(LogCategory.CONTRACTION_ANALYSIS, `Duration threshold for ${channelName}`, {
           perMuscleThresholdSeconds: sessionParams.session_duration_thresholds_per_muscle?.[channelName],
           finalThresholdMs: durationThreshold,
           defaultThresholdMs: defaultDurationThreshold
@@ -134,7 +132,6 @@ export function useContractionAnalysis({
           // Visualization alignment with metrics definitions: only GREEN when both criteria are defined and met
           const visualIsGood = (channelHasMvcThreshold && channelHasDurationThreshold) ? (meetsMvc && meetsDuration) : false;
           
-          logger.debug(LogCategory.CONTRACTION_ANALYSIS, `Contraction ${idx} in ${channelName}`, {
             duration_ms: contraction.duration_ms,
             max_amplitude: contraction.max_amplitude,
             durationThreshold,
@@ -187,7 +184,6 @@ export function useContractionAnalysis({
     
     // This seems to be a custom timer function, which is not part of the new logger API.
     // I'll replace it with a standard log message.
-    logger.debug(LogCategory.PERFORMANCE, 'Starting contraction areas calculation');
     
     // Get default duration threshold - consistent with legend calculation, prefer backend actual per channel later
     const defaultDurationThreshold = sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS;
@@ -200,7 +196,6 @@ export function useContractionAnalysis({
       max: Math.max(...chartData.map(d => d.time))
     } : { min: 0, max: 0 };
     
-    logger.debug(LogCategory.CONTRACTION_ANALYSIS, 'Processing contraction areas', {
       defaultDurationThreshold,
       sessionParams_contraction_duration_threshold: sessionParams.contraction_duration_threshold,
       sessionParams_session_duration_thresholds_per_muscle: sessionParams.session_duration_thresholds_per_muscle,
@@ -213,7 +208,6 @@ export function useContractionAnalysis({
       const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
       
       // 🔍 COMPARISON MODE DEBUG: Log channel processing
-      logger.debug(LogCategory.CONTRACTION_ANALYSIS, `Processing channel ${channelName}`, {
         channelDisplayed,
         finalDisplayDataKeys,
         contractionsCount: channelData.contractions?.length || 0,
@@ -270,7 +264,6 @@ export function useContractionAnalysis({
               }
             }
             
-            logger.debug(LogCategory.CONTRACTION_ANALYSIS, `🔍 Area ${idx} in ${channelName} (${finalDisplayDataKeys.length > 1 ? 'COMPARISON' : 'SINGLE'} mode)`, {
               duration_ms: contraction.duration_ms,
               max_amplitude: contraction.max_amplitude,
               durationThreshold,
@@ -311,7 +304,6 @@ export function useContractionAnalysis({
       }
     });
     
-    logger.debug(LogCategory.CONTRACTION_ANALYSIS, 'Contraction visualization completed', {
       areasCount: areas.length,
       chartTimeRange: timeRange,
       chartDataPoints: chartData.length,
@@ -322,7 +314,6 @@ export function useContractionAnalysis({
     });
     
     // Replacing the custom timer function with a standard log message.
-    logger.debug(LogCategory.PERFORMANCE, 'Finished contraction areas calculation');
     return areas;
   }, [analytics, finalDisplayDataKeys, chartData, sessionParams]);
 

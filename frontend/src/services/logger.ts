@@ -1,7 +1,7 @@
 /**
- * Professional, categorized logger for the frontend.
- * Uses `tslog` with proper transport pattern to avoid console interception issues.
- * Automatically saves all logs to frontend.log without causing infinite loops.
+ * Production-grade logger for the frontend.
+ * In production: Silently captures all logs to file
+ * In development: Shows in console + saves to file
  */
 import { Logger, ILogObj } from "tslog";
 
@@ -16,342 +16,148 @@ export enum LogCategory {
   USER_INTERACTION = "user-interaction",
   ERROR_BOUNDARY = "error-boundary",
   LIFECYCLE = "lifecycle",
-  CONSOLE = "console", // For captured console logs
 }
 
-// File logging transport for browser environment
+const isDevelopment = import.meta.env.DEV;
+
+// Simple file transport for browser
 class BrowserFileTransport {
-  public logBuffer: string[] = [];  // Made public for direct console access
+  private logBuffer: string[] = [];
   private flushInterval: number;
-  private originalConsole = {
-    log: console.log.bind(console),
-    info: console.info.bind(console),
-    warn: console.warn.bind(console),
-    error: console.error.bind(console),
-    debug: console.debug.bind(console),
-  };
 
   constructor(flushIntervalMs = 1000) {
     this.flushInterval = window.setInterval(() => this.flush(), flushIntervalMs);
-    
-    // Flush logs before page unload
     window.addEventListener('beforeunload', () => this.flush());
   }
 
-  log(logObj: ILogObj): void {
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const level = (logObj._meta as any)?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
-    const category = (logObj._meta as any)?.name || 'frontend';
-    
-    // Format log entry
-    const logEntry = `${timestamp}\t${level}\t[${category}] ${this.formatMessage(logObj)}`;
+  log(timestamp: string, level: string, category: string, message: string): void {
+    const logEntry = `${timestamp}\t${level}\t[${category}] ${message}`;
     this.logBuffer.push(logEntry);
 
-    // Auto-flush if buffer gets large
     if (this.logBuffer.length > 100) {
       this.flush();
     }
   }
 
-  private formatMessage(logObj: ILogObj): string {
-    const messages = (logObj._meta as any)?.argumentsArray || [];
-    return messages
-      .map((arg: unknown) => {
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch {
-            return String(arg);
-          }
-        }
-        return String(arg);
-      })
-      .join(' ');
-  }
-
-  public async flush(): Promise<void> {
+  async flush(): Promise<void> {
     if (this.logBuffer.length === 0) return;
-
     const logs = this.logBuffer.splice(0);
     
     try {
-      // Send logs to backend endpoint for file writing
-      const response = await fetch('/api/logs/frontend', {
+      await fetch('/api/logs/frontend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logs }),
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (error) {
-      // Fallback: Store in localStorage if backend unavailable
-      // Use original console to prevent infinite loops
+    } catch {
+      // Fallback to localStorage if backend unavailable
       try {
-        const existingLogs = localStorage.getItem('frontend_logs') || '';
-        localStorage.setItem('frontend_logs', existingLogs + '\n' + logs.join('\n'));
-      } catch (storageError) {
-        // If even localStorage fails, use original console as last resort
-        this.originalConsole.warn('Failed to flush logs to backend and localStorage:', error, storageError);
+        const existing = localStorage.getItem('frontend_logs') || '';
+        localStorage.setItem('frontend_logs', existing + '\n' + logs.join('\n'));
+      } catch {
+        // Silent fail in production
       }
     }
   }
 
   destroy(): void {
     this.flush();
-    if (this.flushInterval) {
-      clearInterval(this.flushInterval);
-    }
+    clearInterval(this.flushInterval);
   }
 }
 
-// Create file transport instance
 const fileTransport = new BrowserFileTransport();
 
-// Base logger configuration with file transport
-const baseLogger: Logger<ILogObj> = new Logger({
+// Base logger configuration
+const baseLogger = new Logger<ILogObj>({
   name: "frontend",
-  minLevel: import.meta.env.PROD ? 3 : 0, // 3: warn, 0: silly
-  prettyLogTemplate: "{{yyyy}}-{{mm}}-{{dd}} {{hh}}:{{MM}}:{{ss}}:{{ms}}\t{{logLevelName}}\t[{{name}}]",
-  prettyErrorTemplate: "\n{{errorName}} {{errorMessage}}\nerror stack:\n{{errorStack}}",
-  prettyErrorStackTemplate: "  • {{fileName}}\t{{method}}\n\t{{filePathWithLine}}",
-  // Disable default console transport to avoid infinite loops
-  type: "hidden",
-  // Store arguments in a predictable place for transport
-  argumentsArrayName: "msg"
+  minLevel: isDevelopment ? 2 : 3, // 2: info+ in dev, 3: warn+ in prod (reduced verbosity)
+  type: isDevelopment ? "pretty" : "hidden", // Show in console only in dev
 });
 
-// Attach our custom transport with proper message extraction
-baseLogger.attachTransport((logObj) => {
-  // Extract messages from the logObj properly
-  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  const level = (logObj._meta as any)?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
-  const category = (logObj._meta as any)?.name || 'frontend';
-  
-  // Get the actual message content from the logObj
-  let message = '';
-  if ((logObj as any).msg && Array.isArray((logObj as any).msg)) {
-    // Messages are stored in the msg array
-    message = (logObj as any).msg.map((arg: unknown) => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-  } else {
-    // Fallback to extracting from other properties
-    const keys = Object.keys(logObj).filter(k => k !== '_meta');
-    message = keys.map(k => {
-      const val = logObj[k];
-      if (typeof val === 'object' && val !== null) {
-        try {
-          return JSON.stringify(val, null, 2);
-        } catch {
-          return String(val);
-        }
-      }
-      return String(val);
-    }).join(' ');
-  }
-  
-  const logEntry = `${timestamp}\t${level}\t[${category}] ${message}`;
-  fileTransport.logBuffer.push(logEntry);
-  
-  if (fileTransport.logBuffer.length > 100) {
-    fileTransport.flush();
-  }
-});
-
-// Create a child logger for each category
+// Create categorized loggers
 const loggers = Object.values(LogCategory).reduce((acc, category) => {
   acc[category] = baseLogger.getSubLogger({ name: category });
   return acc;
 }, {} as Record<LogCategory, Logger<ILogObj>>);
 
-// Store original console methods safely
-const originalConsole = {
-  log: console.log.bind(console),
-  info: console.info.bind(console),
-  warn: console.warn.bind(console),
-  error: console.error.bind(console),
-  debug: console.debug.bind(console),
-};
+// Attach file transport for all log levels
+baseLogger.attachTransport((logObj) => {
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const level = (logObj._meta as any)?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
+  const category = (logObj._meta as any)?.name || 'frontend';
+  
+  let message = '';
+  if ((logObj as any).msg && Array.isArray((logObj as any).msg)) {
+    message = (logObj as any).msg.map((arg: unknown) => 
+      typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+    ).join(' ');
+  }
+  
+  fileTransport.log(timestamp, level, category, message);
+});
 
-// Console interception to capture all console.* calls
-// Using direct logging to file transport to ensure messages are captured
-const interceptConsole = () => {
-  console.log = (...args: unknown[]): void => {
-    originalConsole.log(...args);
-    // Directly create and send log entry to ensure message capture
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-    const logEntry = `${timestamp}\tINFO \t[console] ${message}`;
-    fileTransport.logBuffer.push(logEntry);
-    if (fileTransport.logBuffer.length > 100) {
-      fileTransport.flush();
-    }
-    return undefined; // Explicitly return void
+// In production, intercept console to prevent leaks
+if (!isDevelopment) {
+  const noop = () => undefined;
+  console.log = noop;
+  console.info = noop;
+  console.debug = noop;
+  // Keep warn and error in production for critical issues
+  const originalWarn = console.warn.bind(console);
+  const originalError = console.error.bind(console);
+  
+  console.warn = (...args: unknown[]) => {
+    fileTransport.log(
+      new Date().toISOString().replace('T', ' ').substring(0, 19),
+      'WARN',
+      'console',
+      args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+    );
+    if (isDevelopment) originalWarn(...args);
   };
   
-  console.info = (...args: unknown[]): void => {
-    originalConsole.info(...args);
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-    const logEntry = `${timestamp}\tINFO \t[console] ${message}`;
-    fileTransport.logBuffer.push(logEntry);
-    if (fileTransport.logBuffer.length > 100) {
-      fileTransport.flush();
-    }
-    return undefined; // Explicitly return void
+  console.error = (...args: unknown[]) => {
+    fileTransport.log(
+      new Date().toISOString().replace('T', ' ').substring(0, 19),
+      'ERROR',
+      'console',
+      args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+    );
+    if (isDevelopment) originalError(...args);
   };
-  
-  console.warn = (...args: unknown[]): void => {
-    originalConsole.warn(...args);
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-    const logEntry = `${timestamp}\tWARN \t[console] ${message}`;
-    fileTransport.logBuffer.push(logEntry);
-    if (fileTransport.logBuffer.length > 100) {
-      fileTransport.flush();
-    }
-    return undefined; // Explicitly return void
-  };
-  
-  console.error = (...args: unknown[]): void => {
-    originalConsole.error(...args);
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-    const logEntry = `${timestamp}\tERROR\t[console] ${message}`;
-    fileTransport.logBuffer.push(logEntry);
-    if (fileTransport.logBuffer.length > 100) {
-      fileTransport.flush();
-    }
-    return undefined; // Explicitly return void
-  };
-  
-  console.debug = (...args: unknown[]): void => {
-    originalConsole.debug(...args);
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return String(arg);
-        }
-      }
-      return String(arg);
-    }).join(' ');
-    const logEntry = `${timestamp}\tDEBUG\t[console] ${message}`;
-    fileTransport.logBuffer.push(logEntry);
-    if (fileTransport.logBuffer.length > 100) {
-      fileTransport.flush();
-    }
-    return undefined; // Explicitly return void
-  };
-};
-
-// Initialize console interception
-if (typeof window !== 'undefined') {
-  interceptConsole();
 }
 
-// Global error handler to capture unhandled errors
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (event) => {
-    try {
-      loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Error:', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error?.stack || event.error,
-      });
-    } catch (loggingError) {
-      // Prevent infinite loops in error logging
-      originalConsole.error('Error in error logging:', loggingError);
-    }
+// Global error handlers
+window.addEventListener('error', (event) => {
+  loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Error:', {
+    message: event.message,
+    filename: event.filename,
+    line: event.lineno,
+    column: event.colno,
+    stack: event.error?.stack,
   });
+});
 
-  // Global promise rejection handler
-  window.addEventListener('unhandledrejection', (event) => {
-    try {
-      loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Promise Rejection:', {
-        reason: event.reason,
-        stack: event.reason?.stack,
-      });
-    } catch (loggingError) {
-      // Prevent infinite loops in error logging
-      originalConsole.error('Error in promise rejection logging:', loggingError);
-    }
+window.addEventListener('unhandledrejection', (event) => {
+  loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Promise Rejection:', {
+    reason: event.reason,
+    stack: event.reason?.stack,
   });
-}
+});
 
 /**
- * The main logger instance. Use this for all frontend logging.
- *
+ * Main logger instance for categorized logging
  * @example
- * logger.info(LogCategory.API, "Fetching data from endpoint", { url: "/data" });
- * logger.error(LogCategory.AUTH, "Authentication failed", error);
+ * logger.info(LogCategory.API, "Fetching data", { url: "/api/data" });
+ * logger.error(LogCategory.AUTH, "Login failed", error);
  */
 export const logger = {
-  silly: (category: LogCategory, ...args: unknown[]) => loggers[category].silly(...args),
   debug: (category: LogCategory, ...args: unknown[]) => loggers[category].debug(...args),
   info: (category: LogCategory, ...args: unknown[]) => loggers[category].info(...args),
   warn: (category: LogCategory, ...args: unknown[]) => loggers[category].warn(...args),
   error: (category: LogCategory, ...args: unknown[]) => loggers[category].error(...args),
-  fatal: (category: LogCategory, ...args: unknown[]) => loggers[category].fatal(...args),
-  
-  // Utility to restore original console (for testing or debugging)
-  restoreConsole: () => {
-    Object.assign(console, originalConsole);
-  },
-  
-  // Utility to flush logs immediately
   flush: () => fileTransport.flush(),
-  
-  // Cleanup method
   destroy: () => fileTransport.destroy(),
 };
 

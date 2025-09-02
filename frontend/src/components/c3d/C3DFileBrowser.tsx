@@ -13,6 +13,7 @@ import SupabaseStorageService from '@/services/supabaseStorage';
 import SupabaseSetup from '@/lib/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { TherapySessionsService, TherapySession } from '@/services/therapySessionsService';
+import { logger, LogCategory } from '@/services/logger';
 import { 
   C3DFile,
   resolvePatientId,
@@ -90,7 +91,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   });
   
   // 🔍 DEBUG: Log files when they change
-  console.log('🗂️ C3DFileBrowser - Files loaded:', {
     filesCount: files.length,
     sampleFiles: files.slice(0, 2).map(f => ({
       id: f.id,
@@ -109,14 +109,12 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       // Create file paths from storage files (bucket/object format)
       const filePaths = fileList.map(file => `c3d-examples/${file.name}`);
       
-      console.log('🔍 Loading session data for files:', filePaths.slice(0, 3), '...');
       
       const sessions = await TherapySessionsService.getSessionsByFilePaths(filePaths);
       
-      console.log('✅ Session data loaded:', Object.keys(sessions).length, 'sessions found');
       setSessionData(sessions);
     } catch (error) {
-      console.warn('Failed to load session data:', error);
+      logger.warn(LogCategory.API, 'Failed to load session data:', error);
       // Not critical - continue without session data
     }
   }, []);
@@ -128,13 +126,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     
     // Priority 1: Processed session timestamp from therapy_sessions table
     if (session?.session_date) {
-      console.log('✅ Using processed session timestamp for:', file.name, '→', session.session_date);
       return session.session_date;
     }
     
     // Priority 2: C3D metadata time from therapy_sessions table
     if (session?.game_metadata?.time) {
-      console.log('✅ Using C3D metadata time for:', file.name, '→', session.game_metadata.time);
       return session.game_metadata.time;
     }
     
@@ -147,7 +143,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     // Wait for authentication to be fully initialized before attempting to load files
     if (authState.loading) {
       if (import.meta.env.DEV) {
-        console.log('C3D Browser: Waiting for auth to initialize...');
       }
       return;
     }
@@ -158,7 +153,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       
       // Shorter timeout with better error handling
       const timeoutId = setTimeout(() => {
-        console.error('C3D Browser: File loading timeout');
+        logger.error(LogCategory.DATA_PROCESSING, 'C3D Browser: File loading timeout');
         setIsLoadingFiles(false);
         setError('Connection timeout. Please check your internet connection and try refreshing the page.');
       }, 10000); // Reduced to 10 seconds
@@ -181,9 +176,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         }
 
         if (import.meta.env.DEV) {
-          console.log('Loading files from c3d-examples bucket...');
-          console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-          console.log('Auth state:', { user: authState.user?.email, loading: authState.loading });
         }
 
         // Add timeout promise to race against the actual request - more generous timeout
@@ -195,7 +187,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         const supabaseFiles = await Promise.race([loadPromise, timeoutPromise]);
         
         clearTimeout(timeoutId);
-        console.log('Files loaded from Supabase c3d-examples bucket:', supabaseFiles);
         
         if (supabaseFiles.length === 0) {
           // Bucket exists but is empty
@@ -210,7 +201,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       } catch (err: any) {
         clearTimeout(timeoutId);
         
-        console.error('Full error details:', err);
+        logger.error(LogCategory.DATA_PROCESSING, 'Full error details:', err);
         
         // More intelligent retry logic
         const isAuthError = err.message?.includes('Authentication') || err.message?.includes('JWT');
@@ -221,7 +212,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         // Don't retry auth errors immediately - they need time to resolve
         if ((isNetworkError || isAuthError) && retryCount < 2) {
           const retryDelay = isAuthError ? 5000 : 2000; // Longer delay for auth errors
-          console.log(`Retrying file load (attempt ${retryCount + 1}/2) in ${retryDelay}ms...`);
           setTimeout(() => {
             loadFiles(retryCount + 1);
           }, retryDelay);
@@ -416,7 +406,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       
       // Create timeout to prevent infinite loading
       const timeoutId = setTimeout(() => {
-        console.error('File loading timeout - forcing completion');
+        logger.error(LogCategory.DATA_PROCESSING, 'File loading timeout - forcing completion');
         setIsLoadingFiles(false);
         setError('Loading timeout. Please refresh the page or check your connection.');
       }, 15000); // 15 second timeout
@@ -429,7 +419,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           return;
         }
 
-        console.log('Retrying to load files from c3d-examples bucket...');
 
         // Add timeout promise to race against the actual request
         const loadPromise = SupabaseStorageService.listC3DFiles();
@@ -440,7 +429,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         const supabaseFiles = await Promise.race([loadPromise, timeoutPromise]);
         
         clearTimeout(timeoutId);
-        console.log('Files loaded successfully on retry:', supabaseFiles);
         
         if (supabaseFiles.length === 0) {
           setFiles([]);
@@ -453,7 +441,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
-        console.error('Retry failed:', err);
+        logger.error(LogCategory.DATA_PROCESSING, 'Retry failed:', err);
         setError(`Retry failed: ${err.message}`);
         setFiles([]);
         setIsLoadingFiles(false);
@@ -478,7 +466,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       }
     } catch (err) {
       setError('Failed to refresh file list. Please try again.');
-      console.error('Error refreshing files:', err);
+      logger.error(LogCategory.DATA_PROCESSING, 'Error refreshing files:', err);
     } finally {
       setIsLoadingFiles(false);
     }

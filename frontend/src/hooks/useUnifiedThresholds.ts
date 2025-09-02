@@ -145,7 +145,6 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       
       const channels = Array.from(channelSet).sort(); // Stable ordering
       
-      logger.debug(LogCategory.DATA_PROCESSING, 'Base channels extracted', {
         availableDataKeys,
         baseChannels: channels,
         count: channels.length
@@ -317,7 +316,6 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
         }
       });
       
-      logger.debug(LogCategory.DATA_PROCESSING, 'Unified thresholds calculated', {
         baseChannels,
         thresholdCount: thresholds.length,
         thresholds: thresholds.map(t => ({

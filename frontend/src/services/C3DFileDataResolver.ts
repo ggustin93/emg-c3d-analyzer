@@ -1,6 +1,7 @@
 import { C3DFileInfo } from '@/services/supabaseStorage';
 import { getMockTherapistName } from '@/lib/devUtils';
 import { getPatientColorClasses, getTherapistColorClasses } from '@/lib/colorUtils';
+import { logger, LogCategory } from '@/services/logger';
 
 /**
  * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
@@ -49,25 +50,20 @@ export interface BadgeProps {
  * 5. Default to 'Unknown'
  */
 export const resolvePatientId = (file: C3DFile): string => {
-  console.log('🔍 Resolving Patient ID for:', file.name);
-  
   // ⭐ PRIORITY 1: Storage Subfolder (HIGHEST PRIORITY - User Request)
   const subfolderMatch = file.name.match(/^(P\d{3})\//);
   if (subfolderMatch) {
     const patientId = subfolderMatch[1];
-    console.log('✅ Patient ID from subfolder:', patientId);
     return patientId;
   }
   
   // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
   if (file.metadata?.player_name) {
-    console.log('✅ Patient ID from C3D metadata:', file.metadata.player_name);
     return file.metadata.player_name;
   }
   
   // 🔄 Legacy Support (Lower Priority)
   if (file.patient_id) {
-    console.log('✅ Patient ID from storage metadata:', file.patient_id);
     return file.patient_id;
   }
   
@@ -75,11 +71,9 @@ export const resolvePatientId = (file: C3DFile): string => {
   const filenameMatch = file.name.match(/[_-](P\d{3})[_-]/i);
   if (filenameMatch) {
     const patientId = filenameMatch[1].toUpperCase();
-    console.log('✅ Patient ID from filename pattern:', patientId);
     return patientId;
   }
   
-  console.log('❌ No Patient ID found');
   return 'Unknown';
 };
 
@@ -94,14 +88,11 @@ export const resolvePatientId = (file: C3DFile): string => {
 export const resolveTherapistId = (file: C3DFile): string => {
   // DEV MODE: Assign random therapist for demo purposes
   if (import.meta.env.DEV) {
-    console.log('🔧 DEV MODE: Resolving Therapist ID for file:', file.name);
     const realId = file.metadata?.therapist_id || file.therapist_id;
     if (realId) {
-      console.log('✅ Found real Therapist ID in DEV_MODE:', realId);
       return realId;
     }
     const mockName = getMockTherapistName(file.id);
-    console.log(' MOCK Therapist ID generated:', mockName);
     // Use a stable mock name based on file ID
     return mockName;
   }
@@ -110,7 +101,6 @@ export const resolveTherapistId = (file: C3DFile): string => {
   const prodId = file.metadata?.therapist_id || 
          file.therapist_id || 
          'Unknown';
-  console.log('🏭 PROD MODE: Resolved Therapist ID to:', prodId);
   return prodId;
 };
 
@@ -165,28 +155,22 @@ export const extractDateFromFilename = (filename: string): string | null => {
 };
 
 export const resolveSessionDate = (file: C3DFile): string | null => {
-  console.log('🔍 Resolving Session Date for:', file.name);
-  
   // ⭐ PRIORITY 1: Filename Extraction (HIGHEST PRIORITY - User Request)
   const extractedDate = extractDateFromFilename(file.name);
   if (extractedDate) {
-    console.log('✅ Session Date from filename:', extractedDate);
     return extractedDate;
   }
   
   // ⭐ PRIORITY 2: C3D Metadata (FALLBACK - User Request)
   if (file.metadata?.session_date) {
-    console.log('✅ Session Date from C3D metadata:', file.metadata.session_date);
     return file.metadata.session_date;
   }
   
   // 🔄 Alternative C3D Field (Additional Fallback)
   if (file.metadata?.time) {
-    console.log('✅ Session Date from C3D time field:', file.metadata.time);
     return file.metadata.time;
   }
   
-  console.log('❌ No Session Date found');
   return null;
 };
 

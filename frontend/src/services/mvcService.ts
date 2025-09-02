@@ -7,6 +7,7 @@
  */
 
 import { EMGAnalysisResult } from '@/types/emg';
+import { logger, LogCategory } from '@/services/logger';
 
 export interface MVCEstimationResult {
   mvc_value: number;
@@ -43,7 +44,6 @@ export class MVCService {
       threshold_percentage?: number;
     } = {}
   ): Promise<MVCEstimationResponse> {
-    console.log('🔄 Starting initial MVC calibration for file:', file.name);
     
     const formData = new FormData();
     formData.append('file', file);
@@ -60,7 +60,7 @@ export class MVCService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error(`❌ MVC calibration failed: ${response.status}`, errorData);
+        logger.error(LogCategory.MVC_CALCULATION,`❌ MVC calibration failed: ${response.status}`, errorData);
         
         // Enhanced error messages based on status
         let userMessage = errorData.detail || `HTTP error! status: ${response.status}`;
@@ -76,11 +76,10 @@ export class MVCService {
       }
 
       const result = await response.json();
-      console.log('✅ Initial MVC calibration completed successfully');
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('❌ MVC calibration error:', errorMessage);
+      logger.error(LogCategory.MVC_CALCULATION,'❌ MVC calibration error:', errorMessage);
       throw error;
     }
   }
@@ -93,7 +92,6 @@ export class MVCService {
     session_params: any,
     signal?: AbortSignal
   ): Promise<MVCEstimationResponse> {
-    console.log('🔄 Starting MVC recalibration from existing analysis');
     
     const response = await fetch(`${this.BASE_URL}/mvc/calibrate`, {
       method: 'POST',
@@ -104,12 +102,11 @@ export class MVCService {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`MVC recalibration failed: ${response.status}`, errorData);
+      logger.error(LogCategory.MVC_CALCULATION,`MVC recalibration failed: ${response.status}`, errorData);
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
     }
     
     const result = await response.json();
-    console.log('✅ MVC recalibration successful');
     return result;
   }
 
@@ -128,7 +125,6 @@ export class MVCService {
    * Extract MVC values from existing analysis result
    */
   static extractMVCFromAnalysis(analysisResult: EMGAnalysisResult): Record<string, MVCEstimationResult> | null {
-    console.log('🔍 Starting MVC extraction from analysis result');
     
     if (!analysisResult.analytics) {
       console.warn('⚠️ No analytics data available in analysis result');
@@ -138,7 +134,6 @@ export class MVCService {
     const mvcResults: Record<string, MVCEstimationResult> = {};
 
     for (const [channel, analytics] of Object.entries(analysisResult.analytics)) {
-      console.log(`🔍 Checking ${channel} for MVC data:`, {
         mvc_threshold_actual_value: analytics.mvc_threshold_actual_value,
         mvc_estimation_method: analytics.mvc_estimation_method,
         hasThreshold: analytics.mvc_threshold_actual_value !== null && analytics.mvc_threshold_actual_value !== undefined,
@@ -169,11 +164,9 @@ export class MVCService {
           timestamp: new Date().toISOString()
         };
         
-        console.log(`✅ Successfully extracted MVC for ${channel}:`, mvcResults[channel]);
       } else {
         // Try fallback estimation from signal characteristics
         if (analytics.max_amplitude && analytics.max_amplitude > 0) {
-          console.log(`🔄 Attempting fallback MVC estimation for ${channel} using max_amplitude: ${analytics.max_amplitude}`);
           
           // Use max amplitude as MVC estimate (conservative approach)
           const mvcValue = analytics.max_amplitude;
@@ -195,18 +188,14 @@ export class MVCService {
             timestamp: new Date().toISOString()
           };
           
-          console.log(`⚡ Fallback MVC estimation for ${channel}:`, mvcResults[channel]);
         } else {
-          console.log(`❌ No MVC data or suitable fallback available for ${channel}`);
         }
       }
     }
 
     if (Object.keys(mvcResults).length > 0) {
-      console.log(`✅ Successfully extracted MVC data for ${Object.keys(mvcResults).length} channels`);
       return mvcResults;
     } else {
-      console.log('⚠️ No MVC data could be extracted from any channel');
       return null;
     }
   }
