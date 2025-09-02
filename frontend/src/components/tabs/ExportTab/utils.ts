@@ -113,15 +113,15 @@ export function calculateMusclePerformance(
   const goodContractions = analytics.good_contraction_count || 0;
   
   // Count contractions that meet MVC threshold and duration threshold separately
-  let mvcContractions = analytics.mvc_contraction_count || 0;
-  let durationContractions = analytics.duration_contraction_count || 0;
+  let mvcContractions = analytics.mvc75_compliance_rate || 0;
+  let durationContractions = analytics.duration_compliance_rate || 0;
   
   // If backend doesn't provide these counts, calculate from contractions array
   if (analytics.contractions && Array.isArray(analytics.contractions)) {
-    if (mvcContractions === 0 && analytics.mvc_contraction_count === undefined) {
+    if (mvcContractions === 0 && analytics.mvc75_compliance_rate === undefined) {
       mvcContractions = analytics.contractions.filter((c: any) => c.meets_mvc === true).length;
     }
-    if (durationContractions === 0 && analytics.duration_contraction_count === undefined) {
+    if (durationContractions === 0 && analytics.duration_compliance_rate === undefined) {
       durationContractions = analytics.contractions.filter((c: any) => c.meets_duration === true).length;
     }
   }

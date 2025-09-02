@@ -137,7 +137,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   }, [chartData]);
 
   const finalDisplayDataKeys = useMemo(() => {
-    });
 
     if (viewMode === 'comparison') {
       // For comparison mode, we need to find the correct data keys based on current signal type
@@ -251,9 +250,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
     
     // Extract base channel names from current display keys
     const baseChannels = finalDisplayDataKeys.map(key => key.split(' ')[0]);
-    
-      chartDataKeys: chartData?.[0] ? Object.keys(chartData[0]) : []
-    });
     
     baseChannels.forEach(baseChannel => {
       // Find Raw signal
@@ -421,14 +417,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             
             {(() => {
               const shouldRenderOverlay = plotMode === 'raw_with_rms' && overlayDataKeys && hasValidOverlayData;
-                plotMode, 
-                isRawWithRms: plotMode === 'raw_with_rms',
-                overlayDataKeys: !!overlayDataKeys, 
-                hasValidOverlayData, 
-                shouldRenderOverlay,
-                overlayAvailable,
-                effectivePlotMode
-              });
               return shouldRenderOverlay;
             })() ? (
               // Render overlay mode with Raw on left axis and RMS on right axis
@@ -534,11 +522,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   }
                 });
                 
-                  baseChannels: Array.from(baseChannelNames),
-                  thresholdCount: thresholdLines.length,
-                  thresholds: thresholdLines.map(t => ({ channel: t.baseChannelName, value: t.threshold }))
-                });
-                
                 return thresholdLines.map((item, index) => (
                   <ReferenceLine 
                     key={`mvc-comparison-${item.baseChannelName}`}
@@ -586,12 +569,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             )}
 
             {/* Debug: Log when rendering contraction visualizations */}
-            {contractionAreas.length > 0 && (() => {
-                count: contractionAreas.length, 
-                sample: contractionAreas.slice(0, 2).map(a => ({isGood: a.isGood, meetsMvc: a.meetsMvc, meetsDuration: a.meetsDuration}))
-              });
-              return null;
-            })()}
             
             {/* Contraction areas - colorize EMG lines between two abscissas with enhanced quality colors */}
             {showContractionAreas && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 &&
@@ -600,8 +577,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 // Three quality categories: Good (green), Adequate (yellow), Poor (red)
                 if (area.isGood) {
                   const show = showGoodContractions;
-                    category: 'good', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -613,17 +588,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Show adequate contractions when either good OR poor contractions are enabled
                   // This ensures yellow contractions are visible in the legacy 2-toggle system
                   const show = showGoodContractions || showPoorContractions;
-                    category: 'adequate', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show,
-                    reason: area.meetsMvc && !area.meetsDuration ? 'mvc-only' : 'duration-only'
-                  });
                   return show;
                 }
                 
                 if (isPoor) {
                   // Only show poor contractions when explicitly enabled
                   const show = showPoorContractions;
-                    category: 'poor', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -633,23 +603,11 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 return false;
               })
               .map((area, index) => {
-                  x1: area.startTime,
-                  x2: area.endTime,
-                  isGood: area.isGood,
-                  meetsMvc: area.meetsMvc,
-                  meetsDuration: area.meetsDuration,
-                  channel: area.channel
-                });
                 
                 const { fill: fillColor, stroke: strokeColor } = getContractionAreaColors({
                   isGood: area.isGood,
                   meetsMvc: area.meetsMvc,
                   meetsDuration: area.meetsDuration
-                });
-                
-                  flags: { isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration },
-                  colors: { fill: fillColor, stroke: strokeColor },
-                  channel: area.channel
                 });
                 
                 const stableAreaKey = `area-${area.channel}-${area.startTime}-${area.endTime}`;
@@ -675,8 +633,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 // Three quality categories: Good (green), Adequate (yellow), Poor (red)
                 if (area.isGood) {
                   const show = showGoodContractions;
-                    category: 'good', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -688,17 +644,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Show adequate contractions when either good OR poor contractions are enabled
                   // This ensures yellow contractions are visible in the legacy 2-toggle system
                   const show = showGoodContractions || showPoorContractions;
-                    category: 'adequate', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show,
-                    reason: area.meetsMvc && !area.meetsDuration ? 'mvc-only' : 'duration-only'
-                  });
                   return show;
                 }
                 
                 if (isPoor) {
                   // Only show poor contractions when explicitly enabled
                   const show = showPoorContractions;
-                    category: 'poor', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -708,12 +659,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 return false;
               })
               .map((area, index) => {
-                  x: area.peakTime,
-                  y: area.maxAmplitude,
-                  isGood: area.isGood,
-                  meetsMvc: area.meetsMvc,
-                  meetsDuration: area.meetsDuration
-                });
                 
                 const { fill: fillColor, stroke: strokeColor, symbol } = getContractionDotStyle({
                   isGood: area.isGood,

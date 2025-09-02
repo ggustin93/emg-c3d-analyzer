@@ -76,7 +76,7 @@ const EMGChartTestHarness: React.FC = () => {
       mpf: 85.2,
       mdf: 78.4,
       fatigue_index_fi_nsm5: 0.12,
-      mvc_threshold_actual_value: 0.5, // MVC threshold
+      mvc75_threshold: 0.5, // MVC threshold
       duration_threshold_actual_value: 2000, // Duration threshold in ms
       contractions: [
         // Perfect contraction (green)

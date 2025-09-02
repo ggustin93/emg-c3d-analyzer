@@ -94,7 +94,7 @@ const ContractionDataInspector: React.FC<ContractionDataInspectorProps> = ({
                 {/* Channel Thresholds */}
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div className="bg-blue-50 p-2 rounded">
-                    <strong>MVC Threshold:</strong> {channelData.mvc_threshold_actual_value ?? 'N/A'}
+                    <strong>MVC Threshold:</strong> {channelData.mvc75_threshold ?? 'N/A'}
                   </div>
                   <div className="bg-blue-50 p-2 rounded">
                     <strong>Duration Threshold:</strong> {channelData.duration_threshold_actual_value ?? 'N/A'}ms
@@ -104,7 +104,7 @@ const ContractionDataInspector: React.FC<ContractionDataInspectorProps> = ({
                 {/* Contractions */}
                 {channelData.contractions?.map((contraction, idx) => {
                   // Calculate frontend values for comparison
-                  const mvcThreshold = channelData.mvc_threshold_actual_value;
+                  const mvcThreshold = channelData.mvc75_threshold;
                   const durationThreshold = channelData.duration_threshold_actual_value ?? defaultDurationThreshold;
                   
                   const frontendMeetsMvc = mvcThreshold !== null && mvcThreshold !== undefined && contraction.max_amplitude >= mvcThreshold;

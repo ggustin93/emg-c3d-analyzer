@@ -81,7 +81,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   const handleDevelopmentBypass = () => {
-    console.warn('Development bypass: Authentication skipped');
     // Set a flag in sessionStorage to indicate development bypass
     sessionStorage.setItem('emg_analyzer_dev_bypass', 'true');
     onLoginSuccess?.();

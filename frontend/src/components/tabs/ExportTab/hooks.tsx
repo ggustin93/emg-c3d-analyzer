@@ -401,8 +401,8 @@ export function useExportData(
 
             // Contraction detection context from backend analytics only
             const cd: any = {};
-            if (channelAnalytics?.mvc_threshold_actual_value != null) {
-              cd.mvc_threshold_actual_value = channelAnalytics.mvc_threshold_actual_value;
+            if (channelAnalytics?.mvc75_threshold != null) {
+              cd.mvc75_threshold = channelAnalytics.mvc75_threshold;
             }
             if (channelAnalytics?.duration_threshold_actual_value != null) {
               cd.duration_threshold_actual_value = channelAnalytics.duration_threshold_actual_value;

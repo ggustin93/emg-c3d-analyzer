@@ -18,7 +18,7 @@ function TestComponent({ analysisResult }: { analysisResult: any }) {
 describe('useLiveAnalytics - debounce and cancel', () => {
   const initialAnalysis = {
     analytics: {
-      CH1: { contractions: [], mvc_threshold_actual_value: null, duration_threshold_actual_value: null }
+      CH1: { contractions: [], mvc75_threshold: null, duration_threshold_actual_value: null }
     },
     metadata: { session_parameters_used: {} }
   } as any;

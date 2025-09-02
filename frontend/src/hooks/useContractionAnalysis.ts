@@ -73,12 +73,6 @@ export function useContractionAnalysis({
       ? Math.round(effectiveDurations.reduce((a, b) => a + b, 0) / effectiveDurations.length)
       : (sessionParams.contraction_duration_threshold ?? EMG_CHART_CONFIG.DEFAULT_DURATION_THRESHOLD_MS);
     
-      defaultDurationThreshold,
-      sessionParams_contraction_duration_threshold: sessionParams.contraction_duration_threshold,
-      sessionParams_session_duration_thresholds_per_muscle: sessionParams.session_duration_thresholds_per_muscle,
-      unit: 'milliseconds'
-    });
-    
     let goodCount = 0;        // Meets both MVC and duration
     let mvcOnlyCount = 0;     // Meets MVC only (but not duration)
     let durationOnlyCount = 0; // Meets duration only (but not MVC)
@@ -90,7 +84,7 @@ export function useContractionAnalysis({
       const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
       if (channelDisplayed && channelData.contractions) {
         // Check if we have quality criteria data
-        const channelHasMvcThreshold = channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined;
+        const channelHasMvcThreshold = channelData.mvc75_threshold !== null && channelData.mvc75_threshold !== undefined;
         const channelHasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
 
         if (channelHasMvcThreshold) {
@@ -101,16 +95,11 @@ export function useContractionAnalysis({
         }
         
         // Calculate good contractions using the same logic as backend processor.py
-        const mvcThreshold = channelData.mvc_threshold_actual_value;
+        const mvcThreshold = channelData.mvc75_threshold;
         const channelDurationActual = channelData.duration_threshold_actual_value ?? null;
         
          // Use centralized duration threshold logic with proper backend priority
          const durationThreshold = getEffectiveDurationThreshold(channelName, sessionParams, channelData);
-        
-          perMuscleThresholdSeconds: sessionParams.session_duration_thresholds_per_muscle?.[channelName],
-          finalThresholdMs: durationThreshold,
-          defaultThresholdMs: defaultDurationThreshold
-        });
         
         channelData.contractions.forEach((contraction, idx) => {
           // SINGLE SOURCE OF TRUTH: Backend analytics flags are authoritative
@@ -131,25 +120,6 @@ export function useContractionAnalysis({
             : (meetsMvc && meetsDuration);
           // Visualization alignment with metrics definitions: only GREEN when both criteria are defined and met
           const visualIsGood = (channelHasMvcThreshold && channelHasDurationThreshold) ? (meetsMvc && meetsDuration) : false;
-          
-            duration_ms: contraction.duration_ms,
-            max_amplitude: contraction.max_amplitude,
-            durationThreshold,
-            mvcThreshold,
-            backend: {
-              is_good: contraction.is_good,
-              meets_mvc: contraction.meets_mvc,
-              meets_duration: contraction.meets_duration,
-              hasValues: { mvc: hasBackendMvc, duration: hasBackendDuration, good: hasBackendGood }
-            },
-            final: {
-              meetsMvc,
-              meetsDuration,
-              isGood: visualIsGood,
-              source: hasBackendGood ? 'backend' : 'frontend-calculated',
-              rawIsGood
-            }
-          });
           
           // Only count contractions that are currently visible
           if ((visualIsGood && showGoodContractions) || (!visualIsGood && showPoorContractions)) {
@@ -196,27 +166,14 @@ export function useContractionAnalysis({
       max: Math.max(...chartData.map(d => d.time))
     } : { min: 0, max: 0 };
     
-      defaultDurationThreshold,
-      sessionParams_contraction_duration_threshold: sessionParams.contraction_duration_threshold,
-      sessionParams_session_duration_thresholds_per_muscle: sessionParams.session_duration_thresholds_per_muscle,
-      unit: 'milliseconds',
-      timeRange,
-      chartDataPoints: chartData.length
-    });
-    
     Object.entries(analytics).forEach(([channelName, channelData]) => {
       const channelDisplayed = finalDisplayDataKeys.some(key => key.startsWith(channelName));
       
       // 🔍 COMPARISON MODE DEBUG: Log channel processing
-        channelDisplayed,
-        finalDisplayDataKeys,
-        contractionsCount: channelData.contractions?.length || 0,
-        mode: finalDisplayDataKeys.length > 1 ? 'comparison' : 'single'
-      });
       
       if (channelDisplayed && channelData.contractions) {
-        const mvcThreshold = channelData.mvc_threshold_actual_value;
-        const channelHasMvcThreshold = channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined;
+        const mvcThreshold = channelData.mvc75_threshold;
+        const channelHasMvcThreshold = channelData.mvc75_threshold !== null && channelData.mvc75_threshold !== undefined;
         const channelHasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
         
         // Use centralized duration threshold logic with proper backend priority
@@ -264,26 +221,6 @@ export function useContractionAnalysis({
               }
             }
             
-              duration_ms: contraction.duration_ms,
-              max_amplitude: contraction.max_amplitude,
-              durationThreshold,
-              mvcThreshold,
-              backend: {
-                is_good: contraction.is_good,
-                meets_mvc: contraction.meets_mvc,
-                meets_duration: contraction.meets_duration
-              },
-              final: {
-                meetsMvc,
-                meetsDuration,
-                isGood: visualIsGood,
-                source: hasBackendGood ? 'backend' : 'frontend-calculated',
-                rawIsGood
-              },
-              visualization: { startTime, endTime },
-              expectedColor: visualIsGood ? 'GREEN' : ((meetsMvc && !meetsDuration) || (!meetsMvc && meetsDuration)) ? 'YELLOW' : 'RED'
-            });
-            
             areas.push({
               startTime,
               endTime,
@@ -302,15 +239,6 @@ export function useContractionAnalysis({
           }
         });
       }
-    });
-    
-      areasCount: areas.length,
-      chartTimeRange: timeRange,
-      chartDataPoints: chartData.length,
-      goodCount: areas.filter(a => a.isGood).length,
-      mvcOnlyCount: areas.filter(a => a.meetsMvc && !a.meetsDuration).length,
-      durationOnlyCount: areas.filter(a => !a.meetsMvc && a.meetsDuration).length,
-      poorCount: areas.filter(a => !a.meetsMvc && !a.meetsDuration).length
     });
     
     // Replacing the custom timer function with a standard log message.

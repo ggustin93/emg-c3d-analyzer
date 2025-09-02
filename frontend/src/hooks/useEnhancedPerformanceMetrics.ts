@@ -121,7 +121,7 @@ const calculateMuscleMetrics = (
       return c.meets_mvc === true;
     }
     // Fallback calculation only if backend flag is missing
-    const mvcThresholdValue = channelData.mvc_threshold_actual_value || 0;
+    const mvcThresholdValue = channelData.mvc75_threshold || 0;
     const dynamicMvcThreshold = mvcThresholdValue * (mvcThreshold / 100);
     return c.max_amplitude >= dynamicMvcThreshold;
   }).length;

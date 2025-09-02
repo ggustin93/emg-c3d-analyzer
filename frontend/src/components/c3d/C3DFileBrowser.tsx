@@ -89,17 +89,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       upload_date: false  // Default to false as requested
     };
   });
-  
-  // 🔍 DEBUG: Log files when they change
-    filesCount: files.length,
-    sampleFiles: files.slice(0, 2).map(f => ({
-      id: f.id,
-      name: f.name,
-      created_at: f.created_at,
-      created_at_type: typeof f.created_at,
-      hasCreatedAt: !!f.created_at
-    }))
-  });
 
   // Load session data for all files
   const loadSessionData = useCallback(async (fileList: C3DFile[]) => {

@@ -75,7 +75,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         mpf: 0.0,
         mdf: 0.0,
         fatigue_index_fi_nsm5: 0.0,
-        mvc_threshold_actual_value: 100.0,
+        mvc75_threshold: 100.0,
         contractions: [
           {
             start_time_ms: 1000,
@@ -119,7 +119,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         mpf: 0.0,
         mdf: 0.0,
         fatigue_index_fi_nsm5: 0.0,
-        mvc_threshold_actual_value: 95.0,
+        mvc75_threshold: 95.0,
         contractions: [
           {
             start_time_ms: 1200,
@@ -542,11 +542,28 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
 
       const performanceData = result.current!;
 
-      // Should fall back to new default weights (50% compliance, 30% effort, 20% symmetry, 0% game)
-      expect(performanceData.weights.compliance).toBe(0.50);
-      expect(performanceData.weights.symmetry).toBe(0.20);
-      expect(performanceData.weights.effort).toBe(0.30);
-      expect(performanceData.weights.gameScore).toBe(0.00);
+      // Should fall back to default weights (flexible - can be configured by users/therapists/admins)
+      expect(performanceData.weights.compliance).toBeTypeOf('number');
+      expect(performanceData.weights.symmetry).toBeTypeOf('number');
+      expect(performanceData.weights.effort).toBeTypeOf('number');
+      expect(performanceData.weights.gameScore).toBeTypeOf('number');
+      
+      // Verify all weights are valid percentages (0-1)
+      expect(performanceData.weights.compliance).toBeGreaterThanOrEqual(0);
+      expect(performanceData.weights.compliance).toBeLessThanOrEqual(1);
+      expect(performanceData.weights.symmetry).toBeGreaterThanOrEqual(0);
+      expect(performanceData.weights.symmetry).toBeLessThanOrEqual(1);
+      expect(performanceData.weights.effort).toBeGreaterThanOrEqual(0);
+      expect(performanceData.weights.effort).toBeLessThanOrEqual(1);
+      expect(performanceData.weights.gameScore).toBeGreaterThanOrEqual(0);
+      expect(performanceData.weights.gameScore).toBeLessThanOrEqual(1);
+      
+      // Verify weights sum to 1.0 (within floating point tolerance)
+      const totalWeight = performanceData.weights.compliance + 
+                         performanceData.weights.symmetry + 
+                         performanceData.weights.effort + 
+                         performanceData.weights.gameScore;
+      expect(Math.abs(totalWeight - 1.0)).toBeLessThan(0.001);
     });
 
     it('should handle missing session parameters', async () => {

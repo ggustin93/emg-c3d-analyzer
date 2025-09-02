@@ -145,11 +145,6 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
       
       const channels = Array.from(channelSet).sort(); // Stable ordering
       
-        availableDataKeys,
-        baseChannels: channels,
-        count: channels.length
-      });
-      
       return channels;
       
     } catch (error) {
@@ -205,10 +200,10 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
           channelAnalytics = found ? found[1] : null;
         }
         
-        // Use mvc_threshold_actual_value to reverse-calculate MVC base value
-        if (channelAnalytics?.mvc_threshold_actual_value && channelAnalytics.mvc_threshold_actual_value > 0.00001) {
+        // Use mvc75_threshold to reverse-calculate MVC base value
+        if (channelAnalytics?.mvc75_threshold && channelAnalytics.mvc75_threshold > 0.00001) {
           const percentage = getPerChannelMvcPercentage(baseChannel, sessionParams);
-          const threshold = channelAnalytics.mvc_threshold_actual_value;
+          const threshold = channelAnalytics.mvc75_threshold;
           const baseValue = threshold / (percentage / 100.0); // Reverse-calculate base MVC
           
           return {
@@ -314,16 +309,6 @@ export function useUnifiedThresholds(params: UseUnifiedThresholdsParams): UseUni
           
           thresholds.push(thresholdData);
         }
-      });
-      
-        baseChannels,
-        thresholdCount: thresholds.length,
-        thresholds: thresholds.map(t => ({
-          channel: t.channel,
-          mvcThreshold: t.mvcThreshold,
-          source: t.source,
-          confidence: t.confidence
-        }))
       });
       
       return thresholds;

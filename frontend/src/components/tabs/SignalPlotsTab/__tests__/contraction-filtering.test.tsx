@@ -27,7 +27,7 @@ describe('useContractionAnalysis - duration threshold priority', () => {
         { duration_ms: 1800, max_amplitude: 0.001 },
         { duration_ms: 2200, max_amplitude: 0.001 }
       ],
-      mvc_threshold_actual_value: 0.0005,
+      mvc75_threshold: 0.0005,
       duration_threshold_actual_value: 2500
     }
   };

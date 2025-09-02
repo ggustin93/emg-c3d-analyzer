@@ -218,21 +218,11 @@ const MusclePerformanceCard: React.FC<MusclePerformanceCardProps> = ({
   } else {
     // Fallback to pre-calculated longContractions, but log a warning
     durationCompliantCount = longContractions;
-    console.log(`⚠️ Warning: Using pre-calculated longContractions (${longContractions}) for ${channel} - may not match actualDurationThreshold (${actualDurationThreshold}ms)`);
   }
   
   const durationQualityPercentage = totalContractions > 0 ? Math.round((durationCompliantCount / totalContractions) * 100) : 0;
   const durationQualityColors = useScoreColors(durationQualityPercentage);
   
-  console.log(`🎯 MusclePerformanceCard Duration Quality for ${channel}:`, {
-    totalContractions,
-    durationCompliantCount,
-    durationQualityPercentage,
-    actualDurationThreshold,
-    longContractions,
-    shortContractions,
-    hasRawContractions: contractions && contractions.length > 0
-  });
 
   // Get colors for the overall score
   const scoreColors = useScoreColors(totalScore);
