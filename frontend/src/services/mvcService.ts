@@ -134,24 +134,19 @@ export class MVCService {
     const mvcResults: Record<string, MVCEstimationResult> = {};
 
     for (const [channel, analytics] of Object.entries(analysisResult.analytics)) {
-        mvc_threshold_actual_value: analytics.mvc_threshold_actual_value,
-        mvc_estimation_method: analytics.mvc_estimation_method,
-        hasThreshold: analytics.mvc_threshold_actual_value !== null && analytics.mvc_threshold_actual_value !== undefined,
-        hasMethod: !!analytics.mvc_estimation_method
-      });
 
       // Check for MVC threshold data with method
-      if (analytics.mvc_threshold_actual_value !== null && 
-          analytics.mvc_threshold_actual_value !== undefined &&
+      if (analytics.mvc75_threshold !== null && 
+          analytics.mvc75_threshold !== undefined &&
           analytics.mvc_estimation_method) {
         
         // Calculate original MVC value from threshold - use 75% as default
         const thresholdPercentage = 75; // Standard threshold percentage
-        const mvcValue = analytics.mvc_threshold_actual_value / (thresholdPercentage / 100);
+        const mvcValue = analytics.mvc75_threshold / (thresholdPercentage / 100);
 
         mvcResults[channel] = {
           mvc_value: mvcValue,
-          threshold_value: analytics.mvc_threshold_actual_value,
+          threshold_value: analytics.mvc75_threshold,
           threshold_percentage: thresholdPercentage,
           estimation_method: analytics.mvc_estimation_method as any,
           confidence_score: 0.8, // Default confidence
