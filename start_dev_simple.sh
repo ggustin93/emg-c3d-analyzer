@@ -79,6 +79,7 @@ ${BOLD}Options:${NC}
   ${GREEN}--install${NC}            Install dependencies first
   ${GREEN}--test${NC}               Run tests instead of starting services
   ${GREEN}--kill${NC}               Kill any running servers on ports $BACKEND_PORT, $FRONTEND_PORT, and $REDIS_PORT
+  ${GREEN}--diagnose${NC}           Run network diagnostics for troubleshooting
   ${GREEN}-h, --help${NC}           Show this help message
 
 ${BOLD}Requirements:${NC}
@@ -94,6 +95,7 @@ ${BOLD}Examples:${NC}
   ./start_dev_simple.sh --webhook        # Start with ngrok webhook tunnel
   ./start_dev_simple.sh --test           # Run tests
   ./start_dev_simple.sh --kill           # Kill running servers
+  ./start_dev_simple.sh --diagnose       # Network troubleshooting
 
 EOF
 }
@@ -569,10 +571,41 @@ wait_for_services() {
     if [[ -n "$BACKEND_PID" ]]; then
         local attempts=0
         local max_attempts=30
+        local health_url="http://localhost:$BACKEND_PORT/health"
+        
+        log_info "Checking backend health at $health_url..."
+        
         while [ $attempts -lt $max_attempts ]; do
-            if curl -s http://localhost:$BACKEND_PORT/health >/dev/null 2>&1; then
+            # Enhanced health check with detailed response logging
+            local curl_response=$(curl -s -w "HTTPSTATUS:%{http_code};TIME:%{time_total};SIZE:%{size_download}" "$health_url" 2>&1)
+            local curl_exit_code=$?
+            
+            if [ $curl_exit_code -eq 0 ] && [[ $curl_response == *"HTTPSTATUS:200"* ]]; then
                 log_success "Backend is ready and healthy at http://localhost:$BACKEND_PORT"
+                # Extract and display response details
+                local response_body=$(echo "$curl_response" | sed 's/HTTPSTATUS:.*$//')
+                local http_status=$(echo "$curl_response" | grep -o "HTTPSTATUS:[0-9]*" | cut -d: -f2)
+                local response_time=$(echo "$curl_response" | grep -o "TIME:[0-9.]*" | cut -d: -f2)
+                log_info "Health check details: HTTP $http_status in ${response_time}s"
                 break
+            else
+                # Detailed error logging for debugging
+                local error_msg=""
+                case $curl_exit_code in
+                    0)  error_msg="HTTP error: $curl_response" ;;
+                    6)  error_msg="Could not resolve host (DNS/network issue)" ;;
+                    7)  error_msg="Failed to connect (connection refused/port closed)" ;;
+                    28) error_msg="Operation timeout" ;;
+                    52) error_msg="Empty reply from server" ;;
+                    56) error_msg="Failure with receiving network data" ;;
+                    *)  error_msg="curl error $curl_exit_code: $curl_response" ;;
+                esac
+                
+                if [ $attempts -eq 0 ]; then
+                    log_info "First attempt failed: $error_msg"
+                elif [ $((attempts % 5)) -eq 0 ]; then
+                    log_info "Attempt $((attempts + 1))/$max_attempts: $error_msg"
+                fi
             fi
             
             # Check if backend process is still alive
@@ -594,8 +627,23 @@ wait_for_services() {
         done
         
         if [ $attempts -eq $max_attempts ]; then
-            log_warning "Backend health check timed out, but process is running"
-            log_warning "Check logs if you experience issues: logs/backend_dev.log"
+            log_warning "Backend health check timed out after ${max_attempts}s, but process is running (PID: $BACKEND_PID)"
+            log_warning "This might indicate slow startup or networking issues"
+            log_warning "Check logs: logs/backend_dev.log"
+            
+            # Additional debugging info
+            log_info "Debugging network connectivity..."
+            if command -v netstat >/dev/null 2>&1; then
+                log_info "Port $BACKEND_PORT status:"
+                netstat -an | grep ":$BACKEND_PORT " | head -5 | sed "s/^/    ${BLUE}| ${NC}/"
+            fi
+            
+            # Check if we can reach localhost at all
+            if ping -c 1 localhost >/dev/null 2>&1; then
+                log_info "localhost connectivity: ✅ OK"
+            else
+                log_warning "localhost connectivity: ❌ FAILED"
+            fi
         fi
     fi
     
@@ -603,6 +651,137 @@ wait_for_services() {
     if [[ -n "$FRONTEND_PID" ]]; then
         log_success "Frontend should be ready at ${FRONTEND_URL:-http://localhost:$FRONTEND_PORT}"
     fi
+}
+
+# Enhanced network diagnostics function
+diagnose_network() {
+    log_header "Network Diagnostics"
+    
+    local backend_url="http://localhost:$BACKEND_PORT"
+    local frontend_url="http://localhost:$FRONTEND_PORT"
+    local health_url="$backend_url/health"
+    local upload_url="$backend_url/upload"
+    
+    echo -e "${BOLD}Target URLs:${NC}"
+    echo -e "  Backend:  $backend_url"
+    echo -e "  Frontend: $frontend_url"
+    echo -e "  Health:   $health_url"
+    echo -e "  Upload:   $upload_url"
+    echo ""
+    
+    # Test basic connectivity
+    echo -e "${BOLD}🔍 Basic Connectivity Tests:${NC}"
+    
+    # Test localhost resolution
+    if ping -c 1 localhost >/dev/null 2>&1; then
+        echo -e "  ✅ localhost resolution: OK"
+    else
+        echo -e "  ❌ localhost resolution: FAILED"
+    fi
+    
+    # Test port availability
+    if command -v nc >/dev/null 2>&1; then
+        echo -e "${BOLD}🔍 Port Connectivity Tests:${NC}"
+        
+        if nc -z localhost $BACKEND_PORT 2>/dev/null; then
+            echo -e "  ✅ Backend port $BACKEND_PORT: Open"
+        else
+            echo -e "  ❌ Backend port $BACKEND_PORT: Closed/Unreachable"
+        fi
+        
+        if nc -z localhost $FRONTEND_PORT 2>/dev/null; then
+            echo -e "  ✅ Frontend port $FRONTEND_PORT: Open"
+        else
+            echo -e "  ❌ Frontend port $FRONTEND_PORT: Closed/Unreachable"
+        fi
+    fi
+    
+    # Test HTTP endpoints
+    echo -e "${BOLD}🔍 HTTP Endpoint Tests:${NC}"
+    
+    # Health endpoint test
+    local health_response=$(curl -s -w "STATUS:%{http_code};TIME:%{time_total};SIZE:%{size_download}" "$health_url" 2>&1)
+    local health_exit_code=$?
+    
+    if [ $health_exit_code -eq 0 ] && [[ $health_response == *"STATUS:200"* ]]; then
+        local response_time=$(echo "$health_response" | grep -o "TIME:[0-9.]*" | cut -d: -f2)
+        echo -e "  ✅ Health endpoint: OK (${response_time}s)"
+        
+        # Show response body
+        local response_body=$(echo "$health_response" | sed 's/STATUS:.*$//')
+        if [[ -n "$response_body" ]]; then
+            echo -e "     Response: $response_body"
+        fi
+    else
+        echo -e "  ❌ Health endpoint: FAILED"
+        
+        case $health_exit_code in
+            6)  echo -e "     Error: Could not resolve host" ;;
+            7)  echo -e "     Error: Failed to connect (connection refused)" ;;
+            28) echo -e "     Error: Operation timeout" ;;
+            52) echo -e "     Error: Empty reply from server" ;;
+            56) echo -e "     Error: Network receiving failure" ;;
+            *)  echo -e "     Error: curl exit code $health_exit_code" ;;
+        esac
+        
+        if [[ $health_response != *"STATUS:"* ]]; then
+            echo -e "     Details: $health_response"
+        fi
+    fi
+    
+    # Upload endpoint test (OPTIONS request to avoid CORS issues)
+    local upload_response=$(curl -s -X OPTIONS -w "STATUS:%{http_code};TIME:%{time_total}" "$upload_url" 2>&1)
+    local upload_exit_code=$?
+    
+    if [ $upload_exit_code -eq 0 ]; then
+        local status_code=$(echo "$upload_response" | grep -o "STATUS:[0-9]*" | cut -d: -f2)
+        local response_time=$(echo "$upload_response" | grep -o "TIME:[0-9.]*" | cut -d: -f2)
+        
+        case $status_code in
+            200|204|405) echo -e "  ✅ Upload endpoint: Reachable (HTTP $status_code in ${response_time}s)" ;;
+            404) echo -e "  ⚠️  Upload endpoint: Not found (HTTP $status_code)" ;;
+            *)   echo -e "  ⚠️  Upload endpoint: HTTP $status_code in ${response_time}s" ;;
+        esac
+    else
+        echo -e "  ❌ Upload endpoint: Connection failed (curl exit $upload_exit_code)"
+    fi
+    
+    # Process status
+    echo -e "${BOLD}🔍 Process Status:${NC}"
+    
+    if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+        echo -e "  ✅ Backend process: Running (PID: $BACKEND_PID)"
+    else
+        echo -e "  ❌ Backend process: Not running"
+    fi
+    
+    if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+        echo -e "  ✅ Frontend process: Running (PID: $FRONTEND_PID)"
+    else
+        echo -e "  ❌ Frontend process: Not running"
+    fi
+    
+    # Show recent logs
+    echo -e "${BOLD}🔍 Recent Log Activity:${NC}"
+    
+    if [[ -f "logs/backend.error.log" ]]; then
+        local error_count=$(wc -l < "logs/backend.error.log" 2>/dev/null || echo "0")
+        if [[ "$error_count" -gt 0 ]]; then
+            echo -e "  ⚠️  Backend errors: $error_count lines in logs/backend.error.log"
+            echo -e "     Last error:"
+            tail -n 1 "logs/backend.error.log" 2>/dev/null | sed "s/^/       ${RED}| ${NC}/" || echo "       (Could not read error log)"
+        else
+            echo -e "  ✅ Backend errors: None"
+        fi
+    fi
+    
+    echo ""
+    echo -e "${BOLD}💡 Troubleshooting Tips:${NC}"
+    echo -e "  • If backend port is closed: Check if backend is starting properly"
+    echo -e "  • If connection refused: Backend may be starting up (wait 30s)"
+    echo -e "  • If DNS issues: Try 127.0.0.1 instead of localhost"
+    echo -e "  • Check logs: ${GREEN}tail -f logs/backend_dev.log${NC}"
+    echo -e "  • Check errors: ${GREEN}tail -f logs/backend.error.log${NC}"
 }
 
 show_status() {
@@ -696,6 +875,7 @@ main() {
     local INSTALL_DEPS=false
     local RUN_TESTS=false
     local KILL_ONLY=false
+    local DIAGNOSE_ONLY=false
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -708,6 +888,7 @@ main() {
             --install) INSTALL_DEPS=true ;;
             --test) RUN_TESTS=true ;;
             --kill) KILL_ONLY=true ;;
+            --diagnose) DIAGNOSE_ONLY=true ;;
             -h|--help) usage; exit 0 ;;
             *) log_error "Unknown option: $1"; usage; exit 1 ;;
         esac
@@ -727,6 +908,25 @@ main() {
     if [ "$RUN_TESTS" = true ]; then
         check_requirements
         run_tests
+        exit 0
+    fi
+    
+    # Handle diagnose-only mode
+    if [ "$DIAGNOSE_ONLY" = true ]; then
+        # Load PIDs from file if it exists to get current processes
+        if [[ -f "$PID_FILE" ]]; then
+            local pid_array=()
+            while IFS= read -r pid; do
+                pid_array+=("$pid")
+            done < "$PID_FILE"
+            
+            if [[ ${#pid_array[@]} -ge 2 ]]; then
+                BACKEND_PID=${pid_array[0]}
+                FRONTEND_PID=${pid_array[1]}
+            fi
+        fi
+        
+        diagnose_network
         exit 0
     fi
     
