@@ -124,36 +124,7 @@ class EMGDataRepository(
             self.logger.exception(f"Failed to get EMG statistics for session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get EMG statistics: {e!s}") from e
 
-    def upsert_processing_parameters(self, params_data: dict[str, Any]) -> dict[str, Any]:
-        """Insert or update processing parameters for a session.
-        Uses upsert to handle duplicate session_id gracefully.
-
-        Args:
-            params_data: Processing parameters data
-
-        Returns:
-            Dict: Inserted or updated processing parameters
-        """
-        try:
-            data = self._prepare_timestamps(params_data.copy())
-
-            # Validate session_id
-            if "session_id" in data:
-                data["session_id"] = self._validate_uuid(data["session_id"], "session_id")
-
-            result = self.client.table("processing_parameters").upsert(data).execute()
-
-            upserted_data = self._handle_supabase_response(
-                result, "upsert", "processing parameters"
-            )[0]
-
-            self.logger.info(f"✅ Upserted processing parameters for session: {data['session_id']}")
-            return upserted_data
-
-        except Exception as e:
-            error_msg = f"Failed to upsert processing parameters: {e!s}"
-            self.logger.error(error_msg, exc_info=True)
-            raise RepositoryError(error_msg) from e
+    # Processing parameters functionality removed - now stored as JSONB in emg_statistics.processing_config
 
     def upsert_c3d_technical_data(
         self, technical_data: dict[str, Any], unique_key: str = "session_id"
@@ -166,7 +137,9 @@ class EMGDataRepository(
         return {}
 
     def get_processing_parameters_by_session(self, session_id: str | UUID) -> dict[str, Any] | None:
-        """Get processing parameters for a session.
+        """DEPRECATED: Processing parameters now stored in emg_statistics.processing_config JSONB field.
+        
+        Use get_emg_statistics_by_session() and access processing_config field instead.
 
         Args:
             session_id: Session UUID

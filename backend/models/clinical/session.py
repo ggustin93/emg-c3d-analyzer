@@ -82,14 +82,14 @@ class EMGStatisticsBase(DatabaseBaseModel):
     # Contraction metrics
     total_contractions: int = Field(0, ge=0)
     good_contractions: int = Field(0, ge=0)
-    mvc_contraction_count: int = Field(0, ge=0)
-    duration_contraction_count: int = Field(0, ge=0)
+    mvc75_compliance_rate: int = Field(0, ge=0)  # renamed from mvc_contraction_count
+    duration_compliance_rate: int = Field(0, ge=0)  # renamed from duration_contraction_count
     compliance_rate: float = Field(0.0, ge=0.0, le=1.0)
 
     # MVC analysis
     mvc_value: float | None = Field(None, gt=0)
     mvc_threshold: float | None = Field(None, gt=0)
-    mvc_threshold_actual_value: float | None = None
+    mvc75_threshold: float | None = None  # renamed from mvc_threshold_actual_value
 
     # Duration analysis
     duration_threshold_actual_value: float | None = None
@@ -119,6 +119,11 @@ class EMGStatisticsBase(DatabaseBaseModel):
 
     # Quality metrics
     signal_quality_score: float | None = Field(None, ge=0.0, le=1.0)
+    
+    # New JSONB fields for detailed storage
+    contractions_detail: list[dict] | None = Field(None, description="Detailed contraction data array")
+    signal_quality_metrics: dict | None = Field(None, description="Signal quality metrics object")  
+    processing_config: dict | None = Field(None, description="Processing parameters used for analysis")
 
 
 class EMGStatisticsCreate(EMGStatisticsBase):

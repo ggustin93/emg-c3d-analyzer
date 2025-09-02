@@ -99,22 +99,23 @@ class TherapySessionRepository(
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
-    def get_therapy_session(self, session_id: str | UUID) -> dict[str, Any] | None:
-        """Get therapy session by ID.
+    def get_therapy_session(self, session_code: str) -> dict[str, Any] | None:
+        """Get therapy session by session code.
 
         Args:
-            session_id: Session UUID
+            session_code: Session code (format: P###S###)
 
         Returns:
             Optional[Dict]: Session data or None if not found
         """
         try:
-            validated_id = self._validate_uuid(session_id, "session_id")
+            if not session_code or not isinstance(session_code, str):
+                raise RepositoryError("Invalid session_code provided")
 
             result = (
                 self.client.table("therapy_sessions")
                 .select("*")
-                .eq("id", validated_id)
+                .eq("session_code", session_code)
                 .limit(1)
                 .execute()
             )
@@ -123,7 +124,7 @@ class TherapySessionRepository(
             return data[0] if data else None
 
         except Exception as e:
-            self.logger.exception(f"Failed to get therapy session {session_id}: {e!s}")
+            self.logger.exception(f"Failed to get therapy session {session_code}: {e!s}")
             raise RepositoryError(f"Failed to get therapy session: {e!s}") from e
 
     def get_session_by_file_hash(self, file_hash: str) -> dict[str, Any] | None:
@@ -155,53 +156,56 @@ class TherapySessionRepository(
             raise RepositoryError(f"Failed to get session by file hash: {e!s}") from e
 
     def update_therapy_session(
-        self, session_id: str | UUID, update_data: dict[str, Any]
+        self, session_code: str, update_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Update therapy session data.
 
         Args:
-            session_id: Session UUID
+            session_code: Session code (format: P###S###)
             update_data: Data to update
 
         Returns:
             Dict: Updated session data
         """
         try:
-            validated_id = self._validate_uuid(session_id, "session_id")
+            if not session_code or not isinstance(session_code, str):
+                raise RepositoryError("Invalid session_code provided")
+            
             update_data = self._prepare_timestamps(update_data, update=True)
 
             result = (
                 self.client.table("therapy_sessions")
                 .update(update_data)
-                .eq("id", validated_id)
+                .eq("session_code", session_code)
                 .execute()
             )
 
             updated_data = self._handle_supabase_response(result, "update", "therapy session")
 
             if not updated_data:
-                raise RepositoryError(f"Therapy session {session_id} not found for update")
+                raise RepositoryError(f"Therapy session {session_code} not found for update")
 
-            self.logger.info(f"✅ Updated therapy session: {session_id}")
+            self.logger.info(f"✅ Updated therapy session: {session_code}")
             return updated_data[0]
 
         except Exception as e:
-            error_msg = f"Failed to update therapy session {session_id}: {e!s}"
+            error_msg = f"Failed to update therapy session {session_code}: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
     def update_session_status(
-        self, session_id: str | UUID, status: str, error_message: str | None = None
+        self, session_code: str, status: str, error_message: str | None = None
     ) -> None:
         """Update session processing status.
 
         Args:
-            session_id: Session UUID
+            session_code: Session code (format: P###S###)
             status: New processing status (pending, processing, completed, failed)
             error_message: Optional error message if status is failed
         """
         try:
-            validated_id = self._validate_uuid(session_id, "session_id")
+            if not session_code or not isinstance(session_code, str):
+                raise RepositoryError("Invalid session_code provided")
 
             update_data = {"processing_status": status, "updated_at": datetime.now().isoformat()}
 
@@ -211,17 +215,47 @@ class TherapySessionRepository(
             result = (
                 self.client.table("therapy_sessions")
                 .update(update_data)
-                .eq("id", validated_id)
+                .eq("session_code", session_code)
                 .execute()
             )
 
             self._handle_supabase_response(result, "update status", "therapy session")
-            self.logger.info(f"🔄 Session {session_id} status updated to: {status}")
+            self.logger.info(f"🔄 Session {session_code} status updated to: {status}")
 
         except Exception as e:
-            error_msg = f"Failed to update session status {session_id}: {e!s}"
+            error_msg = f"Failed to update session status {session_code}: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
+    
+    def get_sessions_by_patient_code(self, patient_code: str) -> list[dict[str, Any]]:
+        """Get all sessions for a patient by patient code.
+        
+        Args:
+            patient_code: Patient code (e.g., "P039")
+            
+        Returns:
+            List of session records for the patient
+        """
+        try:
+            if not patient_code or not isinstance(patient_code, str):
+                raise RepositoryError("Invalid patient_code provided")
+            
+            # Use LIKE operator to match session codes starting with the patient code
+            # For example, P039% will match P039S001, P039S002, etc.
+            result = (
+                self.client.table("therapy_sessions")
+                .select("*")
+                .like("session_code", f"{patient_code}S%")
+                .order("session_code")
+                .execute()
+            )
+            
+            data = self._handle_supabase_response(result, "get", "sessions by patient code")
+            return data if data else []
+            
+        except Exception as e:
+            self.logger.exception(f"Failed to get sessions for patient {patient_code}: {e!s}")
+            raise RepositoryError(f"Failed to get sessions by patient code: {e!s}") from e
 
     def get_sessions_by_patient(
         self, patient_id: str | UUID, limit: int | None = None

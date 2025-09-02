@@ -11,7 +11,7 @@ Therapy Session Processor - Workflow Orchestrator.
 - Create therapy session database records
 - Download C3D files from Supabase Storage
 - Orchestrate EMG analysis via c3d_processor.py
-- Populate ALL related database tables (emg_statistics with processing_config JSONB, etc.)
+- Populate ALL related database tables (emg_statistics, processing_parameters, etc.)
 - Update session status and analytics cache
 - Extract and store session timestamps (C3D TIME field)
 
@@ -70,8 +70,6 @@ from config import (
     RMS_OVERLAP_PERCENTAGE,
     # Session Defaults (unified development & C3D metadata structure)
     SessionDefaults,
-    # File processing behavior
-    ENABLE_FILE_HASH_DEDUPLICATION,
 )
 
 from services.clinical.performance_scoring_service import (
@@ -107,7 +105,7 @@ class TherapySessionProcessor:
     Manages the complete lifecycle:
     1. Create therapy_sessions record
     2. Process C3D file
-    3. Populate related tables (emg_statistics with embedded processing config, etc.)
+    3. Populate related tables (emg_statistics, processing_parameters, etc.)
     4. Calculate performance scores
     5. Update session with results
     """
@@ -140,9 +138,8 @@ class TherapySessionProcessor:
     ) -> str:
         """Creates a new therapy session record, ensuring data integrity.
 
-        This method optionally generates a unique file hash to prevent duplicate session
-        entries for the same C3D file, making the process conditionally idempotent
-        based on the ENABLE_FILE_HASH_DEDUPLICATION configuration.
+        This method generates a unique file hash to prevent duplicate session
+        entries for the same C3D file, making the process idempotent.
 
         Args:
             file_path: Storage path to the C3D file (e.g., "bucket/file.c3d").
@@ -163,24 +160,15 @@ class TherapySessionProcessor:
                 file_path, file_metadata, patient_id, therapist_id
             )
 
-            file_hash = None
+            # Generate a unique hash of the file content for deduplication.
+            # This makes session creation idempotent.
+            file_hash = await self._calculate_file_hash_from_path(file_path)
 
-            # Conditional idempotency: Check for duplicates only if enabled
-            if ENABLE_FILE_HASH_DEDUPLICATION:
-                # Generate a unique hash of the file content for deduplication.
-                # This makes session creation idempotent.
-                file_hash = await self._calculate_file_hash_from_path(file_path)
-
-                # Check for an existing session to avoid reprocessing the same file.
-                existing = await self._find_existing_session(file_hash)
-                if existing:
-                    logger.info(f"♻️ Found existing session: {existing.get('session_code', existing.get('id'))}")
-                    return existing.get("session_code", str(existing["id"]))
-            else:
-                # When deduplication is disabled, generate a simple hash for storage
-                # (still needed for database constraint, but won't prevent duplicates)
-                file_hash = hashlib.sha256(f"{file_path}_{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()
-                logger.info("📄 File hash deduplication disabled - allowing duplicate processing")
+            # Check for an existing session to avoid reprocessing the same file.
+            existing = await self._find_existing_session(file_hash)
+            if existing:
+                logger.info(f"♻️ Found existing session: {existing.get('session_code', existing.get('id'))}")
+                return existing.get("session_code", str(existing["id"]))
 
             # Generate timestamps once for consistency
             timestamp = datetime.now(timezone.utc).isoformat()
@@ -208,15 +196,12 @@ class TherapySessionProcessor:
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "game_metadata": {},
-                # NOTE: scoring_config_id is automatically set by database trigger
-                # It copies from patient's current_scoring_config_id or uses global default
-                # This ensures immutable audit trail for each session's scoring algorithm
+                # REMOVED: analytics_cache (migrated to Redis for ~100x performance)
             }
 
             # Use repository pattern for domain separation
             session = self.session_repo.create_therapy_session(session_data)
-            logger.info(f"📊 Session {session_code} created with scoring_config: {session.get('scoring_config_id', 'default')}")
-            return session_code  # Return the session_code we already have
+            return session["session_code"]
 
         except Exception as e:
             logger.error(f"Failed to create session: {e!s}", exc_info=True)
@@ -413,7 +398,7 @@ class TherapySessionProcessor:
 
     # Session Configuration Methods
     async def _prepare_session_config(
-        self, session_code: str
+        self, session_id: str
     ) -> tuple[dict | None, str | None, float]:
         """Fetches all necessary configuration for a processing session.
 
@@ -425,9 +410,9 @@ class TherapySessionProcessor:
             A tuple containing the session info dictionary, patient ID, and
             the duration threshold in milliseconds.
         """
-        session_info = await self.get_session_status(session_code)
+        session_info = await self.get_session_status(session_id)
         if not session_info:
-            raise SessionNotFoundError(f"Session not found: {session_code}")
+            raise SessionNotFoundError(f"Session not found: {session_id}")
 
         patient_id = session_info.get("patient_id")
         duration_threshold = await self._get_patient_duration_threshold(patient_id)
@@ -435,16 +420,9 @@ class TherapySessionProcessor:
         return session_info, patient_id, duration_threshold
 
     async def _process_file_with_cleanup(
-        self, session_code: str, bucket: str, object_path: str, duration_threshold: float
+        self, session_id: str, bucket: str, object_path: str, duration_threshold: float
     ) -> dict[str, Any]:
         """Process C3D file with proper resource cleanup."""
-        # Get session record to obtain the UUID
-        session_record = self.session_repo.get_therapy_session(session_code)
-        if not session_record:
-            raise SessionNotFoundError(f"Session not found: {session_code}")
-        
-        session_uuid = session_record["id"]  # Get the UUID for foreign key references
-        
         # Download C3D file
         file_data = await self._download_file(bucket, object_path)
 
@@ -465,10 +443,9 @@ class TherapySessionProcessor:
                 include_signals=False,  # ⚡ 90% memory reduction for webhook processing
             )
 
-            # Populate database tables (pass both session_code and session_uuid)
+            # Populate database tables
             await self._populate_database_tables(
                 session_code=session_code,
-                session_uuid=session_uuid,
                 processing_result=result,
                 file_data=file_data,
                 processing_opts=processing_opts,
@@ -476,9 +453,9 @@ class TherapySessionProcessor:
             )
 
             # Cache analytics in Redis for high-performance retrieval
-            await self._cache_session_analytics(session_code, result)
+            await self._cache_session_analytics(session_id, result)
             # Update session metadata in database
-            await self._update_session_metadata(session_code, result)
+            await self._update_session_metadata(session_id, result)
 
             return {
                 "success": True,
@@ -565,9 +542,9 @@ class TherapySessionProcessor:
             profile = self.patient_repo.get_patient_profile(patient_id)
 
             if profile:
-                # Check for per-channel duration targets (with new naming)
-                duration_ch1 = profile.get("current_duration_ch1_seconds")
-                duration_ch2 = profile.get("current_duration_ch2_seconds")
+                # Check for per-channel duration targets
+                duration_ch1 = profile.get("current_duration_ch1")
+                duration_ch2 = profile.get("current_duration_ch2")
                 
                 # Also check for legacy field as fallback
                 if duration_ch1 is None and duration_ch2 is None:
@@ -679,8 +656,7 @@ class TherapySessionProcessor:
 
     async def _populate_database_tables(
         self,
-        session_code: str,
-        session_uuid: str,
+        session_id: str,
         processing_result: dict[str, Any],
         file_data: bytes,
         processing_opts: ProcessingOptions,
@@ -701,56 +677,50 @@ class TherapySessionProcessor:
 
         # Validate required data
         if not metadata:
-            raise ValueError(f"No metadata found in processing result for session {session_code}")
+            raise ValueError(f"No metadata found in processing result for session {session_id}")
         if not analytics:
-            raise ValueError(f"No analytics found in processing result for session {session_code}")
+            raise ValueError(f"No analytics found in processing result for session {session_id}")
 
         try:
-            # Build processing config (now stored in EMG statistics instead of separate table)
-            processing_config = await self._populate_processing_parameters(session_uuid, metadata, processing_opts)
-            
-            # Populate EMG statistics with processing config
+            # Populate tables with optimized order for performance
+            await self._populate_processing_parameters(session_id, metadata, processing_opts)
             await self._populate_emg_statistics(
-                session_uuid, analytics, session_params, processing_config
-            )  # Batch insert with processing config
+                session_id, analytics, session_params
+            )  # Batch insert
             await self._calculate_and_save_performance_scores(
-                session_code, session_uuid, analytics, processing_result
+                session_id, analytics, processing_result
             )
 
             # Schema v2.1 compliance - populate missing tables
-            await self._populate_session_settings(session_code, session_uuid, processing_opts, session_params)
-            await self._populate_bfr_monitoring(session_code, session_uuid, session_params, processing_result)
+            await self._populate_session_settings(session_id, processing_opts, session_params)
+            await self._populate_bfr_monitoring(session_id, session_params, processing_result)
 
             logger.info(
-                f"📊 Successfully populated all database tables (6 total) for session: {session_code}"
+                f"📊 Successfully populated all database tables (6 total) for session: {session_id}"
             )
 
         except Exception as e:
             logger.error(
-                f"Failed to populate database tables for session {session_code}: {e!s}", exc_info=True
+                f"Failed to populate database tables for session {session_id}: {e!s}", exc_info=True
             )
             raise TherapySessionError(
-                f"Database population failed for session {session_code}: {e!s}"
+                f"Database population failed for session {session_id}: {e!s}"
             ) from e
 
     async def _populate_emg_statistics(
-        self, session_uuid: str, analytics: dict[str, Any], session_params: GameSessionParameters,
-        processing_config: dict[str, Any] = None
+        self, session_id: str, analytics: dict[str, Any], session_params: GameSessionParameters
     ) -> None:
         """Populate EMG statistics for each channel using batch insert."""
         if not analytics:
-            logger.warning(f"No analytics data for session {session_uuid}")
+            logger.warning(f"No analytics data for session {session_id}")
             return
 
         # Build all statistics records for batch insert
         all_stats = []
         for channel_name, channel_data in analytics.items():
             stats_data = self._build_emg_stats_record(
-                session_uuid, channel_name, channel_data, session_params
+                session_id, channel_name, channel_data, session_params
             )
-            # Add the processing config to each record
-            if processing_config:
-                stats_data["processing_config"] = processing_config
             all_stats.append(stats_data)
 
         # Batch insert using centralized database operations (DRY principle)
@@ -758,17 +728,17 @@ class TherapySessionProcessor:
             try:
                 result = self.emg_repo.bulk_insert_emg_statistics(all_stats)
                 logger.info(
-                    f"📊 Successfully inserted {len(result)} EMG statistics records for session {session_uuid}"
+                    f"📊 Successfully inserted {len(result)} EMG statistics records for session {session_id}"
                 )
             except Exception as e:
-                logger.error(f"❌ Failed to insert EMG statistics for session {session_uuid}: {e!s}", exc_info=True)
+                logger.error(f"❌ Failed to insert EMG statistics for session {session_id}: {e!s}", exc_info=True)
                 raise
         else:
-            logger.warning(f"⚠️ No EMG statistics to insert for session {session_uuid}")
+            logger.warning(f"⚠️ No EMG statistics to insert for session {session_id}")
 
     def _build_emg_stats_record(
         self,
-        session_uuid: str,
+        session_id: str,
         channel_name: str,
         channel_data: dict[str, Any],
         session_params: GameSessionParameters,
@@ -780,43 +750,18 @@ class TherapySessionProcessor:
 
         # Extract temporal statistics
         temporal_stats = self._extract_temporal_stats(channel_data)
-        
-        # Build contractions detail JSONB
-        contractions_detail = []
-        contractions = channel_data.get("contractions", [])
-        for contraction in contractions:
-            contractions_detail.append({
-                "start_time_ms": contraction.get("start_time_ms", 0),
-                "end_time_ms": contraction.get("end_time_ms", 0),
-                "peak_amplitude": contraction.get("peak_amplitude", 0.0),
-                "mean_amplitude": contraction.get("mean_amplitude", 0.0),
-                "meets_mvc": contraction.get("meets_mvc", False),
-                "meets_duration": contraction.get("meets_duration", False)
-            })
-        
-        # Build signal quality metrics JSONB
-        signal_quality_metrics = {
-            "snr_db": channel_data.get("snr_db", 0.0),
-            "baseline_noise_uv": channel_data.get("baseline_noise_uv", 0.0),
-            "artifact_percentage": channel_data.get("artifact_percentage", 0.0),
-            "saturation_percentage": channel_data.get("saturation_percentage", 0.0)
-        }
-        
-        # Build processing config JSONB (will be populated from _populate_processing_parameters)
-        # This will be added when we consolidate processing parameters
 
         return {
-            "session_id": session_uuid,
+            "session_id": session_id,
             "channel_name": channel_name,
             "total_contractions": channel_data.get("contraction_count", 0),
             "good_contractions": channel_data.get("good_contraction_count", 0),
-            # Renamed columns according to new schema
-            "mvc75_compliance_rate": channel_data.get("mvc_contraction_count", 0),  # was mvc_contraction_count
-            "duration_compliance_rate": channel_data.get("duration_contraction_count", 0),  # was duration_contraction_count
+            "mvc_contraction_count": channel_data.get("mvc_contraction_count", 0),
+            "duration_contraction_count": channel_data.get("duration_contraction_count", 0),
             "compliance_rate": channel_data.get("compliance_rate", 0.0),
             "mvc_value": default_mvc_value,
             "mvc_threshold": channel_data.get("mvc_threshold", channel_mvc_default * DEFAULT_MVC_THRESHOLD_PERCENTAGE / 100.0),
-            "mvc75_threshold": DEFAULT_MVC_THRESHOLD_PERCENTAGE,  # was mvc_threshold_actual_value
+            "mvc_threshold_actual_value": DEFAULT_MVC_THRESHOLD_PERCENTAGE,
             "duration_threshold_actual_value": session_params.contraction_duration_threshold,
             "total_time_under_tension_ms": channel_data.get("total_time_under_tension_ms", 0.0),
             "avg_duration_ms": channel_data.get("avg_duration_ms", 0.0),
@@ -826,10 +771,7 @@ class TherapySessionProcessor:
             "max_amplitude": channel_data.get("max_amplitude", 0.0),
             **temporal_stats,
             "signal_quality_score": channel_data.get("signal_quality_score", 0.0),
-            # New JSONB fields
-            "contractions_detail": contractions_detail,
-            "signal_quality_metrics": signal_quality_metrics,
-            # processing_config will be added later when we consolidate processing parameters
+            # Note: processing_confidence, median_frequency_slope and estimated_fatigue_percentage removed (not in schema)
             # Timestamp will be added automatically by database operations service
         }
 
@@ -856,12 +798,9 @@ class TherapySessionProcessor:
         }
 
     async def _populate_processing_parameters(
-        self, session_uuid: str, metadata: dict[str, Any], processing_opts: ProcessingOptions
-    ) -> dict[str, Any]:
-        """Build processing parameters for JSONB storage in emg_statistics.
-        
-        Returns the processing_config dict to be included in EMG statistics records.
-        """
+        self, session_id: str, metadata: dict[str, Any], processing_opts: ProcessingOptions
+    ) -> None:
+        """Populate processing parameters table with MVC priority cascade integration."""
         sampling_rate = metadata.get("sampling_rate", 1000.0)
         nyquist_freq = sampling_rate / 2
         safe_high_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * NYQUIST_SAFETY_FACTOR)
@@ -873,8 +812,8 @@ class TherapySessionProcessor:
         
         mvc_values, mvc_source = self._determine_mvc_values(c3d_metadata, patient_id, analytics)
         
-        # Build processing config JSONB structure
-        processing_config = {
+        params_data = {
+            "session_id": session_id,
             "sampling_rate_hz": sampling_rate,
             "filter_low_cutoff_hz": EMG_HIGH_PASS_CUTOFF,
             "filter_high_cutoff_hz": safe_high_cutoff,
@@ -884,14 +823,33 @@ class TherapySessionProcessor:
             "mvc_window_seconds": MVC_WINDOW_SECONDS,
             "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
             "processing_version": PROCESSING_VERSION,
+            # MVC workflow alignment with 4-level priority cascade
             "mvc_source": mvc_source,  # Determined by priority cascade
-            "mvc_values_determined": mvc_values,  # Store determined MVC values for traceability
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "algorithm_config": {
+                "signal_processing": {
+                    "sampling_rate_hz": sampling_rate,
+                    "filter_low_cutoff_hz": EMG_HIGH_PASS_CUTOFF,
+                    "filter_high_cutoff_hz": safe_high_cutoff,
+                    "filter_order": DEFAULT_FILTER_ORDER,
+                    "rms_window_ms": DEFAULT_RMS_WINDOW_MS,
+                    "rms_overlap_percent": RMS_OVERLAP_PERCENTAGE,
+                },
+                "mvc_analysis": {
+                    "mvc_window_seconds": MVC_WINDOW_SECONDS,
+                    "mvc_threshold_percentage": processing_opts.threshold_factor * 100,
+                    "mvc_values_determined": mvc_values,  # Store determined MVC values for traceability
+                    "mvc_source": mvc_source,  # Store source for audit trail
+                    # Note: MVC percentage divisor removed - redundant with threshold_percentage
+                },
+                "version_info": {
+                    "processing_version": PROCESSING_VERSION,
+                    "algorithm_timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            },  # Immutable snapshot for session traceability
         }
-        
-        # Store for use in EMG statistics records
-        self._processing_config = processing_config
-        return processing_config
+
+        # Use centralized database operations (DRY principle)
+        self.emg_repo.upsert_processing_parameters(params_data)
 
     async def _upsert_table(self, table_name: str, data: dict[str, Any], unique_key: str) -> None:
         """Upsert data into table (insert or update if exists) with optimized error handling."""
@@ -915,7 +873,7 @@ class TherapySessionProcessor:
             raise
 
     async def _calculate_and_save_performance_scores(
-        self, session_code: str, session_uuid: str, analytics: dict[str, Any], processing_result: dict[str, Any]
+        self, session_id: str, analytics: dict[str, Any], processing_result: dict[str, Any]
     ) -> None:
         """Calculate and save performance scores using the dedicated GHOSTLY+ scoring service.
 
@@ -929,7 +887,7 @@ class TherapySessionProcessor:
 
             # Create SessionMetrics object for the scoring service
             session_metrics = SessionMetrics(
-                session_id=session_uuid,
+                session_id=session_id,
                 # Left muscle (CH1) metrics
                 left_total_contractions=left_data.get("contraction_count", 0),
                 left_good_contractions=left_data.get("good_contraction_count", 0),
@@ -952,21 +910,21 @@ class TherapySessionProcessor:
                 expected_contractions_per_muscle=DEFAULT_TARGET_CONTRACTIONS_CH1,  # Using CH1 default (12 contractions)
             )
 
-            # Use the dedicated service to calculate scores (pass UUID, not session_code)
-            scores = self.scoring_service.calculate_performance_scores(session_uuid, session_metrics)
+            # Use the dedicated service to calculate scores
+            scores = self.scoring_service.calculate_performance_scores(session_id, session_metrics)
 
             if scores and "error" not in scores:
                 # Save scores using the service
                 success = self.scoring_service.save_performance_scores(scores)
                 if success:
                     logger.info(
-                        f"✅ GHOSTLY+ performance scores calculated and saved for session: {session_code} (UUID: {session_uuid})"
+                        f"✅ GHOSTLY+ performance scores calculated and saved for session: {session_id}"
                     )
                     logger.info(
                         f"   Overall: {scores.get('overall_score', 'N/A')}, Compliance: {scores.get('compliance_score', 'N/A')}"
                     )
                 else:
-                    logger.error(f"❌ Failed to save performance scores for session: {session_code} (UUID: {session_uuid})")
+                    logger.error(f"❌ Failed to save performance scores for session: {session_id}")
             else:
                 logger.error(f"❌ Failed to calculate performance scores: {scores}")
 
@@ -975,13 +933,13 @@ class TherapySessionProcessor:
             # Not critical for C3D processing, continue without failing
 
     async def _cache_session_analytics(
-        self, session_code: str, processing_result: dict[str, Any]
+        self, session_id: str, processing_result: dict[str, Any]
     ) -> None:
         """Cache session analytics in Redis for high-performance retrieval."""
         try:
             analytics_data = processing_result.get("analytics", {})
             if not analytics_data:
-                logger.warning(f"No analytics data to cache for session {session_code}")
+                logger.warning(f"No analytics data to cache for session {session_id}")
                 return
 
             # Enhanced cache data with metadata for better performance
@@ -1000,13 +958,13 @@ class TherapySessionProcessor:
             }
 
             # Cache in Redis with 24h TTL (configurable)
-            success = self.cache_service.set_session_analytics(session_code, cache_data)
+            success = self.cache_service.set_session_analytics(session_id, cache_data)
 
             if success:
-                logger.info(f"📦 Cached analytics for session {session_code} in Redis")
+                logger.info(f"📦 Cached analytics for session {session_id} in Redis")
             else:
                 logger.warning(
-                    f"⚠️ Failed to cache analytics for session {session_code} - continuing without cache"
+                    f"⚠️ Failed to cache analytics for session {session_id} - continuing without cache"
                 )
 
         except Exception as e:
@@ -1014,7 +972,7 @@ class TherapySessionProcessor:
             # Not critical, continue processing
 
     async def _update_session_metadata(
-        self, session_code: str, processing_result: dict[str, Any]
+        self, session_id: str, processing_result: dict[str, Any]
     ) -> None:
         """Update session with extracted game metadata and session timestamp."""
         try:
@@ -1042,9 +1000,9 @@ class TherapySessionProcessor:
                 logger.info(f"📅 Extracted session timestamp: {session_timestamp}")
 
             # Use domain-specific repository for therapy session updates
-            self.session_repo.update_therapy_session(session_code, update_data)
+            self.session_repo.update_therapy_session(session_id, update_data)
 
-            logger.info(f"📊 Updated session metadata for: {session_code}")
+            logger.info(f"📊 Updated session metadata for: {session_id}")
 
         except Exception as e:
             logger.exception(f"Failed to update session metadata: {e!s}")
@@ -1107,8 +1065,7 @@ class TherapySessionProcessor:
 
     async def _populate_session_settings(
         self,
-        session_code: str,
-        session_uuid: str,
+        session_id: str,
         processing_opts: ProcessingOptions,
         session_params: GameSessionParameters,
     ) -> None:
@@ -1157,7 +1114,7 @@ class TherapySessionProcessor:
             patient_id = getattr(session_params, 'patient_id', None)
             if not patient_id:
                 # Try to get patient_id from session
-                session_info = await self.get_session_status(session_code)
+                session_info = await self.get_session_status(session_id)
                 if session_info:
                     patient_id = session_info.get('patient_id')
             
@@ -1181,7 +1138,7 @@ class TherapySessionProcessor:
                 logger.info(f"📊 Using default CH2 duration from config: {target_duration_ch2}ms")
 
             session_settings_data = {
-                "session_id": session_uuid,
+                "session_id": session_id,
                 # Therapeutic targets (flexible per-channel)
                 "target_contractions_ch1": target_ch1,
                 "target_contractions_ch2": target_ch2,
@@ -1229,7 +1186,7 @@ class TherapySessionProcessor:
             await self._upsert_table("session_settings", session_settings_data, "session_id")
 
             logger.info(
-                f"📊 Session settings populated for session {session_code}: "
+                f"📊 Session settings populated for session {session_id}: "
                 f"MVC {session_settings_data['mvc_threshold_percentage']}%, "
                 f"Duration CH1={session_settings_data['target_duration_ch1']}ms CH2={session_settings_data['target_duration_ch2']}ms, "
                 f"BFR {'enabled' if session_settings_data['bfr_enabled'] else 'disabled'}"
@@ -1237,15 +1194,14 @@ class TherapySessionProcessor:
 
         except Exception as e:
             logger.error(
-                f"Failed to populate session_settings for session {session_code}: {e!s}",
+                f"Failed to populate session_settings for session {session_id}: {e!s}",
                 exc_info=True,
             )
             raise TherapySessionError(f"Session settings population failed: {e!s}") from e
 
     async def _populate_bfr_monitoring(
         self,
-        session_code: str,
-        session_uuid: str,
+        session_id: str,
         session_params: GameSessionParameters,
         processing_result: dict[str, Any],
     ) -> None:
@@ -1291,7 +1247,7 @@ class TherapySessionProcessor:
                 
                 # Build per-channel BFR monitoring record
                 bfr_monitoring_data = {
-                    "session_id": session_uuid,
+                    "session_id": session_id,
                     "channel_name": channel_name,
                     
                     # BFR pressure settings (from C3D metadata or defaults)
@@ -1326,7 +1282,7 @@ class TherapySessionProcessor:
                 )
 
             logger.info(
-                f"🔄 Per-channel BFR monitoring populated for session {session_code}: "
+                f"🔄 Per-channel BFR monitoring populated for session {session_id}: "
                 f"{len(bfr_records)} channels processed"
             )
             
@@ -1347,7 +1303,7 @@ class TherapySessionProcessor:
 
         except Exception as e:
             logger.error(
-                f"Failed to populate per-channel bfr_monitoring for session {session_code}: {e!s}", 
+                f"Failed to populate per-channel bfr_monitoring for session {session_id}: {e!s}", 
                 exc_info=True
             )
             raise TherapySessionError(f"Per-channel BFR monitoring population failed: {e!s}") from e

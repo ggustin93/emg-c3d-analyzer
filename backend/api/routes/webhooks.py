@@ -76,7 +76,7 @@ class WebhookResponse(BaseModel):
 
     success: bool
     message: str
-    session_id: str | None = None
+    session_code: str | None = None
     processing_time_ms: float | None = None
 
 
@@ -94,7 +94,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
     4. Populate all related tables (emg_statistics, processing_parameters, etc.)
 
     Returns:
-        Fast webhook response with session_id for tracking
+        Fast webhook response with session_code for tracking
     """
     start_time = datetime.now()
 
@@ -141,7 +141,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
 
         # Create therapy session record (immediate response)
         try:
-            session_id = await session_processor.create_session(
+            session_code = await session_processor.create_session(
                 file_path=f"{event.bucket_id}/{event.object_name}",
                 file_metadata=event.record.get("metadata", {}),
                 patient_id=patient_uuid,
@@ -153,26 +153,26 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
             return WebhookResponse(
                 success=False,
                 message=f"Session creation failed: {e!s}",
-                session_id=None,
+                session_code=None,
                 processing_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
             )
 
         # Process C3D file in background
         background_tasks.add_task(
             _process_c3d_background,
-            session_id=session_id,
+            session_code=session_code,
             bucket=event.bucket_id,
             object_path=event.object_name,
         )
 
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
 
-        logger.info(f"✅ Session created: {session_id} ({processing_time:.1f}ms)")
+        logger.info(f"✅ Session created: {session_code} ({processing_time:.1f}ms)")
 
         return WebhookResponse(
             success=True,
             message="C3D processing initiated",
-            session_id=session_id,
+            session_code=session_code,
             processing_time_ms=processing_time,
         )
 
@@ -186,24 +186,24 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
         raise HTTPException(status_code=500, detail=f"Processing error: {e!s}")
 
 
-@router.get("/storage/status/{session_id}")
-async def get_processing_status(session_id: str) -> dict:
+@router.get("/storage/status/{session_code}")
+async def get_processing_status(session_code: str) -> dict:
     """Get processing status for a therapy session.
 
     Args:
-        session_id: Therapy session UUID
+        session_code: Therapy session code (format: P###S###)
 
     Returns:
         Session status and analysis results if available
     """
     try:
-        status = await session_processor.get_session_status(session_id)
+        status = await session_processor.get_session_status(session_code)
 
         if not status:
             raise HTTPException(status_code=404, detail="Session not found")
 
         return {
-            "session_id": session_id,
+            "session_code": session_code,
             "status": status["processing_status"],
             "file_path": status["file_path"],
             "created_at": status["created_at"],
@@ -222,7 +222,7 @@ async def get_processing_status(session_id: str) -> dict:
 # === BACKGROUND PROCESSING ===
 
 
-async def _process_c3d_background(session_id: str, bucket: str, object_path: str) -> None:
+async def _process_c3d_background(session_code: str, bucket: str, object_path: str) -> None:
     """Background task: Complete C3D file processing.
 
     Populates all database tables:
@@ -232,26 +232,26 @@ async def _process_c3d_background(session_id: str, bucket: str, object_path: str
     - processing_parameters
 
     Args:
-        session_id: Therapy session UUID
+        session_code: Therapy session code (format: P###S###)
         bucket: Storage bucket name
         object_path: Path to C3D file
     """
     try:
-        logger.info(f"🔄 Background processing started: {session_id}")
+        logger.info(f"🔄 Background processing started: {session_code}")
 
         # Update status to processing
-        await session_processor.update_session_status(session_id, "processing")
+        await session_processor.update_session_status(session_code, "processing")
 
         # Process C3D file completely
         result = await session_processor.process_c3d_file(
-            session_id=session_id, bucket=bucket, object_path=object_path
+            session_code=session_code, bucket=bucket, object_path=object_path
         )
 
         if result["success"]:
             # Update status to completed
-            await session_processor.update_session_status(session_id, "completed")
+            await session_processor.update_session_status(session_code, "completed")
 
-            logger.info(f"✅ Background processing completed: {session_id}")
+            logger.info(f"✅ Background processing completed: {session_code}")
             logger.info(f"📊 EMG channels analyzed: {result.get('channels_analyzed', 0)}")
             logger.info(f"⭐ Overall score: {result.get('overall_score', 'N/A')}")
         else:
@@ -261,7 +261,7 @@ async def _process_c3d_background(session_id: str, bucket: str, object_path: str
         logger.error(f"❌ Background processing failed: {e!s}", exc_info=True)
 
         # Update status to failed
-        await session_processor.update_session_status(session_id, "failed", error_message=str(e))
+        await session_processor.update_session_status(session_code, "failed", error_message=str(e))
 
 
 # === HEALTH CHECK ===

@@ -154,7 +154,19 @@ API_VERSION = "2.1.0"
 API_DESCRIPTION = "EMG analysis and therapeutic assessment for C3D files"
 
 # CORS configuration
-CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+CORS_ORIGINS = [
+    # Allow common Vite development ports
+    "http://localhost:3000", "http://127.0.0.1:3000",
+    "http://localhost:3001", "http://127.0.0.1:3001", 
+    "http://localhost:3002", "http://127.0.0.1:3002",
+    "http://localhost:3003", "http://127.0.0.1:3003",
+    "http://localhost:3004", "http://127.0.0.1:3004",
+    "http://localhost:3005", "http://127.0.0.1:3005",
+    "http://localhost:3006", "http://127.0.0.1:3006",
+    "http://localhost:3007", "http://127.0.0.1:3007",
+    "http://localhost:3008", "http://127.0.0.1:3008",
+    "http://localhost:3009", "http://127.0.0.1:3009",
+]
 CORS_CREDENTIALS = True
 CORS_METHODS = ["GET", "POST", "PUT", "DELETE"]
 CORS_HEADERS = ["*"]
@@ -191,6 +203,9 @@ REDIS_MAX_CACHE_SIZE_MB = 256
 # Webhook configuration
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 PROCESSING_VERSION = "2.1.0"
+
+# File processing behavior
+ENABLE_FILE_HASH_DEDUPLICATION = os.getenv("ENABLE_FILE_HASH_DEDUPLICATION", "true").lower() == "true"
 
 
 # =============================================================================
