@@ -24,13 +24,13 @@ class ScoringConfigurationRequest(BaseModel):
         None, max_length=500, description="Description of the configuration"
     )
 
-    # Main scoring weights (must sum to 1.0)
+    # Main scoring weights (must sum to 1.0) - Research-determined defaults from metricsDefinitions.md
     weight_compliance: float = Field(
-        0.400, ge=0.0, le=1.0, description="Therapeutic compliance weight"
+        0.500, ge=0.0, le=1.0, description="Therapeutic compliance weight (50% default)"
     )
-    weight_symmetry: float = Field(0.250, ge=0.0, le=1.0, description="Muscle symmetry weight")
-    weight_effort: float = Field(0.200, ge=0.0, le=1.0, description="Subjective effort weight")
-    weight_game: float = Field(0.150, ge=0.0, le=1.0, description="Game performance weight")
+    weight_symmetry: float = Field(0.250, ge=0.0, le=1.0, description="Muscle symmetry weight (25% default)")
+    weight_effort: float = Field(0.250, ge=0.0, le=1.0, description="Subjective effort weight (25% default)")
+    weight_game: float = Field(0.000, ge=0.0, le=1.0, description="Game performance weight (0% default - game-dependent)")
 
     # Compliance sub-component weights (must sum to 1.0)
     weight_completion: float = Field(0.333, ge=0.0, le=1.0, description="Completion rate weight")

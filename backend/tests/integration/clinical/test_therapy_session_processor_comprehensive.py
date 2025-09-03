@@ -47,8 +47,8 @@ def sample_processing_result():
                 "compliance_rate": 0.87,
                 "contraction_count": 15,
                 "good_contraction_count": 13,
-                "mvc75_compliance_rate": 11,
-                "duration_compliance_rate": 12,
+                "mvc_contraction_count": 11,
+                "duration_contraction_count": 12,
                 "mvc_value": 0.245,
                 "mvc_threshold": 75.0,
                 "total_time_under_tension_ms": 45000.0,
@@ -70,8 +70,8 @@ def sample_processing_result():
                 "compliance_rate": 0.92,
                 "contraction_count": 16,
                 "good_contraction_count": 15,
-                "mvc75_compliance_rate": 14,
-                "duration_compliance_rate": 13,
+                "mvc_contraction_count": 14,
+                "duration_contraction_count": 13,
                 "mvc_value": 0.289,
                 "mvc_threshold": 75.0,
                 "total_time_under_tension_ms": 48000.0,
@@ -156,13 +156,15 @@ class TestTherapySessionProcessorComprehensive:
              patch.object(processor, '_populate_session_settings') as mock_populate_settings, \
              patch.object(processor, '_populate_bfr_monitoring') as mock_populate_bfr:
             
-            # Execute table population
+            # Execute table population with positional arguments
+            # Order: session_code, session_uuid, processing_result, file_data, processing_opts, session_params
             await processor._populate_database_tables(
-                session_id=session_id,
-                processing_result=sample_processing_result,
-                file_data=file_data,
-                processing_opts=sample_processing_options,
-                session_params=sample_session_params
+                "S001",  # session_code
+                session_id,  # session_uuid
+                sample_processing_result,
+                file_data,
+                sample_processing_options,
+                sample_session_params
             )
             
             # Verify all 5 table population methods were called with correct parameters (c3d_technical_data replaced by game_metadata)
@@ -187,9 +189,13 @@ class TestTherapySessionProcessorComprehensive:
         
         with patch.object(processor, '_upsert_table_with_composite_key') as mock_upsert_composite:
             
-            # Execute BFR monitoring population with basic parameters
+            # Execute BFR monitoring population with positional arguments
+            # Order: session_code, session_uuid, session_params, processing_result
             await processor._populate_bfr_monitoring(
-                session_id, basic_session_params, sample_processing_result
+                "S001",  # session_code
+                session_id,  # session_uuid
+                basic_session_params,  # session_params
+                sample_processing_result  # processing_result
             )
             
             # Verify both channels were processed (CH1, CH2)
@@ -236,8 +242,12 @@ class TestTherapySessionProcessorComprehensive:
             mock_calc.return_value = expected_scores
             mock_save.return_value = True
             
+            # Call with positional arguments: session_code, session_uuid, analytics, processing_result
             await processor._calculate_and_save_performance_scores(
-                session_id, sample_processing_result["analytics"], sample_processing_result
+                "S001",  # session_code
+                session_id,  # session_uuid
+                sample_processing_result["analytics"],  # analytics
+                sample_processing_result  # processing_result
             )
             
             # Verify SessionMetrics object construction
@@ -354,8 +364,8 @@ class TestTherapySessionProcessorComprehensive:
             "compliance_rate": 0.87,
             "contraction_count": 15,
             "good_contraction_count": 13,
-            "mvc75_compliance_rate": 11,
-            "duration_compliance_rate": 12,
+            "mvc_contraction_count": 11,  # This is what the method looks for
+            "duration_contraction_count": 12,  # This is what the method looks for
             "mvc_value": 0.245,
             "mvc_threshold": 75.0,
             "total_time_under_tension_ms": 45000.0,
@@ -383,7 +393,7 @@ class TestTherapySessionProcessorComprehensive:
         assert stats_record["channel_name"] == channel_name
         assert stats_record["total_contractions"] == 15
         assert stats_record["good_contractions"] == 13
-        assert stats_record["mvc75_compliance_rate"] == 11
+        assert stats_record["mvc75_compliance_rate"] == 11  # This field stores the count
         assert stats_record["compliance_rate"] == 0.87
         
         # Verify temporal statistics
@@ -413,12 +423,14 @@ class TestTherapySessionProcessorComprehensive:
             mock_populate.side_effect = Exception("Database connection failed")
             
             with pytest.raises(Exception, match="Database population failed"):
+                # Call with positional arguments: session_code, session_uuid, processing_result, file_data, processing_opts, session_params
                 await processor._populate_database_tables(
-                    session_id=session_id,
-                    processing_result={"metadata": {"sampling_rate": 1000.0}, "analytics": {"CH1": {}}},
-                    file_data=b"mock_data",
-                    processing_opts=ProcessingOptions(threshold_factor=0.75, min_duration_ms=1500, smoothing_window=100),
-                    session_params=GameSessionParameters(session_mvc_threshold_percentage=75.0, contraction_duration_threshold=2000.0)
+                    "S001",  # session_code
+                    session_id,  # session_uuid
+                    {"metadata": {"sampling_rate": 1000.0}, "analytics": {"CH1": {}}},
+                    b"mock_data",
+                    ProcessingOptions(threshold_factor=0.75, min_duration_ms=1500, smoothing_window=100),
+                    GameSessionParameters(session_mvc_threshold_percentage=75.0, contraction_duration_threshold=2000.0)
                 )
 
     @pytest.mark.asyncio

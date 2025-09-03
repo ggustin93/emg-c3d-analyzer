@@ -177,10 +177,10 @@ class PerformanceScoringService:
             if weights_query.data:
                 config = weights_query.data[0]
                 return ScoringWeights(
-                    w_compliance=config.get("weight_compliance", 0.40),
-                    w_symmetry=config.get("weight_symmetry", 0.25),
-                    w_effort=config.get("weight_effort", 0.20),
-                    w_game=config.get("weight_game", 0.15),
+                    w_compliance=config.get("weight_compliance", 0.50),  # 50% default from metricsDefinitions.md
+                    w_symmetry=config.get("weight_symmetry", 0.25),     # 25% default
+                    w_effort=config.get("weight_effort", 0.25),         # 25% default
+                    w_game=config.get("weight_game", 0.00),             # 0% default (game-dependent)
                     w_completion=config.get("weight_completion", 0.333),
                     w_intensity=config.get("weight_intensity", 0.333),
                     w_duration=config.get("weight_duration", 0.334),
