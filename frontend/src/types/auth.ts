@@ -7,7 +7,7 @@ export interface ResearcherProfile {
   full_name?: string
   institution?: string
   department?: string
-  role: 'researcher' | 'admin' | 'clinical_specialist'
+  role: 'researcher' | 'admin' | 'therapist'
   access_level: 'basic' | 'advanced' | 'full'
   created_at: string
   updated_at: string
@@ -37,7 +37,7 @@ export interface ResearcherRegistration {
   full_name: string
   institution?: string
   department?: string
-  role?: 'researcher' | 'clinical_specialist'
+  role?: 'researcher' | 'therapist'
 }
 
 // Auth response wrapper

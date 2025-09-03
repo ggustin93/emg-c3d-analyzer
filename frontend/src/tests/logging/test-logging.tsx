@@ -3,7 +3,7 @@
  * This can be imported and used temporarily to test logging
  */
 import React, { useEffect } from 'react';
-import { logger, LogCategory } from './services/logger';
+import { logger, LogCategory } from '../../services/logger';
 
 export const TestLogging: React.FC = () => {
   useEffect(() => {

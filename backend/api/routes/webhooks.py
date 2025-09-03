@@ -77,6 +77,7 @@ class WebhookResponse(BaseModel):
     success: bool
     message: str
     session_code: str | None = None
+    session_id: str | None = None
     processing_time_ms: float | None = None
 
 
@@ -147,6 +148,11 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
                 patient_id=patient_uuid,
                 therapist_id=therapist_uuid,
             )
+            
+            # Get session details to retrieve UUID (session_id)
+            session_details = await session_processor.get_session_status(session_code)
+            session_id = session_details["id"] if session_details else None
+            
         except Exception as e:
             logger.error(f"Failed to create session for {event.object_name}: {e!s}", exc_info=True)
             # Return success with error message rather than HTTP 500
@@ -154,6 +160,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
                 success=False,
                 message=f"Session creation failed: {e!s}",
                 session_code=None,
+                session_id=None,
                 processing_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
             )
 
@@ -173,6 +180,7 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
             success=True,
             message="C3D processing initiated",
             session_code=session_code,
+            session_id=session_id,
             processing_time_ms=processing_time,
         )
 
