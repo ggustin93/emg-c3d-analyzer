@@ -7,6 +7,9 @@ __pycache__/
 .Python
 *.so
 
+.bmad-core/* 
+.claude/*
+
 # Python virtualenv
 .venv/
 venv/
