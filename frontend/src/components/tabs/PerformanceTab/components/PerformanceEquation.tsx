@@ -8,6 +8,7 @@ import { ScoringWeights } from '@/types/emg';
 import { getComponentColors } from '@/lib/performanceColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { cn } from '@/lib/utils';
+import { formatPercentage } from '@/lib/formatUtils';
 
 interface PerformanceEquationProps {
   weights: ScoringWeights;
@@ -64,7 +65,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({
         title: "Current Configuration",
         type: "table" as const,
         items: [
-          { label: "Overall Weight", value: (weights.compliance * 100).toFixed(0), color: "text-slate-800 bg-slate-100" }
+          { label: "Overall Weight", value: formatPercentage(weights.compliance * 100).replace('%', ''), color: "text-slate-800 bg-slate-100" }
         ]
       }
     ]
@@ -98,7 +99,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({
         title: "Current Configuration",
         type: "table" as const,
         items: [
-          { label: "Weight", value: (weights.symmetry * 100).toFixed(0), color: "text-slate-800 bg-slate-100" }
+          { label: "Weight", value: formatPercentage(weights.symmetry * 100).replace('%', ''), color: "text-slate-800 bg-slate-100" }
         ]
       }
     ]
@@ -131,7 +132,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({
         title: "Current Configuration",
         type: "table" as const,
         items: [
-          { label: "Weight", value: (weights.effort * 100).toFixed(0), color: "text-slate-800 bg-slate-100" }
+          { label: "Weight", value: formatPercentage(weights.effort * 100).replace('%', ''), color: "text-slate-800 bg-slate-100" }
         ]
       }
     ]
@@ -185,7 +186,7 @@ const PerformanceEquation: React.FC<PerformanceEquationProps> = ({
         title: "Current Configuration",
         type: "table" as const,
         items: [
-          { label: "Weight", value: (weights.gameScore * 100).toFixed(0), color: "text-slate-800 bg-slate-100" },
+          { label: "Weight", value: formatPercentage(weights.gameScore * 100).replace('%', ''), color: "text-slate-800 bg-slate-100" },
           { label: "Status", value: "⚠️ Experimental", color: "text-amber-700 bg-amber-100" }
         ]
       },

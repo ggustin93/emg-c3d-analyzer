@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { getPerformanceColor } from '@/lib/performanceColors';
 import BFRBadge from './BFRBadge';
 import { MusclePerformanceData, GameSessionParameters } from '@/types/emg';
+import { formatPercentage } from '@/lib/formatUtils';
 
 interface TherapeuticComplianceAccordionProps {
   leftMuscle: MusclePerformanceData;
@@ -30,7 +31,7 @@ const ComplianceComponent: React.FC<ComplianceComponentProps> = ({ label, value,
       <span className="text-xs text-gray-600">{label}</span>
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500">{count}/{total}</span>
-        <span className={`text-xs font-medium ${colors.text}`}>{value.toFixed(0)}%</span>
+        <span className={`text-xs font-medium ${colors.text}`}>{formatPercentage(value)}</span>
       </div>
     </div>
   );
@@ -61,7 +62,7 @@ const TherapeuticComplianceAccordion: React.FC<TherapeuticComplianceAccordionPro
               Therapeutic Compliance Details
             </span>
             <span className={`text-sm font-bold ${averageColors.text}`}>
-              {averageScore.toFixed(1)}%
+              {formatPercentage(averageScore, false, 1)}
             </span>
           </div>
           <ChevronDownIcon 
@@ -80,7 +81,7 @@ const TherapeuticComplianceAccordion: React.FC<TherapeuticComplianceAccordionPro
                 <BFRBadge isActive={leftBFRActive} muscle="left" />
               </div>
               <span className={`text-sm font-bold ${leftColors.text}`}>
-                {leftMuscle.totalScore.toFixed(0)}%
+                {formatPercentage(leftMuscle.totalScore)}
               </span>
             </div>
             <Progress 
@@ -118,7 +119,7 @@ const TherapeuticComplianceAccordion: React.FC<TherapeuticComplianceAccordionPro
                 <BFRBadge isActive={rightBFRActive} muscle="right" />
               </div>
               <span className={`text-sm font-bold ${rightColors.text}`}>
-                {rightMuscle.totalScore.toFixed(0)}%
+                {formatPercentage(rightMuscle.totalScore)}
               </span>
             </div>
             <Progress 

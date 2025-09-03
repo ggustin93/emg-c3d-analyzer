@@ -100,16 +100,16 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     totalScore: overallScore,
     durationThreshold: contractionDurationThreshold,
     contributions: {
-      compliance: enhancedPerformanceData?.weights?.compliance || 0.50,
-      symmetry: enhancedPerformanceData?.weights?.symmetry || 0.20,
-      effort: enhancedPerformanceData?.weights?.effort || 0.30,
-      game: enhancedPerformanceData?.weights?.gameScore || 0.00,
+      compliance: enhancedPerformanceData?.weights?.compliance || 0.50,  // 50% - from backend config.py ScoringDefaults
+      symmetry: enhancedPerformanceData?.weights?.symmetry || 0.25,      // 25% - from backend config.py ScoringDefaults  
+      effort: enhancedPerformanceData?.weights?.effort || 0.25,          // 25% - from backend config.py ScoringDefaults
+      game: enhancedPerformanceData?.weights?.gameScore || 0.00,         // 0% - from backend config.py ScoringDefaults
     },
     strongestDriver: 'compliance', // Default strongest driver
     weightedScores: {
       compliance: ((leftMuscle?.totalScore || 0) + (rightMuscle?.totalScore || 0)) / 2 * (enhancedPerformanceData?.weights?.compliance || 0.50),
-      symmetry: (enhancedPerformanceData?.symmetryScore || 0) * (enhancedPerformanceData?.weights?.symmetry || 0.20),
-      effort: (enhancedPerformanceData?.effortScore || 0) * (enhancedPerformanceData?.weights?.effort || 0.30),
+      symmetry: (enhancedPerformanceData?.symmetryScore || 0) * (enhancedPerformanceData?.weights?.symmetry || 0.25),      // Fixed: 25% not 20%
+      effort: (enhancedPerformanceData?.effortScore || 0) * (enhancedPerformanceData?.weights?.effort || 0.25),          // Fixed: 25% not 30%
       game: (enhancedPerformanceData?.gameScoreNormalized || 0) * (enhancedPerformanceData?.weights?.gameScore || 0.00),
     }
   };

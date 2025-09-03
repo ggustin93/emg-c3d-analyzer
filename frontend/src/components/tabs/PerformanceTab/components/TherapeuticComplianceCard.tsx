@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScoreColors } from '@/hooks/useScoreColors';
+import { formatPercentage } from '@/lib/formatUtils';
 
 interface TherapeuticComplianceCardProps {
   complianceScore: number;
@@ -66,8 +67,8 @@ const TherapeuticComplianceCard: React.FC<TherapeuticComplianceCardProps> = ({
                             <div>• <strong>Quality:</strong> {goodContractions}/{totalContractions} met MVC threshold</div>
                             {leftMuscleScore !== undefined && rightMuscleScore !== undefined && (
                               <>
-                                <div>• <strong>Left Muscle:</strong> {leftMuscleScore.toFixed(0)}% compliance</div>
-                                <div>• <strong>Right Muscle:</strong> {rightMuscleScore.toFixed(0)}% compliance</div>
+                                <div>• <strong>Left Muscle:</strong> {formatPercentage(leftMuscleScore)} compliance</div>
+                                <div>• <strong>Right Muscle:</strong> {formatPercentage(rightMuscleScore)} compliance</div>
                               </>
                             )}
                           </div>
@@ -89,7 +90,7 @@ const TherapeuticComplianceCard: React.FC<TherapeuticComplianceCardProps> = ({
               </Tooltip>
             </CardTitle>
           </div>
-          <span className={`text-xl font-bold ${complianceColors.text}`}>{complianceScore.toFixed(0)}%</span>
+          <span className={`text-xl font-bold ${complianceColors.text}`}>{formatPercentage(complianceScore)}</span>
         </CardHeader>
         <CardContent>
           <Progress 
