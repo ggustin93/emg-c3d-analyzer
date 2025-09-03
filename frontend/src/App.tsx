@@ -21,6 +21,14 @@ import SupabaseStorageService from "./services/supabaseStorage";
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { logger, LogCategory } from './services/logger';
 
+// Import dashboard components
+import { AdminDashboard } from './components/dashboards/admin/AdminDashboard';
+import { TherapistDashboard } from './components/dashboards/therapist/TherapistDashboard';
+import { ResearcherDashboard } from './components/dashboards/researcher/ResearcherDashboard';
+import { AnalysisWorkspace } from './components/dashboards/researcher/AnalysisWorkspace';
+
+
+type ViewMode = 'dashboard' | 'analysis';
 
 function AppContent() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
@@ -29,9 +37,10 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [signalType, setSignalType] = useState<SignalDisplayType>('processed');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   
   // Authentication state
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userRole, canAccess } = useAuth();
   
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
@@ -124,6 +133,7 @@ function AppContent() {
     setUploadDate(null); // Clear the upload date before resetting session params
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
+    setViewMode('dashboard'); // Return to dashboard view after reset
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
   // Reset state but preserve upload date (for file browser selections)
@@ -431,6 +441,36 @@ function AppContent() {
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
+  // Handle navigation from dashboard to analysis view
+  const handleAnalysisNavigation = useCallback((filename?: string, uploadDate?: string) => {
+    if (filename && uploadDate) {
+      // If we have file data, trigger the quick select to load it
+      handleQuickSelect(filename, uploadDate);
+    }
+    setViewMode('analysis');
+  }, [handleQuickSelect]);
+
+  // Render the appropriate dashboard based on user role
+  const renderDashboard = () => {
+    switch (userRole) {
+      case 'ADMIN':
+        return <AdminDashboard />;
+      case 'THERAPIST':
+        return <TherapistDashboard />;
+      case 'RESEARCHER':
+        return <ResearcherDashboard onQuickSelect={handleAnalysisNavigation} />;
+      default:
+        return (
+          <div className="p-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <h2 className="text-lg font-semibold text-yellow-800">No Role Assigned</h2>
+              <p className="text-yellow-700">Please contact an administrator to assign you a role.</p>
+            </div>
+          </div>
+        );
+    }
+  };
+
 
   return (
     <>
@@ -441,42 +481,43 @@ function AppContent() {
           onReset={resetState}
           isAuthenticated={isAuthenticated}
           uploadDate={uploadDate}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
         <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
           <AuthGuard>
-            {!analysisResult ? (
-              <C3DSourceSelector
-                onUploadSuccess={handleSuccess}
-                onUploadError={handleError}
-                setIsLoading={setIsLoading}
-                onQuickSelect={handleQuickSelect}
-                isLoading={isLoading}
-                sessionParams={sessionParams}
-              />
+            {viewMode === 'dashboard' ? (
+              // Dashboard view - show role-based dashboard
+              renderDashboard()
             ) : (
-              <GameSessionTabs
-                analysisResult={analysisResult}
-                mvcThresholdForPlot={null}
-                muscleChannels={muscleChannels}
-                allAvailableChannels={allAvailableChannels}
-                setPlotChannel1Name={setPlotChannel1Name}
-                setPlotChannel2Name={setPlotChannel2Name}
-                selectedChannelForStats={selectedChannelForStats}
-                setSelectedChannelForStats={setSelectedChannelForStats}
-                currentStats={currentStats}
-                mainChartData={mainCombinedChartData}
-                dataPoints={downsamplingControls.dataPoints}
-                setDataPoints={downsamplingControls.setDataPoints}
-                mainPlotChannel1Data={plotChannel1Data}
-                mainPlotChannel2Data={plotChannel2Data}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                signalType={signalType}
-                setSignalType={setSignalType}
-                appIsLoading={isLoading}
-                uploadedFileName={uploadedFileName}
-              />
+              // Analysis view - EMG analysis functionality or placeholder
+              !analysisResult ? (
+                <AnalysisWorkspace onReturnToDashboard={() => setViewMode('dashboard')} />
+              ) : (
+                <GameSessionTabs
+                  analysisResult={analysisResult}
+                  mvcThresholdForPlot={null}
+                  muscleChannels={muscleChannels}
+                  allAvailableChannels={allAvailableChannels}
+                  setPlotChannel1Name={setPlotChannel1Name}
+                  setPlotChannel2Name={setPlotChannel2Name}
+                  selectedChannelForStats={selectedChannelForStats}
+                  setSelectedChannelForStats={setSelectedChannelForStats}
+                  currentStats={currentStats}
+                  mainChartData={mainCombinedChartData}
+                  dataPoints={downsamplingControls.dataPoints}
+                  setDataPoints={downsamplingControls.setDataPoints}
+                  mainPlotChannel1Data={plotChannel1Data}
+                  mainPlotChannel2Data={plotChannel2Data}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  signalType={signalType}
+                  setSignalType={setSignalType}
+                  appIsLoading={isLoading}
+                  uploadedFileName={uploadedFileName}
+                />
+              )
             )}
           </AuthGuard>
 

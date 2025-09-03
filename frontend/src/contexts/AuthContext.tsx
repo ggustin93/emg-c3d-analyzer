@@ -28,6 +28,9 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<AuthResponse<void>>
   isAuthenticated: boolean
   isLoading: boolean
+  // RBAC additions
+  userRole: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
+  canAccess: (permission: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -280,6 +283,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return AuthService.resetPassword(email)
   }, [])
   
+  // RBAC permissions mapping (matching backend)
+  const PERMISSIONS: Record<string, string[]> = {
+    'ADMIN': [
+      'all', // Admin has full access
+      'scoring:write',
+      'settings:write', 
+      'users:manage',
+      'reports:all',
+      'audit:read'
+    ],
+    'THERAPIST': [
+      'patients:own',
+      'sessions:write',
+      'sessions:own',
+      'notes:write',
+      'reports:own',
+      'upload:c3d'
+    ],
+    'RESEARCHER': [
+      'reports:read',
+      'analytics:read', 
+      'export:anonymized',
+      'sessions:read_anonymized'
+    ]
+  }
+
+  // Role-based access control - normalize role to uppercase
+  const userRole = authState.profile?.role 
+    ? (authState.profile.role.toUpperCase() as 'ADMIN' | 'THERAPIST' | 'RESEARCHER') 
+    : null
+  
+  const canAccess = useCallback((permission: string) => {
+    if (!userRole) return false
+    if (userRole === 'ADMIN') return true // Admin can do everything
+    return PERMISSIONS[userRole]?.includes(permission) || false
+  }, [userRole])
+
   // Computed values
   const isAuthenticated = !!authState.user
   const isLoading = authState.loading
@@ -292,7 +332,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshSession,
     resetPassword,
     isAuthenticated,
-    isLoading
+    isLoading,
+    userRole,
+    canAccess
   }
   
   return (

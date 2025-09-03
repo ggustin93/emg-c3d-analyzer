@@ -248,12 +248,12 @@ export class AuthService {
   }
 
   /**
-   * Get researcher profile from profiles table
+   * Get user profile from user_profiles table
    */
   static async getResearcherProfile(userId: string): Promise<AuthResponse<ResearcherProfile>> {
     try {
       const { data, error } = await supabase
-        .from('researcher_profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .single()
@@ -277,12 +277,12 @@ export class AuthService {
   }
 
   /**
-   * Update researcher profile
+   * Update user profile
    */
   static async updateProfile(userId: string, updates: Partial<ResearcherProfile>): Promise<AuthResponse<ResearcherProfile>> {
     try {
       const { data, error } = await supabase
-        .from('researcher_profiles')
+        .from('user_profiles')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', userId)
         .select()
@@ -351,7 +351,7 @@ export class AuthService {
   private static async updateLastLogin(userId: string): Promise<void> {
     try {
       await supabase
-        .from('researcher_profiles')
+        .from('user_profiles')
         .update({ last_login: new Date().toISOString() })
         .eq('id', userId)
     } catch (err) {
