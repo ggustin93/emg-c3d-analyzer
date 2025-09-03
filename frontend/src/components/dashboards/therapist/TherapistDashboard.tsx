@@ -9,9 +9,9 @@ import { User, File, Activity } from 'lucide-react'
  * Access: THERAPIST or ADMIN roles
  */
 export function TherapistDashboard() {
-  const { userRole, canAccess } = useAuth()
+  const { userRole, canViewFeature } = useAuth()
   
-  if (!canAccess('patients:own') && userRole !== 'ADMIN') {
+  if (!canViewFeature('patient-management') && userRole !== 'ADMIN') {
     return (
       <div className="p-6">
         <Card className="border-destructive">
@@ -45,7 +45,7 @@ export function TherapistDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canAccess('patients:own') ? (
+              {canViewFeature('patient-management') ? (
                 <>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="p-3 rounded border text-center">
@@ -98,7 +98,7 @@ export function TherapistDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canAccess('sessions:own') ? (
+              {canViewFeature('patient-management') ? (
                 <>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="p-3 rounded border text-center">
@@ -145,7 +145,7 @@ export function TherapistDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canAccess('notes:write') ? (
+              {canViewFeature('session-notes') ? (
                 <div className="space-y-2">
                   <div className="p-3 rounded border">
                     <div className="flex justify-between items-center">
@@ -191,7 +191,7 @@ export function TherapistDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canAccess('upload:c3d') ? (
+              {canViewFeature('c3d-upload') ? (
                 <div className="space-y-4">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <Activity className="w-8 h-8 mx-auto mb-2 text-gray-400" />

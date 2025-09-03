@@ -107,10 +107,10 @@ const C3DFileUpload: React.FC<C3DFileUploadProps> = ({
           disabled={disabled || isUploading}
         />
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           disabled={disabled || isUploading}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all duration-200"
         >
           {isUploading ? (
             <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

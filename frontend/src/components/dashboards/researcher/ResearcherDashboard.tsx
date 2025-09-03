@@ -10,10 +10,10 @@ import { useSessionStore } from '../../../store/sessionStore'
 export function ResearcherDashboard({ onQuickSelect }: { 
   onQuickSelect: (filename: string, uploadDate?: string) => void 
 }) {
-  const { userRole, canAccess } = useAuth()
+  const { userRole, canViewFeature } = useAuth()
   const { sessionParams } = useSessionStore()
   
-  if (!canAccess('reports:read') && userRole !== 'ADMIN') {
+  if (!canViewFeature('reports') && userRole !== 'ADMIN') {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">

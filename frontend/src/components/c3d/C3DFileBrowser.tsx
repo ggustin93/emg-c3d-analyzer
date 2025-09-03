@@ -2,7 +2,18 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Spinner from '@/components/ui/Spinner';
-import { MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon, EyeOpenIcon, PersonIcon, ArchiveIcon, CalendarIcon } from '@radix-ui/react-icons';
+import { 
+  MagnifyingGlassIcon, 
+  ChevronDownIcon, 
+  ChevronUpIcon, 
+  EyeOpenIcon, 
+  PersonIcon, 
+  ArchiveIcon, 
+  CalendarIcon,
+  UploadIcon,
+  MixerHorizontalIcon,
+  ViewGridIcon
+} from '@radix-ui/react-icons';
 import {
   Popover,
   PopoverContent,
@@ -19,6 +30,8 @@ import {
   resolvePatientId,
   resolveTherapistId,
   resolveSessionDate,
+  resolveSessionDateTime,
+  formatSessionDateTime,
   getSizeCategory
 } from '@/services/C3DFileDataResolver';
 
@@ -63,6 +76,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     therapistIdFilter: '',
     dateFromFilter: '',
     dateToFilter: '',
+    timeFromFilter: '',
+    timeToFilter: '',
     sizeFilter: 'all'
   });
   
@@ -108,7 +123,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     }
   }, []);
 
-  // Enhanced session date resolver that uses processed session data
+  // Enhanced session date resolver that uses processed session data with time support
   const resolveEnhancedSessionDate = useCallback((file: C3DFile): string | null => {
     const filePath = `c3d-examples/${file.name}`;
     const session = sessionData[filePath];
@@ -123,8 +138,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       return session.game_metadata.time;
     }
     
-    // Priority 3: Fallback to original filename/storage resolution
-    return resolveSessionDate(file);
+    // Priority 3: Use enhanced datetime resolver for filename timestamps
+    return resolveSessionDateTime(file);
   }, [sessionData]);
 
   // Load files from Supabase
@@ -257,14 +272,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       
       // Session date range filtering using enhanced resolver
       let matchesDateRange = true;
+      const sessionDateTime = resolveEnhancedSessionDate(file);
+      
       if (filters.dateFromFilter || filters.dateToFilter) {
-        const sessionDate = resolveEnhancedSessionDate(file);
-        
         // If file has no session date, exclude it from date-based filtering
-        if (!sessionDate) {
+        if (!sessionDateTime) {
           matchesDateRange = false;
         } else {
-          const fileDate = new Date(sessionDate);
+          const fileDate = new Date(sessionDateTime);
           const fromDate = filters.dateFromFilter ? new Date(filters.dateFromFilter) : null;
           const toDate = filters.dateToFilter ? new Date(filters.dateToFilter) : null;
           
@@ -273,10 +288,23 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         }
       }
       
+      // Time range filtering
+      let matchesTimeRange = true;
+      if ((filters.timeFromFilter || filters.timeToFilter) && sessionDateTime) {
+        const sessionDate = new Date(sessionDateTime);
+        const sessionTime = sessionDate.toTimeString().slice(0, 5); // Format: "HH:MM"
+        if (filters.timeFromFilter) {
+          matchesTimeRange = matchesTimeRange && sessionTime >= filters.timeFromFilter;
+        }
+        if (filters.timeToFilter) {
+          matchesTimeRange = matchesTimeRange && sessionTime <= filters.timeToFilter;
+        }
+      }
+      
       const matchesSize = filters.sizeFilter === 'all' || 
         getSizeCategory(file.size) === filters.sizeFilter;
 
-      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesSize;
+      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesTimeRange && matchesSize;
     });
   }, [files, filters, resolveEnhancedSessionDate]);
 
@@ -372,9 +400,23 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       therapistIdFilter: '',
       dateFromFilter: '',
       dateToFilter: '',
+      timeFromFilter: '',
+      timeToFilter: '',
       sizeFilter: 'all'
     });
   };
+
+  // Calculate active filter count for badge display
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.searchTerm) count++;
+    if (filters.patientIdFilter) count++;
+    if (filters.therapistIdFilter) count++;
+    if (filters.dateFromFilter || filters.dateToFilter) count++;
+    if (filters.timeFromFilter || filters.timeToFilter) count++;
+    if (filters.sizeFilter && filters.sizeFilter !== 'all') count++;
+    return count;
+  }, [filters]);
 
   // Get unique values for filter dropdowns
   const uniquePatientIds = useMemo(() => {
@@ -575,15 +617,20 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold">C3D File Library</CardTitle>
-            <p className="text-sm text-slate-500 mt-1">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalFiles)} of {totalFiles} files
-              {totalFiles !== files.length && ` (${files.length} total)`}
+            <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
+              <ViewGridIcon className="w-5 h-5 text-blue-600" />
+              C3D File Library
+            </CardTitle>
+            <p className="text-sm text-slate-600 mt-1">
+              Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, totalFiles)}</span> of <span className="font-medium text-slate-900">{totalFiles} files</span>
+              {totalFiles !== files.length && (
+                <span className="ml-2 text-slate-500">({files.length} total)</span>
+              )}
               {!SupabaseStorageService.isConfigured() && (
-                <span className="ml-2 text-yellow-600">(Mock Data)</span>
+                <span className="ml-2 text-yellow-600 text-sm">(Mock Data)</span>
               )}
             </p>
           </div>
@@ -596,25 +643,38 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
               />
             )}
             <Button
-              variant="outline"
+              variant={showFilters ? "default" : "outline"}
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
+              className={`flex items-center gap-2 transition-all duration-200 ${
+                showFilters 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                  : 'hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
+              }`}
             >
-              <MagnifyingGlassIcon className="w-4 h-4" />
+              <MixerHorizontalIcon className="w-4 h-4" />
               Filters
-              {showFilters ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+              {showFilters ? <ChevronUpIcon className="w-4 h-4 ml-1" /> : <ChevronDownIcon className="w-4 h-4 ml-1" />}
+              {activeFilterCount > 0 && (
+                <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full font-medium ${
+                  showFilters 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {activeFilterCount}
+                </span>
+              )}
             </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition-colors duration-200"
                 >
-                  <EyeOpenIcon className="w-4 h-4" />
+                  <ViewGridIcon className="w-4 h-4 text-slate-600" />
                   Columns
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <ChevronDownIcon className="w-4 h-4 text-slate-400" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56" align="end">

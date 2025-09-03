@@ -65,7 +65,7 @@ const mockAuthContext = {
   isAuthenticated: false,
   isLoading: false,
   userRole: 'RESEARCHER' as const,
-  canAccess: vi.fn().mockReturnValue(true)
+  canViewFeature: vi.fn().mockReturnValue(true)
 };
 
 describe('C3DFileBrowser - Core Functionality Tests', () => {
@@ -231,7 +231,7 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
         isAuthenticated: false,
         isLoading: false,
         userRole: null,
-        canAccess: vi.fn().mockReturnValue(false)
+        canViewFeature: vi.fn().mockReturnValue(false)
       });
 
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);

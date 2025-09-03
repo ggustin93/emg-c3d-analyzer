@@ -25,10 +25,8 @@ import { logger, LogCategory } from './services/logger';
 import { AdminDashboard } from './components/dashboards/admin/AdminDashboard';
 import { TherapistDashboard } from './components/dashboards/therapist/TherapistDashboard';
 import { ResearcherDashboard } from './components/dashboards/researcher/ResearcherDashboard';
-import { AnalysisWorkspace } from './components/dashboards/researcher/AnalysisWorkspace';
 
 
-type ViewMode = 'dashboard' | 'analysis';
 
 function AppContent() {
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
@@ -37,10 +35,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [signalType, setSignalType] = useState<SignalDisplayType>('processed');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   
   // Authentication state
-  const { isAuthenticated, userRole, canAccess } = useAuth();
+  const { isAuthenticated, userRole, canViewFeature } = useAuth();
   
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
@@ -441,13 +438,12 @@ function AppContent() {
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
 
-  // Handle navigation from dashboard to analysis view
+  // Handle file selection from dashboard
   const handleAnalysisNavigation = useCallback((filename?: string, uploadDate?: string) => {
     if (filename && uploadDate) {
       // If we have file data, trigger the quick select to load it
       handleQuickSelect(filename, uploadDate);
     }
-    setViewMode('analysis');
   }, [handleQuickSelect]);
 
   // Render the appropriate dashboard based on user role
@@ -481,21 +477,16 @@ function AppContent() {
           onReset={resetState}
           isAuthenticated={isAuthenticated}
           uploadDate={uploadDate}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
         />
 
         <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
           <AuthGuard>
-            {viewMode === 'dashboard' ? (
-              // Dashboard view - show role-based dashboard
+            {!analysisResult ? (
+              // Show dashboard when no file is loaded
               renderDashboard()
             ) : (
-              // Analysis view - EMG analysis functionality or placeholder
-              !analysisResult ? (
-                <AnalysisWorkspace onReturnToDashboard={() => setViewMode('dashboard')} />
-              ) : (
-                <GameSessionTabs
+              // Show EMG analysis tabs when file is loaded
+              <GameSessionTabs
                   analysisResult={analysisResult}
                   mvcThresholdForPlot={null}
                   muscleChannels={muscleChannels}
@@ -517,7 +508,6 @@ function AppContent() {
                   appIsLoading={isLoading}
                   uploadedFileName={uploadedFileName}
                 />
-              )
             )}
           </AuthGuard>
 

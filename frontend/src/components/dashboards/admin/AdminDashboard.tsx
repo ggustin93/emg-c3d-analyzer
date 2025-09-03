@@ -9,7 +9,7 @@ import { User, Activity } from 'lucide-react'
  * Access: ADMIN role only
  */
 export function AdminDashboard() {
-  const { userRole, canAccess } = useAuth()
+  const { userRole, canViewFeature } = useAuth()
   
   if (userRole !== 'ADMIN') {
     return (
@@ -48,13 +48,13 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between p-3 rounded border">
                 <span>Scoring Configuration</span>
                 <Badge variant="outline">
-                  {canAccess('scoring:write') ? 'Full Access' : 'Read Only'}
+                  {userRole === 'ADMIN' ? 'Full Access' : 'Read Only'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded border">
                 <span>Global Settings</span>
                 <Badge variant="outline">
-                  {canAccess('settings:write') ? 'Full Access' : 'Read Only'}
+                  {canViewFeature('system-settings') ? 'Full Access' : 'Read Only'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded border">
@@ -91,7 +91,7 @@ export function AdminDashboard() {
               </div>
               <div className="mt-4">
                 <Badge variant="secondary" className="w-full justify-center p-2">
-                  {canAccess('users:manage') ? 'User Management Available' : 'Read Only Access'}
+                  {canViewFeature('user-management') ? 'User Management Available' : 'Read Only Access'}
                 </Badge>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canAccess('audit:read') ? (
+              {canViewFeature('audit-logs') ? (
                 <div className="space-y-2">
                   <div className="p-3 rounded border">
                     <div className="flex justify-between items-center">

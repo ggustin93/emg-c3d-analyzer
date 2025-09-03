@@ -154,6 +154,36 @@ export const extractDateFromFilename = (filename: string): string | null => {
   return null;
 };
 
+/**
+ * 🕐 ENHANCED SESSION TIMESTAMP EXTRACTION
+ * 
+ * Extracts full timestamp including time from filename patterns:
+ * Ghostly_Emg_YYYYMMDD_HH-MM-SS-XXXX.c3d -> YYYY-MM-DDTHH:MM:SS
+ * Falls back to date-only if time not found
+ */
+export const extractTimestampFromFilename = (filename: string): string | null => {
+  // Pattern for Ghostly files: YYYYMMDD_HH-MM-SS
+  const timestampMatch = filename.match(/(\d{4})(\d{2})(\d{2})_(\d{2})-(\d{2})-(\d{2})/);
+  if (timestampMatch) {
+    const [, year, month, day, hour, minute, second] = timestampMatch;
+    // Validate date range
+    const yearNum = parseInt(year);
+    if (yearNum >= 2020 && yearNum <= 2030) {
+      // Return ISO 8601 format for proper sorting
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    }
+  }
+  
+  // Fallback to date-only extraction
+  const dateOnly = extractDateFromFilename(filename);
+  if (dateOnly) {
+    // Add midnight time for consistent sorting
+    return `${dateOnly}T00:00:00`;
+  }
+  
+  return null;
+};
+
 export const resolveSessionDate = (file: C3DFile): string | null => {
   // ⭐ PRIORITY 1: Filename Extraction (HIGHEST PRIORITY - User Request)
   const extractedDate = extractDateFromFilename(file.name);
@@ -169,6 +199,41 @@ export const resolveSessionDate = (file: C3DFile): string | null => {
   // 🔄 Alternative C3D Field (Additional Fallback)
   if (file.metadata?.time) {
     return file.metadata.time;
+  }
+  
+  return null;
+};
+
+/**
+ * 🕐 ENHANCED SESSION DATETIME RESOLUTION
+ * 
+ * Resolves session date with time for accurate hour-based sorting
+ * Uses full timestamp extraction when available
+ */
+export const resolveSessionDateTime = (file: C3DFile): string | null => {
+  // ⭐ PRIORITY 1: Full timestamp from filename (includes time)
+  const timestamp = extractTimestampFromFilename(file.name);
+  if (timestamp) {
+    return timestamp;
+  }
+  
+  // ⭐ PRIORITY 2: C3D Metadata with time
+  if (file.metadata?.session_date) {
+    // Check if it already includes time
+    if (file.metadata.session_date.includes('T')) {
+      return file.metadata.session_date;
+    }
+    // Add midnight time for consistent format
+    return `${file.metadata.session_date}T00:00:00`;
+  }
+  
+  // 🔄 Alternative C3D Field
+  if (file.metadata?.time) {
+    // Check if it's already a full timestamp
+    if (file.metadata.time.includes('T')) {
+      return file.metadata.time;
+    }
+    return `${file.metadata.time}T00:00:00`;
   }
   
   return null;
@@ -232,6 +297,68 @@ export const formatFullDate = (dateString: string): string => {
     minute: '2-digit',
     hour12: true
   });
+};
+
+/**
+ * 📅 FORMAT SESSION DATETIME WITH TIME AWARENESS
+ * 
+ * Displays date with time when available, date-only otherwise
+ * Provides user-friendly format for session timestamps
+ */
+export const formatSessionDateTime = (dateTimeString: string | null): string => {
+  if (!dateTimeString) return 'Unknown';
+  
+  try {
+    const date = new Date(dateTimeString);
+    
+    // Check if time component exists (not midnight from fallback)
+    const hasTime = dateTimeString.includes('T') && 
+                   !dateTimeString.endsWith('T00:00:00');
+    
+    if (hasTime) {
+      // Full datetime format with time
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    // Date-only format
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  } catch (e) {
+    return 'Invalid date';
+  }
+};
+
+/**
+ * 🕐 GET TIME OF DAY CATEGORY
+ * 
+ * Categorizes time into morning/afternoon/evening
+ * Useful for filtering sessions by time period
+ */
+export const getTimeOfDay = (dateTimeString: string | null): 'morning' | 'afternoon' | 'evening' | null => {
+  if (!dateTimeString || !dateTimeString.includes('T')) return null;
+  
+  try {
+    const date = new Date(dateTimeString);
+    const hour = date.getHours();
+    
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'afternoon';
+    if (hour >= 18 || hour < 6) return 'evening';
+    
+    return null;
+  } catch (e) {
+    return null;
+  }
 };
 
 export const isShortSession = (bytes: number): boolean => {
