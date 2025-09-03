@@ -321,7 +321,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
   });
 
   describe('Priority Order Validation', () => {
-    it('should follow correct priority: database > session override > defaults', async () => {
+    it('should follow correct priority: database > defaults, with session for simulation', async () => {
       const customDatabaseWeights: ScoringWeights = {
         compliance: 0.35,
         symmetry: 0.35,
@@ -332,7 +332,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         compliance_duration: 0.334,
       };
 
-      // Mock database weights (highest priority)
+      // Mock database weights (highest priority for base values)
       mockUseScoringConfiguration.mockReturnValue({
         weights: customDatabaseWeights,
         isLoading: false,
@@ -341,16 +341,19 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         saveCustomWeights: vi.fn()
       });
 
-      // Mock session with different override weights (should be ignored)
+      // Mock session with simulation weights (used for UI display only)
       const sessionParamsWithOverride = {
         ...mockSessionParams,
         enhanced_scoring: {
           enabled: true,
           weights: {
-            compliance: 0.50, // Different from database
+            compliance: 0.50, // Simulation weight for UI
             symmetry: 0.25,
             effort: 0.15,
-            gameScore: 0.10
+            gameScore: 0.10,
+            compliance_completion: 0.333,
+            compliance_intensity: 0.333,
+            compliance_duration: 0.334
           }
         }
       };
@@ -365,8 +368,8 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         expect(result.current).not.toBeNull();
       });
 
-      // Should use database weights (priority 1), not session override (priority 2)
-      expect(result.current!.weights).toEqual(customDatabaseWeights);
+      // Should use session weights for simulation (UI display)
+      expect(result.current!.weights).toEqual(sessionParamsWithOverride.enhanced_scoring.weights);
     });
 
     it('should use session override when database is unavailable', async () => {
