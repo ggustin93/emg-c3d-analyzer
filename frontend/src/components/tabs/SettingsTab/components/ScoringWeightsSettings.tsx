@@ -32,7 +32,6 @@ import UnifiedSettingsCard from './UnifiedSettingsCard';
 import PerformanceEquation from '@/components/tabs/PerformanceTab/components/PerformanceEquation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import SaveModeSelector from './SaveModeSelector';
 
 // Note: SCORING_PRESETS will be defined inside component to access database weights
 const SCORING_PRESETS_TEMPLATES = {
@@ -239,6 +238,9 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   };
 
   const updateWeights = (newWeights: ScoringWeights) => {
+    // Mark as local changes (simulation mode)
+    setLocalWeights(newWeights);
+    
     // Normalize only the main four scoring components to ensure they sum to 1.0
     const mainComponents = ['compliance', 'symmetry', 'effort', 'gameScore'] as const;
     const mainComponentsTotal = mainComponents.reduce((sum, key) => {
@@ -271,6 +273,28 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         ...(complianceWeights && { compliance_weights: complianceWeights })
       } as any
     });
+  };
+
+  // Handle reset to database values
+  const handleResetToDatabase = () => {
+    // Clear local changes
+    setLocalWeights(null);
+    
+    // Reset to database weights or backend defaults
+    const resetWeights = databaseWeights || backendConfigDefaults;
+    
+    // Update session params to clear any local overrides
+    setSessionParams({
+      ...sessionParams,
+      enhanced_scoring: {
+        ...sessionParams.enhanced_scoring,
+        enabled: true,
+        weights: resetWeights
+      } as any
+    });
+    
+    // Reset preset to default
+    setCurrentPreset('default');
   };
 
   const handleWeightChange = (key: keyof ScoringWeights, value: number) => {
@@ -357,6 +381,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 
     try {
       switch (mode) {
+        // All saves are now local only (simulation mode)
         case 'session':
           // Just update local state, already done via updateWeights
           setLocalWeights(currentWeights);
@@ -590,18 +615,29 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
               ))}
 
 
-              {/* Save Mode Selector - Replaces old Action Buttons */}
+              {/* Local Changes Indicator and Reset Button */}
               <div className="pt-4 border-t">
-                <SaveModeSelector
-                  onSave={handleSaveWeights}
-                  userRole={authState?.profile?.role}
-                  hasUnsavedChanges={hasUnsavedChanges || (localWeights !== null && JSON.stringify(localWeights) !== JSON.stringify(weights))}
-                  currentSaveState={currentSaveState}
-                  isTherapistMode={isTherapistMode}
-                  disabled={!canEdit}
-                  therapistId={authState?.user?.id}
-                  patientId={sessionParams?.patient_id}
-                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={localWeights ? "warning" : "secondary"}>
+                      {localWeights ? "Local Changes" : "Database Values"}
+                    </Badge>
+                    {localWeights && (
+                      <span className="text-sm text-muted-foreground">
+                        (Simulation mode - changes are not saved)
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetToDatabase}
+                    disabled={!localWeights}
+                  >
+                    <MixerHorizontalIcon className="h-4 w-4 mr-2" />
+                    Reset to Database Values
+                  </Button>
+                </div>
               </div>
 
               {/* Quick Action Buttons */}

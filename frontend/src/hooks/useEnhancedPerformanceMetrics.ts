@@ -173,18 +173,23 @@ export const useEnhancedPerformanceMetrics = (
       return null;
     }
     
-    // SINGLE SOURCE OF TRUTH: Priority per metricsDefinitions.md specification
-    // Priority order: 1. Session override, 2. Database weights, 3. Backend config.py fallback
-    // This aligns with the clinical specification: session > database > config.py
-    const weights = sessionParams.enhanced_scoring?.weights || databaseWeights || {
-      compliance: 0.50,  // w_c = 0.5 (Therapeutic Compliance) - from metricsDefinitions.md
-      symmetry: 0.25,    // w_s = 0.25 (Muscle Symmetry) - from metricsDefinitions.md  
-      effort: 0.25,      // w_e = 0.25 (Subjective Effort RPE) - from metricsDefinitions.md
-      gameScore: 0.00,   // w_g = 0.0 (Game Performance, optional) - from metricsDefinitions.md
-      compliance_completion: 0.333,  // w_comp = 1/3 - from metricsDefinitions.md
-      compliance_intensity: 0.333,   // w_int = 1/3 - from metricsDefinitions.md
-      compliance_duration: 0.334,    // w_dur = 1/3 - from metricsDefinitions.md
+    // SINGLE SOURCE OF TRUTH: Priority for simplified system
+    // Priority order: 1. Database weights, 2. Backend config.py fallback
+    // Session params are now only for local simulation (doesn't affect database results)
+    const weights = databaseWeights || {
+      compliance: 0.50,  // w_c = 0.5 (Therapeutic Compliance) - from backend/config.py ScoringDefaults
+      symmetry: 0.25,    // w_s = 0.25 (Muscle Symmetry) - from backend/config.py ScoringDefaults
+      effort: 0.25,      // w_e = 0.25 (Subjective Effort RPE) - from backend/config.py ScoringDefaults
+      gameScore: 0.00,   // w_g = 0.0 (Game Performance, optional) - from backend/config.py ScoringDefaults
+      compliance_completion: 0.333,  // w_comp = 1/3 - from backend/config.py ScoringDefaults
+      compliance_intensity: 0.333,   // w_int = 1/3 - from backend/config.py ScoringDefaults
+      compliance_duration: 0.334,    // w_dur = 1/3 - from backend/config.py ScoringDefaults
     };
+    
+    // For local simulation, we can use session params if available
+    const simulationWeights = sessionParams.enhanced_scoring?.enabled && sessionParams.enhanced_scoring?.weights
+      ? sessionParams.enhanced_scoring.weights
+      : weights;
     
     if (!weights) {
       console.warn('No scoring weights available, hook will return null');
@@ -262,12 +267,13 @@ export const useEnhancedPerformanceMetrics = (
     // BFR Safety Gate: P_overall = (...) × C_BFR (applied as final multiplier)
     const therapeuticComplianceScore = (leftMuscle.totalScore + rightMuscle.totalScore) / 2;
     
-    // Calculate base score using metricsDefinitions.md formula
+    // Calculate base score using simulation weights (for UI display)
+    // Note: Database results use 'weights', UI simulation uses 'simulationWeights'
     const baseOverallScore = Math.round(
-      weights.compliance * therapeuticComplianceScore +
-      weights.symmetry * symmetryScore +
-      weights.effort * effortScore +
-      weights.gameScore * gameScoreNormalized
+      simulationWeights.compliance * therapeuticComplianceScore +
+      simulationWeights.symmetry * symmetryScore +
+      simulationWeights.effort * effortScore +
+      simulationWeights.gameScore * gameScoreNormalized
     );
     
     // Apply BFR Safety Gate (C_BFR): multiply by compliance score (0.0-1.0 range)
@@ -283,7 +289,7 @@ export const useEnhancedPerformanceMetrics = (
       effortScore,
       complianceScore,
       gameScoreNormalized,
-      weights,
+      weights: simulationWeights,  // Return simulation weights for UI display
       isDebugMode
     };
     
