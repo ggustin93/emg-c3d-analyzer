@@ -12,6 +12,7 @@ import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercentage, formatClinicalValue } from '@/lib/formatUtils';
+import { cn } from '@/lib/utils';
 
 interface MuscleComplianceCardProps {
   channel: string;
@@ -147,7 +148,11 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
   const scoreColors = useScoreColors(totalScore);
 
   return (
-    <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-slate-200 ${isExpanded ? 'relative z-10' : ''}`}>
+    <Card className={cn(
+      "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2",
+      scoreColors.border,
+      isExpanded && "relative z-10"
+    )}>
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer group">

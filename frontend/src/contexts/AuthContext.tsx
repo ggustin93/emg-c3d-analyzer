@@ -28,9 +28,9 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<AuthResponse<void>>
   isAuthenticated: boolean
   isLoading: boolean
-  // RBAC additions
+  // RBAC - UI display only (security is enforced by database RLS)
   userRole: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
-  canAccess: (permission: string) => boolean
+  canViewFeature: (feature: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -283,41 +283,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return AuthService.resetPassword(email)
   }, [])
   
-  // RBAC permissions mapping (matching backend)
-  const PERMISSIONS: Record<string, string[]> = {
-    'ADMIN': [
-      'all', // Admin has full access
-      'scoring:write',
-      'settings:write', 
-      'users:manage',
-      'reports:all',
-      'audit:read'
-    ],
-    'THERAPIST': [
-      'patients:own',
-      'sessions:write',
-      'sessions:own',
-      'notes:write',
-      'reports:own',
-      'upload:c3d'
-    ],
-    'RESEARCHER': [
-      'reports:read',
-      'analytics:read', 
-      'export:anonymized',
-      'sessions:read_anonymized'
-    ]
-  }
-
-  // Role-based access control - normalize role to uppercase
+  // IMPORTANT: This is UI display logic ONLY. All actual security enforcement 
+  // is handled by database Row Level Security (RLS) policies in Supabase.
+  // Frontend should NEVER be trusted for authorization decisions.
+  
+  // Get user role for UI display purposes
   const userRole = authState.profile?.role 
     ? (authState.profile.role.toUpperCase() as 'ADMIN' | 'THERAPIST' | 'RESEARCHER') 
     : null
   
-  const canAccess = useCallback((permission: string) => {
+  // UI feature visibility - for showing/hiding buttons, menu items, etc.
+  // This does NOT provide security - it only improves UX by hiding irrelevant features
+  const canViewFeature = useCallback((feature: string) => {
     if (!userRole) return false
-    if (userRole === 'ADMIN') return true // Admin can do everything
-    return PERMISSIONS[userRole]?.includes(permission) || false
+    
+    // Basic feature visibility based on role
+    // All security enforcement happens at the database level via RLS
+    switch (feature) {
+      // Admin features
+      case 'user-management':
+      case 'system-settings':
+      case 'audit-logs':
+        return userRole === 'ADMIN'
+      
+      // Therapist features  
+      case 'patient-management':
+      case 'session-notes':
+      case 'c3d-upload':
+        return userRole === 'ADMIN' || userRole === 'THERAPIST'
+      
+      // Researcher features
+      case 'analytics':
+      case 'export-data':
+        return userRole === 'ADMIN' || userRole === 'RESEARCHER'
+      
+      // Common features available to authenticated users
+      case 'reports':
+      case 'dashboard':
+        return true
+      
+      default:
+        // Conservative default - don't show unknown features
+        return userRole === 'ADMIN'
+    }
   }, [userRole])
 
   // Computed values
@@ -334,7 +342,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated,
     isLoading,
     userRole,
-    canAccess
+    canViewFeature
   }
   
   return (

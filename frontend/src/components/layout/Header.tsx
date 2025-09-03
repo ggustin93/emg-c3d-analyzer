@@ -2,18 +2,13 @@ import React from 'react';
 import UserProfile from '../auth/UserProfile';
 import FileMetadataBar from './FileMetadataBar';
 import { EMGAnalysisResult } from '../../types/emg';
-import { Button } from '../ui/button';
-import { User, Activity } from 'lucide-react';
 
-type ViewMode = 'dashboard' | 'analysis';
 
 interface HeaderProps {
   analysisResult?: EMGAnalysisResult | null;
   onReset?: () => void;
   isAuthenticated?: boolean;
   uploadDate?: string | null; // Upload date from file browser
-  viewMode?: ViewMode;
-  onViewModeChange?: (mode: ViewMode) => void;
 }
 
 /**
@@ -24,9 +19,7 @@ const Header: React.FC<HeaderProps> = ({
   analysisResult, 
   onReset, 
   isAuthenticated = true, 
-  uploadDate,
-  viewMode = 'dashboard',
-  onViewModeChange
+  uploadDate
 }) => {
   return (
     <header className="bg-white shadow-sm">
@@ -47,29 +40,6 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Center - View toggle buttons (only when authenticated) */}
-          {isAuthenticated && onViewModeChange && (
-            <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg">
-              <Button
-                variant={viewMode === 'dashboard' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onViewModeChange('dashboard')}
-                className="flex items-center gap-2"
-              >
-                <User className="w-4 h-4" />
-                Dashboard
-              </Button>
-              <Button
-                variant={viewMode === 'analysis' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onViewModeChange('analysis')}
-                className="flex items-center gap-2"
-              >
-                <Activity className="w-4 h-4" />
-                Analysis
-              </Button>
-            </div>
-          )}
 
           {/* Right side - User profile (only when authenticated) */}
           {isAuthenticated && <UserProfile compact />}

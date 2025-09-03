@@ -70,18 +70,10 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   const overallScore = performanceData?.totalScore || 0;
   const consistentColors = useScoreColors(overallScore);
   
-  // Determine border color based on score - cyan for 70-84% range
-  const cardBorderClass = useMemo(() => {
-    if (overallScore >= 85) return 'border-green-500';
-    if (overallScore >= 70) return 'border-cyan-500'; // Force cyan for 70-84% range
-    if (overallScore >= 50) return 'border-yellow-500';
-    return 'border-red-500';
-  }, [overallScore]);
-  
   // Early return for loading state
   if (!performanceData) {
     return (
-      <Card className="bg-white shadow-sm p-4 text-center min-h-[400px] flex items-center justify-center">
+      <Card className="bg-white shadow-sm p-4 text-center flex items-center justify-center">
         <span className="text-gray-500">Loading performance data...</span>
       </Card>
     );
@@ -92,8 +84,8 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   return (
     <Card 
       className={cn(
-        "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden min-h-[400px] border-2",
-        cardBorderClass
+        "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2",
+        consistentColors.border
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
