@@ -134,7 +134,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
           <CollapsibleContent>
             <CardContent className="pt-0 space-y-6">
           {/* Performance Breakdown */}
-          <div className="rounded-lg bg-slate-50 py-6 px-4 space-y-6">
+          <div className="rounded-lg bg-slate-50 py-4 px-4 space-y-4 pb-10">
             <h4 className="text-sm font-semibold text-gray-700 text-center">Performance Breakdown</h4>
 
             {(() => {
@@ -177,9 +177,9 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
               const totalContribution = Object.values(contributions).reduce((sum, val) => sum + val, 0);
 
               return (
-                <div className="space-y-3" data-testid="performance-breakdown">
+                <div className="space-y-6" data-testid="performance-breakdown">
                   {/* Visual progress bar showing component contributions */}
-                  <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${formatPercentage(totalScore)}`}>
+                  <div className="h-4 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${formatPercentage(totalScore)}`}>
                     <div className="flex h-full w-full">
                       {contributionData.map((c) => {
                         const widthPercentage = totalContribution > 0 ? (c.value / totalContribution) * 100 : 0;
@@ -196,7 +196,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   </div>
                   
                   {/* Component breakdown with calculations */}
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {contributionData.map((c) => (
                       <div key={`row-${c.key}`} className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                           <span className="text-slate-600">{formatPercentage(c.weight * 100)}</span>
                           <span className="text-slate-400">=</span>
                           <span className="font-semibold text-slate-800 min-w-[3rem] text-right">
-                            +{formatPercentage(c.value)}
+                            +{formatPercentage((c.rawScore ?? 0)*c.weight)}
                           </span>
                         </div>
                       </div>
@@ -220,7 +220,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   </div>
                   
                   {/* Summary section */}
-                  <div className="pt-2 border-t border-slate-200/80 space-y-1">
+                  <div className="pt-2 border-t border-slate-200/80 space-y-2">
                     <div className="flex justify-between items-center text-sm">
                       <span className="font-medium text-slate-700">Total Score:</span>
                       <span className="font-bold text-slate-800">{formatPercentage(totalScore)}</span>
