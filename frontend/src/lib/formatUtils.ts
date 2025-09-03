@@ -58,15 +58,18 @@ export function formatClinicalValue(
 
 /**
  * Format points/scores for performance display
- * @param value - The points value
+ * @param value - The points value (can be decimal from weighted calculations)
  * @returns Formatted points string (e.g., "+25 pts")
  */
 export function formatPoints(value: number | null | undefined): string {
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || value === 0) {
     return '+0 pts';
   }
+  // Round to nearest integer for display, but handle small decimals
   const rounded = Math.round(value);
-  return `+${rounded} pts`;
+  // If rounding results in 0 but value is positive, show at least 1
+  const displayValue = rounded === 0 && value > 0 ? 1 : rounded;
+  return `+${displayValue} pts`;
 }
 
 /**

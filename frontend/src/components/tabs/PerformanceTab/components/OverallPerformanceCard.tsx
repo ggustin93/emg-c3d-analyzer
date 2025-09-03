@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
@@ -6,26 +6,42 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { useSessionStore } from '@/store/sessionStore';
-import { ScoringWeights } from '@/types/emg';
 import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
-import { formatPercentage, formatPoints } from '@/lib/formatUtils';
+import { formatPercentage } from '@/lib/formatUtils';
 import CircleDisplay from '@/components/shared/CircleDisplay';
 
-
+/**
+ * Props for the OverallPerformanceCard component
+ */
 interface OverallPerformanceCardProps {
+  /** Performance calculation result from performanceUtils */
   performanceData: PerformanceCalculationResult | null;
+  /** Label describing the score level (e.g., "Excellent", "Good") */
   scoreLabel: string;
+  /** Tailwind text color class for the score */
   scoreTextColor: string;
+  /** Tailwind background color class for the score */
   scoreBgColor: string;
+  /** Hex color value for visual elements */
   scoreHexColor: string;
-  // Keep props that are not part of the calculation but are needed for display context
+  /** Optional therapeutic compliance score for display */
   therapeuticComplianceScore?: number;
+  /** Optional symmetry score for display */
   symmetryScore?: number;
-  // subjectiveFatigueLevel is now derived from performanceData
+  /** Optional game score for display */
   gameScore?: number;
 }
 
+/**
+ * OverallPerformanceCard displays the comprehensive performance score
+ * with a breakdown of contributing factors (compliance, symmetry, effort, game).
+ * 
+ * The component uses a weight hierarchy:
+ * 1. Session weights (highest priority)
+ * 2. Database weights from Supabase
+ * 3. Default weights from backend config
+ */
 const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   performanceData,
   scoreLabel,
@@ -39,50 +55,48 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   const { sessionParams } = useSessionStore();
   const { weights: databaseWeights } = useScoringConfiguration();
   
-  // Use proper scoring configuration weights from API first, then backend config.py defaults
-  const weights = sessionParams.enhanced_scoring?.weights || databaseWeights || {
-    compliance: 0.50,  // 50% - Therapeutic Compliance (from backend config.py ScoringDefaults)
-    symmetry: 0.25,    // 25% - Muscle Symmetry (from backend config.py ScoringDefaults)
-    effort: 0.25,      // 25% - Subjective Effort (RPE) (from backend config.py ScoringDefaults)
-    gameScore: 0.00,   // 0% - Game Performance (from backend config.py ScoringDefaults)
-    compliance_completion: 0.333,
-    compliance_intensity: 0.333,
-    compliance_duration: 0.334,
-  };
+  // Weight hierarchy: Session → Database → Defaults
+  const weights = useMemo(() => 
+    sessionParams.enhanced_scoring?.weights || databaseWeights || {
+      compliance: 0.50,
+      symmetry: 0.25,
+      effort: 0.25,
+      gameScore: 0.00,
+      compliance_completion: 0.333,
+      compliance_intensity: 0.333,
+      compliance_duration: 0.334,
+    }, [sessionParams.enhanced_scoring?.weights, databaseWeights]);
   
-  // Use consistent color system like MusclePerformance cards
   const overallScore = performanceData?.totalScore || 0;
   const consistentColors = useScoreColors(overallScore);
   
-  // Map hex colors to border classes to match CircleDisplay
-  const getBorderClass = (hex: string): string => {
-    switch (hex) {
-      case '#22c55e': return 'border-green-500';
-      case '#06b6d4': return 'border-cyan-500';
-      case '#eab308': return 'border-yellow-500';
-      case '#ef4444': return 'border-red-500';
-      default: return 'border-gray-300';
-    }
-  };
+  // Determine border color based on score - cyan for 70-84% range
+  const cardBorderClass = useMemo(() => {
+    if (overallScore >= 85) return 'border-green-500';
+    if (overallScore >= 70) return 'border-cyan-500'; // Force cyan for 70-84% range
+    if (overallScore >= 50) return 'border-yellow-500';
+    return 'border-red-500';
+  }, [overallScore]);
   
-  // If performanceData is not available, show a loading/default state
+  // Early return for loading state
   if (!performanceData) {
-    // You can return a loading spinner or a placeholder card here
-    return <Card className="bg-white shadow-sm p-4 text-center">Loading performance data...</Card>;
+    return (
+      <Card className="bg-white shadow-sm p-4 text-center min-h-[400px] flex items-center justify-center">
+        <span className="text-gray-500">Loading performance data...</span>
+      </Card>
+    );
   }
 
   const { totalScore, contributions, strongestDriver, weightedScores } = performanceData;
 
-  const scoreData = [
-    { name: 'Score', value: Math.min(totalScore, 100) },
-    { name: 'Remaining', value: Math.max(0, 100 - totalScore) },
-  ];
-
-  const SCORE_COLORS = [scoreHexColor, '#e5e7eb'];
-
   return (
-    <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2 min-h-[400px] ${getBorderClass(consistentColors.hex)}`}>
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+    <Card 
+      className={cn(
+        "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden min-h-[400px] border-2",
+        cardBorderClass
+      )}
+    >
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer group">
               <CardHeader className="flex flex-col items-center text-center pb-4 relative">
@@ -97,15 +111,17 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                     effortScoreWeight={weights.effort}
                     gameScoreWeight={weights.gameScore}
                   />
-                  </CardTitle>
-                  <p className={`text-sm font-bold ${consistentColors.text} mb-2`}>{consistentColors.label}</p>
+                </CardTitle>
+                <p className={cn("text-sm font-bold mb-2", scoreTextColor || consistentColors.text)}>
+                  {scoreLabel || consistentColors.label}
+                </p>
                   
                   <WeightedScoreTooltip weights={weights}>
                     <div>
                       <CircleDisplay 
                         value={overallScore} 
                         label="" 
-                        color={consistentColors.hex}
+                        color={scoreHexColor || consistentColors.hex}
                         size="lg"
                         showPercentage={true}
                       />
@@ -117,25 +133,53 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0 space-y-6">
-          {/* Performance Breakdown - Improved Clinical UX */}
+          {/* Performance Breakdown */}
           <div className="rounded-lg bg-slate-50 py-6 px-4 space-y-6">
             <h4 className="text-sm font-semibold text-gray-700 text-center">Performance Breakdown</h4>
 
             {(() => {
+              // Define contribution components with their styling and values
               const contributionData = [
-                { key: 'C', color: 'bg-green-500', label: 'Compliance', value: contributions.compliance, weight: weights.compliance },
-                { key: 'S', color: 'bg-purple-500', label: 'Symmetry', value: contributions.symmetry, weight: weights.symmetry },
-                { key: 'E', color: 'bg-orange-500', label: 'Effort', value: contributions.effort, weight: weights.effort },
-                ...(weights.gameScore > 0 ? [{ key: 'G' as const, color: 'bg-cyan-500', label: 'Game', value: contributions.game, weight: weights.gameScore }] : []),
+                { 
+                  key: 'C', 
+                  color: 'bg-green-500', 
+                  label: 'Compliance', 
+                  value: contributions.compliance, 
+                  weight: weights.compliance,
+                  rawScore: therapeuticComplianceScore
+                },
+                { 
+                  key: 'S', 
+                  color: 'bg-purple-500', 
+                  label: 'Symmetry', 
+                  value: contributions.symmetry, 
+                  weight: weights.symmetry,
+                  rawScore: symmetryScore
+                },
+                { 
+                  key: 'E', 
+                  color: 'bg-orange-500', 
+                  label: 'Effort', 
+                  value: contributions.effort, 
+                  weight: weights.effort,
+                  rawScore: weightedScores.effort
+                },
+                ...(weights.gameScore > 0 ? [{ 
+                  key: 'G' as const, 
+                  color: 'bg-cyan-500', 
+                  label: 'Game', 
+                  value: contributions.game, 
+                  weight: weights.gameScore,
+                  rawScore: gameScore
+                }] : []),
               ];
               
-              const totalContribution = Object.values(contributions).reduce((s, c) => s + c, 0);
-              const maxContribution = Math.max(...Object.values(contributions));
+              const totalContribution = Object.values(contributions).reduce((sum, val) => sum + val, 0);
 
               return (
-                <div className="space-y-3">
-                  {/* Progress bar showing relative contribution */}
-                  <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${formatPercentage(totalContribution)}`}>
+                <div className="space-y-3" data-testid="performance-breakdown">
+                  {/* Visual progress bar showing component contributions */}
+                  <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${formatPercentage(totalScore)}`}>
                     <div className="flex h-full w-full">
                       {contributionData.map((c) => {
                         const widthPercentage = totalContribution > 0 ? (c.value / totalContribution) * 100 : 0;
@@ -144,14 +188,14 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                             key={`seg-${c.key}`}
                             className={cn(c.color, "transition-all duration-500")}
                             style={{ width: `${Math.max(0, Math.min(100, widthPercentage))}%` }}
-                            title={`${c.label}: ${formatPoints(c.value)} (${formatPercentage(c.value)})`}
+                            title={`${c.label}: +${formatPercentage(c.value)}`}
                           />
                         );
                       })}
                     </div>
                   </div>
                   
-                  {/* Single-line layout per metric - improved readability */}
+                  {/* Component breakdown with calculations */}
                   <div className="space-y-3">
                     {contributionData.map((c) => (
                       <div key={`row-${c.key}`} className="flex items-center justify-between text-xs">
@@ -162,22 +206,20 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-slate-600">
-                            {c.key === 'C' && therapeuticComplianceScore !== undefined ? formatPercentage(therapeuticComplianceScore) :
-                             c.key === 'S' && symmetryScore !== undefined ? formatPercentage(symmetryScore) :
-                             c.key === 'E' ? formatPercentage(weightedScores.effort) :
-                             c.key === 'G' && gameScore !== undefined ? formatPercentage(gameScore) :
-                             formatPercentage(weightedScores[c.key.toLowerCase() as keyof typeof weightedScores] || 0)}
+                            {formatPercentage(c.rawScore ?? 0)}
                           </span>
                           <span className="text-slate-400">×</span>
                           <span className="text-slate-600">{formatPercentage(c.weight * 100)}</span>
                           <span className="text-slate-400">=</span>
-                          <span className="font-semibold text-slate-800 min-w-[3rem] text-right">{formatPoints(c.value)}</span>
+                          <span className="font-semibold text-slate-800 min-w-[3rem] text-right">
+                            +{formatPercentage(c.value)}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                   
-                  {/* Total and key insight */}
+                  {/* Summary section */}
                   <div className="pt-2 border-t border-slate-200/80 space-y-1">
                     <div className="flex justify-between items-center text-sm">
                       <span className="font-medium text-slate-700">Total Score:</span>
@@ -193,8 +235,6 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
 
           </div>
 
-            {/* Component Values Grid removed - redundant with breakdown above */}
-          
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
