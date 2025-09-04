@@ -9,45 +9,8 @@ import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMet
 import { useSessionStore } from '@/store/sessionStore';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { perfMonitor } from '@/lib/performanceMonitoring';
+import { getScoreStyle } from '@/lib/scoringSystem';
 
-/**
- * Score ranges for performance classification
- */
-const SCORE_RANGES = {
-  EXCELLENT: 80,
-  GOOD: 60,
-  FAIR: 40,
-} as const;
-
-/**
- * Score styling configuration for different performance levels
- */
-const SCORE_STYLES = {
-  excellent: {
-    label: 'Excellent' as const,
-    textColor: 'text-emerald-700',
-    bgColor: 'bg-emerald-100',
-    hexColor: '#10b981',
-  },
-  good: {
-    label: 'Good' as const,
-    textColor: 'text-blue-700',
-    bgColor: 'bg-blue-100',
-    hexColor: '#3b82f6',
-  },
-  fair: {
-    label: 'Fair' as const,
-    textColor: 'text-amber-700',
-    bgColor: 'bg-amber-100',
-    hexColor: '#f59e0b',
-  },
-  poor: {
-    label: 'Poor' as const,
-    textColor: 'text-red-700',
-    bgColor: 'bg-red-100',
-    hexColor: '#ef4444',
-  },
-} as const;
 
 /**
  * Default weight values from backend configuration
@@ -163,15 +126,6 @@ const CardSkeleton = ({ variant = 'muscle' }: { variant?: 'muscle' | 'overall' }
   </div>
 );
 
-/**
- * Get score styling based on performance score
- */
-function getScoreStyle(score: number) {
-  if (score >= SCORE_RANGES.EXCELLENT) return SCORE_STYLES.excellent;
-  if (score >= SCORE_RANGES.GOOD) return SCORE_STYLES.good;
-  if (score >= SCORE_RANGES.FAIR) return SCORE_STYLES.fair;
-  return SCORE_STYLES.poor;
-}
 
 /**
  * Calculate average contraction time from channel data
@@ -323,9 +277,9 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         channelName,
         totalScore: muscle.totalScore,
         scoreLabel: scoreStyle.label,
-        scoreTextColor: scoreStyle.textColor,
-        scoreBgColor: scoreStyle.bgColor,
-        scoreHexColor: scoreStyle.hexColor,
+        scoreTextColor: scoreStyle.text,
+        scoreBgColor: scoreStyle.bg,
+        scoreHexColor: scoreStyle.hex,
         totalContractions: muscle.components.completion.count,
         expectedContractions: muscle.components.completion.total,
         contractionScore: muscle.components.completion.value,
@@ -391,9 +345,9 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     const scoreStyle = getScoreStyle(performanceMetrics.overallScore);
     return {
       label: scoreStyle.label,
-      text: scoreStyle.textColor,
-      bg: scoreStyle.bgColor,
-      hex: scoreStyle.hexColor,
+      text: scoreStyle.text,
+      bg: scoreStyle.bg,
+      hex: scoreStyle.hex,
     };
   }, [performanceMetrics?.overallScore]);
 

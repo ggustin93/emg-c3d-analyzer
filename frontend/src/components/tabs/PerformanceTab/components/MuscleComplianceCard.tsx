@@ -13,6 +13,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercentage, formatClinicalValue } from '@/lib/formatUtils';
 import { cn } from '@/lib/utils';
+import { getEnhancedProgressColors } from '@/lib/progressBarColors';
 
 interface MuscleComplianceCardProps {
   channel: string;
@@ -120,12 +121,14 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
   // The `contractionScore` prop is now the source of truth, passed from the hook.
   // The local calculation below is removed to adhere to DRY principles.
   const contractionColors = useScoreColors(contractionScore ?? 0);
+  const contractionProgressColors = getEnhancedProgressColors(contractionScore ?? 0);
 
   // Calculate good contraction percentage with consistent formatting
   const goodContractionPercentage = totalContractions > 0 
     ? Math.round((goodContractionCount / totalContractions) * 100) 
     : 0;
   const goodContractionColors = useScoreColors(goodContractionPercentage);
+  const goodContractionProgressColors = getEnhancedProgressColors(goodContractionPercentage);
 
   // Calculate duration quality score based on actualDurationThreshold
   let durationCompliantCount = 0;
@@ -142,6 +145,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
     ? Math.round((durationCompliantCount / totalContractions) * 100) 
     : 0;
   const durationQualityColors = useScoreColors(durationQualityPercentage);
+  const durationQualityProgressColors = getEnhancedProgressColors(durationQualityPercentage);
   
 
   // Get colors for the overall score
@@ -149,8 +153,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
 
   return (
     <Card className={cn(
-      "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2",
-      scoreColors.border,
+      "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2 border-gray-200",
       isExpanded && "relative z-10"
     )}>
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -257,7 +260,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                   <Progress 
                     value={contractionScore} 
                     className="h-2" 
-                    indicatorClassName={`${contractionColors.bg} opacity-80`} 
+                    indicatorClassName={contractionProgressColors.bg} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
                     {totalContractions} contractions detected (short: {shortContractions}, long: {longContractions})
@@ -320,7 +323,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                   <Progress 
                     value={goodContractionPercentage} 
                     className="h-2" 
-                    indicatorClassName={`${goodContractionColors.bg} opacity-80`} 
+                    indicatorClassName={goodContractionProgressColors.bg} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
                     {goodContractionCount} of {totalContractions} good quality
@@ -392,7 +395,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                   <Progress 
                     value={durationQualityPercentage} 
                     className="h-2" 
-                    indicatorClassName={`${durationQualityColors.bg} opacity-80`} 
+                    indicatorClassName={durationQualityProgressColors.bg} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
                     {durationCompliantCount} of {totalContractions} met duration threshold

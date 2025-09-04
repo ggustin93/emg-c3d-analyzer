@@ -130,7 +130,6 @@ function AppContent() {
     setUploadDate(null); // Clear the upload date before resetting session params
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
-    setViewMode('dashboard'); // Return to dashboard view after reset
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
   // Reset state but preserve upload date (for file browser selections)

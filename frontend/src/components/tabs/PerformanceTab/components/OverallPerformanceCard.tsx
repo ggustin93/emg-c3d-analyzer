@@ -4,12 +4,13 @@ import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useScoreColors } from '@/hooks/useScoreColors';
+import { hexToBorderClass } from '@/lib/scoringSystem';
 import { useSessionStore } from '@/store/sessionStore';
 import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { formatPercentage } from '@/lib/formatUtils';
 import CircleDisplay from '@/components/shared/CircleDisplay';
+import { getEnhancedProgressColors } from '@/lib/progressBarColors';
 
 /**
  * Props for the OverallPerformanceCard component
@@ -68,7 +69,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
     }, [sessionParams.enhanced_scoring?.weights, databaseWeights]);
   
   const overallScore = performanceData?.totalScore || 0;
-  const consistentColors = useScoreColors(overallScore);
+  const borderClass = scoreHexColor ? hexToBorderClass(scoreHexColor) : 'border-gray-200';
   
   // Early return for loading state
   if (!performanceData) {
@@ -85,7 +86,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
     <Card 
       className={cn(
         "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2",
-        consistentColors.border
+        borderClass
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -104,8 +105,8 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                     gameScoreWeight={weights.gameScore}
                   />
                 </CardTitle>
-                <p className={cn("text-sm font-bold mb-2", scoreTextColor || consistentColors.text)}>
-                  {scoreLabel || consistentColors.label}
+                <p className={cn("text-sm font-bold mb-2", scoreTextColor)}>
+                  {scoreLabel}
                 </p>
                   
                   <WeightedScoreTooltip weights={weights}>
@@ -113,7 +114,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                       <CircleDisplay 
                         value={overallScore} 
                         label="" 
-                        color={scoreHexColor || consistentColors.hex}
+                        color={scoreHexColor || '#10b981'}
                         size="lg"
                         showPercentage={true}
                       />
@@ -134,7 +135,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
               const contributionData = [
                 { 
                   key: 'C', 
-                  color: 'bg-green-500', 
+                  color: getEnhancedProgressColors(therapeuticComplianceScore ?? 50).bg, 
                   label: 'Compliance', 
                   value: contributions.compliance, 
                   weight: weights.compliance,
@@ -142,7 +143,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 },
                 { 
                   key: 'S', 
-                  color: 'bg-purple-500', 
+                  color: getEnhancedProgressColors(symmetryScore ?? 50).bg, 
                   label: 'Symmetry', 
                   value: contributions.symmetry, 
                   weight: weights.symmetry,
@@ -150,7 +151,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 },
                 { 
                   key: 'E', 
-                  color: 'bg-orange-500', 
+                  color: 'bg-amber-600', // Fixed color for effort since it's subjective 
                   label: 'Effort', 
                   value: contributions.effort, 
                   weight: weights.effort,
@@ -158,7 +159,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 },
                 ...(weights.gameScore > 0 ? [{ 
                   key: 'G' as const, 
-                  color: 'bg-cyan-500', 
+                  color: 'bg-slate-500', // Neutral color for experimental game score 
                   label: 'Game', 
                   value: contributions.game, 
                   weight: weights.gameScore,
