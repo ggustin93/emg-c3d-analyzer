@@ -81,7 +81,8 @@ class TestWebhookCompleteIntegration:
         client, 
         supabase_client, 
         sample_c3d_path, 
-        test_patient_code
+        test_patient_code,
+        auto_cleanup_test_artifacts
     ):
         """Test complete workflow from file upload to analysis completion.
         
@@ -92,6 +93,9 @@ class TestWebhookCompleteIntegration:
         4. Analytics cache is updated
         5. All error handling works properly
         """
+        # Get cleanup trackers
+        files_to_cleanup, sessions_to_cleanup = auto_cleanup_test_artifacts
+        
         # Skip only if explicitly disabled
         if os.getenv("SKIP_E2E_TESTS", "false").lower() == "true":
             pytest.skip("E2E tests disabled - set SKIP_E2E_TESTS=false to enable")
@@ -109,6 +113,9 @@ class TestWebhookCompleteIntegration:
                 storage_response = supabase_client.storage.from_("c3d-examples").upload(
                     test_object_path, f
                 )
+            
+            # Track file for automatic cleanup
+            files_to_cleanup.append(f"c3d-examples/{test_object_path}")
             
             if hasattr(storage_response, 'error') and storage_response.error:
                 pytest.skip(f"Storage upload failed - E2E test requires storage access: {storage_response.error}")
@@ -149,19 +156,15 @@ class TestWebhookCompleteIntegration:
         session_id = response_data["session_id"]
         assert session_id is not None
         
+        # Track session for automatic cleanup
+        sessions_to_cleanup.append(session_id)
+        
         # Step 5: Verify database state across all tables
         self._verify_therapy_session_created(supabase_client, session_id)
         self._verify_emg_statistics_populated(supabase_client, session_id)
         self._verify_c3d_technical_data_populated(supabase_client, session_id)
         
-        # Step 6: Cleanup - remove test file from storage AND database records
-        try:
-            supabase_client.storage.from_("c3d-examples").remove([test_object_path])
-        except Exception as e:
-            print(f"Warning: Could not cleanup test file {test_object_path}: {e}")
-        
-        # Clean up database records to prevent duplicate key errors in subsequent runs
-        self._cleanup_database_records(supabase_client, session_id)
+        # Note: Cleanup is now handled automatically by the fixture
     
     def _verify_therapy_session_created(
         self, 
