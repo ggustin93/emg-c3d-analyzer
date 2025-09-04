@@ -120,9 +120,9 @@ def analyze_contractions(
         "contractions": [],
         # Always return integer counts for stability
         "good_contraction_count": 0,
-        "mvc_contraction_count": 0,
-        "duration_contraction_count": 0,
-        "mvc_threshold_actual_value": mvc_amplitude_threshold,
+        "mvc75_compliance_rate": 0,
+        "duration_compliance_rate": 0,
+        "mvc75_threshold": mvc_amplitude_threshold,
         "duration_threshold_actual_value": contraction_duration_threshold_ms,
     }
 
@@ -322,8 +322,8 @@ def analyze_contractions(
     # 9. Calculate summary statistics
     if not contractions_list:
         base_return["good_contraction_count"] = int(good_contraction_count)
-        base_return["mvc_contraction_count"] = int(mvc_contraction_count)
-        base_return["duration_contraction_count"] = int(duration_contraction_count)
+        base_return["mvc75_compliance_rate"] = int(mvc_contraction_count)
+        base_return["duration_compliance_rate"] = int(duration_contraction_count)
         return base_return
 
     durations = [c["duration_ms"] for c in contractions_list]
@@ -351,9 +351,9 @@ def analyze_contractions(
         else 0.0,  # Max of max amplitudes
         "contractions": contractions_list,
         "good_contraction_count": int(good_contraction_count),
-        "mvc_contraction_count": int(mvc_contraction_count),
-        "duration_contraction_count": int(duration_contraction_count),
-        "mvc_threshold_actual_value": mvc_amplitude_threshold,
+        "mvc75_compliance_rate": int(mvc_contraction_count),
+        "duration_compliance_rate": int(duration_contraction_count),
+        "mvc75_threshold": mvc_amplitude_threshold,
         "duration_threshold_actual_value": contraction_duration_threshold_ms,
         "compliance_rate": compliance_rate,  # Percentage of contractions meeting both MVC and duration criteria
     }

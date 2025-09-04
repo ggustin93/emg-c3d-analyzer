@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isMarkedAsLoggedIn } from '../lib/authUtils';
+import { logger, LogCategory } from './logger';
 
 export interface C3DFileInfo {
   id: string;
@@ -30,22 +31,22 @@ export class SupabaseStorageService {
    */
   static async listC3DFiles(): Promise<C3DFileInfo[]> {
     if (!isSupabaseConfigured()) {
-      console.warn('Supabase not configured, returning empty list');
+      logger.warn(LogCategory.API, 'Supabase not configured, returning empty list');
       return [];
     }
 
     try {
-      console.log(`Attempting to list files from bucket: ${this.BUCKET_NAME}`);
+      logger.info(LogCategory.API, `📂 Attempting to list files from bucket: ${this.BUCKET_NAME}`);
       
       // Simple check - if not marked as logged in, don't proceed
       if (!isMarkedAsLoggedIn()) {
         throw new Error('Authentication required. Please sign in as a researcher to access C3D files.');
       }
       
-      console.log('User is authenticated, proceeding with file listing...');
+      logger.debug(LogCategory.AUTH, 'User is authenticated, proceeding with file listing...');
       
       // First check if the bucket exists to provide better error messages
-      console.log('Checking if bucket exists...');
+      logger.debug(LogCategory.API, 'Checking if bucket exists...');
       try {
         const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
         if (bucketError) {
@@ -56,14 +57,14 @@ export class SupabaseStorageService {
         if (!bucketExists) {
           throw new Error(`Bucket '${this.BUCKET_NAME}' does not exist. Please create it in your Supabase dashboard.`);
         }
-        console.log('✅ Bucket exists, proceeding with file listing...');
+        logger.debug(LogCategory.API, '✅ Bucket exists, proceeding with file listing...');
       } catch (bucketCheckError) {
-        console.error('Bucket check failed:', bucketCheckError);
+        logger.error(LogCategory.API, 'Bucket check failed:', bucketCheckError);
         throw bucketCheckError;
       }
       
       // Generic recursive directory discovery approach
-      console.log('📂 Starting recursive directory discovery...');
+      logger.debug(LogCategory.API, '📂 Starting recursive directory discovery...');
       
       // Step 1: Get root directory contents to discover subdirectories
       const rootOperation = supabase.storage
@@ -86,7 +87,7 @@ export class SupabaseStorageService {
       if (hasError && allFiles.length === 0) {
         // If bucket doesn't exist, try creating it or provide better error message
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
-          console.warn(`Bucket '${this.BUCKET_NAME}' not found. Please create the bucket in Supabase dashboard.`);
+          logger.warn(LogCategory.API, `Bucket '${this.BUCKET_NAME}' not found. Please create the bucket in Supabase dashboard.`);
           throw new Error(`Storage bucket '${this.BUCKET_NAME}' not found. Please create it in your Supabase dashboard.`);
         }
         
@@ -94,11 +95,11 @@ export class SupabaseStorageService {
       }
 
       if (allFiles.length === 0) {
-        console.log('No files returned from Supabase storage');
+        logger.info(LogCategory.API, 'No files returned from Supabase storage');
         return [];
       }
 
-      console.log(`📂 Found ${allFiles.length} total files across all directories`);
+      logger.info(LogCategory.API, `📂 Found ${allFiles.length} total files across all directories`);
       
       // Filter out placeholder files
       const files = allFiles.filter((file: any) => !file.name.includes('.emptyFolderPlaceholder'));
@@ -126,10 +127,10 @@ export class SupabaseStorageService {
           };
         });
 
-      console.log(`Filtered to ${c3dFiles.length} C3D files`);
+      logger.info(LogCategory.API, `Filtered to ${c3dFiles.length} C3D files`);
       return c3dFiles;
     } catch (error) {
-      console.error('Error in listC3DFiles:', error);
+      logger.error(LogCategory.API, 'Error in listC3DFiles:', error);
       throw error;
     }
   }
@@ -149,15 +150,15 @@ export class SupabaseStorageService {
 
     try {
       // Step 1: Get root directory files and discover subdirectories
-      console.log('📂 Listing files from root directory...');
+      logger.debug(LogCategory.API, '📂 Listing files from root directory...');
       const rootResult = await rootOperation;
       
       if (rootResult.error) {
-        console.error('Error listing root files:', rootResult.error);
+        logger.error(LogCategory.API, 'Error listing root files:', rootResult.error);
         hasError = true;
         errorMessage = rootResult.error.message;
       } else if (rootResult.data) {
-        console.log(`📂 Found ${rootResult.data.length} items in root directory`);
+        logger.debug(LogCategory.API, `📂 Found ${rootResult.data.length} items in root directory`);
         
         // Separate files from directories (directories don't have metadata.size)
         const rootFiles = rootResult.data.filter((item: any) => 
@@ -168,7 +169,7 @@ export class SupabaseStorageService {
         );
         
         allFiles.push(...rootFiles);
-        console.log(`📂 Found ${rootFiles.length} files in root, ${directories.length} Patient ID directories`);
+        logger.debug(LogCategory.API, `📂 Found ${rootFiles.length} files in root, ${directories.length} Patient ID directories`);
         
         // Step 2: Discover and list files from Patient ID subdirectories
         if (directories.length > 0) {
@@ -176,7 +177,7 @@ export class SupabaseStorageService {
             SupabaseStorageService.listDirectoryFiles(dir.name)
           );
           
-          console.log(`📂 Listing files from ${directories.length} discovered subdirectories...`);
+          logger.debug(LogCategory.API, `📂 Listing files from ${directories.length} discovered subdirectories...`);
           const subdirectoryResults = await Promise.allSettled(subdirectoryOperations);
           
           // Process subdirectory results
@@ -184,7 +185,7 @@ export class SupabaseStorageService {
             const dirName = directories[index].name;
             
             if (result.status === 'fulfilled' && result.value.data) {
-              console.log(`📂 Found ${result.value.data.length} files in ${dirName} directory`);
+              logger.debug(LogCategory.API, `📂 Found ${result.value.data.length} files in ${dirName} directory`);
               // Add folder prefix to file names
               const prefixedFiles = result.value.data.map((file: any) => ({
                 ...file,
@@ -192,13 +193,13 @@ export class SupabaseStorageService {
               }));
               allFiles.push(...prefixedFiles);
             } else if (result.status === 'rejected') {
-              console.warn(`Error listing ${dirName} files:`, result.reason);
+              logger.warn(LogCategory.API, `Error listing ${dirName} files:`, result.reason);
             }
           });
         }
       }
     } catch (error) {
-      console.error('Error in discoverAndListFiles:', error);
+      logger.error(LogCategory.API, 'Error in discoverAndListFiles:', error);
       hasError = true;
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
@@ -224,13 +225,13 @@ export class SupabaseStorageService {
    * This can be customized based on your folder structure
    */
   private static extractPatientId(filename: string): string {
-    console.log(`🔍 SupabaseStorageService - Extracting Patient ID from: ${filename}`);
+    logger.debug(LogCategory.DATA_PROCESSING, `🔍 SupabaseStorageService - Extracting Patient ID from: ${filename}`);
     
     // Priority 1: If files are organized in folders like "P005/filename.c3d", "P008/filename.c3d"
     const folderMatch = filename.match(/^(P\d{3})\//);
     if (folderMatch) {
       const patientId = folderMatch[1];
-      console.log(`✅ Found Patient ID in folder structure: ${patientId}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID in folder structure: ${patientId}`);
       return patientId;
     }
 
@@ -238,7 +239,7 @@ export class SupabaseStorageService {
     const filenameMatch = filename.match(/[_-](P\d{3})[_-]/i);
     if (filenameMatch) {
       const patientId = filenameMatch[1].toUpperCase();
-      console.log(`✅ Found Patient ID in filename: ${patientId}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID in filename: ${patientId}`);
       return patientId;
     }
 
@@ -246,11 +247,11 @@ export class SupabaseStorageService {
     const prefixMatch = filename.match(/^(P\d{3})[_-]/i);
     if (prefixMatch) {
       const patientId = prefixMatch[1].toUpperCase();
-      console.log(`✅ Found Patient ID at filename start: ${patientId}`);
+      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID at filename start: ${patientId}`);
       return patientId;
     }
 
-    console.log(`❌ No Patient ID found in: ${filename}`);
+    logger.debug(LogCategory.DATA_PROCESSING, `❌ No Patient ID found in: ${filename}`);
     return 'Unknown';
   }
 
@@ -295,14 +296,14 @@ export class SupabaseStorageService {
       throw new Error('Supabase not configured');
     }
 
-    console.log(`Downloading file from Supabase: ${filename}`);
+    logger.info(LogCategory.API, `📥 Downloading file from Supabase: ${filename}`);
 
     const { data, error } = await supabase.storage
       .from(this.BUCKET_NAME)
       .download(filename);
 
     if (error) {
-      console.error('Error downloading file:', error);
+      logger.error(LogCategory.API, 'Error downloading file:', error);
       
       // Provide more specific error messages
       if (error.message.includes('not found')) {
@@ -316,7 +317,7 @@ export class SupabaseStorageService {
       throw new Error('No data received from file download');
     }
 
-    console.log(`Successfully downloaded file: ${filename}, size: ${data.size} bytes`);
+    logger.info(LogCategory.API, `✅ Successfully downloaded file: ${filename}, size: ${data.size} bytes`);
     return data;
   }
 
@@ -328,7 +329,7 @@ export class SupabaseStorageService {
       return false;
     }
 
-    console.log(`🔍 Checking if file exists: ${filename}`);
+    logger.debug(LogCategory.API, `🔍 Checking if file exists: ${filename}`);
 
     try {
       // Handle subfolder paths (e.g., "P005/filename.c3d")
@@ -337,7 +338,7 @@ export class SupabaseStorageService {
         const directory = parts.slice(0, -1).join('/'); // Get directory path
         const fileBasename = parts[parts.length - 1]; // Get just the filename
         
-        console.log(`📂 Searching in directory: "${directory}" for file: "${fileBasename}"`);
+        logger.debug(LogCategory.API, `📂 Searching in directory: "${directory}" for file: "${fileBasename}"`);
         
         const { data, error } = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -346,16 +347,16 @@ export class SupabaseStorageService {
           });
 
         if (error) {
-          console.error('Error checking file existence in subdirectory:', error);
+          logger.error(LogCategory.API, 'Error checking file existence in subdirectory:', error);
           return false;
         }
 
         const exists = data?.some(file => file.name === fileBasename) || false;
-        console.log(`${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in subdirectory`);
+        logger.debug(LogCategory.API, `${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in subdirectory`);
         return exists;
       } else {
         // Handle root directory files
-        console.log(`📂 Searching in root directory for file: "${filename}"`);
+        logger.debug(LogCategory.API, `📂 Searching in root directory for file: "${filename}"`);
         
         const { data, error } = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -364,16 +365,16 @@ export class SupabaseStorageService {
           });
 
         if (error) {
-          console.error('Error checking file existence in root:', error);
+          logger.error(LogCategory.API, 'Error checking file existence in root:', error);
           return false;
         }
 
         const exists = data?.some(file => file.name === filename) || false;
-        console.log(`${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in root directory`);
+        logger.debug(LogCategory.API, `${exists ? '✅' : '❌'} File ${exists ? 'found' : 'not found'} in root directory`);
         return exists;
       }
     } catch (error) {
-      console.error('Error in fileExists:', error);
+      logger.error(LogCategory.API, 'Error in fileExists:', error);
       return false;
     }
   }
@@ -386,7 +387,7 @@ export class SupabaseStorageService {
       return null;
     }
 
-    console.log(`🔍 Getting file info for: ${filename}`);
+    logger.debug(LogCategory.API, `🔍 Getting file info for: ${filename}`);
 
     try {
       let data, error;
@@ -397,7 +398,7 @@ export class SupabaseStorageService {
         const directory = parts.slice(0, -1).join('/'); // Get directory path
         const fileBasename = parts[parts.length - 1]; // Get just the filename
         
-        console.log(`📂 Getting info from directory: "${directory}" for file: "${fileBasename}"`);
+        logger.debug(LogCategory.API, `📂 Getting info from directory: "${directory}" for file: "${fileBasename}"`);
         
         const result = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -409,7 +410,7 @@ export class SupabaseStorageService {
         error = result.error;
       } else {
         // Handle root directory files
-        console.log(`📂 Getting info from root directory for file: "${filename}"`);
+        logger.debug(LogCategory.API, `📂 Getting info from root directory for file: "${filename}"`);
         
         const result = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -422,7 +423,7 @@ export class SupabaseStorageService {
       }
 
       if (error || !data) {
-        console.error('Error getting file info:', error);
+        logger.error(LogCategory.API, 'Error getting file info:', error);
         return null;
       }
 
@@ -431,11 +432,11 @@ export class SupabaseStorageService {
       const file = data.find(f => f.name === searchName);
       
       if (!file) {
-        console.log(`❌ File info not found: ${filename}`);
+        logger.debug(LogCategory.API, `❌ File info not found: ${filename}`);
         return null;
       }
 
-      console.log(`✅ File info found: ${filename}`);
+      logger.debug(LogCategory.API, `✅ File info found: ${filename}`);
 
       return {
         id: file.id || filename, // Use full filename as ID to maintain consistency
@@ -449,7 +450,7 @@ export class SupabaseStorageService {
         public_url: this.getPublicUrl(filename) // Use full path for public URL
       };
     } catch (error) {
-      console.error('Error in getFileInfo:', error);
+      logger.error(LogCategory.API, 'Error in getFileInfo:', error);
       return null;
     }
   }
@@ -479,7 +480,7 @@ export class SupabaseStorageService {
       });
 
     if (error) {
-      console.error('Error uploading file:', error);
+      logger.error(LogCategory.API, 'Error uploading file:', error);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
 
@@ -508,7 +509,7 @@ export class SupabaseStorageService {
       .remove([filename]);
 
     if (error) {
-      console.error('Error deleting file:', error);
+      logger.error(LogCategory.API, 'Error deleting file:', error);
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   }
@@ -521,7 +522,7 @@ export class SupabaseStorageService {
       throw new Error('Supabase not configured');
     }
 
-    console.log(`🔍 Getting metadata for file: ${filename}`);
+    logger.debug(LogCategory.API, `🔍 Getting metadata for file: ${filename}`);
 
     try {
       let data, error;
@@ -532,7 +533,7 @@ export class SupabaseStorageService {
         const directory = parts.slice(0, -1).join('/'); // Get directory path
         const fileBasename = parts[parts.length - 1]; // Get just the filename
         
-        console.log(`📂 Getting metadata from directory: "${directory}" for file: "${fileBasename}"`);
+        logger.debug(LogCategory.API, `📂 Getting metadata from directory: "${directory}" for file: "${fileBasename}"`);
         
         const result = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -544,7 +545,7 @@ export class SupabaseStorageService {
         error = result.error;
       } else {
         // Handle root directory files
-        console.log(`📂 Getting metadata from root directory for file: "${filename}"`);
+        logger.debug(LogCategory.API, `📂 Getting metadata from root directory for file: "${filename}"`);
         
         const result = await supabase.storage
           .from(this.BUCKET_NAME)
@@ -557,7 +558,7 @@ export class SupabaseStorageService {
       }
 
       if (error) {
-        console.error('Error getting file metadata:', error);
+        logger.error(LogCategory.API, 'Error getting file metadata:', error);
         throw new Error(`Failed to get file metadata: ${error.message}`);
       }
 
@@ -566,11 +567,11 @@ export class SupabaseStorageService {
       const file = data?.find(f => f.name === searchName);
       
       if (!file) {
-        console.log(`❌ File metadata not found: ${filename}`);
+        logger.debug(LogCategory.API, `❌ File metadata not found: ${filename}`);
         return null;
       }
       
-      console.log(`✅ File metadata found: ${filename}`);
+      logger.debug(LogCategory.API, `✅ File metadata found: ${filename}`);
       
       return {
         id: file.id || filename, // Use full filename as ID to maintain consistency
@@ -583,7 +584,7 @@ export class SupabaseStorageService {
         metadata: file.metadata
       };
     } catch (error) {
-      console.error('Error in getFileMetadata:', error);
+      logger.error(LogCategory.API, 'Error in getFileMetadata:', error);
       throw error;
     }
   }

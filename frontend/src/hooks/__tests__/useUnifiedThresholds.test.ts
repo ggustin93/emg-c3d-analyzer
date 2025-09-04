@@ -40,7 +40,7 @@ describe('useUnifiedThresholds', () => {
   const mockAnalytics: Record<string, ChannelAnalyticsData> = {
     CH1: {
       contraction_count: 10,
-      mvc_threshold_actual_value: 0.0001125,
+      mvc75_threshold: 0.0001125,
       // ... other properties
     } as ChannelAnalyticsData,
   };

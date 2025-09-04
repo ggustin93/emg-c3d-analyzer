@@ -71,10 +71,14 @@ def sample_processing_result():
         },
         "analytics": {
             "CH1": {
+                "total_contractions": 20,
+                "good_contractions": 18,
                 "contraction_count": 20,
                 "good_contraction_count": 18,
                 "mvc_contraction_count": 15,
                 "duration_contraction_count": 17,
+                "mvc75_compliance_rate": 15,
+                "duration_compliance_rate": 17,
                 "compliance_rate": 0.85,
                 "mvc_value": 0.75,
                 "mvc_threshold": 562.5,
@@ -95,10 +99,14 @@ def sample_processing_result():
                 "fatigue_index_fi_nsm5": 0.18
             },
             "CH2": {
+                "total_contractions": 18,
+                "good_contractions": 16,
                 "contraction_count": 18,
                 "good_contraction_count": 16,
                 "mvc_contraction_count": 13,
                 "duration_contraction_count": 15,
+                "mvc75_compliance_rate": 13,
+                "duration_compliance_rate": 15,
                 "compliance_rate": 0.78,
                 "mvc_value": 0.72,
                 "mvc_threshold": 540.0,
@@ -158,7 +166,7 @@ class TestProcessingParametersPopulation:
 
     @pytest.mark.asyncio
     async def test_populate_processing_parameters_success(self):
-        """Test successful processing parameters table population."""
+        """Test successful processing parameters config generation (returns JSONB for emg_statistics)."""
         # Setup
         processor = TherapySessionProcessor()
         session_id = str(uuid4())
@@ -175,26 +183,21 @@ class TestProcessingParametersPopulation:
             smoothing_window=50
         )
 
-        # Mock EMG repository
-        with patch.object(processor.emg_repo, 'upsert_processing_parameters', new_callable=AsyncMock) as mock_insert:
-            
-            # Execute
-            await processor._populate_processing_parameters(session_id, metadata, processing_opts)
-            
-            # Verify
-            mock_insert.assert_called_once()
-            call_args = mock_insert.call_args[0][0]
-            
-            # Validate critical parameters
-            assert call_args["session_id"] == session_id
-            assert call_args["sampling_rate_hz"] == 1000.0
-            assert call_args["filter_low_cutoff_hz"] == EMG_HIGH_PASS_CUTOFF
-            assert call_args["filter_order"] == DEFAULT_FILTER_ORDER
-            assert call_args["rms_window_ms"] == DEFAULT_RMS_WINDOW_MS
-            assert call_args["rms_overlap_percent"] == RMS_OVERLAP_PERCENTAGE
-            assert call_args["mvc_window_seconds"] == MVC_WINDOW_SECONDS
-            assert call_args["processing_version"] == PROCESSING_VERSION
-            assert call_args["mvc_threshold_percentage"] == processing_opts.threshold_factor * 100
+        # Execute - method returns processing config dict for JSONB storage
+        processing_config = await processor._populate_processing_parameters(session_id, metadata, processing_opts)
+        
+        # Verify config structure and values
+        assert isinstance(processing_config, dict)
+        assert processing_config["sampling_rate_hz"] == 1000.0
+        assert processing_config["filter_low_cutoff_hz"] == EMG_HIGH_PASS_CUTOFF
+        assert processing_config["filter_order"] == DEFAULT_FILTER_ORDER
+        assert processing_config["rms_window_ms"] == DEFAULT_RMS_WINDOW_MS
+        assert processing_config["rms_overlap_percent"] == RMS_OVERLAP_PERCENTAGE
+        assert processing_config["mvc_window_seconds"] == MVC_WINDOW_SECONDS
+        assert processing_config["processing_version"] == PROCESSING_VERSION
+        assert processing_config["mvc_threshold_percentage"] == processing_opts.threshold_factor * 100
+        assert "mvc_source" in processing_config
+        assert "created_at" in processing_config
 
     @pytest.mark.asyncio
     async def test_populate_processing_parameters_nyquist_safety(self):
@@ -211,19 +214,16 @@ class TestProcessingParametersPopulation:
         
         processing_opts = ProcessingOptions(threshold_factor=0.8)
 
-        # Mock EMG repository
-        with patch.object(processor.emg_repo, 'upsert_processing_parameters', new_callable=AsyncMock) as mock_insert:
-            
-            # Execute
-            await processor._populate_processing_parameters(session_id, metadata, processing_opts)
-            
-            # Verify Nyquist safety applied
-            call_args = mock_insert.call_args[0][0]
-            nyquist_freq = 200.0 / 2  # 100 Hz
-            expected_safe_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * 0.9)
-            
-            assert call_args["filter_high_cutoff_hz"] == expected_safe_cutoff
-            assert call_args["filter_high_cutoff_hz"] < 100  # Below Nyquist
+        # Execute - method returns processing config dict
+        processing_config = await processor._populate_processing_parameters(session_id, metadata, processing_opts)
+        
+        # Verify Nyquist safety applied
+        nyquist_freq = 200.0 / 2  # 100 Hz
+        expected_safe_cutoff = min(DEFAULT_LOWPASS_CUTOFF, nyquist_freq * 0.9)
+        
+        assert processing_config["filter_high_cutoff_hz"] == expected_safe_cutoff
+        assert processing_config["filter_high_cutoff_hz"] < 100  # Below Nyquist
+        assert processing_config["sampling_rate_hz"] == 200.0
 
 
 # ============================================================================
@@ -254,9 +254,10 @@ class TestPerformanceScoresPopulation:
         with patch.object(processor.scoring_service, 'calculate_performance_scores', return_value=mock_scores) as mock_calc, \
              patch.object(processor.scoring_service, 'save_performance_scores', return_value=True) as mock_save:
             
-            # Execute
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
             await processor._calculate_and_save_performance_scores(
-                session_id, sample_processing_result["analytics"], sample_processing_result
+                session_code, session_id, sample_processing_result["analytics"], sample_processing_result
             )
             
             # Verify calculation called with proper metrics
@@ -292,8 +293,9 @@ class TestPerformanceScoresPopulation:
         with patch.object(processor.scoring_service, 'calculate_performance_scores', return_value={"error": "No analytics data"}):
             
             # Execute - should not raise exception
+            session_code = "P001S001"
             await processor._calculate_and_save_performance_scores(
-                session_id, empty_analytics, processing_result
+                session_code, session_id, empty_analytics, processing_result
             )
             
             # Test passes if no exception raised (graceful degradation)
@@ -316,9 +318,10 @@ class TestSessionSettingsPopulation:
         # Mock upsert method
         with patch.object(processor, '_upsert_table', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
             await processor._populate_session_settings(
-                session_id, sample_processing_options, sample_session_parameters
+                session_code, session_id, sample_processing_options, sample_session_parameters
             )
             
             # Verify upsert called
@@ -328,8 +331,12 @@ class TestSessionSettingsPopulation:
             settings_data = mock_upsert.call_args[0][1]
             assert settings_data["session_id"] == session_id
             assert settings_data["mvc_threshold_percentage"] == 75.0
-            assert settings_data["target_contractions"] == 24  # CH1 (12) + CH2 (12) = 24
-            assert settings_data["expected_contractions_per_muscle"] == 12
+            
+            # Updated for current remote schema - per-channel targets
+            assert settings_data["target_contractions_ch1"] == 12  # CH1 target
+            assert settings_data["target_contractions_ch2"] == 12  # CH2 target
+            assert settings_data["target_duration_ch1_ms"] == 2000.0  # CH1 duration in ms
+            assert settings_data["target_duration_ch2_ms"] == 2000.0  # CH2 duration in ms
             assert settings_data["bfr_enabled"] == True
 
     @pytest.mark.asyncio
@@ -353,8 +360,9 @@ class TestSessionSettingsPopulation:
         # Mock upsert method
         with patch.object(processor, '_upsert_table', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute
-            await processor._populate_session_settings(session_id, invalid_opts, session_params)
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
+            await processor._populate_session_settings(session_code, session_id, invalid_opts, session_params)
             
             # Verify correction applied
             settings_data = mock_upsert.call_args[0][1]
@@ -377,8 +385,9 @@ class TestSessionSettingsPopulation:
         # Mock upsert method
         with patch.object(processor, '_upsert_table', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute
-            await processor._populate_session_settings(session_id, processing_opts, session_params)
+            # Execute - now requires both session_code and session_uuid
+            session_code = "P001S001"
+            await processor._populate_session_settings(session_code, session_id, processing_opts, session_params)
             
             # Test passes - duration validation removed since duration is now per-channel
             # Verify method was called
@@ -402,9 +411,10 @@ class TestBFRMonitoringPopulation:
         # Mock composite key upsert method (new per-channel approach)
         with patch.object(processor, '_upsert_table_with_composite_key', new_callable=AsyncMock) as mock_upsert:
             
-            # Execute
+            # Execute - method requires session_code and session_uuid
+            session_code = "P001S001"
             await processor._populate_bfr_monitoring(
-                session_id, sample_session_parameters, sample_processing_result
+                session_code, session_id, sample_session_parameters, sample_processing_result
             )
             
             # Verify upsert called twice (once for each channel)
@@ -456,7 +466,8 @@ class TestBFRMonitoringPopulation:
         with patch.object(processor, '_upsert_table_with_composite_key', new_callable=AsyncMock) as mock_upsert:
             
             # Execute - should use SessionDefaults for all BFR values
-            await processor._populate_bfr_monitoring(session_id, sample_session_parameters, processing_result)
+            session_code = "P001S001"
+            await processor._populate_bfr_monitoring(session_code, session_id, sample_session_parameters, processing_result)
             
             # Verify two records created (CH1 and CH2)
             assert mock_upsert.call_count == 2
@@ -492,7 +503,8 @@ class TestBFRMonitoringPopulation:
         with patch.object(processor, '_upsert_table_with_composite_key', new_callable=AsyncMock) as mock_upsert:
             
             # Execute
-            await processor._populate_bfr_monitoring(session_id, minimal_params, processing_result)
+            session_code = "P001S001"
+            await processor._populate_bfr_monitoring(session_code, session_id, minimal_params, processing_result)
             
             # Verify cuff pressure calculated correctly for both channels (AOP * 3.0 conversion factor)
             call_args_list = mock_upsert.call_args_list
@@ -529,37 +541,47 @@ class TestCompleteTablePopulation:
              patch.object(processor, '_populate_session_settings', new_callable=AsyncMock) as mock_settings, \
              patch.object(processor, '_populate_bfr_monitoring', new_callable=AsyncMock) as mock_bfr:
             
-            # Execute
+            # Execute - method expects positional args: session_code, session_uuid, processing_result, file_data, processing_opts, session_params
+            session_code = "P001S001"
             await processor._populate_database_tables(
-                session_id=session_id,
-                processing_result=sample_processing_result,
-                file_data=file_data,
-                processing_opts=sample_processing_options,
-                session_params=sample_session_parameters
+                session_code,
+                session_id,  # session_uuid
+                sample_processing_result,
+                file_data,
+                sample_processing_options,
+                sample_session_parameters
             )
             
             # Verify all 5 table population methods called (c3d_technical_data replaced by game_metadata)
+            # Note: _populate_processing_parameters doesn't take session_code
             mock_params.assert_called_once_with(
                 session_id, 
                 sample_processing_result["metadata"], 
                 sample_processing_options
             )
+            # _populate_emg_statistics takes session_uuid, analytics, session_params, processing_config
+            # Since mock_params returns a mock, we can check the call with ANY for processing_config
+            from unittest.mock import ANY
             mock_emg.assert_called_once_with(
                 session_id, 
                 sample_processing_result["analytics"], 
-                sample_session_parameters
+                sample_session_parameters,
+                ANY  # processing_config returned from _populate_processing_parameters
             )
             mock_scores.assert_called_once_with(
+                session_code,
                 session_id, 
                 sample_processing_result["analytics"], 
                 sample_processing_result
             )
             mock_settings.assert_called_once_with(
+                session_code,
                 session_id, 
                 sample_processing_options, 
                 sample_session_parameters
             )
             mock_bfr.assert_called_once_with(
+                session_code,
                 session_id, 
                 sample_session_parameters, 
                 sample_processing_result
@@ -584,12 +606,14 @@ class TestCompleteTablePopulation:
 
         # Execute and verify exception
         with pytest.raises(ValueError, match="No metadata found in processing result"):
+            session_code = "P001S001"
             await processor._populate_database_tables(
-                session_id=session_id,
-                processing_result=invalid_result,
-                file_data=file_data,
-                processing_opts=processing_opts,
-                session_params=session_params
+                session_code,
+                session_id,  # session_uuid
+                invalid_result,
+                file_data,
+                processing_opts,
+                session_params
             )
 
     @pytest.mark.asyncio
@@ -611,10 +635,12 @@ class TestCompleteTablePopulation:
 
         # Execute and verify exception
         with pytest.raises(ValueError, match="No analytics found in processing result"):
+            session_code = "P001S001"
             await processor._populate_database_tables(
-                session_id=session_id,
-                processing_result=invalid_result,
-                file_data=file_data,
-                processing_opts=processing_opts,
-                session_params=session_params
+                session_code,
+                session_id,  # session_uuid
+                invalid_result,
+                file_data,
+                processing_opts,
+                session_params
             )

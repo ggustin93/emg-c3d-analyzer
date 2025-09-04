@@ -7,7 +7,7 @@ export { default as PerformanceTab } from './PerformanceTab';
 
 // Re-export all performance components
 export * from './components/OverallPerformanceCard';
-export * from './components/MusclePerformanceCard'; 
+export * from './components/MuscleComplianceCard'; 
 export * from './components/MuscleSymmetryCard';
 export * from './components/SubjectiveFatigueCard';
 export * from './components/GHOSTLYGameCard';

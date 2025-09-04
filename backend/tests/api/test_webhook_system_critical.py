@@ -161,7 +161,7 @@ class TestWebhookBusinessLogic:
         data = response.json()
         assert data["success"] is True
         assert "Ignored" in data["message"] 
-        assert data["session_id"] is None
+        assert data["session_code"] is None
 
     def test_webhook_invalid_json_handling(self, client):
         """Test webhook handles invalid JSON gracefully."""

@@ -99,21 +99,16 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   // Normalize overlay availability: allow 'raw_with_rms' only if both raw and processed keys exist
   const overlayAvailable = React.useMemo(() => {
     const keys = availableChannels;
-    logger.debug(LogCategory.DATA_PROCESSING, 'Overlay Availability Check', { availableChannels: keys });
     
     if (!keys || keys.length === 0) return false;
     const baseNames = keys.map(k => k.replace(/ (Raw|activated|Processed)$/,'')).filter((v,i,a)=>a.indexOf(v)===i);
     
-    logger.debug(LogCategory.DATA_PROCESSING, 'Base Names', baseNames);
-    
     const hasOverlay = baseNames.some(base => {
       const hasRaw = keys.includes(`${base} Raw`);
       const hasProcessed = keys.includes(`${base} Processed`);
-      logger.debug(LogCategory.DATA_PROCESSING, `Checking signals for ${base}`, { hasRaw, hasProcessed });
       return hasRaw && hasProcessed;
     });
     
-    logger.debug(LogCategory.DATA_PROCESSING, 'Overlay Available', { hasOverlay });
     return hasOverlay;
   }, [availableChannels]);
 
@@ -138,18 +133,10 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
       });
     }
     const keys = Array.from(keySet);
-    logger.debug(LogCategory.DATA_PROCESSING, 'Chart Data Keys (union across all rows)', keys);
     return keys;
   }, [chartData]);
 
   const finalDisplayDataKeys = useMemo(() => {
-    logger.debug(LogCategory.DATA_PROCESSING, 'Final Display Keys Calculation', { 
-      viewMode, 
-      availableChannels, 
-      selectedChannel, 
-      availableDataKeys,
-      plotMode: effectivePlotMode 
-    });
 
     if (viewMode === 'comparison') {
       // For comparison mode, we need to find the correct data keys based on current signal type
@@ -159,7 +146,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
         : [];
       
       if (baseChannels.length === 0) {
-        logger.debug(LogCategory.DATA_PROCESSING, 'No base channels available, using all available data keys');
         return availableDataKeys;
       }
 
@@ -196,25 +182,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
         
         if (foundKey) {
           resolvedKeys.push(foundKey);
-          logger.debug(LogCategory.DATA_PROCESSING, `Resolved channel mapping`, { baseChannel, foundKey, plotMode: effectivePlotMode });
         } else {
-          logger.debug(LogCategory.DATA_PROCESSING, `Failed to resolve channel`, { baseChannel, availableDataKeys, plotMode: effectivePlotMode });
         }
-      });
-      
-      logger.debug(LogCategory.DATA_PROCESSING, 'Comparison mode resolved keys', { 
-        baseChannels, 
-        resolvedKeys, 
-        expectedCount: baseChannels.length 
       });
       
       // Ensure we have at least the expected number of channels for comparison
       if (resolvedKeys.length < Math.min(2, baseChannels.length)) {
-        logger.debug(LogCategory.DATA_PROCESSING, 'Insufficient resolved keys, falling back to available data keys', {
-          resolvedCount: resolvedKeys.length,
-          expectedCount: Math.min(2, baseChannels.length)
-        });
-        
         // Fallback: use first available keys that match our base channels
         const fallbackKeys = availableDataKeys.filter(key => 
           baseChannels.some(base => key.startsWith(base))
@@ -260,17 +233,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
         getColorForChannel
     });
 
-    // DEBUG: Log the analytics data structure and unified thresholds
-    React.useEffect(() => {
-      console.log('🔍 EMGChart MVC Debug - Analytics Structure:', {
-        analytics: analytics ? Object.keys(analytics) : null,
-        analyticsData: analytics,
-        unifiedThresholds: unifiedThresholds,
-        finalDisplayDataKeys,
-        sessionParams: sessionParams?.session_mvc_value,
-        globalMvcThreshold: mvcThresholdForPlot
-      });
-    }, [analytics, unifiedThresholds, finalDisplayDataKeys, sessionParams?.session_mvc_value, mvcThresholdForPlot]);
 
     const { contractionAreas, qualitySummary } = useContractionAnalysis({
         analytics,
@@ -283,22 +245,11 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
 
   // For overlay mode, we need both Raw and RMS data keys
   const overlayDataKeys = useMemo(() => {
-    logger.debug(LogCategory.DATA_PROCESSING, 'Overlay Debug', { plotMode, overlayAvailable });
-    
-    if (plotMode !== 'raw_with_rms') return null;
-    
     const rawKeys: string[] = [];
     const rmsKeys: string[] = [];
     
     // Extract base channel names from current display keys
     const baseChannels = finalDisplayDataKeys.map(key => key.split(' ')[0]);
-    
-    logger.debug(LogCategory.DATA_PROCESSING, 'Overlay Debug', {
-      finalDisplayDataKeys,
-      availableDataKeys,
-      baseChannels,
-      chartDataKeys: chartData?.[0] ? Object.keys(chartData[0]) : []
-    });
     
     baseChannels.forEach(baseChannel => {
       // Find Raw signal
@@ -309,10 +260,8 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
       const processedKey = availableDataKeys.find(key => key === `${baseChannel} Processed`);
       if (processedKey) rmsKeys.push(processedKey);
       
-      logger.debug(LogCategory.DATA_PROCESSING, `Channel mapping for ${baseChannel}`, { rawKey, processedKey });
     });
     
-    logger.debug(LogCategory.DATA_PROCESSING, 'Overlay Keys Result', { rawKeys, rmsKeys });
     return { rawKeys, rmsKeys };
   }, [plotMode, finalDisplayDataKeys, availableDataKeys, chartData]);
 
@@ -320,11 +269,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
   const hasValidOverlayData = useMemo(() => {
     if (plotMode !== 'raw_with_rms' || !overlayDataKeys) return true;
     const hasValid = overlayDataKeys.rawKeys.length > 0 && overlayDataKeys.rmsKeys.length > 0;
-    logger.debug(LogCategory.DATA_PROCESSING, 'Has Valid Overlay Data', { 
-      hasValid,
-      rawKeys: overlayDataKeys.rawKeys, 
-      rmsKeys: overlayDataKeys.rmsKeys 
-    });
     return hasValid;
   }, [plotMode, overlayDataKeys]);
 
@@ -473,15 +417,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             
             {(() => {
               const shouldRenderOverlay = plotMode === 'raw_with_rms' && overlayDataKeys && hasValidOverlayData;
-              logger.debug(LogCategory.CHART_RENDER, 'Rendering Decision', { 
-                plotMode, 
-                isRawWithRms: plotMode === 'raw_with_rms',
-                overlayDataKeys: !!overlayDataKeys, 
-                hasValidOverlayData, 
-                shouldRenderOverlay,
-                overlayAvailable,
-                effectivePlotMode
-              });
               return shouldRenderOverlay;
             })() ? (
               // Render overlay mode with Raw on left axis and RMS on right axis
@@ -553,13 +488,10 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             {/* MVC Reference Lines - exactly 2 lines for comparison mode */}
             {(() => {
               const keysForThresholds = plotMode === 'raw_with_rms' && overlayDataKeys ? overlayDataKeys.rmsKeys : finalDisplayDataKeys;
-              logger.debug(LogCategory.CHART_RENDER, 'MVC Reference Lines Keys', keysForThresholds);
               
               // DEBUG: Log MVC threshold values for each key
               keysForThresholds.forEach(key => {
                 const threshold = getMvcThreshold(key);
-                console.log(`🔍 MVC Debug - Key: ${key}, Threshold: ${threshold}`);
-                logger.debug(LogCategory.CHART_RENDER, `MVC Threshold for ${key}`, { threshold, unifiedThresholds });
               });
               
               // In comparison mode, ensure we have exactly 2 lines (one per base channel)
@@ -588,12 +520,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                       thresholdLines.push({ threshold, baseChannelName, colorStyle });
                     }
                   }
-                });
-                
-                logger.debug(LogCategory.CHART_RENDER, 'Comparison Mode MVC Lines', {
-                  baseChannels: Array.from(baseChannelNames),
-                  thresholdCount: thresholdLines.length,
-                  thresholds: thresholdLines.map(t => ({ channel: t.baseChannelName, value: t.threshold }))
                 });
                 
                 return thresholdLines.map((item, index) => (
@@ -643,10 +569,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
             )}
 
             {/* Debug: Log when rendering contraction visualizations */}
-            {contractionAreas.length > 0 && logger.debug(LogCategory.CHART_RENDER, 'Rendering contractions', { 
-              count: contractionAreas.length, 
-              sample: contractionAreas.slice(0, 2).map(a => ({isGood: a.isGood, meetsMvc: a.meetsMvc, meetsDuration: a.meetsDuration}))
-            })}
             
             {/* Contraction areas - colorize EMG lines between two abscissas with enhanced quality colors */}
             {showContractionAreas && contractionAreas && chartData.length > 0 && finalDisplayDataKeys.length > 0 &&
@@ -655,9 +577,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 // Three quality categories: Good (green), Adequate (yellow), Poor (red)
                 if (area.isGood) {
                   const show = showGoodContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🎯 Filtering AREA ${area.channel}`, { 
-                    category: 'good', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -669,19 +588,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Show adequate contractions when either good OR poor contractions are enabled
                   // This ensures yellow contractions are visible in the legacy 2-toggle system
                   const show = showGoodContractions || showPoorContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🟡 Filtering AREA ${area.channel}`, { 
-                    category: 'adequate', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show,
-                    reason: area.meetsMvc && !area.meetsDuration ? 'mvc-only' : 'duration-only'
-                  });
                   return show;
                 }
                 
                 if (isPoor) {
                   // Only show poor contractions when explicitly enabled
                   const show = showPoorContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🔴 Filtering AREA ${area.channel}`, { 
-                    category: 'poor', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -691,25 +603,11 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 return false;
               })
               .map((area, index) => {
-                logger.debug(LogCategory.CHART_RENDER, `ReferenceArea ${index}`, {
-                  x1: area.startTime,
-                  x2: area.endTime,
-                  isGood: area.isGood,
-                  meetsMvc: area.meetsMvc,
-                  meetsDuration: area.meetsDuration,
-                  channel: area.channel
-                });
                 
                 const { fill: fillColor, stroke: strokeColor } = getContractionAreaColors({
                   isGood: area.isGood,
                   meetsMvc: area.meetsMvc,
                   meetsDuration: area.meetsDuration
-                });
-                
-                logger.debug(LogCategory.CHART_RENDER, `Color for area ${index}`, {
-                  flags: { isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration },
-                  colors: { fill: fillColor, stroke: strokeColor },
-                  channel: area.channel
                 });
                 
                 const stableAreaKey = `area-${area.channel}-${area.startTime}-${area.endTime}`;
@@ -735,9 +633,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 // Three quality categories: Good (green), Adequate (yellow), Poor (red)
                 if (area.isGood) {
                   const show = showGoodContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🎯 Filtering DOT ${area.channel}`, { 
-                    category: 'good', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -749,19 +644,12 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                   // Show adequate contractions when either good OR poor contractions are enabled
                   // This ensures yellow contractions are visible in the legacy 2-toggle system
                   const show = showGoodContractions || showPoorContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🟡 Filtering DOT ${area.channel}`, { 
-                    category: 'adequate', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show,
-                    reason: area.meetsMvc && !area.meetsDuration ? 'mvc-only' : 'duration-only'
-                  });
                   return show;
                 }
                 
                 if (isPoor) {
                   // Only show poor contractions when explicitly enabled
                   const show = showPoorContractions;
-                  logger.debug(LogCategory.CHART_RENDER, `🔴 Filtering DOT ${area.channel}`, { 
-                    category: 'poor', isGood: area.isGood, meetsMvc: area.meetsMvc, meetsDuration: area.meetsDuration, show 
-                  });
                   return show;
                 }
                 
@@ -771,13 +659,6 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                 return false;
               })
               .map((area, index) => {
-                logger.debug(LogCategory.CHART_RENDER, `ReferenceDot ${index}`, {
-                  x: area.peakTime,
-                  y: area.maxAmplitude,
-                  isGood: area.isGood,
-                  meetsMvc: area.meetsMvc,
-                  meetsDuration: area.meetsDuration
-                });
                 
                 const { fill: fillColor, stroke: strokeColor, symbol } = getContractionDotStyle({
                   isGood: area.isGood,

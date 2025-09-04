@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { formatPercentage } from '@/lib/formatUtils';
 
 interface CompactMetricCardProps {
   title: string;
@@ -25,7 +26,7 @@ const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
   badge,
 }) => {
   return (
-    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-200 border-gray-200">
+    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200">
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -44,7 +45,7 @@ const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
         </div>
         <div className="flex items-baseline gap-1 mb-2">
           <span className={`text-3xl font-bold ${color}`}>
-            {typeof value === 'number' ? value.toFixed(0) : value}
+            {typeof value === 'number' && unit === '%' ? formatPercentage(value).replace('%', '') : typeof value === 'number' ? value.toFixed(0) : value}
           </span>
           {unit && <span className="text-base text-gray-500 font-medium">{unit}</span>}
         </div>

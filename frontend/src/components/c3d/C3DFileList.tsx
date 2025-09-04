@@ -24,6 +24,7 @@ import {
   resolvePatientId,
   resolveTherapistId,
   resolveSessionDate,
+  formatSessionDateTime,
   getPatientIdBadgeProps,
   getTherapistIdBadgeProps,
   formatFileSize,
@@ -197,7 +198,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
       <div className={className}>
 
         {/* Table Header */}
-        <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-2">
+        <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-3 pt-2">
           <div className="relative" style={{ width: `${filenameColumnWidth}px` }}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -433,12 +434,12 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <span>Session:</span>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
-                                {formatDate(getSessionDate(file)!)}
-                              </Badge>
+                              <span className="text-slate-700 text-xs cursor-help hover:text-slate-900 transition-colors">
+                                {formatSessionDateTime(getSessionDate(file))}
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Session date: {formatFullDate(getSessionDate(file)!)}</p>
+                              <p>Full timestamp: {formatFullDate(getSessionDate(file)!)}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -448,9 +449,9 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <span>Upload:</span>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline" className="text-slate-600 border-slate-300 text-xs cursor-help">
+                              <span className="text-slate-600 text-xs cursor-help hover:text-slate-800 transition-colors">
                                 {formatDate(file.created_at)}
-                              </Badge>
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>File upload date: {formatFullDate(file.created_at)}</p>
@@ -614,18 +615,18 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                         {getSessionDate(file) ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs cursor-help">
-                                {formatDate(getSessionDate(file)!)}
-                              </Badge>
+                              <span className="text-slate-700 text-xs cursor-help hover:text-slate-900 transition-colors">
+                                {formatSessionDateTime(getSessionDate(file))}
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Session date: {formatFullDate(getSessionDate(file)!)}</p>
+                              <p>Full timestamp: {formatFullDate(getSessionDate(file)!)}</p>
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <Badge variant="outline" className="text-slate-400 border-slate-300 text-xs">
+                          <span className="text-slate-400 text-xs">
                             N/A
-                          </Badge>
+                          </span>
                         )}
                       </div>
                     )}
@@ -633,9 +634,9 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Badge variant="outline" className="text-slate-600 border-slate-300 text-xs cursor-help">
+                            <span className="text-slate-600 text-xs cursor-help hover:text-slate-800 transition-colors">
                               {formatDate(file.created_at)}
-                            </Badge>
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Upload date: {formatFullDate(file.created_at)}</p>

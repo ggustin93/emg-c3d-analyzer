@@ -18,6 +18,7 @@ import {
 import { EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
 import SupabaseStorageService from '@/services/supabaseStorage';
+import { logger, LogCategory } from '@/services/logger';
 
 // Import modular components
 import { ChannelSelector } from './ChannelSelector';
@@ -71,7 +72,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
         setJsonData('');
       }
     } catch (error) {
-      console.error('Error generating JSON data:', error);
+      logger.error(LogCategory.DATA_PROCESSING, 'Error generating JSON data:', error);
       setJsonData('');
     } finally {
       setIsGenerating(false);
@@ -85,7 +86,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      logger.error(LogCategory.USER_INTERACTION, 'Failed to copy to clipboard:', error);
     }
   }, [jsonData]);
 

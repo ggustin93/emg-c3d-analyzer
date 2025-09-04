@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { logger, LogCategory } from '../services/logger'
 
 /**
  * Simple Auth Flow Test Component
@@ -16,7 +17,7 @@ export const AuthFlowTest: React.FC = () => {
   
   // Track auth state changes
   useEffect(() => {
-    console.log('🔍 Auth State Changed:', {
+    logger.debug(LogCategory.AUTH, '🔍 Auth State Changed:', {
       isAuthenticated,
       isLoading,
       user: authState.user?.email,

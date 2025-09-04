@@ -8,6 +8,12 @@ import os
 import sys
 import importlib.util
 from pathlib import Path
+from typing import List, Optional, Generator
+import pytest
+
+# Configure test environment settings before any imports
+# Disable file hash deduplication for testing to allow repeatable E2E tests
+os.environ.setdefault("ENABLE_FILE_HASH_DEDUPLICATION", "false")
 
 
 def get_fastapi_app():
@@ -55,3 +61,150 @@ def get_fastapi_app():
 # Create the app instance once for all tests
 # This will be imported by all test files
 app = get_fastapi_app()
+
+
+# =====================================================
+# Cleanup Fixtures for Supabase Storage and Database
+# =====================================================
+
+@pytest.fixture
+def cleanup_supabase_test_files():
+    """Fixture to clean up test files from Supabase Storage.
+    
+    Usage:
+        Pass a list to track files to cleanup, then the fixture
+        will automatically delete them after the test completes.
+        
+    Example:
+        def test_something(cleanup_supabase_test_files):
+            files_to_cleanup = cleanup_supabase_test_files
+            # Upload a test file
+            files_to_cleanup.append("bucket/path/to/file.c3d")
+            # ... run test ...
+            # Files will be automatically deleted after test
+    """
+    from database.supabase_client import get_supabase_client
+    
+    # List to track files that need cleanup
+    files_to_cleanup: List[str] = []
+    
+    # Provide the list to the test
+    yield files_to_cleanup
+    
+    # Cleanup after test completes
+    if files_to_cleanup:
+        try:
+            client = get_supabase_client(use_service_key=True)
+            
+            # Group files by bucket for efficient cleanup
+            files_by_bucket = {}
+            for file_path in files_to_cleanup:
+                # Parse bucket from path (format: bucket/path/to/file)
+                if "/" in file_path:
+                    parts = file_path.split("/", 1)
+                    bucket = parts[0]
+                    path = parts[1] if len(parts) > 1 else ""
+                    
+                    if bucket not in files_by_bucket:
+                        files_by_bucket[bucket] = []
+                    files_by_bucket[bucket].append(path)
+            
+            # Delete files from each bucket
+            for bucket, paths in files_by_bucket.items():
+                try:
+                    result = client.storage.from_(bucket).remove(paths)
+                    print(f"🧹 Cleaned {len(paths)} test files from bucket '{bucket}'")
+                except Exception as e:
+                    print(f"⚠️ Could not clean files from bucket '{bucket}': {e}")
+                    
+        except Exception as e:
+            print(f"⚠️ Cleanup warning: Could not connect to Supabase: {e}")
+
+
+@pytest.fixture
+def cleanup_database_records():
+    """Fixture to clean up test database records.
+    
+    Usage:
+        Pass a list of session IDs to track, then the fixture
+        will automatically delete all related records after the test.
+        
+    Example:
+        def test_something(cleanup_database_records):
+            sessions_to_cleanup = cleanup_database_records
+            # Create a test session
+            session_id = create_test_session()
+            sessions_to_cleanup.append(session_id)
+            # ... run test ...
+            # Database records will be automatically deleted after test
+    """
+    from database.supabase_client import get_supabase_client
+    
+    # List to track session IDs that need cleanup
+    sessions_to_cleanup: List[str] = []
+    
+    # Provide the list to the test
+    yield sessions_to_cleanup
+    
+    # Cleanup after test completes
+    if sessions_to_cleanup:
+        try:
+            client = get_supabase_client(use_service_key=True)
+            
+            for session_id in sessions_to_cleanup:
+                try:
+                    # Clean up in reverse dependency order
+                    tables_to_clean = [
+                        "performance_scores",
+                        "emg_statistics", 
+                        "processing_parameters",
+                        "bfr_monitoring_per_channel",
+                        "session_settings",
+                        "c3d_metadata",
+                        "c3d_technical_data",
+                        "therapy_sessions"  # Parent table last
+                    ]
+                    
+                    for table in tables_to_clean:
+                        try:
+                            if table == "therapy_sessions":
+                                result = client.table(table).delete().eq("id", session_id).execute()
+                            else:
+                                result = client.table(table).delete().eq("session_id", session_id).execute()
+                            
+                            if result.data:
+                                print(f"🧹 Cleaned {len(result.data)} records from {table}")
+                        except Exception as table_error:
+                            # Table might not exist in all database schemas, which is expected
+                            # Log it silently to avoid noise in test output
+                            continue
+                    
+                    print(f"✅ Database cleanup completed for session {session_id}")
+                    
+                except Exception as e:
+                    print(f"⚠️ Could not clean session {session_id}: {e}")
+                    
+        except Exception as e:
+            print(f"⚠️ Database cleanup warning: {e}")
+
+
+@pytest.fixture
+def auto_cleanup_test_artifacts(cleanup_supabase_test_files, cleanup_database_records):
+    """Combined fixture that provides both storage and database cleanup.
+    
+    Returns a tuple of (files_list, sessions_list) for tracking artifacts.
+    
+    Example:
+        def test_complete_workflow(auto_cleanup_test_artifacts):
+            files, sessions = auto_cleanup_test_artifacts
+            
+            # Track files to cleanup
+            files.append("c3d-examples/test.c3d")
+            
+            # Track sessions to cleanup
+            session_id = create_session()
+            sessions.append(session_id)
+            
+            # Everything will be cleaned up automatically after test
+    """
+    return cleanup_supabase_test_files, cleanup_database_records

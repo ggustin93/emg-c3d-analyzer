@@ -26,11 +26,11 @@ class ScoringConfigurationBase(DatabaseBaseModel):
     configuration_name: str
     description: str | None = None
 
-    # GHOSTLY+ weights (0.0-1.0 scale)
-    weight_compliance: float = Field(0.40, ge=0.0, le=1.0)
-    weight_symmetry: float = Field(0.25, ge=0.0, le=1.0)
-    weight_effort: float = Field(0.20, ge=0.0, le=1.0)
-    weight_game: float = Field(0.15, ge=0.0, le=1.0)
+    # GHOSTLY+ weights (0.0-1.0 scale) - Research-determined defaults from metricsDefinitions.md
+    weight_compliance: float = Field(0.50, ge=0.0, le=1.0)  # 50% - Therapeutic Compliance
+    weight_symmetry: float = Field(0.25, ge=0.0, le=1.0)    # 25% - Muscle Symmetry
+    weight_effort: float = Field(0.25, ge=0.0, le=1.0)      # 25% - Subjective Effort (RPE)
+    weight_game: float = Field(0.00, ge=0.0, le=1.0)        # 0% - Game Performance (depends on game)
 
     # Sub-weights for compliance calculation (should sum to ~1.0)
     weight_completion: float = Field(0.333, ge=0.0, le=1.0)

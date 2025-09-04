@@ -74,11 +74,19 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 }) => {
   const { authState } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
-  const { weights: databaseWeights } = useScoringConfiguration();
+  const { 
+    weights: databaseWeights,
+    hasUnsavedChanges,
+    currentSaveState,
+    saveCustomWeights,
+    saveGlobalWeights,
+    clearLocalChanges
+  } = useScoringConfiguration();
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isGameNormalizationOpen, setIsGameNormalizationOpen] = useState(false);
   const [isRPEMappingOpen, setIsRPEMappingOpen] = useState(false);
   const [currentPreset, setCurrentPreset] = useState<string>('custom');
+  const [localWeights, setLocalWeights] = useState<ScoringWeights | null>(null);
   
   // Default RPE mapping matching metricsDefinitions.md specification
   const [rpeMapping, setRpeMapping] = useState<RPEMapping>({
@@ -93,16 +101,22 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   });
   
   const isExperimentalEnabled = sessionParams.experimental_features?.enabled || false;
-  const defaultWeights = databaseWeights || {
-    compliance: 0.50,  // 50% - Therapeutic Compliance
-    symmetry: 0.20,    // 20% - Muscle Symmetry
-    effort: 0.30,      // 30% - Subjective Effort (RPE)
-    gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
+  
+  // Initialize with proper priority: 1. Database weights, 2. Backend config.py defaults
+  const backendConfigDefaults = {
+    compliance: 0.50,  // 50% - Therapeutic Compliance (from backend config.py ScoringDefaults)
+    symmetry: 0.25,    // 25% - Muscle Symmetry (from backend config.py ScoringDefaults)
+    effort: 0.25,      // 25% - Subjective Effort (RPE) (from backend config.py ScoringDefaults)
+    gameScore: 0.00,   // 0% - Game Performance (from backend config.py ScoringDefaults)
     compliance_completion: 0.333,
     compliance_intensity: 0.333,
     compliance_duration: 0.334,
   };
   
+  // Priority: 1. Database weights if found, 2. Backend config.py defaults
+  const defaultWeights = databaseWeights || backendConfigDefaults;
+  
+  // Initialize with database/backend defaults, allow session override after user changes
   const weights = sessionParams.enhanced_scoring?.weights || defaultWeights;
   
   // Create scoring presets with database weights as default
@@ -126,12 +140,13 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   };
   const isGameWeightZero = (weights as any)?.gameScore === 0;
 
-  // Role-based editability: Therapist (clinical_specialist) or admin; Debug Mode unlocks
+  // Role-based editability: Therapist or admin; Debug Mode unlocks
   const canTherapistEdit = useMemo(() => {
     const role = authState?.profile?.role;
-    return role === 'clinical_specialist' || role === 'admin';
+    return role === 'therapist' || role === 'admin';
   }, [authState?.profile?.role]);
 
+  const isResearcher = authState?.profile?.role === 'researcher' || authState?.profile?.role === 'admin';
   const canEdit = (isTherapistMode || canTherapistEdit) && !disabled;
   
   // Compliance Score sub-component weights (default: equal weighting)
@@ -223,6 +238,9 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   };
 
   const updateWeights = (newWeights: ScoringWeights) => {
+    // Mark as local changes (simulation mode)
+    setLocalWeights(newWeights);
+    
     // Normalize only the main four scoring components to ensure they sum to 1.0
     const mainComponents = ['compliance', 'symmetry', 'effort', 'gameScore'] as const;
     const mainComponentsTotal = mainComponents.reduce((sum, key) => {
@@ -255,6 +273,28 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         ...(complianceWeights && { compliance_weights: complianceWeights })
       } as any
     });
+  };
+
+  // Handle reset to database values
+  const handleResetToDatabase = () => {
+    // Clear local changes
+    setLocalWeights(null);
+    
+    // Reset to database weights or backend defaults
+    const resetWeights = databaseWeights || backendConfigDefaults;
+    
+    // Update session params to clear any local overrides
+    setSessionParams({
+      ...sessionParams,
+      enhanced_scoring: {
+        ...sessionParams.enhanced_scoring,
+        enabled: true,
+        weights: resetWeights
+      } as any
+    });
+    
+    // Reset preset to default
+    setCurrentPreset('default');
   };
 
   const handleWeightChange = (key: keyof ScoringWeights, value: number) => {
@@ -332,6 +372,43 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
       poor_score: 20.0
     };
     updateRPEMapping(defaultMapping);
+  };
+
+  // Handle save actions from SaveModeSelector
+  const handleSaveWeights = async (mode: 'session' | 'patient' | 'global') => {
+    const currentWeights = localWeights || weights;
+    if (!currentWeights) return;
+
+    try {
+      switch (mode) {
+        // All saves are now local only (simulation mode)
+        case 'session':
+          // Just update local state, already done via updateWeights
+          setLocalWeights(currentWeights);
+          console.info('Weights applied to session only');
+          break;
+          
+        case 'patient':
+          // Save for specific therapist-patient pair
+          // Note: During trial, this is locked for non-researchers
+          const therapistId = authState?.user?.id;
+          const patientId = sessionParams?.patient_id;
+          if (therapistId && patientId) {
+            await saveCustomWeights(currentWeights, therapistId, patientId);
+            console.info('Weights saved for patient');
+          }
+          break;
+          
+        case 'global':
+          // Save globally (researcher only)
+          await saveGlobalWeights(currentWeights);
+          console.info('Weights saved globally for all users');
+          break;
+      }
+    } catch (error) {
+      console.error('Failed to save weights:', error);
+      throw error;
+    }
   };
 
 
@@ -538,8 +615,33 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
               ))}
 
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              {/* Local Changes Indicator and Reset Button */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={localWeights ? "warning" : "secondary"}>
+                      {localWeights ? "Local Changes" : "Database Values"}
+                    </Badge>
+                    {localWeights && (
+                      <span className="text-sm text-muted-foreground">
+                        (Simulation mode - changes are not saved)
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetToDatabase}
+                    disabled={!localWeights}
+                  >
+                    <MixerHorizontalIcon className="h-4 w-4 mr-2" />
+                    Reset to Database Values
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -556,6 +658,16 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                 >
                   Quality Focus
                 </Button>
+                {hasUnsavedChanges && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearLocalChanges}
+                    disabled={!canEdit}
+                  >
+                    Discard Changes
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -805,27 +917,47 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
                 return null;
               })}
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetRPEMappingToDefaults}
-                  disabled={!canEdit}
-                >
-                  Reset to Defaults
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // TODO: Save to database with API call
-                    alert('RPE mapping would be saved to database (API not yet implemented)');
-                  }}
-                  disabled={!canEdit}
-                >
-                  Save Configuration
-                </Button>
+              {/* Action Buttons with Researcher-Only Notice */}
+              <div className="space-y-3">
+                {/* Trial Mode Notice */}
+                {!isResearcher && (
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <LockClosedIcon className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-sm text-blue-800">
+                      <strong>Trial Mode:</strong> During this trial, only researchers can modify RPE mapping globally. 
+                      Therapists can view and test locally but cannot save to the database.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetRPEMappingToDefaults}
+                    disabled={!canEdit}
+                  >
+                    Reset to Defaults
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Save to database with API call
+                      if (isResearcher) {
+                        alert('RPE mapping would be saved globally for all users (API not yet implemented)');
+                      } else {
+                        alert('Only researchers can save RPE mapping during the trial');
+                      }
+                    }}
+                    disabled={!canEdit || !isResearcher}
+                    className={cn(
+                      !isResearcher && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {isResearcher ? 'Save for All Users' : 'Save Configuration (Locked)'}
+                  </Button>
+                </div>
               </div>
             </div>
 

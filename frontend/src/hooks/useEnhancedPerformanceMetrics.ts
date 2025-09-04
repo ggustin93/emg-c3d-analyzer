@@ -16,27 +16,28 @@ import { useScoringConfiguration } from './useScoringConfiguration';
 
 // UI Presets for scoring configuration settings (user-facing features)
 // These are used in SettingsTab for preset selection, not as fallback defaults
+// All presets must sum to 1.0 per metricsDefinitions.md specification
 
 export const QUALITY_FOCUSED_WEIGHTS: ScoringWeights = {
-  compliance: 0.55,  // Much higher emphasis on execution quality
-  symmetry: 0.30,  // Higher emphasis on bilateral balance
-  effort: 0.15,    // Lower emphasis on subjective effort
-  gameScore: 0.00,   // No game score
-  // Sub-weights for compliance
-  compliance_completion: 0.2, // Less focus on just doing them
-  compliance_intensity: 0.4,  // More focus on quality
-  compliance_duration: 0.4,   // More focus on endurance
+  compliance: 0.60,  // Higher emphasis on execution quality (w_c increased)
+  symmetry: 0.25,    // Standard bilateral balance (w_s per spec)
+  effort: 0.15,      // Lower emphasis on subjective effort (w_e reduced)
+  gameScore: 0.00,   // No game score (w_g = 0 per spec)
+  // Sub-weights for compliance (w_comp, w_int, w_dur must sum to 1.0)
+  compliance_completion: 0.25, // Less focus on completion quantity
+  compliance_intensity: 0.40,  // More focus on MVC quality  
+  compliance_duration: 0.35,   // More focus on duration compliance
 };
 
 export const EXPERIMENTAL_WITH_GAME_WEIGHTS: ScoringWeights = {
-  compliance: 0.35,  // Lower compliance weight
-  symmetry: 0.20,  // Slightly lower symmetry
-  effort: 0.15,    // Lower effort weight
-  gameScore: 0.30,   // Higher game score weight
-  // Sub-weights for compliance
-  compliance_completion: 1/3,
-  compliance_intensity: 1/3,
-  compliance_duration: 1/3,
+  compliance: 0.40,  // Reduced compliance weight to accommodate game
+  symmetry: 0.20,    // Slightly lower symmetry (w_s)
+  effort: 0.15,      // Lower effort weight (w_e)
+  gameScore: 0.25,   // Game score weight (w_g), experimental
+  // Sub-weights for compliance (w_comp, w_int, w_dur must sum to 1.0)
+  compliance_completion: 0.333, // Standard distribution per metricsDefinitions.md
+  compliance_intensity: 0.333,  // Standard distribution per metricsDefinitions.md
+  compliance_duration: 0.334,   // Standard distribution per metricsDefinitions.md
 };
 
 // Research-Optimized Contraction Detection Parameters (2024)
@@ -51,15 +52,15 @@ export const DEFAULT_DETECTION_PARAMS: ContractionDetectionParameters = {
   mvc_threshold_percentage: 75   // Maintained for clinical standards
 };
 
-// Fonction pour normaliser le score du jeu
+// Game Score Normalization per metricsDefinitions.md: S_game = (points achieved / max achievable points) × 100
 const normalizeGameScore = (
   rawScore: number | null | undefined,
   normalizationParams?: GameScoreNormalization
 ): number => {
   if (!rawScore) return 0;
   
-  // TODO: Implémenter la vraie normalisation quand l'algorithme sera défini
-  // Pour l'instant, simple mapping linéaire
+  // Linear mapping per metricsDefinitions.md specification
+  // Note: Max achievable points adapt via Dynamic Difficulty Adjustment (DDA) system
   const min = normalizationParams?.min_score || 0;
   const max = normalizationParams?.max_score || 100;
   
@@ -72,28 +73,28 @@ const calculateEffortScore = (_preRPE?: number | null, postRPE?: number | null):
   return getEffortScoreFromRPE(postRPE);
 };
 
-// Fonction pour calculer le score de compliance BFR
+// BFR Safety Gate per metricsDefinitions.md: C_BFR = 1.0 if pressure ∈ [45%, 55%] AOP, 0.0 otherwise
 const calculateComplianceScore = (bfrParameters?: any): number => {
-  if (!bfrParameters) return 50; // Score neutre si pas de données BFR
+  if (!bfrParameters) return 100; // No BFR penalty when data unavailable
   
-  // Handle new left/right structure
+  // Handle bilateral BFR compliance structure
   if (bfrParameters.left && bfrParameters.right) {
     const leftCompliant = bfrParameters.left.is_compliant === true;
     const rightCompliant = bfrParameters.right.is_compliant === true;
     
-    if (leftCompliant && rightCompliant) return 100;
-    if (!leftCompliant && !rightCompliant) return 0;
-    return 75; // Partial compliance (one side compliant)
+    // metricsDefinitions.md: BFR violations result in 0.0 penalty (full penalty)
+    if (leftCompliant && rightCompliant) return 100; // C_BFR = 1.0
+    return 0; // C_BFR = 0.0 (any non-compliance triggers full penalty)
   }
   
   // Legacy structure fallback
-  if (bfrParameters.is_compliant === true) return 100;
-  if (bfrParameters.is_compliant === false) return 0;
+  if (bfrParameters.is_compliant === true) return 100; // C_BFR = 1.0
+  if (bfrParameters.is_compliant === false) return 0;  // C_BFR = 0.0
   
-  return 50; // Fallback pour données incertaines
+  return 100; // Default: no penalty when compliance status unclear
 };
 
-// Fonction pour calculer les métriques d'un muscle
+// Per-Muscle Compliance Calculation per metricsDefinitions.md: S_comp^muscle = w_comp × R_comp + w_int × R_int + w_dur × R_dur
 // SINGLE SOURCE OF TRUTH: Uses backend flags (meets_mvc, meets_duration) when available
 // This ensures consistency with useContractionAnalysis, useLiveAnalytics, and StatsPanel
 const calculateMuscleMetrics = (
@@ -121,7 +122,7 @@ const calculateMuscleMetrics = (
       return c.meets_mvc === true;
     }
     // Fallback calculation only if backend flag is missing
-    const mvcThresholdValue = channelData.mvc_threshold_actual_value || 0;
+    const mvcThresholdValue = channelData.mvc75_threshold || 0;
     const dynamicMvcThreshold = mvcThresholdValue * (mvcThreshold / 100);
     return c.max_amplitude >= dynamicMvcThreshold;
   }).length;
@@ -172,18 +173,23 @@ export const useEnhancedPerformanceMetrics = (
       return null;
     }
     
-    // SINGLE SOURCE OF TRUTH: Use database weights as primary source
-    // Priority order: 1. Database weights, 2. Session override, 3. Hard fallback
-    // Note: databaseWeights already includes proper fallback values from useScoringConfiguration
-    const weights = databaseWeights || sessionParams.enhanced_scoring?.weights || {
-      compliance: 0.50,  // 50% - Therapeutic Compliance  
-      symmetry: 0.20,    // 20% - Muscle Symmetry
-      effort: 0.30,      // 30% - Subjective Effort (RPE)
-      gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
-      compliance_completion: 0.333,
-      compliance_intensity: 0.333,
-      compliance_duration: 0.334,
+    // SINGLE SOURCE OF TRUTH: Priority for simplified system
+    // Priority order: 1. Database weights, 2. Backend config.py fallback
+    // Session params are now only for local simulation (doesn't affect database results)
+    const weights = databaseWeights || {
+      compliance: 0.50,  // w_c = 0.5 (Therapeutic Compliance) - from backend/config.py ScoringDefaults
+      symmetry: 0.25,    // w_s = 0.25 (Muscle Symmetry) - from backend/config.py ScoringDefaults
+      effort: 0.25,      // w_e = 0.25 (Subjective Effort RPE) - from backend/config.py ScoringDefaults
+      gameScore: 0.00,   // w_g = 0.0 (Game Performance, optional) - from backend/config.py ScoringDefaults
+      compliance_completion: 0.333,  // w_comp = 1/3 - from backend/config.py ScoringDefaults
+      compliance_intensity: 0.333,   // w_int = 1/3 - from backend/config.py ScoringDefaults
+      compliance_duration: 0.334,    // w_dur = 1/3 - from backend/config.py ScoringDefaults
     };
+    
+    // For local simulation, we can use session params if available
+    const simulationWeights = sessionParams.enhanced_scoring?.enabled && sessionParams.enhanced_scoring?.weights
+      ? sessionParams.enhanced_scoring.weights
+      : weights;
     
     if (!weights) {
       console.warn('No scoring weights available, hook will return null');
@@ -192,18 +198,18 @@ export const useEnhancedPerformanceMetrics = (
     const detectionParams = sessionParams.contraction_detection || DEFAULT_DETECTION_PARAMS;
     const isDebugMode = sessionParams.experimental_features?.enabled || false;
     
-    // Paramètres d'analyse
+    // Analysis parameters from session configuration
     const durationThreshold = sessionParams.contraction_duration_threshold || detectionParams.quality_threshold_ms;
     const mvcThreshold = sessionParams.session_mvc_threshold_percentage || detectionParams.mvc_threshold_percentage;
     
-    // Récupération des données des muscles
+    // Retrieve muscle data from analytics
     const channelNames = Object.keys(analysisResult.analytics).sort();
     
     if (channelNames.length < 2) {
-      return null; // Nous avons besoin de deux muscles (L/R)
+      return null; // Bilateral analysis requires both left and right muscles
     }
     
-    // Calcul des métriques pour chaque muscle avec leurs objectifs spécifiques
+    // Calculate metrics for each muscle with specific targets
     const leftChannelData = analysisResult.analytics[channelNames[0]];
     const rightChannelData = analysisResult.analytics[channelNames[1]];
     
@@ -219,7 +225,7 @@ export const useEnhancedPerformanceMetrics = (
     leftMuscle.muscleName = "Left";
     rightMuscle.muscleName = "Right";
     
-    // Calcul des scores totaux par muscle (sans symétrie ni effort)
+    // Per-muscle total scores (individual compliance scores without symmetry/effort)
     const calculateMuscleScore = (muscle: MusclePerformanceData): number => {
       const componentSum = weights.compliance_completion + weights.compliance_intensity + weights.compliance_duration;
       if (componentSum === 0) return 0;
@@ -234,39 +240,46 @@ export const useEnhancedPerformanceMetrics = (
     leftMuscle.totalScore = Math.round(calculateMuscleScore(leftMuscle));
     rightMuscle.totalScore = Math.round(calculateMuscleScore(rightMuscle));
     
-    // Calcul de la symétrie - Medical Standard Formula
-    // Uses the clinically established Asymmetry Index: (1 - |left - right| / (left + right)) × 100
+    // Symmetry Score per metricsDefinitions.md - Medical Standard Asymmetry Index Formula
+    // S_symmetry = (1 - |S_comp^left - S_comp^right| / (S_comp^left + S_comp^right)) × 100
     // This formula is standard in rehabilitation medicine and provides clinically meaningful results
     const symmetryScore = leftMuscle.totalScore + rightMuscle.totalScore > 0
       ? Math.round((1 - Math.abs(leftMuscle.totalScore - rightMuscle.totalScore) / 
                    (leftMuscle.totalScore + rightMuscle.totalScore)) * 100)
       : 100;
     
-    // Calcul de l'effort subjectif
+    // Subjective Effort Score per metricsDefinitions.md (post-session RPE only)
     const effortScore = calculateEffortScore(
       sessionParams.pre_session_rpe,
       sessionParams.post_session_rpe
     );
     
-    // Calcul du score de compliance BFR
+    // BFR Safety Gate Score per metricsDefinitions.md
     const complianceScore = calculateComplianceScore(sessionParams.bfr_parameters);
     
-    // Calcul du score de jeu normalisé
+    // Game Performance Score per metricsDefinitions.md (normalized)
     const gameScoreNormalized = normalizeGameScore(
       analysisResult.metadata?.score,
       sessionParams.enhanced_scoring?.game_score_normalization
     );
     
-    // Calcul du score global
-    const muscleAverage = (leftMuscle.totalScore + rightMuscle.totalScore) / 2;
-    const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+    // Overall Score per metricsDefinitions.md: P_overall = w_c × S_compliance + w_s × S_symmetry + w_e × S_effort + w_g × S_game
+    // BFR Safety Gate: P_overall = (...) × C_BFR (applied as final multiplier)
+    const therapeuticComplianceScore = (leftMuscle.totalScore + rightMuscle.totalScore) / 2;
     
-    const overallScore = totalWeight > 0 ? Math.round(
-      (muscleAverage * (weights.compliance_completion + weights.compliance_intensity + weights.compliance_duration) +
-       symmetryScore * weights.symmetry +
-       effortScore * weights.effort +
-       gameScoreNormalized * weights.gameScore) / totalWeight
-    ) : 0;
+    // Calculate base score using simulation weights (for UI display)
+    // Note: Database results use 'weights', UI simulation uses 'simulationWeights'
+    const baseOverallScore = Math.round(
+      simulationWeights.compliance * therapeuticComplianceScore +
+      simulationWeights.symmetry * symmetryScore +
+      simulationWeights.effort * effortScore +
+      simulationWeights.gameScore * gameScoreNormalized
+    );
+    
+    // Apply BFR Safety Gate (C_BFR): multiply by compliance score (0.0-1.0 range)
+    // metricsDefinitions.md: C_BFR = 1.0 if compliant, 0.0 if non-compliant
+    const bfrSafetyGate = complianceScore / 100; // Convert percentage to multiplier
+    const overallScore = Math.round(baseOverallScore * bfrSafetyGate);
     
     return {
       overallScore,
@@ -276,7 +289,7 @@ export const useEnhancedPerformanceMetrics = (
       effortScore,
       complianceScore,
       gameScoreNormalized,
-      weights,
+      weights: simulationWeights,  // Return simulation weights for UI display
       isDebugMode
     };
     

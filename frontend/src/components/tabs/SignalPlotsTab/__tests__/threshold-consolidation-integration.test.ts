@@ -121,7 +121,7 @@ describe('Threshold Consolidation - Senior Engineering Solution', () => {
     it('should demonstrate stable memoization requirements', () => {
       // Test the dependency arrays used in our hook
       const mockSessionParams = { mvc_values: { CH1: 0.05 } };
-      const mockAnalytics = { CH1: { mvc_threshold_actual_value: 0.04 } };
+      const mockAnalytics = { CH1: { mvc75_threshold: 0.04 } };
       const mockAvailableKeys = ['CH1 Raw', 'CH1 Activated'];
       
       // These are the dependencies that should trigger recalculation

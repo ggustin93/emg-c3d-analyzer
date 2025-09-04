@@ -44,10 +44,10 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     }
 
     const channelData = analytics[channel];
-    // Primary check: mvc_threshold_actual_value is the key indicator of MVC data availability
+    // Primary check: mvc75_threshold is the key indicator of MVC data availability
     // mvc_estimation_method is optional and might be undefined in some backend responses
-    const hasMvcData = channelData.mvc_threshold_actual_value && 
-                      channelData.mvc_threshold_actual_value > 0.00001; // Clinical minimum check (10μV)
+    const hasMvcData = channelData.mvc75_threshold && 
+                      channelData.mvc75_threshold > 0.00001; // Clinical minimum check (10μV)
     
     if (!hasMvcData) {
       return { hasData: false, quality: 'missing', message: 'MVC threshold not available' };
@@ -55,8 +55,8 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
 
     // Validate MVC estimation using service method
     const mockResult = {
-      mvc_value: channelData.mvc_threshold_actual_value / 0.75, // Assume 75% threshold
-      threshold_value: channelData.mvc_threshold_actual_value,
+      mvc_value: channelData.mvc75_threshold / 0.75, // Assume 75% threshold
+      threshold_value: channelData.mvc75_threshold,
       threshold_percentage: 75,
       estimation_method: channelData.mvc_estimation_method || 'backend_analysis', // Default if not provided
       confidence_score: 0.8, // Default confidence
@@ -77,7 +77,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       message,
       confidenceScore: mockResult.confidence_score,
       estimationMethod: channelData.mvc_estimation_method,
-      formattedValue: MVCService.formatThresholdValue(channelData.mvc_threshold_actual_value)
+      formattedValue: MVCService.formatThresholdValue(channelData.mvc75_threshold)
     };
   };
 
@@ -105,10 +105,10 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       console.log('🔍 Analytics data structure:', analytics);
       Object.entries(analytics).forEach(([channel, channelData]) => {
         console.log(`📊 ${channel} analytics:`, {
-          mvc_threshold_actual_value: channelData.mvc_threshold_actual_value,
+          mvc75_threshold: channelData.mvc75_threshold,
           mvc_estimation_method: channelData.mvc_estimation_method,
           contraction_count: channelData.contraction_count,
-          hasAllRequiredFields: !!(channelData.mvc_threshold_actual_value && channelData.mvc_estimation_method)
+          hasAllRequiredFields: !!(channelData.mvc75_threshold && channelData.mvc_estimation_method)
         });
       });
       
@@ -125,21 +125,12 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
           ...sessionParams,
           ...sessionUpdate
         });
-        console.log('✅ Applied MVC values from analytics to session');
       }
     }
   };
 
   // Handler to show calibration confirmation modal
   const handleShowCalibrationModal = () => {
-    console.log('🔍 Debug button state:', {
-      uploadedFileName,
-      disabled,
-      isFullRecalculating,
-      hasFile: !!uploadedFileName,
-      canProceed: !disabled && !isFullRecalculating
-    });
-    
     if (!uploadedFileName) {
       setFullRecalcError('No C3D file available for calibration');
       return;
@@ -193,8 +184,6 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     setFullRecalcError(null);
 
     try {
-      console.log('🚀 Starting MVC calibration from C3D file:', fileName);
-
       // Call the backend /mvc/calibrate endpoint with the selected file
       const response = await MVCService.calibrate(fileToUse, {
         user_id: authState.user?.id,
@@ -203,8 +192,6 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
       });
 
       if (response.status === 'success' && response.mvc_estimations) {
-        console.log('✅ MVC recalculation successful:', response);
-
         // Convert the response to session parameters format
         const sessionUpdate = MVCService.convertToSessionParameters(response.mvc_estimations);
 
@@ -215,14 +202,12 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
         });
 
         // Update MVC service state for display
-        console.log('🎯 Applied new MVC values from full recalculation');
         
       } else {
         throw new Error(response.error || 'Unknown error in MVC estimation');
       }
 
     } catch (error) {
-      console.error('❌ Full MVC recalculation failed:', error);
       setFullRecalcError(error instanceof Error ? error.message : 'Failed to recalculate MVC values');
     } finally {
       setIsFullRecalculating(false);
@@ -379,7 +364,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
                                       sessionParams.session_mvc_threshold_percentage ?? 75;
                 
                 // Get backend-calculated actual threshold for validation
-                const backendThreshold = analytics?.[channel]?.mvc_threshold_actual_value;
+                const backendThreshold = analytics?.[channel]?.mvc75_threshold;
                 const estimationMethod = analytics?.[channel]?.mvc_estimation_method;
                 
                 // Calculate frontend threshold for comparison

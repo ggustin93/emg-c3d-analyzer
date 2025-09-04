@@ -1,93 +1,59 @@
-// Couleurs sémantiques pour les scores de performance
+import { getScoreColors } from '@/hooks/useScoreColors';
+
+// Semantic colors for performance scores - delegating to single source of truth
 export const getPerformanceColor = (score: number) => {
-  if (score >= 90) return {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    border: 'border-emerald-300',
-    hex: '#10b981',
-    label: 'Excellent'
-  };
-  if (score >= 80) return {
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    border: 'border-green-300',
-    hex: '#22c55e',
-    label: 'Good'
-  };
-  if (score >= 70) return {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
-    border: 'border-yellow-300',
-    hex: '#eab308',
-    label: 'Fair'
-  };
-  if (score >= 60) return {
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
-    border: 'border-orange-300',
-    hex: '#f97316',
-    label: 'Needs Improvement'
-  };
+  const baseColors = getScoreColors(score);
+  
+  // Add border property for backward compatibility
   return {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
-    border: 'border-red-300',
-    hex: '#ef4444',
-    label: 'Poor'
+    ...baseColors,
+    border: getBorderColorFromHex(baseColors.hex)
   };
 };
 
+// Helper function to convert hex colors to Tailwind border classes
+const getBorderColorFromHex = (hex: string): string => {
+  const colorMap: Record<string, string> = {
+    '#22c55e': 'border-green-500',
+    '#06b6d4': 'border-cyan-500', 
+    '#eab308': 'border-yellow-500',
+    '#ef4444': 'border-red-500'
+  };
+  return colorMap[hex] || 'border-gray-300';
+};
+
+// Specialized color functions for specific domains
 export const getSymmetryColor = (score: number) => {
-  if (score >= 90) return {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    hex: '#10b981',
-    label: 'Excellent Balance'
+  const baseColors = getScoreColors(score);
+  
+  // Custom labels for symmetry scoring
+  const symmetryLabels: Record<string, string> = {
+    'Excellent': 'Excellent Balance',
+    'Good': 'Good Balance', 
+    'Satisfactory': 'Moderate Asymmetry',
+    'Needs Improvement': 'Significant Asymmetry'
   };
-  if (score >= 80) return {
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    hex: '#22c55e',
-    label: 'Good Balance'
-  };
-  if (score >= 70) return {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
-    hex: '#eab308',
-    label: 'Moderate Asymmetry'
-  };
+  
   return {
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
-    hex: '#f97316',
-    label: 'Significant Asymmetry'
+    ...baseColors,
+    label: symmetryLabels[baseColors.label] || baseColors.label
   };
 };
 
 export const getEffortColor = (score: number) => {
-  if (score >= 90) return {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    hex: '#10b981',
-    label: 'Optimal Effort'
+  const baseColors = getScoreColors(score);
+  
+  // Custom labels for effort scoring
+  const effortLabels: Record<string, string> = {
+    'Excellent': 'Optimal Effort',
+    'Good': 'Good Effort',
+    'Satisfactory': 'Moderate Effort', 
+    'Needs Improvement': 'Suboptimal Effort'
   };
-  if (score >= 80) return {
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    hex: '#22c55e',
-    label: 'Good Effort'
-  };
-  if (score >= 60) return {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
-    hex: '#eab308',
-    label: 'Moderate Effort'
-  };
+  
   return {
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
-    hex: '#f97316',
-    label: 'Suboptimal Effort'
+    ...baseColors,
+    label: effortLabels[baseColors.label] || baseColors.label
   };
 };
 

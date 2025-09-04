@@ -12,6 +12,7 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger, LogCategory } from '@/services/logger';
 import { 
   PersonIcon, 
   HomeIcon, 
@@ -41,7 +42,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const handleLogout = async () => {
     // Prevent double-clicking
     if (isLoggingOut) {
-      console.warn('Logout already in progress');
+      logger.warn(LogCategory.AUTH, 'Logout already in progress');
       return;
     }
 
@@ -53,7 +54,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       await logout();
       // The onAuthStateChange listener will handle the redirect automatically
     } catch (error) {
-      console.error('UserProfile: Logout error:', error);
+      logger.error(LogCategory.AUTH, 'UserProfile: Logout error:', error);
     } finally {
       setIsLoggingOut(false);
     }
@@ -63,7 +64,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     switch (role) {
       case 'admin':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'clinical_specialist':
+      case 'therapist':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'researcher':
       default:

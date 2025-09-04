@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from config import SessionDefaults
+from config import SessionDefaults, ScoringDefaults
 
 from database.supabase_client import get_supabase_client
 
@@ -72,15 +72,16 @@ class RPEMapping:
 class ScoringWeights:
     """Configurable weights for performance scoring (must sum to 1.0)."""
 
-    w_compliance: float = 0.40  # Therapeutic Compliance
-    w_symmetry: float = 0.25  # Muscle Symmetry
-    w_effort: float = 0.20  # Subjective Effort (RPE)
-    w_game: float = 0.15  # Game Performance
+    # Use defaults from config.py (from metricsDefinitions.md)
+    w_compliance: float = ScoringDefaults.WEIGHT_COMPLIANCE  # 0.50 - Therapeutic Compliance
+    w_symmetry: float = ScoringDefaults.WEIGHT_SYMMETRY  # 0.25 - Muscle Symmetry
+    w_effort: float = ScoringDefaults.WEIGHT_EFFORT  # 0.25 - Subjective Effort (RPE)
+    w_game: float = ScoringDefaults.WEIGHT_GAME  # 0.00 - Game Performance
 
     # Sub-component weights for compliance (must sum to 1.0)
-    w_completion: float = 0.333  # Completion rate weight
-    w_intensity: float = 0.333  # Intensity rate weight
-    w_duration: float = 0.334  # Duration rate weight
+    w_completion: float = ScoringDefaults.WEIGHT_COMPLETION  # 0.333 - Completion rate weight
+    w_intensity: float = ScoringDefaults.WEIGHT_INTENSITY  # 0.333 - Intensity rate weight
+    w_duration: float = ScoringDefaults.WEIGHT_DURATION  # 0.334 - Duration rate weight
 
     def validate(self) -> bool:
         """Validate that weights sum to 1.0 (within tolerance)."""
@@ -136,15 +137,39 @@ class PerformanceScoringService:
         logger.info("🎯 Performance Scoring Service initialized")
 
     def _load_scoring_weights_from_database(self, session_id: str) -> ScoringWeights:
-        """Load configurable scoring weights from database
-        Fallback to defaults if not found.
+        """Load configurable scoring weights from database using session-based lookup.
+        Priority: Session config → Patient config → Global default → System defaults
         """
         try:
-            # Check for session-specific or global scoring weights configuration
+            # First, get the patient_id from the session
+            session_query = (
+                self.client.table("therapy_sessions")
+                .select("patient_id, scoring_config_id")
+                .eq("id", session_id)
+                .limit(1)
+                .execute()
+            )
+            
+            patient_id = None
+            direct_config_id = None
+            if session_query.data:
+                patient_id = session_query.data[0].get("patient_id")
+                direct_config_id = session_query.data[0].get("scoring_config_id")
+            
+            # Get the appropriate scoring config ID using our intelligent function
+            # If session already has scoring_config_id, it will be used (immutable)
+            # Otherwise, falls back to patient's current config or global default
+            scoring_config_id = self._get_session_scoring_config_id(session_id, patient_id)
+            
+            if not scoring_config_id:
+                logger.info("📊 No database scoring config found, using system defaults")
+                return ScoringWeights()
+            
+            # Load the specific configuration
             weights_query = (
                 self.client.table("scoring_configuration")
                 .select("*")
-                .order("created_at", desc=True)
+                .eq("id", scoring_config_id)
                 .limit(1)
                 .execute()
             )
@@ -152,10 +177,10 @@ class PerformanceScoringService:
             if weights_query.data:
                 config = weights_query.data[0]
                 return ScoringWeights(
-                    w_compliance=config.get("weight_compliance", 0.40),
-                    w_symmetry=config.get("weight_symmetry", 0.25),
-                    w_effort=config.get("weight_effort", 0.20),
-                    w_game=config.get("weight_game", 0.15),
+                    w_compliance=config.get("weight_compliance", 0.50),  # 50% default from metricsDefinitions.md
+                    w_symmetry=config.get("weight_symmetry", 0.25),     # 25% default
+                    w_effort=config.get("weight_effort", 0.25),         # 25% default
+                    w_game=config.get("weight_game", 0.00),             # 0% default (game-dependent)
                     w_completion=config.get("weight_completion", 0.333),
                     w_intensity=config.get("weight_intensity", 0.333),
                     w_duration=config.get("weight_duration", 0.334),
@@ -409,13 +434,11 @@ class PerformanceScoringService:
         Uses configurable RPE mapping and development defaults when needed
         Returns: (effort_score, rpe_source)
         """
-        # Use development default if RPE is missing
+        # Return None if RPE is missing (don't use defaults in calculation)
         if rpe is None:
-            rpe = SessionDefaults.RPE_POST_SESSION
-            rpe_source = "development_default"
-            logger.info(f"💡 Using default RPE={rpe} for development - therapist can update later")
-        else:
-            rpe_source = "c3d_metadata"
+            return None, "no_rpe_data"
+        
+        rpe_source = "c3d_metadata"
 
         # Use configurable RPE mapping (loaded from database or default)
         effort_score = self.rpe_mapping.get_effort_score(rpe)
@@ -445,11 +468,11 @@ class PerformanceScoringService:
         """Calculate BFR safety gate.
 
         C_BFR = 1.0 if pressure ∈ [45%, 55%] AOP, else 0.0
-        CRITICAL: No BFR data = non-compliant (0.0) for safety
+        When BFR data is missing, assume compliant (1.0) for non-BFR sessions
         """
         if pressure_aop is None:
-            logger.warning("⚠️ No BFR pressure data - applying safety penalty (C_BFR = 0.0)")
-            return 0.0  # Non-compliant if no BFR data (safety first)
+            # No BFR data means this might be a non-BFR session - assume compliant
+            return 1.0
 
         # BFR safety window: 45-55% AOP
         if 45.0 <= pressure_aop <= 55.0:
@@ -533,43 +556,89 @@ class PerformanceScoringService:
             logger.exception(f"Error fetching session metrics: {e!s}")
             return None
 
-    def _get_default_scoring_config_id(self) -> str | None:
-        """Get the default global GHOSTLY+ scoring configuration ID
-        Schema v2.1 compliance - references centralized scoring configuration.
+    def _get_session_scoring_config_id(self, session_id: str = None, patient_id: str = None) -> str | None:
+        """Get the appropriate scoring configuration for a session.
+        
+        Priority hierarchy (handled by database function):
+        1. Session's immutable scoring_config_id (preserves historical accuracy)
+        2. Patient's current_scoring_config_id (for new sessions)
+        3. Global GHOSTLY+ Default configuration
+        4. None (will fall back to config.py defaults)
+        
+        Args:
+            session_id: The therapy session UUID. 
+            patient_id: The patient's UUID (used if session doesn't have config).
+            
+        Returns:
+            Scoring configuration ID or None if no config found.
         """
         try:
-            # Query for the default global GHOSTLY+ configuration
-            result = (
-                self.client.table("scoring_configuration")
-                .select("id")
-                .eq("configuration_name", "GHOSTLY+ Default")
-                .eq("is_global", True)
-                .limit(1)
-                .execute()
-            )
-
-            if result.data and len(result.data) > 0:
-                scoring_config_id = result.data[0]["id"]
-                logger.debug(f"Using default GHOSTLY+ scoring configuration: {scoring_config_id}")
-                return scoring_config_id
+            # Use the intelligent database function that handles priority
+            result = self.client.rpc(
+                "get_session_scoring_config",
+                {
+                    "p_session_id": session_id,
+                    "p_patient_id": patient_id
+                }
+            ).execute()
+            
+            if result.data:
+                logger.debug(f"Using scoring config {result.data} for session {session_id or 'new'}")
+                return result.data
             else:
-                logger.error("GHOSTLY+ Default scoring configuration not found in database")
+                logger.warning("No scoring configuration found in database, will use system defaults")
                 return None
 
         except Exception as e:
-            logger.exception(f"Error fetching default scoring configuration: {e!s}")
+            logger.exception(f"Error fetching scoring configuration: {e!s}")
             return None
+    
+    def _get_patient_scoring_config_id(self, patient_id: str = None) -> str | None:
+        """Legacy method for backward compatibility. Calls session-based method with no session."""
+        return self._get_session_scoring_config_id(session_id=None, patient_id=patient_id)
+    
+    def _get_default_scoring_config_id(self) -> str | None:
+        """Legacy method for backward compatibility. Calls _get_patient_scoring_config_id with no patient."""
+        return self._get_patient_scoring_config_id(patient_id=None)
 
     def save_performance_scores(self, scores: dict) -> bool:
         """Save calculated scores to performance_scores table
-        Schema v2.1 compliance - uses scoring_config_id instead of individual weight fields.
+        Schema v2.1 compliance - uses session's scoring_config_id for audit trail.
+        
+        Scoring config hierarchy (handled by database):
+        1. Session's immutable scoring_config_id (preserves what was actually used)
+        2. Patient's current config (for new sessions)
+        3. Global default
+        4. System defaults from config.py if database unavailable
         """
         try:
-            # Get default global scoring configuration ID
-            scoring_config_id = self._get_default_scoring_config_id()
+            session_id = scores.get("session_id")
+            
+            # Get the scoring config that was actually used for this session
+            # This is already set on the therapy_sessions table by the trigger
+            session_query = (
+                self.client.table("therapy_sessions")
+                .select("scoring_config_id, patient_id")
+                .eq("id", session_id)
+                .limit(1)
+                .execute()
+            )
+            
+            scoring_config_id = None
+            if session_query.data:
+                scoring_config_id = session_query.data[0].get("scoring_config_id")
+                patient_id = session_query.data[0].get("patient_id")
+                
+                # If session doesn't have config yet (shouldn't happen with trigger), get it
+                if not scoring_config_id:
+                    scoring_config_id = self._get_session_scoring_config_id(session_id, patient_id)
+            
             if not scoring_config_id:
-                logger.error("No default scoring configuration found")
-                return False
+                logger.warning(
+                    f"No scoring configuration found for session {session_id}. "
+                    "Using system defaults from config.py"
+                )
+                scoring_config_id = None
 
             # Check if record exists
             existing = (
@@ -583,7 +652,6 @@ class PerformanceScoringService:
             # Apply normalization to completion and rate fields to comply with DB constraints
             db_data = {
                 "session_id": scores["session_id"],
-                "scoring_config_id": scoring_config_id,  # Required FK to scoring_configuration
                 "overall_score": scores.get("overall_score"),
                 "compliance_score": scores.get("compliance_score"),
                 "symmetry_score": scores.get("symmetry_score"),
@@ -605,6 +673,10 @@ class PerformanceScoringService:
                 ),
                 # NOTE: weight_* fields removed - now in scoring_configuration table
             }
+            
+            # Only add scoring_config_id if it exists (not None)
+            if scoring_config_id is not None:
+                db_data["scoring_config_id"] = scoring_config_id
 
             if existing.data:
                 # Update existing record

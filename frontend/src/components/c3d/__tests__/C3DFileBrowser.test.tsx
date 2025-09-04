@@ -63,7 +63,9 @@ const mockAuthContext = {
   refreshSession: vi.fn(),
   resetPassword: vi.fn(),
   isAuthenticated: false,
-  isLoading: false
+  isLoading: false,
+  userRole: 'RESEARCHER' as const,
+  canViewFeature: vi.fn().mockReturnValue(true)
 };
 
 describe('C3DFileBrowser - Core Functionality Tests', () => {
@@ -145,8 +147,12 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
         expect(libraryElements.length).toBeGreaterThan(0);
       });
 
-      const fileCountElements = screen.getAllByText(/Showing.*files/);
-      expect(fileCountElements.length).toBeGreaterThan(0);
+      // Check for "Showing" text and "files" text separately since they're in different elements
+      const showingElements = screen.getAllByText(/Showing/);
+      expect(showingElements.length).toBeGreaterThan(0);
+      
+      const filesElements = screen.getAllByText(/files/);
+      expect(filesElements.length).toBeGreaterThan(0);
     });
 
     it('should handle file upload completion', async () => {
@@ -214,8 +220,12 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       });
 
       // Success state with no files - should show library with file count
-      const fileCountElements = screen.getAllByText(/Showing.*files/i);
-      expect(fileCountElements.length).toBeGreaterThan(0);
+      // Check for "Showing" text and "files" text separately since they're in different elements
+      const showingElements = screen.getAllByText(/Showing/i);
+      expect(showingElements.length).toBeGreaterThan(0);
+      
+      const filesElements = screen.getAllByText(/files/i);
+      expect(filesElements.length).toBeGreaterThan(0);
     });
 
     it('should handle unauthenticated state', async () => {
@@ -227,7 +237,9 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
         refreshSession: vi.fn(),
         resetPassword: vi.fn(),
         isAuthenticated: false,
-        isLoading: false
+        isLoading: false,
+        userRole: null,
+        canViewFeature: vi.fn().mockReturnValue(false)
       });
 
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);

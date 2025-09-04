@@ -443,7 +443,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                     </button>
                                   </TooltipTrigger>
                                   <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-                                    <p>{`Contractions meeting the MVC amplitude threshold (${thresholdText}). Backend mvc_threshold_actual_value is authoritative.`}</p>
+                                    <p>{`Contractions meeting the MVC amplitude threshold (${thresholdText}). Backend mvc75_threshold is authoritative.`}</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </div>

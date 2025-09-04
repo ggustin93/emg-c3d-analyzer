@@ -3,6 +3,7 @@ import UserProfile from '../auth/UserProfile';
 import FileMetadataBar from './FileMetadataBar';
 import { EMGAnalysisResult } from '../../types/emg';
 
+
 interface HeaderProps {
   analysisResult?: EMGAnalysisResult | null;
   onReset?: () => void;
@@ -14,7 +15,12 @@ interface HeaderProps {
  * Main application header that adapts to authentication state
  * Features Ghostly+ branding with conditional controls
  */
-const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticated = true, uploadDate }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  analysisResult, 
+  onReset, 
+  isAuthenticated = true, 
+  uploadDate
+}) => {
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-6xl mx-auto">
@@ -33,6 +39,7 @@ const Header: React.FC<HeaderProps> = ({ analysisResult, onReset, isAuthenticate
              
             </div>
           </div>
+
 
           {/* Right side - User profile (only when authenticated) */}
           {isAuthenticated && <UserProfile compact />}

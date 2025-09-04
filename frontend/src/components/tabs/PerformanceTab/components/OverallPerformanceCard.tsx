@@ -1,30 +1,48 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useScoreColors } from '@/hooks/useScoreColors';
+import { hexToBorderClass } from '@/lib/scoringSystem';
 import { useSessionStore } from '@/store/sessionStore';
-import { ScoringWeights } from '@/types/emg';
 import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
+import { formatPercentage } from '@/lib/formatUtils';
+import CircleDisplay from '@/components/shared/CircleDisplay';
+import { getEnhancedProgressColors } from '@/lib/progressBarColors';
 
-
+/**
+ * Props for the OverallPerformanceCard component
+ */
 interface OverallPerformanceCardProps {
+  /** Performance calculation result from performanceUtils */
   performanceData: PerformanceCalculationResult | null;
+  /** Label describing the score level (e.g., "Excellent", "Good") */
   scoreLabel: string;
+  /** Tailwind text color class for the score */
   scoreTextColor: string;
+  /** Tailwind background color class for the score */
   scoreBgColor: string;
+  /** Hex color value for visual elements */
   scoreHexColor: string;
-  // Keep props that are not part of the calculation but are needed for display context
+  /** Optional therapeutic compliance score for display */
   therapeuticComplianceScore?: number;
+  /** Optional symmetry score for display */
   symmetryScore?: number;
-  // subjectiveFatigueLevel is now derived from performanceData
+  /** Optional game score for display */
   gameScore?: number;
 }
 
+/**
+ * OverallPerformanceCard displays the comprehensive performance score
+ * with a breakdown of contributing factors (compliance, symmetry, effort, game).
+ * 
+ * The component uses a weight hierarchy:
+ * 1. Session weights (highest priority)
+ * 2. Database weights from Supabase
+ * 3. Default weights from backend config
+ */
 const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   performanceData,
   scoreLabel,
@@ -38,107 +56,40 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
   const { sessionParams } = useSessionStore();
   const { weights: databaseWeights } = useScoringConfiguration();
   
-  const weights = sessionParams.enhanced_scoring?.weights || databaseWeights || {
-    compliance: 0.50,  // 50% - Therapeutic Compliance
-    symmetry: 0.20,    // 20% - Muscle Symmetry
-    effort: 0.30,      // 30% - Subjective Effort (RPE)
-    gameScore: 0.00,   // 0% - Game Performance (default to zero as requested)
-    compliance_completion: 0.333,
-    compliance_intensity: 0.333,
-    compliance_duration: 0.334,
-  };
+  // Weight hierarchy: Session → Database → Defaults
+  const weights = useMemo(() => 
+    sessionParams.enhanced_scoring?.weights || databaseWeights || {
+      compliance: 0.50,
+      symmetry: 0.25,
+      effort: 0.25,
+      gameScore: 0.00,
+      compliance_completion: 0.333,
+      compliance_intensity: 0.333,
+      compliance_duration: 0.334,
+    }, [sessionParams.enhanced_scoring?.weights, databaseWeights]);
   
-  // If performanceData is not available, show a loading/default state
+  const overallScore = performanceData?.totalScore || 0;
+  const borderClass = scoreHexColor ? hexToBorderClass(scoreHexColor) : 'border-gray-200';
+  
+  // Early return for loading state
   if (!performanceData) {
-    // You can return a loading spinner or a placeholder card here
-    return <Card className="bg-white shadow-sm p-4 text-center">Loading performance data...</Card>;
+    return (
+      <Card className="bg-white shadow-sm p-4 text-center flex items-center justify-center">
+        <span className="text-gray-500">Loading performance data...</span>
+      </Card>
+    );
   }
 
   const { totalScore, contributions, strongestDriver, weightedScores } = performanceData;
 
-  const scoreData = [
-    { name: 'Score', value: Math.min(totalScore, 100) },
-    { name: 'Remaining', value: Math.max(0, 100 - totalScore) },
-  ];
-
-  const SCORE_COLORS = [scoreHexColor, '#e5e7eb'];
-  
-  // Common component for circle displays (same as MusclePerformanceCard)
-  const CircleDisplay = ({ 
-    value, 
-    total, 
-    label, 
-    color, 
-    size = "md",
-    showPercentage = true,
-    showExpected = false
-  }: { 
-    value: number, 
-    total?: number, 
-    label?: string, 
-    color: string,
-    size?: "sm" | "md" | "lg",
-    showPercentage?: boolean,
-    showExpected?: boolean
-  }) => {
-    const sizeClass = {
-      sm: "w-16 h-16",
-      md: "w-24 h-24",
-      lg: "w-32 h-32"
-    };
-    
-    const textSizeClass = {
-      sm: "text-base",
-      md: "text-xl",
-      lg: "text-3xl"
-    };
-    
-    const fillPercentage = total && total > 0 
-      ? (value >= total ? 100 : Math.round((value / total) * 100))
-      : 100;
-    
-    return (
-      <div className="flex flex-col items-center">
-        <div className={cn("relative", sizeClass[size])}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={[{ value: fillPercentage }, { value: 100 - fillPercentage }]}
-                cx="50%"
-                cy="50%"
-                innerRadius={size === "sm" ? 28 : size === "md" ? 38 : 48}
-                outerRadius={size === "sm" ? 30 : size === "md" ? 42 : 52}
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-                stroke="none"
-              >
-                <Cell fill={color} />
-                <Cell fill="#e5e7eb" />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn("font-bold", textSizeClass[size])} style={{ color }}>
-              {showPercentage ? `${value}%` : value}
-            </span>
-            {total && showExpected && (
-              <span className="text-xs text-gray-500">of {total}</span>
-            )}
-          </div>
-        </div>
-        {label && (
-          <p className="text-xs text-gray-500 mt-2">
-            {label}
-          </p>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+    <Card 
+      className={cn(
+        "bg-white shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border-2",
+        borderClass
+      )}
+    >
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer group">
               <CardHeader className="flex flex-col items-center text-center pb-4 relative">
@@ -153,15 +104,17 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                     effortScoreWeight={weights.effort}
                     gameScoreWeight={weights.gameScore}
                   />
-                  </CardTitle>
-                  <p className={`text-sm font-bold ${scoreTextColor} mb-2`}>{scoreLabel}</p>
+                </CardTitle>
+                <p className={cn("text-sm font-bold mb-2", scoreTextColor)}>
+                  {scoreLabel}
+                </p>
                   
                   <WeightedScoreTooltip weights={weights}>
                     <div>
                       <CircleDisplay 
-                        value={totalScore} 
+                        value={overallScore} 
                         label="" 
-                        color={scoreHexColor}
+                        color={scoreHexColor || '#10b981'}
                         size="lg"
                         showPercentage={true}
                       />
@@ -173,49 +126,101 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0 space-y-6">
-          {/* Performance Breakdown - Simplified for Clinical UX */}
-          <div className="rounded-lg bg-slate-50 p-4 border border-slate-200 space-y-4">
+          {/* Performance Breakdown */}
+          <div className="rounded-lg bg-slate-50 py-4 px-4 space-y-4 pb-10">
             <h4 className="text-sm font-semibold text-gray-700 text-center">Performance Breakdown</h4>
 
             {(() => {
+              // Define contribution components with their styling and values
               const contributionData = [
-                { key: 'C', color: 'bg-green-500', label: 'Compliance', value: contributions.compliance, weight: weights.compliance },
-                { key: 'S', color: 'bg-purple-500', label: 'Symmetry', value: contributions.symmetry, weight: weights.symmetry },
-                { key: 'E', color: 'bg-orange-500', label: 'Effort', value: contributions.effort, weight: weights.effort },
-                ...(weights.gameScore > 0 ? [{ key: 'G' as const, color: 'bg-cyan-500', label: 'Game', value: contributions.game, weight: weights.gameScore }] : []),
+                { 
+                  key: 'C', 
+                  color: getEnhancedProgressColors(therapeuticComplianceScore ?? 50).bg, 
+                  label: 'Compliance', 
+                  value: contributions.compliance, 
+                  weight: weights.compliance,
+                  rawScore: therapeuticComplianceScore
+                },
+                { 
+                  key: 'S', 
+                  color: getEnhancedProgressColors(symmetryScore ?? 50).bg, 
+                  label: 'Symmetry', 
+                  value: contributions.symmetry, 
+                  weight: weights.symmetry,
+                  rawScore: symmetryScore
+                },
+                { 
+                  key: 'E', 
+                  color: 'bg-amber-600', // Fixed color for effort since it's subjective 
+                  label: 'Effort', 
+                  value: contributions.effort, 
+                  weight: weights.effort,
+                  rawScore: weightedScores.effort
+                },
+                ...(weights.gameScore > 0 ? [{ 
+                  key: 'G' as const, 
+                  color: 'bg-slate-500', // Neutral color for experimental game score 
+                  label: 'Game', 
+                  value: contributions.game, 
+                  weight: weights.gameScore,
+                  rawScore: gameScore
+                }] : []),
               ];
               
-              const totalContribution = Object.values(contributions).reduce((s, c) => s + c, 0);
+              const totalContribution = Object.values(contributions).reduce((sum, val) => sum + val, 0);
 
               return (
-                <div className="space-y-3">
-                  {/* Contributions bar */}
-                  <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${Math.round(totalContribution)}%`}>
+                <div className="space-y-6" data-testid="performance-breakdown">
+                  {/* Visual progress bar showing component contributions */}
+                  <div className="h-4 w-full rounded-full bg-slate-200 overflow-hidden" title={`Total Score: ${formatPercentage(totalScore)}`}>
                     <div className="flex h-full w-full">
-                      {contributionData.map((c) => (
-                        <div
-                          key={`seg-${c.key}`}
-                          className={cn(c.color, "transition-all duration-500")}
-                          style={{ width: `${Math.max(0, Math.min(100, (c.value / 100) * 100))}%` }}
-                          title={`${c.label}: +${Math.round(c.value)} pts (Score: ${Math.round(weightedScores[c.key.toLowerCase() as keyof typeof weightedScores])}%, Weight: ${Math.round(c.weight * 100)}%)`}
-                        />
-                      ))}
+                      {contributionData.map((c) => {
+                        const widthPercentage = totalContribution > 0 ? (c.value / totalContribution) * 100 : 0;
+                        return (
+                          <div
+                            key={`seg-${c.key}`}
+                            className={cn(c.color, "transition-all duration-500")}
+                            style={{ width: `${Math.max(0, Math.min(100, widthPercentage))}%` }}
+                            title={`${c.label}: +${formatPercentage(c.value)}`}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
-                  {/* Simplified legend */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+                  
+                  {/* Component breakdown with calculations */}
+                  <div className="space-y-4">
                     {contributionData.map((c) => (
-                      <div key={`lbl-${c.key}`} className="flex items-center gap-1.5">
-                        <span className={cn('inline-block w-2.5 h-2.5 rounded-sm', c.color)} />
-                        <span className="font-medium">{c.label}</span>
-                        <span className="text-slate-400 ml-auto">=</span>
-                        <span className="font-semibold text-slate-700 w-8 text-right">+{Math.round(c.value)} pts</span>
+                      <div key={`row-${c.key}`} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className={cn('inline-block w-3 h-3 rounded', c.color)} />
+                          <span className="font-medium text-slate-700">{c.label}</span>
+                          <span className="text-slate-400">({c.key})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-600">
+                            {formatPercentage(c.rawScore ?? 0)}
+                          </span>
+                          <span className="text-slate-400">×</span>
+                          <span className="text-slate-600">{formatPercentage(c.weight * 100)}</span>
+                          <span className="text-slate-400">=</span>
+                          <span className="font-semibold text-slate-800 min-w-[3rem] text-right">
+                            +{formatPercentage((c.rawScore ?? 0)*c.weight)}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
-                   {/* Insight: top driver */}
-                  <div className="text-center text-sm text-slate-500 pt-2 border-t border-slate-200/80">
-                    Key Factor: <span className="font-semibold text-slate-800">{strongestDriver}</span>
+                  
+                  {/* Summary section */}
+                  <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700">Total Score:</span>
+                      <span className="font-bold text-slate-800">{formatPercentage(totalScore)}</span>
+                    </div>
+                    <div className="text-center text-xs text-slate-500">
+                      Key Factor: <span className="font-semibold text-slate-800">{strongestDriver}</span>
+                    </div>
                   </div>
                 </div>
               );
@@ -223,40 +228,6 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
 
           </div>
 
-            {/* Component Values Grid - Responsive - Only show components with non-zero weights */}
-            <div className={`mt-4 grid gap-3 ${
-              [weights.compliance, weights.symmetry, weights.effort, weights.gameScore].filter(w => w > 0).length >= 3 ? 'grid-cols-3' : 'grid-cols-2'
-            }`}>
-              {weights.compliance > 0 && (
-                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-green-100">
-                  <div className="text-green-600 font-bold text-lg sm:text-xl">{typeof therapeuticComplianceScore === 'number' ? Math.round(therapeuticComplianceScore) : '--'}%</div>
-                  <div className="text-xs text-gray-600 mt-0.5">Compliance</div>
-                  <div className="text-xs text-green-600 font-semibold">(C)</div>
-                </div>
-              )}
-              {weights.symmetry > 0 && (
-                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-purple-100">
-                  <div className="text-purple-600 font-bold text-lg sm:text-xl">{typeof symmetryScore === 'number' ? Math.round(symmetryScore) : '--'}%</div>
-                  <div className="text-xs text-gray-600 mt-0.5">Symmetry</div>
-                  <div className="text-xs text-purple-600 font-semibold">(S)</div>
-                </div>
-              )}
-              {weights.effort > 0 && (
-                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-orange-100">
-                  <div className="text-orange-600 font-bold text-lg sm:text-xl">{typeof weightedScores.effort === 'number' ? Math.round(weightedScores.effort) : '--'}%</div>
-                  <div className="text-xs text-gray-600 mt-0.5">Exertion</div>
-                  <div className="text-xs text-orange-600 font-semibold">(E)</div>
-                </div>
-              )}
-              {weights.gameScore > 0 && (
-                <div className="bg-white rounded-lg p-2 sm:p-3 text-center shadow-sm border border-cyan-100">
-                  <div className="text-cyan-600 font-bold text-lg sm:text-xl">{typeof gameScore === 'number' ? Math.round(gameScore) : '--'}%</div>
-                  <div className="text-xs text-gray-600 mt-0.5">Game</div>
-                  <div className="text-xs text-cyan-600 font-semibold">(G)</div>
-                </div>
-              )}
-            </div>
-          
             </CardContent>
           </CollapsibleContent>
         </Collapsible>

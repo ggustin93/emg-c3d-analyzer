@@ -3,7 +3,7 @@
  * Single Source of Truth (SoT) for backend analytics flags and thresholds
  * 
  * Backend analytics is the authoritative source for:
- * - mvc_threshold_actual_value, duration_threshold_actual_value  
+ * - mvc75_threshold, duration_threshold_actual_value  
  * - contractions[].meets_mvc, contractions[].meets_duration, contractions[].is_good
  * - good_contraction_count (and sometimes per-criterion counts)
  * 
@@ -70,7 +70,7 @@ export function computeAcceptanceRates(
     
     const contractions = channelData.contractions;
     const channelTotal = contractions.length;
-    const hasMvcThreshold = channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined;
+    const hasMvcThreshold = channelData.mvc75_threshold !== null && channelData.mvc75_threshold !== undefined;
     const hasDurationThreshold = channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined;
     
     // Good rate must reflect BOTH criteria per metricsDefinitions when both thresholds are available
@@ -92,18 +92,18 @@ export function computeAcceptanceRates(
     }
     
     // For MVC and Duration counts, prefer backend counts but usually need to count flags
-    if (channelData.mvc_contraction_count !== undefined && channelData.mvc_contraction_count !== null) {
-      channelMvc = channelData.mvc_contraction_count;
-      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend mvc_contraction_count = ${channelMvc}`);
+    if (channelData.mvc75_compliance_rate !== undefined && channelData.mvc75_compliance_rate !== null) {
+      channelMvc = channelData.mvc75_compliance_rate;
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend mvc75_compliance_rate = ${channelMvc}`);
     } else {
-      // Count meets_mvc flags (NEVER re-apply mvc_threshold_actual_value)
+      // Count meets_mvc flags (NEVER re-apply mvc75_threshold)
       channelMvc = contractions.filter(c => c.meets_mvc === true).length;
       logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Counted meets_mvc flags = ${channelMvc}`);
     }
     
-    if (channelData.duration_contraction_count !== undefined && channelData.duration_contraction_count !== null) {
-      channelDuration = channelData.duration_contraction_count;
-      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend duration_contraction_count = ${channelDuration}`);
+    if (channelData.duration_compliance_rate !== undefined && channelData.duration_compliance_rate !== null) {
+      channelDuration = channelData.duration_compliance_rate;
+      logger.debug(LogCategory.DATA_PROCESSING, `${channelName}: Using backend duration_compliance_rate = ${channelDuration}`);
     } else {
       // Count meets_duration flags (NEVER re-apply duration_threshold_actual_value)
       channelDuration = contractions.filter(c => c.meets_duration === true).length;
@@ -126,10 +126,10 @@ export function computeAcceptanceRates(
     }
     
     // Collect thresholds for averaging (backend thresholds are authoritative)
-    if (channelData.mvc_threshold_actual_value !== null && channelData.mvc_threshold_actual_value !== undefined) {
+    if (channelData.mvc75_threshold !== null && channelData.mvc75_threshold !== undefined) {
       avgMvcThreshold = avgMvcThreshold === null 
-        ? channelData.mvc_threshold_actual_value
-        : (avgMvcThreshold + channelData.mvc_threshold_actual_value) / 2;
+        ? channelData.mvc75_threshold
+        : (avgMvcThreshold + channelData.mvc75_threshold) / 2;
     }
     
     if (channelData.duration_threshold_actual_value !== null && channelData.duration_threshold_actual_value !== undefined) {
@@ -145,7 +145,7 @@ export function computeAcceptanceRates(
       good: channelGood,
       mvc: channelMvc, 
       duration: channelDuration,
-      mvcThreshold: channelData.mvc_threshold_actual_value,
+      mvcThreshold: channelData.mvc75_threshold,
       durationThreshold: channelData.duration_threshold_actual_value
     });
   });

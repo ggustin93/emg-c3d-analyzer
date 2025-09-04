@@ -97,7 +97,7 @@ The alternative formula `min(left, right) / max(left, right) × 100` has clinica
 
 ### 3.3 Subjective Effort Score
 
-Based on post-session Rating of Perceived Exertion (RPE) on 0-10 scale:
+Based on post-session Rating of Perceived Exertion (RPE) using the **Borg CR-10 Scale** (validated clinical standard):
 
 $$S_{effort} = \begin{cases}
 100\% & \text{if } \text{RPE}_{post} \in [4, 6] \text{ (optimal therapeutic range)} \\
@@ -105,6 +105,19 @@ $$S_{effort} = \begin{cases}
 60\% & \text{if } \text{RPE}_{post} \in \{2, 8\} \text{ (suboptimal range)} \\
 20\% & \text{if } \text{RPE}_{post} \in \{0, 1, 9, 10\} \text{ (poor/dangerous)}
 \end{cases}$$
+
+**Clinical Validation - Borg CR-10 Scale**: The RPE mapping is based on the internationally validated Borg Category-Ratio 10 (CR-10) scale, specifically calibrated for elderly rehabilitation:
+- **0 (Nothing at all)**: No perceived exertion - concerning lack of effort
+- **1 (Very light)**: Below therapeutic minimum for muscle strengthening
+- **2 (Light)**: Warm-up intensity, insufficient for strength gains
+- **3 (Moderate-low)**: Entry-level therapeutic range
+- **4-5 (Optimal moderate)**: Ideal therapeutic intensity for elderly rehabilitation
+- **6 (Somewhat hard)**: Upper therapeutic range, approaching limit
+- **7 (Hard)**: Excessive for most elderly patients
+- **8 (Very hard)**: Dangerous overexertion risk
+- **9-10 (Extremely hard/Maximum)**: Emergency intervention needed
+
+This calibration aligns with evidence-based guidelines for resistance training in older adults, where moderate intensity (RPE 4-6) provides optimal balance between therapeutic benefit and safety (Helms et al., 2016; Zourdos et al., 2016).
 
 ### 3.4 Game Performance Score
 

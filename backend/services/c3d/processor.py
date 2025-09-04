@@ -648,7 +648,7 @@ class GHOSTLYC3DProcessor:
                     max_amplitude = contraction_stats.get("max_amplitude", 0.0)
 
                     # Store the actual MVC threshold that was used for quality calculation
-                    channel_analytics["mvc_threshold_actual_value"] = actual_mvc_threshold
+                    channel_analytics["mvc75_threshold"] = actual_mvc_threshold
 
                     # Enhanced debug logging for contraction analysis
                     logger.debug(f"\n{'=' * 60}")
@@ -913,7 +913,7 @@ class GHOSTLYC3DProcessor:
                             if mvc_value is not None:
                                 actual_mvc_threshold = mvc_value * (default_threshold / 100.0)
                                 # Update the threshold in the analytics
-                                channel_analytics["mvc_threshold_actual_value"] = (
+                                channel_analytics["mvc75_threshold"] = (
                                     actual_mvc_threshold
                                 )
 
@@ -933,7 +933,7 @@ class GHOSTLYC3DProcessor:
                             "good_contraction_count": 0
                             if actual_mvc_threshold is not None
                             else None,
-                            "mvc_threshold_actual_value": actual_mvc_threshold,
+                            "mvc75_threshold": actual_mvc_threshold,
                         }
                     )
             else:
@@ -950,7 +950,7 @@ class GHOSTLYC3DProcessor:
                         "max_amplitude": 0.0,
                         "contractions": [],
                         "good_contraction_count": 0 if actual_mvc_threshold is not None else None,
-                        "mvc_threshold_actual_value": actual_mvc_threshold,
+                        "mvc75_threshold": actual_mvc_threshold,
                     }
                 )
 
@@ -1247,7 +1247,7 @@ class GHOSTLYC3DProcessor:
                 good_contraction_count = channel_analytics.get("good_contraction_count", 0) or 0
 
             # Update the channel analytics
-            channel_analytics["mvc_threshold_actual_value"] = actual_mvc_threshold
+            channel_analytics["mvc75_threshold"] = actual_mvc_threshold
             channel_analytics["duration_threshold_actual_value"] = duration_threshold_ms
             channel_analytics["good_contraction_count"] = good_contraction_count
             channel_analytics["mvc_contraction_count"] = mvc_contraction_count

@@ -19,6 +19,13 @@ import { useSessionStore } from './store/sessionStore';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import SupabaseStorageService from "./services/supabaseStorage";
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
+import { logger, LogCategory } from './services/logger';
+
+// Import dashboard components
+import { AdminDashboard } from './components/dashboards/admin/AdminDashboard';
+import { TherapistDashboard } from './components/dashboards/therapist/TherapistDashboard';
+import { ResearcherDashboard } from './components/dashboards/researcher/ResearcherDashboard';
+
 
 
 function AppContent() {
@@ -30,7 +37,7 @@ function AppContent() {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   
   // Authentication state
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userRole, canViewFeature } = useAuth();
   
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
@@ -111,7 +118,7 @@ function AppContent() {
 
   // Reset all state when user wants to load a new file
   const resetState = useCallback(() => {
-    console.log('🔄 resetState called - clearing upload date');
+    logger.debug(LogCategory.LIFECYCLE, '🔄 resetState called - clearing upload date');
     setAnalysisResult(null);
     setAppError(null);
     setUploadedFileName(null);
@@ -127,7 +134,7 @@ function AppContent() {
 
   // Reset state but preserve upload date (for file browser selections)
   const resetStatePreservingUploadDate = useCallback((preservedUploadDate?: string | null) => {
-    console.log('🔄 resetStatePreservingUploadDate called - preserving upload date:', preservedUploadDate);
+    logger.debug(LogCategory.LIFECYCLE, '🔄 resetStatePreservingUploadDate called - preserving upload date:', preservedUploadDate);
     setAnalysisResult(null);
     setAppError(null);
     setUploadedFileName(null);
@@ -141,7 +148,7 @@ function AppContent() {
     // Restore upload date if provided
     if (preservedUploadDate) {
       setUploadDate(preservedUploadDate);
-      console.log('✅ resetStatePreservingUploadDate - Upload date preserved:', preservedUploadDate);
+      logger.debug(LogCategory.LIFECYCLE, '✅ resetStatePreservingUploadDate - Upload date preserved:', preservedUploadDate);
     }
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
@@ -156,15 +163,22 @@ function AppContent() {
     // Store the current upload date before resetting state
     const currentUploadDate = uploadDate;
     
-    console.log('🔄 handleSuccess - Before reset:', {
+    logger.debug(LogCategory.LIFECYCLE, '🔄 handleSuccess - Setting analysis result:', {
       currentUploadDate,
       uploadDateType: typeof currentUploadDate,
-      uploadDateFromStore: uploadDate
+      uploadDateFromStore: uploadDate,
+      hasAnalysisData: !!data
     });
     
-    // Use the specialized reset function that preserves upload date
-    resetStatePreservingUploadDate(currentUploadDate);
+    // Reset individual state components without affecting analysisResult
+    setAppError(null);
+    resetPlotDataAndStats();
+    resetChannelSelections();
+    resetGameSessionData();
+    setSelectedChannelForStats(null);
+    setIsLoading(false);
     
+    // Set the analysis result BEFORE any other operations to trigger navigation
     setAnalysisResult(data);
     updateChannelsAfterUpload(data);
     determineChannelsForTabs(data);
@@ -194,7 +208,7 @@ function AppContent() {
       }
       
       // Log the updated parameters
-      console.log('Setting session params from upload:', {
+      logger.debug(LogCategory.DATA_PROCESSING, 'Setting session params from upload:', {
         availableChannels,
         channel_muscle_mapping: updatedSessionParams.channel_muscle_mapping,
         session_mvc_values: updatedSessionParams.session_mvc_values,
@@ -206,7 +220,7 @@ function AppContent() {
       // Step 4: Update the session parameters
       setSessionParams(updatedSessionParams);
     }
-  }, [resetStatePreservingUploadDate, updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, ensureDefaultMuscleGroups, initializeMvcValuesFromAnalysis, setSessionParams, uploadDate]);
+  }, [updateChannelsAfterUpload, determineChannelsForTabs, sessionParams, ensureDefaultMuscleGroups, initializeMvcValuesFromAnalysis, setSessionParams, uploadDate, resetPlotDataAndStats, resetChannelSelections, resetGameSessionData]);
   
   const handleError = useCallback((errorMsg: string) => {
     resetState();
@@ -217,16 +231,22 @@ function AppContent() {
   // Handle quick select from the file browser
   const handleQuickSelect = useCallback(async (filename: string, uploadDateFromBrowser?: string) => {
     try {
+      logger.info(LogCategory.API, '🚀 handleQuickSelect starting', { 
+        filename, 
+        uploadDateFromBrowser,
+        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080' 
+      });
+      
       setIsLoading(true);
       setAppError(null);
       
       // Use upload date passed directly from browser (best practice: avoid state race conditions)
-      console.log('🔍 handleQuickSelect - Upload date from browser:', uploadDateFromBrowser);
+      logger.debug(LogCategory.API, '🔍 Upload date from browser:', uploadDateFromBrowser);
       
       // Pre-set the upload date before processing (will be preserved by handleSuccess)
       if (uploadDateFromBrowser) {
         setUploadDate(uploadDateFromBrowser);
-        console.log('✅ handleQuickSelect - Upload date set before processing:', uploadDateFromBrowser);
+        logger.debug(LogCategory.API, '✅ Upload date set before processing:', uploadDateFromBrowser);
       }
       
       // ONLY use Supabase storage - no local samples fallback
@@ -234,7 +254,7 @@ function AppContent() {
         throw new Error('Supabase not configured. Cannot access c3d-examples bucket.');
       }
 
-      console.log(`Downloading from Supabase c3d-examples bucket: ${filename}`);
+      logger.info(LogCategory.API, '📥 Downloading from Supabase c3d-examples bucket:', filename);
       
       // Check if the file exists in Supabase
       const fileExists = await SupabaseStorageService.fileExists(filename);
@@ -244,7 +264,7 @@ function AppContent() {
 
       // Get file metadata to extract upload date
       const fileMetadata = await SupabaseStorageService.getFileMetadata(filename);
-      console.log('🔍 handleQuickSelect - File metadata:', {
+      logger.debug(LogCategory.API, '🔍 handleQuickSelect - File metadata:', {
         filename,
         fileMetadata: fileMetadata ? {
           ...fileMetadata,
@@ -255,14 +275,14 @@ function AppContent() {
       
       if (fileMetadata && fileMetadata.created_at) {
         setUploadDate(fileMetadata.created_at);
-        console.log('✅ handleQuickSelect - Upload date set to:', fileMetadata.created_at);
+        logger.debug(LogCategory.API, '✅ handleQuickSelect - Upload date set to:', fileMetadata.created_at);
       } else {
-        console.log('❌ handleQuickSelect - No upload date in metadata');
+        logger.warn(LogCategory.API, '❌ handleQuickSelect - No upload date in metadata');
       }
 
       // Download file from Supabase storage
       const blob = await SupabaseStorageService.downloadFile(filename);
-      console.log(`Successfully downloaded from Supabase: ${filename}, size: ${blob.size} bytes`);
+      logger.info(LogCategory.API, `✅ Successfully downloaded from Supabase: ${filename}, size: ${blob.size} bytes`);
       
       const file = new File([blob], filename, { type: 'application/octet-stream' });
       
@@ -287,26 +307,81 @@ function AppContent() {
         });
       }
 
-      console.log(`Sending file to backend for processing: ${filename}`);
-      const uploadResponse = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/upload', {
+      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/upload';
+      logger.info(LogCategory.API, '📡 Sending file to backend for processing', { 
+        filename, 
+        apiUrl,
+        formDataKeys: Array.from(formData.keys()),
+        contentLength: file.size
+      });
+
+      const uploadResponse = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
       });
 
+      logger.info(LogCategory.API, '📨 Upload response received', {
+        filename,
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        headers: Object.fromEntries(uploadResponse.headers.entries()),
+        ok: uploadResponse.ok
+      });
+
       if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
+          let errorData: any;
+          try {
+            errorData = await uploadResponse.json();
+            logger.error(LogCategory.API, '❌ Upload failed - structured error', {
+              filename,
+              status: uploadResponse.status,
+              errorData
+            });
+          } catch (parseError) {
+            const errorText = await uploadResponse.text();
+            logger.error(LogCategory.API, '❌ Upload failed - raw response', {
+              filename,
+              status: uploadResponse.status,
+              errorText,
+              parseError: parseError instanceof Error ? parseError.message : String(parseError)
+            });
+            errorData = { detail: `Server error: ${uploadResponse.status} ${uploadResponse.statusText}` };
+          }
           throw new Error(errorData.detail || 'File processing failed.');
       }
 
       const resultData = await uploadResponse.json();
-      console.log(`File processing completed successfully: ${filename}`);
+      logger.info(LogCategory.API, '✅ File processing completed successfully', { 
+        filename,
+        hasAnalysisData: !!resultData,
+        resultKeys: Object.keys(resultData || {}),
+        analyticsChannels: resultData?.analytics ? Object.keys(resultData.analytics) : []
+      });
       
       // handleSuccess will preserve the upload date that was set earlier
       handleSuccess(resultData);
 
     } catch (error: any) {
-      console.error('Error in handleQuickSelect:', error);
-      handleError(error.message || 'An unknown error occurred while processing the file.');
+      logger.error(LogCategory.API, '💥 Error in handleQuickSelect', {
+        filename,
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack,
+        errorType: typeof error,
+        networkError: error instanceof TypeError && error.message.includes('fetch'),
+        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080'
+      });
+      
+      // Enhanced error message based on error type
+      let userFriendlyMessage = error.message || 'An unknown error occurred while processing the file.';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${import.meta.env.VITE_API_URL || 'http://localhost:8080'}`;
+      } else if (error.message.includes('Failed to fetch')) {
+        userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running on http://localhost:8080';
+      }
+      
+      handleError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -321,7 +396,7 @@ function AppContent() {
     const name2 = plotChannel2Name;
 
     if (import.meta.env.DEV && analysisResult) {
-      console.log('Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
+      logger.debug(LogCategory.CHART_RENDER, 'Chart data generation:', { name1, name2, series1Length: series1?.data?.length, series2Length: series2?.data?.length });
     }
 
     if (!series1 && !series2) return [];
@@ -358,9 +433,38 @@ function AppContent() {
       newChartData.push(placeholderPoint);
     }
     
-    console.log('Generated chart data points:', newChartData.length);
+    logger.debug(LogCategory.CHART_RENDER, 'Generated chart data points:', newChartData.length);
     return newChartData;
   }, [plotChannel1Data, plotChannel2Data, plotChannel1Name, plotChannel2Name]);
+
+  // Handle file selection from dashboard
+  const handleAnalysisNavigation = useCallback((filename?: string, uploadDate?: string) => {
+    if (filename && uploadDate) {
+      // If we have file data, trigger the quick select to load it
+      handleQuickSelect(filename, uploadDate);
+    }
+  }, [handleQuickSelect]);
+
+  // Render the appropriate dashboard based on user role
+  const renderDashboard = () => {
+    switch (userRole) {
+      case 'ADMIN':
+        return <AdminDashboard />;
+      case 'THERAPIST':
+        return <TherapistDashboard />;
+      case 'RESEARCHER':
+        return <ResearcherDashboard onQuickSelect={handleAnalysisNavigation} />;
+      default:
+        return (
+          <div className="p-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <h2 className="text-lg font-semibold text-yellow-800">No Role Assigned</h2>
+              <p className="text-yellow-700">Please contact an administrator to assign you a role.</p>
+            </div>
+          </div>
+        );
+    }
+  };
 
 
   return (
@@ -377,40 +481,32 @@ function AppContent() {
         <main className={`flex-grow w-full ${isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''}`}>
           <AuthGuard>
             {!analysisResult ? (
-              <C3DSourceSelector
-                onUploadSuccess={handleSuccess}
-                onUploadError={handleError}
-                setIsLoading={setIsLoading}
-                onQuickSelect={handleQuickSelect}
-                isLoading={isLoading}
-                sessionParams={sessionParams}
-              />
+              // Show dashboard when no file is loaded
+              renderDashboard()
             ) : (
+              // Show EMG analysis tabs when file is loaded
               <GameSessionTabs
-                analysisResult={analysisResult}
-                mvcThresholdForPlot={null}
-                muscleChannels={muscleChannels}
-                allAvailableChannels={allAvailableChannels}
-                plotChannel1Name={plotChannel1Name}
-                setPlotChannel1Name={setPlotChannel1Name}
-                plotChannel2Name={plotChannel2Name}
-                setPlotChannel2Name={setPlotChannel2Name}
-                selectedChannelForStats={selectedChannelForStats}
-                setSelectedChannelForStats={setSelectedChannelForStats}
-                currentStats={currentStats}
-                mainChartData={mainCombinedChartData}
-                dataPoints={downsamplingControls.dataPoints}
-                setDataPoints={downsamplingControls.setDataPoints}
-                handleDataPointsChange={downsamplingControls.handleDataPointsChange}
-                mainPlotChannel1Data={plotChannel1Data}
-                mainPlotChannel2Data={plotChannel2Data}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                signalType={signalType}
-                setSignalType={setSignalType}
-                appIsLoading={isLoading}
-                uploadedFileName={uploadedFileName}
-              />
+                  analysisResult={analysisResult}
+                  mvcThresholdForPlot={null}
+                  muscleChannels={muscleChannels}
+                  allAvailableChannels={allAvailableChannels}
+                  setPlotChannel1Name={setPlotChannel1Name}
+                  setPlotChannel2Name={setPlotChannel2Name}
+                  selectedChannelForStats={selectedChannelForStats}
+                  setSelectedChannelForStats={setSelectedChannelForStats}
+                  currentStats={currentStats}
+                  mainChartData={mainCombinedChartData}
+                  dataPoints={downsamplingControls.dataPoints}
+                  setDataPoints={downsamplingControls.setDataPoints}
+                  mainPlotChannel1Data={plotChannel1Data}
+                  mainPlotChannel2Data={plotChannel2Data}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  signalType={signalType}
+                  setSignalType={setSignalType}
+                  appIsLoading={isLoading}
+                  uploadedFileName={uploadedFileName}
+                />
             )}
           </AuthGuard>
 

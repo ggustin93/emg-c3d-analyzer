@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
+import { logger, LogCategory } from '../services/logger'
 
 /**
  * Auth Context Test Component
@@ -15,7 +16,7 @@ const AuthStateMonitor: React.FC<{ id: string }> = ({ id }) => {
   }, [authState, isAuthenticated, isLoading])
   
   useEffect(() => {
-    console.log(`🔍 Auth Monitor ${id}:`, {
+    logger.debug(LogCategory.AUTH,`🔍 Auth Monitor ${id}:`, {
       isAuthenticated,
       isLoading,
       user: authState.user?.email,
@@ -67,13 +68,13 @@ export const AuthContextTest: React.FC = () => {
   const startTest = () => {
     setTestStartTime(Date.now())
     setShowTest(true)
-    console.log('🧪 Auth Context Test: Starting...')
+    logger.debug(LogCategory.AUTH,'🧪 Auth Context Test: Starting...')
   }
   
   const stopTest = () => {
     if (testStartTime) {
       const duration = Date.now() - testStartTime
-      console.log(`🧪 Auth Context Test: Completed in ${duration}ms`)
+      logger.debug(LogCategory.AUTH,`🧪 Auth Context Test: Completed in ${duration}ms`)
     }
     setShowTest(false)
     setTestStartTime(null)

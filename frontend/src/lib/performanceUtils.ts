@@ -91,7 +91,12 @@ export const calculateOverallPerformance = (
   
   return {
     totalScore: Math.round(totalScore),
-    contributions,
+    contributions: {
+      compliance: contributions.compliance,  // Keep as decimal for accurate display
+      symmetry: contributions.symmetry,
+      effort: contributions.effort,
+      game: contributions.game,
+    },
     strongestDriver,
     weightedScores,
     durationThreshold,

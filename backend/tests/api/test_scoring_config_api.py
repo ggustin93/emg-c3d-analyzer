@@ -72,7 +72,11 @@ class TestScoringConfigurationAPIFixed:
         elif response.status_code == 404:
             # No active configuration - this is also valid
             error_data = response.json()
-            assert "detail" in error_data
+            # API returns custom error format with "error" and "message" fields
+            assert "error" in error_data
+            assert "message" in error_data
+            assert error_data["error"] == "HTTP_ERROR"
+            assert "No active scoring configuration found" in error_data["message"]
         else:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
@@ -104,6 +108,7 @@ class TestScoringConfigurationAPIFixed:
         # Should return validation error (422)
         assert response.status_code == 422
         error_data = response.json()
+        # For validation errors (422), FastAPI returns "detail" field with validation details
         assert "detail" in error_data
         
     def test_scoring_configuration_structure_validation(self, client):
@@ -132,4 +137,5 @@ class TestScoringConfigurationAPIFixed:
         else:
             # Validation error (weights don't sum to 1.0 exactly)
             error_data = response.json()
+            # For validation errors (422), FastAPI returns "detail" field
             assert "detail" in error_data

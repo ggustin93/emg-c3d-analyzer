@@ -24,16 +24,20 @@ interface ScoringConfigurationHook {
   weights: ScoringWeights | null;
   isLoading: boolean;
   error: string | null;
+  hasUnsavedChanges: boolean;
+  currentSaveState: 'default' | 'session' | 'patient' | 'global';
   refetchConfiguration: () => Promise<void>;
   saveCustomWeights: (weights: ScoringWeights, therapistId?: string, patientId?: string) => Promise<void>;
+  saveGlobalWeights: (weights: ScoringWeights) => Promise<void>;
+  clearLocalChanges: () => void;
 }
 
-// Fallback weights with user-specified defaults: 50% compliance, 30% effort, 20% symmetry, 0% game
+// Fallback weights matching backend config.py ScoringDefaults: 50% compliance, 25% effort, 25% symmetry, 0% game
 const FALLBACK_WEIGHTS: ScoringWeights = {
-  compliance: 0.50,        // 50% - Therapeutic Compliance
-  symmetry: 0.20,         // 20% - Muscle Symmetry  
-  effort: 0.30,           // 30% - Subjective Effort (RPE)
-  gameScore: 0.00,        // 0% - Game Performance (default to zero as requested)
+  compliance: 0.50,        // 50% - Therapeutic Compliance (from backend config.py ScoringDefaults)
+  symmetry: 0.25,         // 25% - Muscle Symmetry (from backend config.py ScoringDefaults)
+  effort: 0.25,           // 25% - Subjective Effort (RPE) (from backend config.py ScoringDefaults)
+  gameScore: 0.00,        // 0% - Game Performance (from backend config.py ScoringDefaults)
   
   // Sub-component weights for compliance (must sum to 1.0)
   compliance_completion: 0.333,  // 33.3% - Completion rate
@@ -59,6 +63,8 @@ export const useScoringConfiguration = (
   const [weights, setWeights] = useState<ScoringWeights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [originalWeights, setOriginalWeights] = useState<ScoringWeights | null>(null);
+  const [currentSaveState, setCurrentSaveState] = useState<'default' | 'session' | 'patient' | 'global'>('default');
 
   const fetchConfiguration = useCallback(async () => {
     try {
@@ -143,6 +149,9 @@ export const useScoringConfiguration = (
       });
       
       setWeights(fetchedWeights);
+      setOriginalWeights(fetchedWeights);
+      setCurrentSaveState(configSource === 'therapist-patient-specific' ? 'patient' : 
+                         configSource === 'therapist-specific' ? 'patient' : 'global');
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -151,6 +160,8 @@ export const useScoringConfiguration = (
       // Use fallback weights on error
       setError(errorMessage);
       setWeights(FALLBACK_WEIGHTS);
+      setOriginalWeights(FALLBACK_WEIGHTS);
+      setCurrentSaveState('default');
       
     } finally {
       setIsLoading(false);
@@ -217,6 +228,65 @@ export const useScoringConfiguration = (
     }
   }, [therapistId, patientId, fetchConfiguration]);
 
+  const saveGlobalWeights = useCallback(async (
+    weights: ScoringWeights
+  ) => {
+    try {
+      // Create global configuration data
+      const configData = {
+        configuration_name: 'Global Default',
+        description: 'Global default scoring weights for all users',
+        
+        weight_compliance: weights.compliance,
+        weight_symmetry: weights.symmetry,
+        weight_effort: weights.effort,
+        weight_game: weights.gameScore,
+        
+        weight_completion: weights.compliance_completion,
+        weight_intensity: weights.compliance_intensity,
+        weight_duration: weights.compliance_duration,
+        
+        active: true // Mark as active global configuration
+      };
+
+      const response = await fetch('/api/scoring/configurations/global', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save global scoring configuration: ${response.statusText}`);
+      }
+
+      console.info('Successfully saved global scoring configuration:', weights);
+      
+      // Update local state
+      setOriginalWeights(weights);
+      setCurrentSaveState('global');
+
+      // Refresh configuration after saving
+      await fetchConfiguration();
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Failed to save global scoring configuration:', errorMessage);
+      throw err;
+    }
+  }, [fetchConfiguration]);
+
+  const clearLocalChanges = useCallback(() => {
+    if (originalWeights) {
+      setWeights(originalWeights);
+    }
+  }, [originalWeights]);
+
+  // Calculate if there are unsaved changes
+  const hasUnsavedChanges = weights !== null && originalWeights !== null && 
+    JSON.stringify(weights) !== JSON.stringify(originalWeights);
+
   useEffect(() => {
     fetchConfiguration();
   }, [fetchConfiguration]);
@@ -225,8 +295,12 @@ export const useScoringConfiguration = (
     weights,
     isLoading,
     error,
+    hasUnsavedChanges,
+    currentSaveState,
     refetchConfiguration,
-    saveCustomWeights
+    saveCustomWeights,
+    saveGlobalWeights,
+    clearLocalChanges
   };
 };
 

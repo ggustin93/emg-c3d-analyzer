@@ -56,8 +56,8 @@ def sample_c3d_result():
             "CH1": {
                 "contraction_count": 20,
                 "good_contraction_count": 18,
-                "mvc_contraction_count": 20,
-                "duration_contraction_count": 18,
+                "mvc75_compliance_rate": 20,
+                "duration_compliance_rate": 18,
                 "compliance_rate": 0.9,
                 "mvc_value": 0.001234,
                 "mvc_threshold": 75.0,
@@ -75,8 +75,8 @@ def sample_c3d_result():
             "CH2": {
                 "contraction_count": 9,
                 "good_contraction_count": 7,
-                "mvc_contraction_count": 9,
-                "duration_contraction_count": 7,
+                "mvc75_compliance_rate": 9,
+                "duration_compliance_rate": 7,
                 "compliance_rate": 0.78,
                 "mvc_value": 0.000987,
                 "mvc_threshold": 75.0,
@@ -130,7 +130,12 @@ class TestTherapySessionProcessorCore:
         """Test successful session creation"""
         # Mock repository operations
         test_session_id = str(uuid4())
-        mock_session = {"id": test_session_id, "file_path": "c3d-examples/P039/test.c3d"}
+        test_session_code = "P039S001"
+        mock_session = {
+            "id": test_session_id,
+            "session_code": test_session_code,
+            "file_path": "c3d-examples/P039/test.c3d"
+        }
 
         # Mock the methods used by create_session
         processor.session_repo.get_session_by_file_hash = MagicMock(return_value=None)  # No existing session
@@ -144,7 +149,7 @@ class TestTherapySessionProcessorCore:
                 patient_id="patient-123"
             )
 
-        assert result == test_session_id
+        assert result == test_session_code
 
         # Verify repository calls
         processor.session_repo.create_therapy_session.assert_called_once()
@@ -157,20 +162,26 @@ class TestTherapySessionProcessorCore:
     async def test_create_session_without_patient(self, processor, sample_file_metadata):
         """Test session creation without patient ID"""
         test_session_id = str(uuid4())
-        mock_session = {"id": test_session_id, "file_path": "c3d-examples/anonymous/test.c3d"}
+        test_session_code = "P001S001"  # Use valid patient code
+        mock_session = {
+            "id": test_session_id,
+            "session_code": test_session_code,
+            "file_path": "c3d-examples/anonymous/test.c3d"
+        }
 
         # Mock repository operations
         processor.session_repo.get_session_by_file_hash = MagicMock(return_value=None)
         processor.session_repo.create_therapy_session = MagicMock(return_value=mock_session)
 
-        # Mock file hash calculation to avoid file operations
+        # Mock file hash calculation and session code generation to avoid file operations
         with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
-            result = await processor.create_session(
-                file_path="c3d-examples/anonymous/test.c3d",
-                file_metadata=sample_file_metadata
-            )
+            with patch.object(processor, "_generate_next_session_code", return_value=test_session_code):
+                result = await processor.create_session(
+                    file_path="c3d-examples/anonymous/test.c3d",
+                    file_metadata=sample_file_metadata
+                )
 
-        assert result == test_session_id
+        assert result == test_session_code
 
         # Verify repository calls
         processor.session_repo.create_therapy_session.assert_called_once()
@@ -326,7 +337,7 @@ class TestTherapySessionProcessorFileHandling:
         processor._cleanup_temp_file = MagicMock()
 
         result = await processor.process_c3d_file(
-            session_id="session-123",
+            session_code="P039S001",
             bucket="c3d-examples",
             object_path="P039/test.c3d"
         )
@@ -351,7 +362,7 @@ class TestTherapySessionProcessorFileHandling:
         )
 
         result = await processor.process_c3d_file(
-            session_id="nonexistent-session",
+            session_code="P999S999",
             bucket="c3d-examples",
             object_path="P039/corrupted.c3d"
         )
@@ -368,7 +379,7 @@ class TestTherapySessionProcessorFileHandling:
         )
 
         result = await processor.process_c3d_file(
-            session_id="",  # Invalid empty session ID
+            session_code="",  # Invalid empty session code
             bucket="c3d-examples",
             object_path="P039/test.c3d"
         )
@@ -488,19 +499,19 @@ class TestTherapySessionProcessorIntegration:
         # Create multiple sessions concurrently
         tasks = []
         with patch.object(processor, "_calculate_file_hash_from_path", return_value="test-hash"):
-            for i in range(5):
+            for i in range(1, 6):  # Start from 1 instead of 0, so P001-P005
                 task = processor.create_session(
                     file_path=f"c3d-examples/P{i:03d}/test_{i}.c3d",
-                    file_metadata={"size": 1024 * (i + 1)}
+                    file_metadata={"size": 1024 * i}
                 )
                 tasks.append(task)
 
             results = await asyncio.gather(*tasks)
 
-        # Verify all sessions created with unique IDs
+        # Verify all sessions created with unique session codes
         assert len(results) == 5
         assert len(set(results)) == 5  # All unique
-        assert all(result.startswith("session-") for result in results)
+        assert all(result.startswith("P") and len(result) == 8 for result in results)  # Format P###S###
 
     @pytest.mark.asyncio
     async def test_error_recovery_workflow(self, processor):
