@@ -174,9 +174,10 @@ def cleanup_database_records():
                             
                             if result.data:
                                 print(f"🧹 Cleaned {len(result.data)} records from {table}")
-                        except Exception:
-                            # Table might not exist, that's OK
-                            pass
+                        except Exception as table_error:
+                            # Table might not exist in all database schemas, which is expected
+                            # Log it silently to avoid noise in test output
+                            continue
                     
                     print(f"✅ Database cleanup completed for session {session_id}")
                     
