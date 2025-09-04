@@ -361,8 +361,15 @@ jobs:
           echo "::group::🔍 Scanning for critical code issues"
           
           # Check for issues that will cause runtime failures
+          # F821: Undefined name
+          # F822: Undefined name in __all__
+          # F823: Local variable referenced before assignment
+          # E902: I/O operation error (replaces deprecated E999)
+          # S102: Use of exec()
+          # S301: Pickle usage
+          # S110: Try-except-pass without logging
           ruff check . \
-            --select "F821,F822,F823,E999,S102,S301,S110" \
+            --select "F821,F822,F823,E902,S102,S301,S110" \
             --output-format=github \
             --exit-non-zero-on-fix || EXIT_CODE=$?
           
