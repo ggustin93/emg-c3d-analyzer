@@ -33,7 +33,6 @@ env:
   PYTHON_VERSION: '3.11'
   NODE_VERSION: '20'
   BACKEND_PORT: 8080
-  TEST_TIMEOUT: 10
   CACHE_VERSION: 'v2'  # Increment to invalidate all caches
   PIP_CACHE_DIR: ~/.cache/pip
   NPM_CACHE_DIR: ~/.npm
@@ -280,7 +279,7 @@ jobs:
           echo "status=passed" >> $GITHUB_OUTPUT
           echo "✅ Tests completed in ${DURATION}s"
           echo "::endgroup::"
-        timeout-minutes: ${{ env.TEST_TIMEOUT }}
+        timeout-minutes: 10
 
       - name: 🏗️ Build Production
         id: build-production
@@ -401,11 +400,17 @@ jobs:
             --format json \
             -o bandit-report.json || true
           
-          # Generate SARIF for GitHub Security
-          bandit -r . \
-            --severity-level medium \
-            --format sarif \
-            -o bandit-report.sarif || true
+          # Generate SARIF for GitHub Security (if supported)
+          if bandit --help | grep -q sarif; then
+            bandit -r . \
+              --severity-level medium \
+              --format sarif \
+              -o bandit-report.sarif || true
+            echo "✅ SARIF report generated"
+          else
+            echo "⚠️ SARIF format not supported by this Bandit version"
+            touch bandit-report.sarif  # Create empty file to prevent upload errors
+          fi
           
           # Display summary
           python -c "
@@ -468,7 +473,6 @@ jobs:
         continue-on-error: true
         with:
           config: auto
-          generateSarif: true
 
       - name: 📄 Generate Human-Readable Security Report
         if: always()

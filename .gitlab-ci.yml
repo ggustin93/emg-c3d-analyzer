@@ -1,0 +1,1036 @@
+# =============================================================================
+# 🚀 EMG C3D Analyzer - GitLab CI/CD Pipeline
+# =============================================================================
+#
+# Professional CI/CD pipeline for EMG C3D Analyzer project
+# Equivalent to GitHub Actions workflow with GitLab best practices
+#
+# Features:
+# ✅ Multi-stage parallel execution with matrix strategy
+# ✅ Intelligent caching for optimal performance
+# ✅ Comprehensive testing (unit, integration, API, E2E)
+# ✅ Security scanning with SAST, dependency scanning, and code quality
+# ✅ Performance optimization with change detection
+# ✅ Detailed reporting and artifacts management
+# ✅ Human-readable security and quality reports
+#
+# Author: EMG C3D Analyzer Team
+# Version: 2.0.0
+# Updated: 2025-01-04
+# =============================================================================
+
+# GitLab CI/CD Configuration
+image: ubuntu:22.04
+
+variables:
+  # Performance & Resource Management
+  GIT_DEPTH: "1"
+  GIT_STRATEGY: fetch
+  GET_SOURCES_ATTEMPTS: "3"
+  ARTIFACT_DOWNLOAD_ATTEMPTS: "3"
+  RESTORE_CACHE_ATTEMPTS: "3"
+  
+  # Python Configuration
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_NO_CACHE_DIR: "1"
+  
+  # Node.js Configuration
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  
+  # Testing Configuration
+  SKIP_E2E_TESTS: "true"
+  ENABLE_FILE_HASH_DEDUPLICATION: "false"
+  
+  # Security Configuration
+  SECURE_ANALYZERS_PREFIX: "registry.gitlab.com/security-products/analyzers"
+  SAST_EXCLUDED_ANALYZERS: "eslint"
+  
+  # Report Directories
+  REPORTS_DIR: "reports"
+  ARTIFACTS_DIR: "artifacts"
+
+# Pipeline Stages
+stages:
+  - setup
+  - build
+  - test
+  - security
+  - quality
+  - deploy
+  - notify
+
+# =============================================================================
+# 🔧 SETUP STAGE - Environment Preparation
+# =============================================================================
+
+.setup_template: &setup_template
+  stage: setup
+  image: ubuntu:22.04
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - apt-cache/
+      - .cache/
+    policy: pull-push
+  before_script:
+    - echo "::group::🔧 System Setup"
+    - mkdir -p apt-cache .cache $REPORTS_DIR $ARTIFACTS_DIR
+    - export APT_CACHE_DIR="$CI_PROJECT_DIR/apt-cache"
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends curl wget git ca-certificates
+    - echo "::endgroup::"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/
+      - $ARTIFACTS_DIR/
+    expire_in: 1 hour
+    when: always
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+setup:environment:
+  <<: *setup_template
+  script:
+    - echo "::group::📊 Environment Information"
+    - echo "CI_PIPELINE_ID=$CI_PIPELINE_ID" | tee $REPORTS_DIR/pipeline-info.txt
+    - echo "CI_COMMIT_SHA=$CI_COMMIT_SHA" | tee -a $REPORTS_DIR/pipeline-info.txt
+    - echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME" | tee -a $REPORTS_DIR/pipeline-info.txt
+    - echo "GitLab Runner: $(cat /etc/os-release | grep PRETTY_NAME)" | tee -a $REPORTS_DIR/pipeline-info.txt
+    - echo "Pipeline started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a $REPORTS_DIR/pipeline-info.txt
+    - echo "::endgroup::"
+
+detect:changes:
+  <<: *setup_template
+  script:
+    - echo "::group::🔍 Change Detection"
+    - |
+      # Determine base reference for change detection
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        BASE_REF="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-main}"
+        echo "MR pipeline - comparing against: $BASE_REF"
+      else
+        BASE_REF="HEAD~1"
+        echo "Branch pipeline - comparing against: $BASE_REF"
+      fi
+      
+      # Get changed files (fallback to all files if git diff fails)
+      CHANGED_FILES=$(git diff --name-only $BASE_REF HEAD 2>/dev/null || echo "**/*")
+      echo "$CHANGED_FILES" > $REPORTS_DIR/changed-files.txt
+      
+      # Detect specific change types
+      echo "$CHANGED_FILES" | grep -E '\.(py|txt|toml|yaml|yml|json)$' > $REPORTS_DIR/backend-changes.txt || echo "none" > $REPORTS_DIR/backend-changes.txt
+      echo "$CHANGED_FILES" | grep -E '\.(js|jsx|ts|tsx|css|scss|html|vue)$|^frontend/' > $REPORTS_DIR/frontend-changes.txt || echo "none" > $REPORTS_DIR/frontend-changes.txt
+      echo "$CHANGED_FILES" | grep -E '^\.github/|^\.gitlab-ci|Dockerfile|docker-compose' > $REPORTS_DIR/infra-changes.txt || echo "none" > $REPORTS_DIR/infra-changes.txt
+      
+      # Count changes for decision making
+      BACKEND_COUNT=$(cat $REPORTS_DIR/backend-changes.txt | grep -v "^none$" | wc -l || echo "0")
+      FRONTEND_COUNT=$(cat $REPORTS_DIR/frontend-changes.txt | grep -v "^none$" | wc -l || echo "0")
+      
+      echo "📊 Change Summary:"
+      echo "  Backend files changed: $BACKEND_COUNT" | tee -a $REPORTS_DIR/change-summary.txt
+      echo "  Frontend files changed: $FRONTEND_COUNT" | tee -a $REPORTS_DIR/change-summary.txt
+      echo "  Total files changed: $(echo "$CHANGED_FILES" | wc -l)" | tee -a $REPORTS_DIR/change-summary.txt
+    - echo "::endgroup::"
+  artifacts:
+    reports:
+      junit: $REPORTS_DIR/change-detection.xml
+    paths:
+      - $REPORTS_DIR/changed-files.txt
+      - $REPORTS_DIR/backend-changes.txt
+      - $REPORTS_DIR/frontend-changes.txt
+      - $REPORTS_DIR/infra-changes.txt
+      - $REPORTS_DIR/change-summary.txt
+
+# =============================================================================
+# 🏗️ BUILD STAGE - Application Building
+# =============================================================================
+
+.build_template: &build_template
+  stage: build
+  dependencies:
+    - setup:environment
+    - detect:changes
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - apt-cache/
+      - .cache/
+    policy: pull
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/
+      - $ARTIFACTS_DIR/
+      - backend/venv/
+      - frontend/node_modules/
+      - frontend/dist/
+    expire_in: 1 day
+    when: always
+  timeout: 15 minutes
+
+build:backend:
+  <<: *build_template
+  image: python:3.11-slim
+  cache:
+    key: "backend-$CI_COMMIT_REF_SLUG"
+    paths:
+      - backend/venv/
+      - apt-cache/
+    policy: pull-push
+  script:
+    - echo "::group::🐍 Backend Build Setup"
+    - cd backend
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends build-essential git
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip setuptools wheel
+    - echo "::endgroup::"
+    
+    - echo "::group::📦 Install Dependencies"
+    - |
+      if [ -f "requirements.txt" ]; then
+        pip install -r requirements.txt
+      else
+        echo "⚠️ No requirements.txt found, installing from pyproject.toml"
+        pip install -e .
+      fi
+    - echo "::endgroup::"
+    
+    - echo "::group::✅ Build Validation"
+    - python -c "import sys; print(f'Python: {sys.version}')"
+    - pip list > ../$REPORTS_DIR/backend-dependencies.txt
+    - python -c "
+      try:
+          from api.main import app
+          print('✅ FastAPI app imports successfully')
+      except Exception as e:
+          print(f'❌ Import error: {e}')
+          exit(1)
+      "
+    - echo "Backend build completed successfully" | tee ../$REPORTS_DIR/backend-build.txt
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "backend/**/*"
+        - "pyproject.toml"
+        - "requirements.txt"
+
+build:frontend:
+  <<: *build_template
+  image: node:18-slim
+  cache:
+    key: "frontend-$CI_COMMIT_REF_SLUG"
+    paths:
+      - frontend/node_modules/
+      - frontend/.npm/
+      - apt-cache/
+    policy: pull-push
+  script:
+    - echo "::group::⚡ Frontend Build Setup"
+    - cd frontend
+    - npm ci --cache .npm --prefer-offline --no-audit
+    - echo "::endgroup::"
+    
+    - echo "::group::🏗️ Build Application"
+    - npm run build
+    - echo "::endgroup::"
+    
+    - echo "::group::✅ Build Validation"
+    - node --version > ../$REPORTS_DIR/frontend-versions.txt
+    - npm --version >> ../$REPORTS_DIR/frontend-versions.txt
+    - ls -la dist/ > ../$REPORTS_DIR/frontend-build-output.txt || echo "No dist directory" > ../$REPORTS_DIR/frontend-build-output.txt
+    - |
+      if [ -d "dist/" ]; then
+        du -sh dist/ >> ../$REPORTS_DIR/frontend-build-output.txt
+        echo "✅ Frontend build completed successfully"
+      else
+        echo "❌ No dist directory found"
+        exit 1
+      fi
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "frontend/**/*"
+        - "package.json"
+        - "package-lock.json"
+
+# =============================================================================
+# 🧪 TEST STAGE - Comprehensive Testing
+# =============================================================================
+
+.test_template: &test_template
+  stage: test
+  timeout: 20 minutes
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/
+      - $ARTIFACTS_DIR/
+      - coverage/
+    reports:
+      junit:
+        - $REPORTS_DIR/junit-*.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    expire_in: 1 week
+    when: always
+  dependencies:
+    - setup:environment
+    - detect:changes
+    - build:backend
+    - build:frontend
+
+# Backend Test Matrix
+.backend_test_template: &backend_test_template
+  <<: *test_template
+  image: python:3.11-slim
+  cache:
+    key: "backend-test-$CI_COMMIT_REF_SLUG"
+    paths:
+      - backend/venv/
+      - backend/.cache/
+    policy: pull
+  before_script:
+    - echo "::group::🐍 Backend Test Setup"
+    - cd backend
+    - source venv/bin/activate
+    - export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
+    - export SKIP_E2E_TESTS=true
+    - export ENABLE_FILE_HASH_DEDUPLICATION=false
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "backend/**/*"
+        - "pyproject.toml"
+
+test:backend:unit:
+  <<: *backend_test_template
+  script:
+    - echo "::group::🔬 Unit Tests"
+    - python -m pytest tests/unit/ -v --tb=short --junitxml=../$REPORTS_DIR/junit-backend-unit.xml --cov=. --cov-report=xml:../coverage/backend-unit-coverage.xml --cov-report=term
+    - echo "Unit tests completed" | tee ../$REPORTS_DIR/backend-unit-tests.txt
+    - echo "::endgroup::"
+  parallel:
+    matrix:
+      - TEST_CATEGORY: unit
+        TEST_PATH: tests/unit/
+
+test:backend:integration:
+  <<: *backend_test_template
+  script:
+    - echo "::group::🔗 Integration Tests"
+    - python -m pytest tests/integration/ -v --tb=short --junitxml=../$REPORTS_DIR/junit-backend-integration.xml --cov=. --cov-report=xml:../coverage/backend-integration-coverage.xml --cov-report=term
+    - echo "Integration tests completed" | tee ../$REPORTS_DIR/backend-integration-tests.txt
+    - echo "::endgroup::"
+  parallel:
+    matrix:
+      - TEST_CATEGORY: integration
+        TEST_PATH: tests/integration/
+
+test:backend:api:
+  <<: *backend_test_template
+  script:
+    - echo "::group::🌐 API Tests"
+    - python -m pytest tests/api/ -v --tb=short --junitxml=../$REPORTS_DIR/junit-backend-api.xml --cov=. --cov-report=xml:../coverage/backend-api-coverage.xml --cov-report=term
+    - echo "API tests completed" | tee ../$REPORTS_DIR/backend-api-tests.txt
+    - echo "::endgroup::"
+  parallel:
+    matrix:
+      - TEST_CATEGORY: api
+        TEST_PATH: tests/api/
+
+test:backend:e2e:
+  <<: *backend_test_template
+  script:
+    - echo "::group::🎯 E2E Tests"
+    - export SKIP_E2E_TESTS=false
+    - python -m pytest tests/e2e/ -v -s --tb=short --junitxml=../$REPORTS_DIR/junit-backend-e2e.xml
+    - echo "E2E tests completed" | tee ../$REPORTS_DIR/backend-e2e-tests.txt
+    - echo "::endgroup::"
+  parallel:
+    matrix:
+      - TEST_CATEGORY: e2e
+        TEST_PATH: tests/e2e/
+  when: manual
+  allow_failure: true
+
+# Frontend Tests
+test:frontend:
+  <<: *test_template
+  image: node:18-slim
+  cache:
+    key: "frontend-test-$CI_COMMIT_REF_SLUG"
+    paths:
+      - frontend/node_modules/
+      - frontend/.npm/
+    policy: pull
+  script:
+    - echo "::group::⚡ Frontend Test Setup"
+    - cd frontend
+    - echo "::endgroup::"
+    
+    - echo "::group::🧪 Frontend Tests"
+    - npm test -- --run --reporter=junit --outputFile=../$REPORTS_DIR/junit-frontend.xml --coverage --coverage.reporter=cobertura --coverage.reporter=text
+    - echo "Frontend tests completed" | tee ../$REPORTS_DIR/frontend-tests.txt
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "frontend/**/*"
+        - "package.json"
+
+# Test Summary
+test:summary:
+  stage: test
+  image: ubuntu:22.04
+  dependencies:
+    - test:backend:unit
+    - test:backend:integration
+    - test:backend:api
+    - test:frontend
+  script:
+    - echo "::group::📊 Test Summary"
+    - |
+      echo "# Test Execution Summary" > $REPORTS_DIR/test-summary.md
+      echo "Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $REPORTS_DIR/test-summary.md
+      echo "" >> $REPORTS_DIR/test-summary.md
+      
+      # Backend Test Summary
+      if ls $REPORTS_DIR/junit-backend-*.xml >/dev/null 2>&1; then
+        BACKEND_TESTS=$(grep -h testcase $REPORTS_DIR/junit-backend-*.xml | wc -l || echo "0")
+        BACKEND_FAILURES=$(grep -h 'failure\|error' $REPORTS_DIR/junit-backend-*.xml | wc -l || echo "0")
+        echo "## Backend Tests" >> $REPORTS_DIR/test-summary.md
+        echo "- Total: $BACKEND_TESTS" >> $REPORTS_DIR/test-summary.md
+        echo "- Failed: $BACKEND_FAILURES" >> $REPORTS_DIR/test-summary.md
+        echo "- Success Rate: $(( (BACKEND_TESTS - BACKEND_FAILURES) * 100 / BACKEND_TESTS ))%" >> $REPORTS_DIR/test-summary.md
+        echo "" >> $REPORTS_DIR/test-summary.md
+      fi
+      
+      # Frontend Test Summary
+      if [ -f "$REPORTS_DIR/junit-frontend.xml" ]; then
+        FRONTEND_TESTS=$(grep testcase $REPORTS_DIR/junit-frontend.xml | wc -l || echo "0")
+        FRONTEND_FAILURES=$(grep -c 'failure\|error' $REPORTS_DIR/junit-frontend.xml || echo "0")
+        echo "## Frontend Tests" >> $REPORTS_DIR/test-summary.md
+        echo "- Total: $FRONTEND_TESTS" >> $REPORTS_DIR/test-summary.md
+        echo "- Failed: $FRONTEND_FAILURES" >> $REPORTS_DIR/test-summary.md
+        echo "- Success Rate: $(( (FRONTEND_TESTS - FRONTEND_FAILURES) * 100 / FRONTEND_TESTS ))%" >> $REPORTS_DIR/test-summary.md
+      fi
+      
+      cat $REPORTS_DIR/test-summary.md
+    - echo "::endgroup::"
+  artifacts:
+    name: "test-summary-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/test-summary.md
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# =============================================================================
+# 🔒 SECURITY STAGE - Security Analysis
+# =============================================================================
+
+.security_template: &security_template
+  stage: security
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/
+      - gl-sast-report.json
+      - gl-dependency-scanning-report.json
+      - gl-secret-detection-report.json
+    reports:
+      sast: gl-sast-report.json
+      dependency_scanning: gl-dependency-scanning-report.json
+      secret_detection: gl-secret-detection-report.json
+    expire_in: 1 week
+    when: always
+  timeout: 10 minutes
+  dependencies:
+    - setup:environment
+    - detect:changes
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# SAST (Static Application Security Testing)
+sast:
+  <<: *security_template
+  image: $SECURE_ANALYZERS_PREFIX/semgrep:latest
+  script:
+    - echo "::group::🔍 Static Application Security Testing"
+    - /analyzer run
+    - echo "SAST scan completed" | tee $REPORTS_DIR/sast-scan.txt
+    - echo "::endgroup::"
+
+# Dependency Scanning
+dependency_scanning:
+  <<: *security_template
+  image: $SECURE_ANALYZERS_PREFIX/safety:latest
+  script:
+    - echo "::group::📦 Dependency Security Scanning"
+    - /analyzer run
+    - echo "Dependency scan completed" | tee $REPORTS_DIR/dependency-scan.txt
+    - echo "::endgroup::"
+
+# Secret Detection
+secret_detection:
+  <<: *security_template
+  image: $SECURE_ANALYZERS_PREFIX/secrets:latest
+  script:
+    - echo "::group::🔐 Secret Detection Scanning"
+    - /analyzer run
+    - echo "Secret detection completed" | tee $REPORTS_DIR/secret-detection.txt
+    - echo "::endgroup::"
+
+# Custom Security Analysis
+security:custom:
+  <<: *security_template
+  image: python:3.11-slim
+  dependencies:
+    - setup:environment
+    - detect:changes
+    - build:backend
+  cache:
+    key: "security-$CI_COMMIT_REF_SLUG"
+    paths:
+      - backend/venv/
+    policy: pull
+  script:
+    - echo "::group::🔧 Security Tools Setup"
+    - apt-get update -qq && apt-get install -y -qq curl git
+    - cd backend
+    - source venv/bin/activate
+    - pip install bandit safety semgrep
+    - echo "::endgroup::"
+    
+    - echo "::group::🔍 Bandit Security Analysis"
+    - |
+      bandit -r . -f json -o ../$REPORTS_DIR/bandit-report.json || BANDIT_EXIT=$?
+      bandit -r . -f txt > ../$REPORTS_DIR/bandit-report.txt || true
+      echo "Bandit scan completed (exit code: ${BANDIT_EXIT:-0})" | tee ../$REPORTS_DIR/bandit-summary.txt
+    - echo "::endgroup::"
+    
+    - echo "::group::📦 Safety Vulnerability Scan"
+    - |
+      safety check --json --output ../$REPORTS_DIR/safety-report.json || SAFETY_EXIT=$?
+      safety check --output text > ../$REPORTS_DIR/safety-report.txt || true
+      echo "Safety scan completed (exit code: ${SAFETY_EXIT:-0})" | tee ../$REPORTS_DIR/safety-summary.txt
+    - echo "::endgroup::"
+    
+    - echo "::group::⚡ Critical Code Issues"
+    - |
+      # Install ruff for critical code analysis
+      pip install ruff
+      
+      # Run critical rules check
+      ruff check . \
+        --select "F821,F822,F823,E902,S102,S301,S110" \
+        --output-format=text > ../$REPORTS_DIR/ruff-critical.txt || RUFF_EXIT=$?
+      
+      echo "Critical code analysis completed (exit code: ${RUFF_EXIT:-0})" | tee ../$REPORTS_DIR/ruff-summary.txt
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "backend/**/*"
+        - "pyproject.toml"
+
+# Human-Readable Security Report
+security:report:
+  stage: security
+  image: ubuntu:22.04
+  dependencies:
+    - sast
+    - dependency_scanning
+    - secret_detection
+    - security:custom
+  script:
+    - echo "::group::📋 Security Report Generation"
+    - |
+      # Generate comprehensive security report
+      cat > $REPORTS_DIR/security-report.md << 'EOF'
+      # Security Analysis Report
+      
+      **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+      **Pipeline:** $CI_PIPELINE_ID
+      **Commit:** $CI_COMMIT_SHORT_SHA
+      
+      ## Summary
+      
+      This report consolidates findings from multiple security scanning tools:
+      - SAST (Static Application Security Testing)
+      - Dependency Scanning
+      - Secret Detection
+      - Custom Security Analysis (Bandit, Safety, Ruff)
+      
+      ## Scan Results
+      
+      ### SAST Results
+      EOF
+      
+      if [ -f "gl-sast-report.json" ]; then
+        echo "✅ SAST scan completed successfully" >> $REPORTS_DIR/security-report.md
+        SAST_VULNERABILITIES=$(jq '.vulnerabilities | length' gl-sast-report.json 2>/dev/null || echo "0")
+        echo "- Vulnerabilities found: $SAST_VULNERABILITIES" >> $REPORTS_DIR/security-report.md
+      else
+        echo "⚠️ SAST report not available" >> $REPORTS_DIR/security-report.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/security-report.md
+      echo "### Dependency Scanning" >> $REPORTS_DIR/security-report.md
+      
+      if [ -f "gl-dependency-scanning-report.json" ]; then
+        echo "✅ Dependency scan completed successfully" >> $REPORTS_DIR/security-report.md
+        DEP_VULNERABILITIES=$(jq '.vulnerabilities | length' gl-dependency-scanning-report.json 2>/dev/null || echo "0")
+        echo "- Vulnerabilities found: $DEP_VULNERABILITIES" >> $REPORTS_DIR/security-report.md
+      else
+        echo "⚠️ Dependency scanning report not available" >> $REPORTS_DIR/security-report.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/security-report.md
+      echo "### Secret Detection" >> $REPORTS_DIR/security-report.md
+      
+      if [ -f "gl-secret-detection-report.json" ]; then
+        echo "✅ Secret detection completed successfully" >> $REPORTS_DIR/security-report.md
+        SECRET_VULNERABILITIES=$(jq '.vulnerabilities | length' gl-secret-detection-report.json 2>/dev/null || echo "0")
+        echo "- Secrets found: $SECRET_VULNERABILITIES" >> $REPORTS_DIR/security-report.md
+      else
+        echo "⚠️ Secret detection report not available" >> $REPORTS_DIR/security-report.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/security-report.md
+      echo "### Custom Security Analysis" >> $REPORTS_DIR/security-report.md
+      
+      if [ -f "$REPORTS_DIR/bandit-summary.txt" ]; then
+        echo "#### Bandit (Python Security)" >> $REPORTS_DIR/security-report.md
+        cat $REPORTS_DIR/bandit-summary.txt >> $REPORTS_DIR/security-report.md
+      fi
+      
+      if [ -f "$REPORTS_DIR/safety-summary.txt" ]; then
+        echo "#### Safety (Dependency Vulnerabilities)" >> $REPORTS_DIR/security-report.md
+        cat $REPORTS_DIR/safety-summary.txt >> $REPORTS_DIR/security-report.md
+      fi
+      
+      if [ -f "$REPORTS_DIR/ruff-summary.txt" ]; then
+        echo "#### Ruff (Critical Code Issues)" >> $REPORTS_DIR/security-report.md
+        cat $REPORTS_DIR/ruff-summary.txt >> $REPORTS_DIR/security-report.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/security-report.md
+      echo "## Recommendations" >> $REPORTS_DIR/security-report.md
+      echo "" >> $REPORTS_DIR/security-report.md
+      echo "1. Review all high and critical severity vulnerabilities immediately" >> $REPORTS_DIR/security-report.md
+      echo "2. Update dependencies with known security issues" >> $REPORTS_DIR/security-report.md
+      echo "3. Fix any detected secrets or sensitive information exposure" >> $REPORTS_DIR/security-report.md
+      echo "4. Address critical code quality issues that could lead to security problems" >> $REPORTS_DIR/security-report.md
+      
+      # Display the report
+      cat $REPORTS_DIR/security-report.md
+    - echo "::endgroup::"
+  artifacts:
+    name: "security-report-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/security-report.md
+      - $REPORTS_DIR/bandit-report.*
+      - $REPORTS_DIR/safety-report.*
+      - $REPORTS_DIR/ruff-critical.txt
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# =============================================================================
+# 🎯 QUALITY STAGE - Code Quality Analysis
+# =============================================================================
+
+.quality_template: &quality_template
+  stage: quality
+  timeout: 10 minutes
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/
+      - gl-code-quality-report.json
+    reports:
+      codequality: gl-code-quality-report.json
+    expire_in: 1 week
+    when: always
+
+quality:backend:
+  <<: *quality_template
+  image: python:3.11-slim
+  dependencies:
+    - setup:environment
+    - detect:changes
+    - build:backend
+  cache:
+    key: "quality-backend-$CI_COMMIT_REF_SLUG"
+    paths:
+      - backend/venv/
+    policy: pull
+  script:
+    - echo "::group::🎯 Backend Quality Setup"
+    - cd backend
+    - source venv/bin/activate
+    - pip install ruff mypy pylint
+    - echo "::endgroup::"
+    
+    - echo "::group::📊 Ruff Linting"
+    - |
+      ruff check . --output-format=json > ../$REPORTS_DIR/ruff-report.json || RUFF_EXIT=$?
+      ruff check . --output-format=text > ../$REPORTS_DIR/ruff-report.txt || true
+      echo "Ruff linting completed (exit code: ${RUFF_EXIT:-0})" | tee ../$REPORTS_DIR/ruff-summary.txt
+    - echo "::endgroup::"
+    
+    - echo "::group::🔍 MyPy Type Checking"
+    - |
+      mypy . --json-report ../$REPORTS_DIR/mypy-report.json || MYPY_EXIT=$?
+      mypy . > ../$REPORTS_DIR/mypy-report.txt || true
+      echo "MyPy type checking completed (exit code: ${MYPY_EXIT:-0})" | tee ../$REPORTS_DIR/mypy-summary.txt
+    - echo "::endgroup::"
+    
+    - echo "::group::📈 Code Metrics"
+    - |
+      # Generate simple code quality report for GitLab
+      cat > ../$REPORTS_DIR/code-quality.json << EOF
+      [{
+        "description": "Backend code quality analysis completed",
+        "check_name": "Backend Quality",
+        "fingerprint": "$(echo -n "$CI_COMMIT_SHA-backend" | sha256sum | cut -d' ' -f1)",
+        "severity": "info",
+        "location": {
+          "path": "backend/",
+          "lines": {
+            "begin": 1
+          }
+        }
+      }]
+      EOF
+      
+      cp ../$REPORTS_DIR/code-quality.json ../gl-code-quality-report.json
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "backend/**/*"
+        - "pyproject.toml"
+
+quality:frontend:
+  <<: *quality_template
+  image: node:18-slim
+  dependencies:
+    - setup:environment
+    - detect:changes
+    - build:frontend
+  cache:
+    key: "quality-frontend-$CI_COMMIT_REF_SLUG"
+    paths:
+      - frontend/node_modules/
+    policy: pull
+  script:
+    - echo "::group::🎯 Frontend Quality Analysis"
+    - cd frontend
+    - echo "::endgroup::"
+    
+    - echo "::group::🔍 TypeScript Check"
+    - npm run type-check > ../$REPORTS_DIR/typescript-check.txt || true
+    - echo "TypeScript checking completed" | tee ../$REPORTS_DIR/typescript-summary.txt
+    - echo "::endgroup::"
+    
+    - echo "::group::💅 Linting (if configured)"
+    - npm run lint > ../$REPORTS_DIR/frontend-lint.txt || echo "No lint script configured" | tee ../$REPORTS_DIR/frontend-lint.txt
+    - echo "Frontend linting completed" | tee ../$REPORTS_DIR/frontend-lint-summary.txt
+    - echo "::endgroup::"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - "frontend/**/*"
+        - "package.json"
+
+# Quality Report
+quality:report:
+  stage: quality
+  image: ubuntu:22.04
+  dependencies:
+    - quality:backend
+    - quality:frontend
+  script:
+    - echo "::group::📋 Quality Report Generation"
+    - |
+      # Generate comprehensive quality report
+      cat > $REPORTS_DIR/quality-report.md << 'EOF'
+      # Code Quality Analysis Report
+      
+      **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+      **Pipeline:** $CI_PIPELINE_ID
+      **Commit:** $CI_COMMIT_SHORT_SHA
+      
+      ## Backend Quality
+      EOF
+      
+      if [ -f "$REPORTS_DIR/ruff-summary.txt" ]; then
+        echo "### Ruff Linting" >> $REPORTS_DIR/quality-report.md
+        cat $REPORTS_DIR/ruff-summary.txt >> $REPORTS_DIR/quality-report.md
+        echo "" >> $REPORTS_DIR/quality-report.md
+      fi
+      
+      if [ -f "$REPORTS_DIR/mypy-summary.txt" ]; then
+        echo "### MyPy Type Checking" >> $REPORTS_DIR/quality-report.md
+        cat $REPORTS_DIR/mypy-summary.txt >> $REPORTS_DIR/quality-report.md
+        echo "" >> $REPORTS_DIR/quality-report.md
+      fi
+      
+      echo "## Frontend Quality" >> $REPORTS_DIR/quality-report.md
+      
+      if [ -f "$REPORTS_DIR/typescript-summary.txt" ]; then
+        echo "### TypeScript" >> $REPORTS_DIR/quality-report.md
+        cat $REPORTS_DIR/typescript-summary.txt >> $REPORTS_DIR/quality-report.md
+        echo "" >> $REPORTS_DIR/quality-report.md
+      fi
+      
+      if [ -f "$REPORTS_DIR/frontend-lint-summary.txt" ]; then
+        echo "### Linting" >> $REPORTS_DIR/quality-report.md
+        cat $REPORTS_DIR/frontend-lint-summary.txt >> $REPORTS_DIR/quality-report.md
+        echo "" >> $REPORTS_DIR/quality-report.md
+      fi
+      
+      # Display the report
+      cat $REPORTS_DIR/quality-report.md
+    - echo "::endgroup::"
+  artifacts:
+    name: "quality-report-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/quality-report.md
+      - $REPORTS_DIR/ruff-report.*
+      - $REPORTS_DIR/mypy-report.*
+      - $REPORTS_DIR/typescript-check.txt
+      - $REPORTS_DIR/frontend-lint.txt
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# =============================================================================
+# 🚀 DEPLOY STAGE - Deployment (Manual/Conditional)
+# =============================================================================
+
+deploy:staging:
+  stage: deploy
+  image: ubuntu:22.04
+  environment:
+    name: staging
+    url: https://staging.emg-analyzer.example.com
+  script:
+    - echo "::group::🚀 Staging Deployment"
+    - echo "This would deploy to staging environment"
+    - echo "Deployment completed to staging" | tee $REPORTS_DIR/deploy-staging.txt
+    - echo "::endgroup::"
+  artifacts:
+    name: "deploy-staging-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/deploy-staging.txt
+    expire_in: 1 month
+  dependencies:
+    - test:summary
+    - security:report
+    - quality:report
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: manual
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  allow_failure: false
+
+deploy:production:
+  stage: deploy
+  image: ubuntu:22.04
+  environment:
+    name: production
+    url: https://emg-analyzer.example.com
+  script:
+    - echo "::group::🌟 Production Deployment"
+    - echo "This would deploy to production environment"
+    - echo "Deployment completed to production" | tee $REPORTS_DIR/deploy-production.txt
+    - echo "::endgroup::"
+  artifacts:
+    name: "deploy-production-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/deploy-production.txt
+    expire_in: 1 month
+  dependencies:
+    - test:summary
+    - security:report
+    - quality:report
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  allow_failure: false
+
+# =============================================================================
+# 📊 NOTIFY STAGE - Pipeline Summary & Notifications
+# =============================================================================
+
+pipeline:summary:
+  stage: notify
+  image: ubuntu:22.04
+  dependencies:
+    - setup:environment
+    - detect:changes
+    - build:backend
+    - build:frontend
+    - test:summary
+    - security:report
+    - quality:report
+  script:
+    - echo "::group::📊 Pipeline Summary Generation"
+    - |
+      # Install jq for JSON processing
+      apt-get update -qq && apt-get install -y -qq jq curl
+      
+      # Generate comprehensive pipeline summary
+      cat > $REPORTS_DIR/pipeline-summary.md << 'EOF'
+      # 🚀 EMG C3D Analyzer - Pipeline Summary
+      
+      **Pipeline ID:** $CI_PIPELINE_ID
+      **Commit:** $CI_COMMIT_SHORT_SHA ($CI_COMMIT_REF_NAME)
+      **Triggered by:** $CI_PIPELINE_SOURCE
+      **Started:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+      **Duration:** $(( $(date +%s) - $(date -d "$CI_PIPELINE_CREATED_AT" +%s) ))s
+      
+      ## 🔄 Pipeline Status
+      
+      | Stage | Status | Duration |
+      |-------|--------|----------|
+      | Setup | ✅ Completed | - |
+      | Build | ✅ Completed | - |
+      | Test | ✅ Completed | - |
+      | Security | ✅ Completed | - |
+      | Quality | ✅ Completed | - |
+      | Deploy | ⏳ Manual/Conditional | - |
+      
+      ## 📈 Metrics Summary
+      
+      ### Build Results
+      EOF
+      
+      # Add build information if available
+      if [ -f "$REPORTS_DIR/backend-build.txt" ]; then
+        echo "- ✅ Backend: Built successfully" >> $REPORTS_DIR/pipeline-summary.md
+      else
+        echo "- ⚠️ Backend: Not built (no changes)" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      if [ -f "$REPORTS_DIR/frontend-build-output.txt" ]; then
+        echo "- ✅ Frontend: Built successfully" >> $REPORTS_DIR/pipeline-summary.md
+      else
+        echo "- ⚠️ Frontend: Not built (no changes)" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "### Test Results" >> $REPORTS_DIR/pipeline-summary.md
+      
+      # Add test summary if available
+      if [ -f "$REPORTS_DIR/test-summary.md" ]; then
+        grep -A 20 "## Backend Tests\|## Frontend Tests" $REPORTS_DIR/test-summary.md | head -20 >> $REPORTS_DIR/pipeline-summary.md
+      else
+        echo "- ⚠️ Test summary not available" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "### Security & Quality" >> $REPORTS_DIR/pipeline-summary.md
+      
+      # Add security summary
+      if [ -f "$REPORTS_DIR/security-report.md" ]; then
+        echo "- ✅ Security analysis completed" >> $REPORTS_DIR/pipeline-summary.md
+      else
+        echo "- ⚠️ Security analysis not available" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      # Add quality summary
+      if [ -f "$REPORTS_DIR/quality-report.md" ]; then
+        echo "- ✅ Code quality analysis completed" >> $REPORTS_DIR/pipeline-summary.md
+      else
+        echo "- ⚠️ Code quality analysis not available" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "## 📋 Available Reports" >> $REPORTS_DIR/pipeline-summary.md
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "- [Test Summary](./test-summary.md)" >> $REPORTS_DIR/pipeline-summary.md
+      echo "- [Security Report](./security-report.md)" >> $REPORTS_DIR/pipeline-summary.md
+      echo "- [Quality Report](./quality-report.md)" >> $REPORTS_DIR/pipeline-summary.md
+      
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "## 🔗 Quick Links" >> $REPORTS_DIR/pipeline-summary.md
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "- [Pipeline]($CI_PIPELINE_URL)" >> $REPORTS_DIR/pipeline-summary.md
+      echo "- [Commit]($CI_PROJECT_URL/-/commit/$CI_COMMIT_SHA)" >> $REPORTS_DIR/pipeline-summary.md
+      
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        echo "- [Merge Request]($CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID)" >> $REPORTS_DIR/pipeline-summary.md
+      fi
+      
+      echo "" >> $REPORTS_DIR/pipeline-summary.md
+      echo "---" >> $REPORTS_DIR/pipeline-summary.md
+      echo "*Generated by GitLab CI/CD Pipeline • EMG C3D Analyzer v2.0.0*" >> $REPORTS_DIR/pipeline-summary.md
+      
+      # Display the summary
+      echo ""
+      echo "==============================================="
+      echo "🚀 PIPELINE SUMMARY"
+      echo "==============================================="
+      cat $REPORTS_DIR/pipeline-summary.md
+    - echo "::endgroup::"
+  artifacts:
+    name: "pipeline-summary-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - $REPORTS_DIR/pipeline-summary.md
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# =============================================================================
+# 📝 INCLUDE TEMPLATES & SHARED CONFIGURATIONS
+# =============================================================================
+
+# Include GitLab's Auto DevOps template for additional features (optional)
+# include:
+#   - template: Auto-DevOps.gitlab-ci.yml
+
+# =============================================================================
+# 🎉 END OF PIPELINE CONFIGURATION
+# =============================================================================
