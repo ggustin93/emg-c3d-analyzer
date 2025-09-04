@@ -796,7 +796,7 @@ jobs:
       - name: 📊 Generate Comprehensive Summary Report
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 🚀 CI/CD Pipeline Complete Report
+          # CI/CD Pipeline Report
           
           ## 📊 Test Results Summary
           
