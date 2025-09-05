@@ -1,0 +1,198 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.audit_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  timestamp timestamp with time zone DEFAULT now(),
+  user_id uuid,
+  user_role text,
+  action text NOT NULL,
+  table_name text NOT NULL,
+  record_id uuid,
+  changes jsonb,
+  ip_address inet,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT audit_log_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.bfr_monitoring (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL,
+  channel_name text NOT NULL CHECK (channel_name = ANY (ARRAY['CH1'::text, 'CH2'::text])),
+  target_pressure_aop double precision CHECK (target_pressure_aop >= 0::double precision AND target_pressure_aop <= 100::double precision),
+  actual_pressure_aop double precision CHECK (actual_pressure_aop >= 0::double precision AND actual_pressure_aop <= 100::double precision),
+  cuff_pressure_mmhg double precision CHECK (cuff_pressure_mmhg >= 0::double precision),
+  systolic_bp_mmhg double precision CHECK (systolic_bp_mmhg >= 80::double precision AND systolic_bp_mmhg <= 250::double precision),
+  diastolic_bp_mmhg double precision CHECK (diastolic_bp_mmhg >= 40::double precision AND diastolic_bp_mmhg <= 150::double precision),
+  safety_compliant boolean NOT NULL DEFAULT true,
+  measurement_timestamp timestamp with time zone DEFAULT now(),
+  measurement_method text DEFAULT 'manual'::text CHECK (measurement_method = ANY (ARRAY['sensor'::text, 'manual'::text, 'estimated'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  compliance_validation_method text DEFAULT 'user_input'::text CHECK (compliance_validation_method = ANY (ARRAY['user_input'::text, 'sensor'::text, 'algorithm'::text, 'estimated'::text])),
+  compliance_validated boolean DEFAULT false,
+  CONSTRAINT bfr_monitoring_pkey PRIMARY KEY (id),
+  CONSTRAINT bfr_monitoring_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.therapy_sessions(id)
+);
+CREATE TABLE public.emg_statistics (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL,
+  channel_name text NOT NULL,
+  mvc_value double precision CHECK (mvc_value IS NULL OR mvc_value > 0::double precision),
+  mvc75_threshold double precision CHECK (mvc75_threshold IS NULL OR mvc75_threshold > 0::double precision),
+  signal_quality_score double precision CHECK (signal_quality_score >= 0.0::double precision AND signal_quality_score <= 1.0::double precision),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  contractions_detail jsonb DEFAULT '[]'::jsonb,
+  signal_quality_metrics jsonb DEFAULT '{}'::jsonb,
+  processing_config jsonb DEFAULT '{}'::jsonb,
+  temporal_metrics jsonb DEFAULT '{"mav": {"std": 0, "mean": 0}, "mdf": {"std": 0, "mean": 0}, "mpf": {"std": 0, "mean": 0}, "rms": {"std": 0, "mean": 0}, "fatigue_index": {"std": 0, "mean": 0, "fi_nsm5": 0}}'::jsonb,
+  contraction_quality_metrics jsonb DEFAULT '{}'::jsonb,
+  contraction_timing_metrics jsonb DEFAULT '{}'::jsonb,
+  muscle_activation_metrics jsonb DEFAULT '{}'::jsonb,
+  fatigue_assessment_metrics jsonb DEFAULT '{}'::jsonb,
+  CONSTRAINT emg_statistics_pkey PRIMARY KEY (id),
+  CONSTRAINT emg_statistics_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.therapy_sessions(id)
+);
+CREATE TABLE public.export_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid,
+  exported_by uuid,
+  export_config jsonb DEFAULT '{}'::jsonb,
+  export_format text CHECK (export_format = ANY (ARRAY['json'::text, 'csv'::text, 'excel'::text, 'matlab'::text])),
+  channels_included ARRAY,
+  downsampling_factor integer,
+  exported_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT export_history_pkey PRIMARY KEY (id),
+  CONSTRAINT export_history_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.therapy_sessions(id),
+  CONSTRAINT export_history_exported_by_fkey FOREIGN KEY (exported_by) REFERENCES public.user_profiles(id)
+);
+CREATE TABLE public.patients (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  therapist_id uuid NOT NULL,
+  patient_code text NOT NULL DEFAULT ('P'::text || lpad((nextval('patient_code_seq'::regclass))::text, 3, '0'::text)) UNIQUE,
+  age_group text CHECK (age_group = ANY (ARRAY['18-30'::text, '31-50'::text, '51-70'::text, '71+'::text])),
+  gender text CHECK (gender = ANY (ARRAY['M'::text, 'F'::text, 'NB'::text, 'NS'::text])),
+  pathology_category text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  active boolean DEFAULT true,
+  current_mvc75_ch1 double precision CHECK (current_mvc75_ch1 > 0::double precision),
+  current_mvc75_ch2 double precision CHECK (current_mvc75_ch2 > 0::double precision),
+  current_target_ch1_ms double precision CHECK (current_target_ch1_ms > 0::double precision),
+  current_target_ch2_ms double precision CHECK (current_target_ch2_ms > 0::double precision),
+  last_assessment_date timestamp with time zone,
+  current_scoring_config_id uuid,
+  scoring_config_updated_at timestamp with time zone,
+  scoring_config_updated_by uuid,
+  CONSTRAINT patients_pkey PRIMARY KEY (id),
+  CONSTRAINT patients_therapist_id_fkey FOREIGN KEY (therapist_id) REFERENCES public.user_profiles(id),
+  CONSTRAINT patients_scoring_config_updated_by_fkey FOREIGN KEY (scoring_config_updated_by) REFERENCES public.user_profiles(id),
+  CONSTRAINT patients_current_scoring_config_id_fkey FOREIGN KEY (current_scoring_config_id) REFERENCES public.scoring_configuration(id)
+);
+CREATE TABLE public.performance_scores (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL UNIQUE,
+  overall_score double precision DEFAULT 0.0 CHECK (overall_score >= 0.0::double precision AND overall_score <= 100.0::double precision),
+  compliance_score double precision DEFAULT 0.0 CHECK (compliance_score >= 0.0::double precision AND compliance_score <= 100.0::double precision),
+  symmetry_score double precision CHECK (symmetry_score >= 0.0::double precision AND symmetry_score <= 100.0::double precision),
+  effort_score double precision CHECK (effort_score >= 0.0::double precision AND effort_score <= 100.0::double precision),
+  game_score double precision CHECK (game_score >= 0.0::double precision AND game_score <= 100.0::double precision),
+  left_muscle_compliance double precision CHECK (left_muscle_compliance >= 0.0::double precision AND left_muscle_compliance <= 100.0::double precision),
+  right_muscle_compliance double precision CHECK (right_muscle_compliance >= 0.0::double precision AND right_muscle_compliance <= 100.0::double precision),
+  completion_rate_left double precision CHECK (completion_rate_left >= 0.0::double precision AND completion_rate_left <= 1.0::double precision),
+  completion_rate_right double precision CHECK (completion_rate_right >= 0.0::double precision AND completion_rate_right <= 1.0::double precision),
+  intensity_rate_left double precision CHECK (intensity_rate_left >= 0.0::double precision AND intensity_rate_left <= 1.0::double precision),
+  intensity_rate_right double precision CHECK (intensity_rate_right >= 0.0::double precision AND intensity_rate_right <= 1.0::double precision),
+  duration_rate_left double precision CHECK (duration_rate_left >= 0.0::double precision AND duration_rate_left <= 1.0::double precision),
+  duration_rate_right double precision CHECK (duration_rate_right >= 0.0::double precision AND duration_rate_right <= 1.0::double precision),
+  bfr_compliant boolean NOT NULL DEFAULT true,
+  bfr_pressure_aop double precision CHECK (bfr_pressure_aop >= 0.0::double precision AND bfr_pressure_aop <= 100.0::double precision),
+  rpe_post_session integer CHECK (rpe_post_session >= 0 AND rpe_post_session <= 10),
+  game_points_achieved integer CHECK (game_points_achieved >= 0),
+  game_points_max integer CHECK (game_points_max >= 0),
+  created_at timestamp with time zone DEFAULT now(),
+  scoring_config_id uuid NOT NULL,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT performance_scores_pkey PRIMARY KEY (id),
+  CONSTRAINT performance_scores_scoring_config_id_fkey FOREIGN KEY (scoring_config_id) REFERENCES public.scoring_configuration(id),
+  CONSTRAINT performance_scores_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.therapy_sessions(id)
+);
+CREATE TABLE public.scoring_configuration (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  configuration_name text NOT NULL,
+  description text,
+  weight_compliance numeric NOT NULL DEFAULT 0.400,
+  weight_symmetry numeric NOT NULL DEFAULT 0.250,
+  weight_effort numeric NOT NULL DEFAULT 0.200,
+  weight_game numeric NOT NULL DEFAULT 0.150,
+  weight_completion numeric NOT NULL DEFAULT 0.333,
+  weight_intensity numeric NOT NULL DEFAULT 0.333,
+  weight_duration numeric NOT NULL DEFAULT 0.334,
+  active boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  is_global boolean NOT NULL DEFAULT false,
+  rpe_mapping jsonb DEFAULT '{"0": {"score": 10, "category": "no_exertion", "clinical": "concerning_lack_of_effort"}, "1": {"score": 25, "category": "very_light", "clinical": "below_therapeutic_minimum"}, "2": {"score": 50, "category": "light", "clinical": "warm_up_intensity"}, "3": {"score": 85, "category": "moderate_low", "clinical": "therapeutic_entry_range"}, "4": {"score": 100, "category": "optimal_moderate", "clinical": "ideal_therapeutic_intensity"}, "5": {"score": 100, "category": "optimal_moderate", "clinical": "peak_therapeutic_intensity"}, "6": {"score": 75, "category": "somewhat_hard", "clinical": "approaching_upper_limit"}, "7": {"score": 50, "category": "hard", "clinical": "excessive_for_elderly"}, "8": {"score": 25, "category": "very_hard", "clinical": "dangerous_overexertion"}, "9": {"score": 15, "category": "extremely_hard", "clinical": "immediate_intervention_needed"}, "10": {"score": 10, "category": "maximum", "clinical": "emergency_stop_protocol"}}'::jsonb,
+  CONSTRAINT scoring_configuration_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.session_settings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL,
+  mvc_threshold_percentage double precision NOT NULL DEFAULT 75.0 CHECK (mvc_threshold_percentage > 0::double precision AND mvc_threshold_percentage <= 100::double precision),
+  bfr_enabled boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  target_mvc75_ch1 double precision CHECK (target_mvc75_ch1 > 0::double precision),
+  target_mvc75_ch2 double precision CHECK (target_mvc75_ch2 > 0::double precision),
+  target_duration_ch1_ms double precision DEFAULT 2000 CHECK (target_duration_ch1_ms > 0::double precision),
+  target_duration_ch2_ms double precision DEFAULT 2000 CHECK (target_duration_ch2_ms > 0::double precision),
+  target_contractions_ch1 integer DEFAULT 12,
+  target_contractions_ch2 integer DEFAULT 12,
+  CONSTRAINT session_settings_pkey PRIMARY KEY (id),
+  CONSTRAINT session_settings_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.therapy_sessions(id)
+);
+CREATE TABLE public.therapy_sessions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  file_path text NOT NULL UNIQUE,
+  file_hash text NOT NULL UNIQUE,
+  file_size_bytes bigint NOT NULL CHECK (file_size_bytes > 0),
+  patient_id uuid,
+  therapist_id uuid,
+  session_date timestamp with time zone,
+  processing_status text DEFAULT 'pending'::text CHECK (processing_status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text, 'reprocessing'::text])),
+  processing_error_message text,
+  processing_time_ms double precision CHECK (processing_time_ms >= 0::double precision),
+  game_metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  processed_at timestamp with time zone,
+  updated_at timestamp with time zone DEFAULT now(),
+  session_code text NOT NULL UNIQUE CHECK (session_code ~ '^P[0-9]{3}S[0-9]{3}$'::text OR session_code ~ '^[0-9a-f-]{36}$'::text),
+  scoring_config_id uuid,
+  CONSTRAINT therapy_sessions_pkey PRIMARY KEY (id),
+  CONSTRAINT therapy_sessions_therapist_id_fkey FOREIGN KEY (therapist_id) REFERENCES public.user_profiles(id),
+  CONSTRAINT therapy_sessions_scoring_config_id_fkey FOREIGN KEY (scoring_config_id) REFERENCES public.scoring_configuration(id),
+  CONSTRAINT therapy_sessions_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+);
+CREATE TABLE public.user_profiles (
+  id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['therapist'::text, 'researcher'::text, 'admin'::text])),
+  first_name text,
+  last_name text,
+  full_name text DEFAULT 
+CASE
+    WHEN ((first_name IS NOT NULL) AND (last_name IS NOT NULL)) THEN ((first_name || ' '::text) || last_name)
+    WHEN (full_name_override IS NOT NULL) THEN full_name_override
+    ELSE 'Unknown User'::text
+END,
+  full_name_override text,
+  institution text,
+  department text,
+  access_level text DEFAULT 'basic'::text CHECK (access_level = ANY (ARRAY['full'::text, 'advanced'::text, 'basic'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_login timestamp with time zone,
+  active boolean DEFAULT true,
+  CONSTRAINT user_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);

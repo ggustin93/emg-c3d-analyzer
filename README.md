@@ -50,7 +50,14 @@ Comprehensive performance analysis with muscle-specific compliance scoring, ther
 
 ## 3. Architecture Overview
 
-The GHOSTLY+ EMG Analyzer implements a full-stack architecture for stateless data processing and EMG visualization. The system processes C3D motion capture files and generates EMG analytics.
+The GHOSTLY+ EMG Analyzer implements a **layered, domain-driven architecture** with clear separation of concerns, enabling both stateless processing (upload route) and stateful workflows (webhook route) for EMG data analysis.
+
+**Core Architectural Principles:**
+- **Single Source of Truth (SoT)**: `GHOSTLYC3DProcessor` serves as the authoritative EMG analysis engine
+- **Dual Processing Modes**: Stateless (immediate response) vs Stateful (database persistence)
+- **Repository Pattern**: Clean data access layer with dependency injection
+- **Domain-Driven Design**: Services organized by business domains (clinical, c3d, infrastructure)
+- **SOLID Compliance**: Single responsibility, open/closed, and dependency inversion principles
 
 **Processing Workflow**: When a user uploads a C3D file, the system: **(1)** Parses C3D files using ezc3d library, **(2)** Calculates EMG metrics (RMS, MAV, MPF, MDF, fatigue indices), **(3)** Detects muscle contractions using configurable thresholds, **(4)** Packages analysis results in a single API response, and **(5)** Renders interactive charts in the React frontend. The frontend uses Zustand for state management and updates the UI without server round-trips.
 
@@ -85,7 +92,154 @@ The GHOSTLY+ EMG Analyzer implements a full-stack architecture for stateless dat
                                └───────────────────────────┘
 ```
 
-### 3.2 Data Consistency Architecture
+### 3.2 Layered Architecture Pattern
+
+The system implements a **4-layer architecture** with clear separation of concerns and well-defined dependencies:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   API LAYER                             │
+│  • upload.py (stateless route)                         │
+│  • webhooks.py (stateful route)                        │
+│  • Handles HTTP concerns, validation, responses        │
+└─────────────────────┬───────────────────────────────────┘
+                      │ delegates to
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                ORCHESTRATION LAYER                      │
+│  • therapy_session_processor.py                        │
+│  • Workflow coordination, session lifecycle            │
+│  • Repository pattern, dependency injection            │
+└─────────────────────┬───────────────────────────────────┘
+                      │ uses
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                 PROCESSING LAYER                        │
+│  • processor.py (GHOSTLYC3DProcessor)                  │
+│  • Single Source of Truth for EMG analysis             │
+│  • Core algorithms, signal processing                  │
+└─────────────────────┬───────────────────────────────────┘
+                      │ persists via
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                 PERSISTENCE LAYER                       │
+│  • Repository pattern (EMGDataRepository, etc.)        │
+│  • Supabase integration, database operations           │
+│  • File storage, session management                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 3.3 Component Analysis & Responsibilities
+
+#### 3.3.1 API Layer: Dual Processing Modes
+
+**upload.py (194 lines) - Stateless Processing Route**
+- **Purpose**: Immediate EMG analysis without database persistence
+- **Use Case**: Testing, preview, temporary analysis workflows
+- **Key Features**:
+  - Returns complete EMG signals and analytics in response
+  - Uses `process_c3d_file_stateless()` method
+  - FastAPI file handling with temporary storage
+  - Comprehensive error handling with HTTP status codes
+- **Integration**: Directly calls TherapySessionProcessor in stateless mode
+
+**webhooks.py (349 lines) - Stateful Processing Route**
+- **Purpose**: Supabase Storage event processing with full database persistence
+- **Use Case**: Production workflow with patient/therapist relationships
+- **Key Features**:
+  - HMAC-SHA256 webhook signature verification
+  - Background processing with FastAPI BackgroundTasks
+  - Patient code extraction and UUID lookup
+  - Complete session lifecycle management
+- **Integration**: Creates session → background C3D processing → database population
+
+#### 3.3.2 Orchestration Layer: Workflow Management
+
+**therapy_session_processor.py (1,669 lines) - Session Lifecycle Orchestrator**
+- **Architecture**: Repository pattern with dependency injection
+- **Core Responsibilities**:
+  1. **Session Management**: Create, update, track therapy sessions
+  2. **File Coordination**: Download from Supabase Storage, manage temporary files
+  3. **Processing Orchestration**: Coordinate C3D analysis with database population
+  4. **Database Population**: Populate all related tables (sessions, statistics, scores)
+- **Design Patterns**:
+  - Repository Pattern: Clean data access abstraction
+  - Dependency Injection: Testable, configurable service composition
+  - Error Recovery: Comprehensive error handling with status tracking
+- **Key Methods**:
+  ```python
+  async def create_session()           # Create therapy session record
+  async def process_c3d_file()        # Complete processing workflow
+  async def _populate_all_database_tables()  # Database persistence
+  ```
+
+#### 3.3.3 Processing Layer: Single Source of Truth
+
+**processor.py (1,341 lines) - GHOSTLYC3DProcessor Class**
+- **Architecture**: Single Source of Truth (SoT) for EMG processing
+- **Core Responsibilities**:
+  1. **C3D File Parsing**: ezc3d integration with GHOSTLY-specific channel detection
+  2. **EMG Signal Processing**: Filtering, envelope calculation, statistical analysis
+  3. **Contraction Detection**: MVC-based amplitude and duration thresholds
+  4. **Analytics Generation**: Clinical metrics (RMS, MAV, MPF, MDF, fatigue indices)
+- **Dual Mode Support**:
+  - `include_signals=True`: Full signal data (stateless mode)
+  - `include_signals=False`: Analytics only (stateful mode, memory optimization)
+- **Key Features**:
+  - Flexible channel mapping for real-world C3D variations
+  - Comprehensive metadata extraction
+  - Performance optimization for large datasets
+  - SOLID principles: single responsibility, dependency inversion
+
+### 3.4 Data Flow & Integration Patterns
+
+#### 3.4.1 Stateless Processing Flow (Upload Route)
+```
+Upload Request → upload.py → TherapySessionProcessor → GHOSTLYC3DProcessor
+     ↓
+Complete EMG Analysis ← include_signals=True ← Temporary File Processing
+     ↓
+HTTP Response (Full Analytics + Signals)
+```
+
+#### 3.4.2 Stateful Processing Flow (Webhook Route)
+```
+Supabase Storage Event → webhooks.py → Patient/Therapist Lookup → Session Creation
+     ↓
+Background Processing → TherapySessionProcessor → GHOSTLYC3DProcessor
+     ↓
+Database Population → EMG Statistics → Performance Scores → Session Update
+```
+
+#### 3.4.3 Dependency Injection Pattern
+```
+Routes → TherapySessionProcessor → Dependencies:
+  • GHOSTLYC3DProcessor (created per-file)
+  • EMGDataRepository (database access)
+  • TherapySessionRepository (session management) 
+  • CacheService (performance optimization)
+  • PerformanceScoringService (GHOSTLY+ metrics)
+```
+
+### 3.5 Design Principles Implementation
+
+**Single Responsibility Principle (SRP)**:
+- `upload.py`: HTTP request handling only
+- `webhooks.py`: Supabase event processing only
+- `processor.py`: EMG analysis algorithms only
+- `therapy_session_processor.py`: Workflow orchestration only
+
+**Open/Closed Principle (OCP)**:
+- Processing modes extensible without modifying core algorithms
+- New routes can reuse existing processor components
+- Repository pattern allows different data sources
+
+**Dependency Inversion Principle (DIP)**:
+- High-level orchestrator depends on processor abstraction
+- Routes depend on service interfaces, not implementations
+- Testable architecture with mockable dependencies
+
+### 3.6 Data Consistency Architecture
 
 The system implements Single Source of Truth (SoT) for analytics data across the frontend.
 

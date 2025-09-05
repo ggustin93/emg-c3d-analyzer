@@ -1,0 +1,2 @@
+- RLS functions and repositories
+  -> check docs/DATABASE_FUNCTIONS_AND_RLS.md
