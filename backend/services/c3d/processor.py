@@ -1266,3 +1266,76 @@ class GHOSTLYC3DProcessor:
             "analytics": updated_analytics,
             "available_channels": available_channels,
         }
+
+    def get_emg_signals_for_export(self) -> dict[str, dict]:
+        """Get EMG signals formatted for export/frontend use.
+        
+        Returns:
+            dict: Dictionary of channel names mapped to signal data with:
+                  - data: List of signal values
+                  - time_axis: Time axis for plotting
+                  - sampling_rate: Signal sampling rate
+                  - processed_data: Processed signal data (if available)
+        """
+        if not self.emg_data:
+            logger.warning("No EMG data available for export. Call extract_emg_data() first.")
+            return {}
+            
+        # Return a copy of emg_data to prevent external modification
+        export_data = {}
+        for channel_name, channel_data in self.emg_data.items():
+            export_data[channel_name] = {
+                "data": channel_data.get("data", []),
+                "time_axis": channel_data.get("time_axis", []),
+                "sampling_rate": channel_data.get("sampling_rate", DEFAULT_SAMPLING_RATE),
+            }
+            # Include processed data if available
+            if "processed_data" in channel_data:
+                export_data[channel_name]["processed_data"] = channel_data["processed_data"]
+                
+        logger.info(f"📊 Exporting EMG signals for {len(export_data)} channels")
+        return export_data
+
+    def get_c3d_parameters(self) -> dict:
+        """Get C3D file parameters and metadata.
+        
+        Returns:
+            dict: C3D file parameters including:
+                  - frame_rate: Video/game frame rate
+                  - analog_rate: EMG sampling rate
+                  - total_frames: Total number of frames
+                  - duration: Total duration in seconds
+        """
+        if not self.c3d:
+            logger.warning("No C3D file loaded. Call load_file() first.")
+            return {}
+            
+        try:
+            # Extract basic C3D parameters using C3DUtils
+            parameters = {
+                "frame_rate": float(self.c3d["header"]["frame_rate"]) if "frame_rate" in self.c3d.get("header", {}) else 60.0,
+                "analog_rate": float(self.c3d["header"]["analog_sample_rate"]) if "analog_sample_rate" in self.c3d.get("header", {}) else DEFAULT_SAMPLING_RATE,
+                "total_frames": int(self.c3d["header"]["last_frame"] - self.c3d["header"]["first_frame"] + 1) if "header" in self.c3d else 0,
+            }
+            
+            # Calculate duration
+            if parameters["frame_rate"] > 0 and parameters["total_frames"] > 0:
+                parameters["duration"] = parameters["total_frames"] / parameters["frame_rate"]
+            else:
+                parameters["duration"] = 0.0
+                
+            # Add metadata from game_metadata if available
+            if self.game_metadata:
+                parameters.update({
+                    "sampling_rate": self.game_metadata.get("sampling_rate", parameters["analog_rate"]),
+                    "total_duration_seconds": self.game_metadata.get("total_duration_seconds", parameters["duration"]),
+                    "frame_count": self.game_metadata.get("frame_count", parameters["total_frames"]),
+                })
+                
+            logger.info(f"📋 Extracted C3D parameters: {len(parameters)} fields")
+            return parameters
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract C3D parameters: {e!s}")
+            return {}
+ww

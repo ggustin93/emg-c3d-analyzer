@@ -124,6 +124,153 @@ class EMGDataRepository(
             self.logger.exception(f"Failed to get EMG statistics for session {session_id}: {e!s}")
             raise RepositoryError(f"Failed to get EMG statistics: {e!s}") from e
 
+
+    def get_clinical_quality_summary(self, session_id: str | UUID) -> dict[str, Any]:
+        """Get clinical quality summary for a session using JSONB queries.
+        
+        Extracts key quality metrics from contraction_quality_metrics JSONB field
+        for clinical assessment and reporting.
+
+        Args:
+            session_id: Session UUID
+
+        Returns:
+            Dict: Clinical quality summary with aggregated metrics
+        """
+        try:
+            validated_id = self._validate_uuid(session_id, "session_id")
+
+            # Query using JSONB operators for efficient filtering
+            result = (
+                self.client.table("emg_statistics")
+                .select(
+                    "channel_name, "
+                    "contraction_quality_metrics->>'total_contractions' as total_contractions, "
+                    "contraction_quality_metrics->>'overall_compliant_contractions' as overall_compliant, "
+                    "contraction_quality_metrics->>'overall_compliance_percentage' as compliance_rate, "
+                    "contraction_quality_metrics->>'mvc75_compliance_percentage' as mvc75_rate, "
+                    "contraction_quality_metrics->>'duration_compliance_percentage' as duration_rate"
+                )
+                .eq("session_id", validated_id)
+                .order("channel_name")
+                .execute()
+            )
+
+            data = self._handle_supabase_response(result, "get", "clinical quality summary")
+            
+            # Aggregate summary statistics
+            summary = {
+                "session_id": validated_id,
+                "channel_count": len(data),
+                "total_contractions": sum(int(row.get("total_contractions", 0)) for row in data),
+                "overall_compliant": sum(int(row.get("overall_compliant", 0)) for row in data),
+                "channels": data
+            }
+            
+            # Calculate average compliance rates
+            if summary["total_contractions"] > 0:
+                summary["overall_compliance_rate"] = round(
+                    (summary["overall_compliant"] / summary["total_contractions"]) * 100, 2
+                )
+            else:
+                summary["overall_compliance_rate"] = 0.0
+            
+            return summary
+
+        except Exception as e:
+            self.logger.exception(f"Failed to get clinical quality summary for session {session_id}: {e!s}")
+            raise RepositoryError(f"Failed to get clinical quality summary: {e!s}") from e
+
+    def find_sessions_by_compliance_threshold(self, min_compliance_rate: float) -> list[dict[str, Any]]:
+        """Find sessions meeting minimum compliance threshold using JSONB queries.
+        
+        Uses PostgreSQL JSONB operators to efficiently query compliance rates
+        without needing to parse entire JSONB structures.
+
+        Args:
+            min_compliance_rate: Minimum compliance rate (0-100)
+
+        Returns:
+            List[Dict]: Sessions meeting compliance criteria
+        """
+        try:
+            if not (0 <= min_compliance_rate <= 100):
+                raise ValueError("Compliance rate must be between 0 and 100")
+
+            result = (
+                self.client.table("emg_statistics")
+                .select(
+                    "session_id, channel_name, "
+                    "contraction_quality_metrics->>'overall_compliance_percentage' as compliance_rate"
+                )
+                .gte("contraction_quality_metrics->>'overall_compliance_percentage'", str(min_compliance_rate))
+                .order("session_id, channel_name")
+                .execute()
+            )
+
+            return self._handle_supabase_response(result, "get", "sessions by compliance threshold")
+
+        except Exception as e:
+            self.logger.exception(f"Failed to find sessions by compliance threshold {min_compliance_rate}: {e!s}")
+            raise RepositoryError(f"Failed to find sessions by compliance: {e!s}") from e
+
+    def update_clinical_metrics(
+        self, 
+        emg_stats_id: str | UUID, 
+        clinical_updates: dict[str, dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Update specific clinical JSONB groups for an EMG statistics record.
+        
+        Allows partial updates of JSONB clinical groups without affecting other groups.
+        Uses JSONB merge operations for efficient partial updates.
+
+        Args:
+            emg_stats_id: EMG statistics record ID
+            clinical_updates: Dict with keys matching clinical group names
+                             (contraction_quality_metrics, contraction_timing_metrics, etc.)
+
+        Returns:
+            Dict: Updated EMG statistics record
+        """
+        try:
+            validated_id = self._validate_uuid(emg_stats_id, "emg_stats_id")
+            
+            if not clinical_updates:
+                raise ValueError("No clinical updates provided")
+            
+            # Validate that update keys match known clinical groups
+            valid_groups = {
+                "contraction_quality_metrics",
+                "contraction_timing_metrics", 
+                "muscle_activation_metrics",
+                "fatigue_assessment_metrics"
+            }
+            
+            invalid_keys = set(clinical_updates.keys()) - valid_groups
+            if invalid_keys:
+                raise ValueError(f"Invalid clinical group keys: {invalid_keys}")
+
+            # Perform update with JSONB merge
+            update_data = {}
+            for group_name, group_data in clinical_updates.items():
+                update_data[group_name] = group_data
+
+            result = (
+                self.client.table("emg_statistics")
+                .update(update_data)
+                .eq("id", validated_id)
+                .execute()
+            )
+
+            updated_data = self._handle_supabase_response(result, "update", "clinical metrics")
+            
+            self.logger.info(f"✅ Updated clinical metrics for EMG statistics {validated_id}")
+            return updated_data[0] if updated_data else {}
+
+        except Exception as e:
+            self.logger.exception(f"Failed to update clinical metrics for {emg_stats_id}: {e!s}")
+            raise RepositoryError(f"Failed to update clinical metrics: {e!s}") from e
+
     # Processing parameters functionality removed - now stored as JSONB in emg_statistics.processing_config
 
     def upsert_c3d_technical_data(

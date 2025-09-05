@@ -344,18 +344,65 @@ class MetadataService:
         return "Unknown"
 
     def _resolve_therapist_id(self, c3d_metadata: dict, storage_metadata: dict) -> str:
-        """Resolve therapist ID using frontend-consistent priority system
-        Priority: 1) C3D metadata.therapist_id, 2) storage metadata.therapist_id.
+        """Resolve therapist ID using frontend-consistent priority system.
+        
+        Priority: 
+        1) C3D metadata.therapist_id (UUID or user_code)
+        2) Storage metadata.therapist_id (UUID or user_code)
+        3) Return "Unknown" if not found
+        
+        If the value looks like a user_code (T### format), attempt to look up the UUID.
         """
         # Priority 1: C3D metadata
-        if c3d_metadata.get("therapist_id"):
-            return str(c3d_metadata["therapist_id"])
+        therapist_identifier = c3d_metadata.get("therapist_id")
+        if therapist_identifier:
+            # Check if it's a user_code format (T followed by 3 digits)
+            if isinstance(therapist_identifier, str) and re.match(r'^T\d{3}$', therapist_identifier):
+                # Lookup UUID by user_code
+                uuid = self._lookup_therapist_by_code(therapist_identifier)
+                if uuid:
+                    return str(uuid)
+            else:
+                # Assume it's already a UUID
+                return str(therapist_identifier)
 
         # Priority 2: Storage metadata
-        if storage_metadata.get("therapist_id"):
-            return str(storage_metadata["therapist_id"])
+        therapist_identifier = storage_metadata.get("therapist_id")
+        if therapist_identifier:
+            # Check if it's a user_code format
+            if isinstance(therapist_identifier, str) and re.match(r'^T\d{3}$', therapist_identifier):
+                # Lookup UUID by user_code
+                uuid = self._lookup_therapist_by_code(therapist_identifier)
+                if uuid:
+                    return str(uuid)
+            else:
+                # Assume it's already a UUID
+                return str(therapist_identifier)
 
         return "Unknown"
+    
+    def _lookup_therapist_by_code(self, user_code: str) -> str | None:
+        """Lookup therapist UUID by user_code.
+        
+        Args:
+            user_code: The user code to lookup (e.g., "T001")
+            
+        Returns:
+            The UUID string if found, None otherwise
+        """
+        try:
+            client = get_supabase_client(use_service_key=True)
+            result = client.table("user_profiles").select("id").eq("user_code", user_code).eq("role", "therapist").limit(1).execute()
+            
+            if result.data and len(result.data) > 0:
+                return str(result.data[0]["id"])
+            else:
+                logger.warning(f"No therapist found with user_code: {user_code}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error looking up therapist by code {user_code}: {e}")
+            return None
 
     def _resolve_session_date(self, file_path: str, c3d_metadata: dict) -> str | None:
         """Resolve session date using frontend-consistent priority system

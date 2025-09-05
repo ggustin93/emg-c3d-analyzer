@@ -19,6 +19,7 @@ Date: 2025-08-12
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from config import SessionDefaults, ScoringDefaults
 
@@ -160,9 +161,12 @@ class PerformanceScoringService:
             # If session already has scoring_config_id, it will be used (immutable)
             # Otherwise, falls back to patient's current config or global default
             scoring_config_id = self._get_session_scoring_config_id(session_id, patient_id)
+            self.scoring_config_id = scoring_config_id  # Store for later use in result
             
             if not scoring_config_id:
-                logger.info("📊 No database scoring config found, using system defaults")
+                # This should not happen anymore with fallback, but handle gracefully
+                logger.warning("📊 No scoring config ID available, using system defaults from config.py")
+                self.scoring_config_id = None  # Explicitly set to None when using defaults
                 return ScoringWeights()
             
             # Load the specific configuration
@@ -292,6 +296,7 @@ class PerformanceScoringService:
         # Step 6: Prepare result
         result = {
             "session_id": session_id,
+            "scoring_config_id": getattr(self, 'scoring_config_id', None),  # Include the scoring config ID
             "overall_score": overall_score,
             "compliance_score": compliance_score,
             "symmetry_score": symmetry_score,
@@ -497,11 +502,13 @@ class PerformanceScoringService:
                 return None
 
             # Aggregate left/right metrics
-            left_stats = [s for s in emg_stats.data if "left" in s["channel_name"].lower()]
-            right_stats = [s for s in emg_stats.data if "right" in s["channel_name"].lower()]
+            # Map CH1 to left and CH2 to right for compatibility
+            left_stats = [s for s in emg_stats.data if "left" in s["channel_name"].lower() or s["channel_name"] == "CH1"]
+            right_stats = [s for s in emg_stats.data if "right" in s["channel_name"].lower() or s["channel_name"] == "CH2"]
 
             if not left_stats or not right_stats:
                 logger.error(f"Missing left/right channel data for session: {session_id}")
+                logger.debug(f"Available channels: {[s['channel_name'] for s in emg_stats.data]}")
                 return None
 
             # Use first channel for each side (assuming single muscle per side for MVP)
@@ -556,42 +563,89 @@ class PerformanceScoringService:
             logger.exception(f"Error fetching session metrics: {e!s}")
             return None
 
+    def _ensure_default_scoring_config(self) -> str:
+        """Ensure a default scoring configuration exists in the database.
+        
+        Creates the GHOSTLY+ Default configuration using values from config.py
+        if it doesn't already exist.
+        
+        Returns:
+            The UUID of the default scoring configuration
+        """
+        from config import ScoringDefaults
+        import json
+        
+        defaults = ScoringDefaults()
+        
+        try:
+            # Check if GHOSTLY-TRIAL-DEFAULT already exists
+            existing = self.client.table("scoring_configuration").select("id").eq(
+                "name", "GHOSTLY-TRIAL-DEFAULT"
+            ).limit(1).execute()
+            
+            if existing.data:
+                logger.debug("Found existing GHOSTLY-TRIAL-DEFAULT configuration")
+                return existing.data[0]["id"]
+            
+            # Create the default configuration from config.py
+            config_data = {
+                "name": "GHOSTLY-TRIAL-DEFAULT",
+                "description": "Default scoring configuration for GHOSTLY+ trial - auto-created from config.py",
+                "weight_compliance": defaults.WEIGHT_COMPLIANCE,
+                "weight_symmetry": defaults.WEIGHT_SYMMETRY,
+                "weight_effort": defaults.WEIGHT_EFFORT,
+                "weight_game": defaults.WEIGHT_GAME,
+                "weight_completion": defaults.WEIGHT_COMPLETION,
+                "weight_intensity": defaults.WEIGHT_INTENSITY,
+                "weight_duration": defaults.WEIGHT_DURATION,
+                "active": True,
+                "rpe_mapping": defaults.DEFAULT_RPE_MAPPING  # Already a dict, no need for json.dumps
+            }
+            
+            result = self.client.table("scoring_configuration").insert(config_data).execute()
+            logger.info("✅ Created default scoring configuration from config.py")
+            return result.data[0]["id"]
+            
+        except Exception as e:
+            logger.exception(f"Failed to ensure default scoring config: {e!s}")
+            # Return None to prevent crash, but log the issue
+            return None
+    
     def _get_session_scoring_config_id(self, session_id: str = None, patient_id: str = None) -> str | None:
         """Get the appropriate scoring configuration for a session.
         
-        Priority hierarchy (handled by database function):
+        Priority hierarchy:
         1. Session's immutable scoring_config_id (preserves historical accuracy)
         2. Patient's current_scoring_config_id (for new sessions)
-        3. Global GHOSTLY+ Default configuration
-        4. None (will fall back to config.py defaults)
+        3. Global GHOSTLY+ Default configuration (from database)
+        4. Create default from config.py if none exists
         
         Args:
             session_id: The therapy session UUID. 
             patient_id: The patient's UUID (used if session doesn't have config).
             
         Returns:
-            Scoring configuration ID or None if no config found.
+            Scoring configuration ID (always returns a value, creating default if needed)
         """
+        # Use repository pattern for cleaner database access
+        from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
+        
         try:
-            # Use the intelligent database function that handles priority
-            result = self.client.rpc(
-                "get_session_scoring_config",
-                {
-                    "p_session_id": session_id,
-                    "p_patient_id": patient_id
-                }
-            ).execute()
+            repo = ScoringConfigurationRepository(self.client)
+            config_id = repo.get_session_scoring_config(session_id, patient_id)
             
-            if result.data:
-                logger.debug(f"Using scoring config {result.data} for session {session_id or 'new'}")
-                return result.data
+            if config_id:
+                logger.debug(f"Using scoring config {config_id} for session {session_id or 'new'}")
+                return config_id
             else:
-                logger.warning("No scoring configuration found in database, will use system defaults")
-                return None
+                # No config found in database, create/get default from config.py
+                logger.info("No scoring config found in database, creating default from config.py")
+                return self._ensure_default_scoring_config()
 
         except Exception as e:
             logger.exception(f"Error fetching scoring configuration: {e!s}")
-            return None
+            # Try to create default as last resort
+            return self._ensure_default_scoring_config()
     
     def _get_patient_scoring_config_id(self, patient_id: str = None) -> str | None:
         """Legacy method for backward compatibility. Calls session-based method with no session."""
@@ -807,6 +861,28 @@ class PerformanceScoringService:
 
         except Exception as e:
             logger.exception(f"Error calculating adherence score: {e!s}")
+            return {"error": str(e)}
+
+    async def calculate_session_performance(
+        self, session_id: str, analytics: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Async wrapper for calculate_performance_scores method.
+        
+        Used by TherapySessionProcessor to calculate performance scores.
+        
+        Args:
+            session_id: Therapy session UUID
+            analytics: Session analytics data (from EMG processing)
+            
+        Returns:
+            Dictionary with calculated scores and sub-components
+        """
+        try:
+            # Call the main sync calculation method
+            scores = self.calculate_performance_scores(session_id)
+            return scores
+        except Exception as e:
+            logger.exception(f"Error in async calculate_session_performance: {e!s}")
             return {"error": str(e)}
 
 

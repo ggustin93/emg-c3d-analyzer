@@ -112,6 +112,7 @@ class TherapySessionRepository(
             if not session_code or not isinstance(session_code, str):
                 raise RepositoryError("Invalid session_code provided")
 
+            # Query by session_code column (primary key)
             result = (
                 self.client.table("therapy_sessions")
                 .select("*")
@@ -126,6 +127,33 @@ class TherapySessionRepository(
         except Exception as e:
             self.logger.exception(f"Failed to get therapy session {session_code}: {e!s}")
             raise RepositoryError(f"Failed to get therapy session: {e!s}") from e
+
+    def get_therapy_session_by_id(self, session_id: str | UUID) -> dict[str, Any] | None:
+        """Get therapy session by UUID (for foreign key relationships).
+
+        Args:
+            session_id: Session UUID
+
+        Returns:
+            Optional[Dict]: Session data or None if not found
+        """
+        try:
+            validated_id = self._validate_uuid(session_id, "session_id")
+
+            result = (
+                self.client.table("therapy_sessions")
+                .select("*")
+                .eq("id", validated_id)
+                .limit(1)
+                .execute()
+            )
+
+            data = self._handle_supabase_response(result, "get", "therapy session by id")
+            return data[0] if data else None
+
+        except Exception as e:
+            self.logger.exception(f"Failed to get therapy session by id {session_id}: {e!s}")
+            raise RepositoryError(f"Failed to get therapy session by id: {e!s}") from e
 
     def get_session_by_file_hash(self, file_hash: str) -> dict[str, Any] | None:
         """Get therapy session by C3D file hash (duplicate detection).
@@ -173,6 +201,7 @@ class TherapySessionRepository(
             
             update_data = self._prepare_timestamps(update_data, update=True)
 
+            # Update by session_code column (primary key)
             result = (
                 self.client.table("therapy_sessions")
                 .update(update_data)
@@ -190,6 +219,116 @@ class TherapySessionRepository(
 
         except Exception as e:
             error_msg = f"Failed to update therapy session {session_code}: {e!s}"
+            self.logger.error(error_msg, exc_info=True)
+            raise RepositoryError(error_msg) from e
+
+    def generate_next_session_code(self, patient_code: str) -> str:
+        """Generate the next sequential session code for a patient.
+        
+        Args:
+            patient_code: Patient code (format: P###)
+            
+        Returns:
+            str: Next sequential session code (format: P###S###)
+            
+        Raises:
+            RepositoryError: If generation fails
+        """
+        try:
+            # Validate patient code format
+            if not patient_code or not patient_code.startswith('P'):
+                raise RepositoryError(f"Invalid patient code format: {patient_code}")
+            
+            # Query for the highest existing session number for this patient
+            result = (
+                self.client.table("therapy_sessions")
+                .select("session_code")
+                .like("session_code", f"{patient_code}S%")
+                .order("session_code", desc=True)
+                .limit(1)
+                .execute()
+            )
+            
+            if result.data:
+                # Extract the last session number and increment
+                last_code = result.data[0]["session_code"]
+                # Extract number from P###S### format
+                last_num = int(last_code.split('S')[1])
+                next_num = last_num + 1
+            else:
+                # First session for this patient
+                next_num = 1
+            
+            # Format with zero-padding
+            session_code = f"{patient_code}S{next_num:03d}"
+            
+            self.logger.info(f"Generated session code: {session_code}")
+            return session_code
+            
+        except Exception as e:
+            error_msg = f"Failed to generate session code for {patient_code}: {e!s}"
+            self.logger.error(error_msg, exc_info=True)
+            raise RepositoryError(error_msg) from e
+    
+    def create_session_with_code(
+        self, 
+        patient_code: str, 
+        file_path: str,
+        file_metadata: dict[str, Any] | None = None,
+        patient_id: str | None = None,
+        therapist_id: str | None = None
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Create a new therapy session with auto-generated chronological code.
+        
+        This method implements proper DRY/SOLID principles by encapsulating
+        all session creation logic in the repository layer.
+        
+        Args:
+            patient_code: Patient code (format: P###)
+            file_path: Path to the C3D file
+            file_metadata: Optional file metadata
+            patient_id: Optional patient UUID
+            therapist_id: Optional therapist UUID
+            
+        Returns:
+            tuple: (session_code, session_data)
+            
+        Raises:
+            RepositoryError: If creation fails
+        """
+        try:
+            # Generate next sequential session code for human readability
+            session_code = self.generate_next_session_code(patient_code)
+            
+            # Generate file hash for deduplication
+            import hashlib
+            file_hash_input = f"{file_path}:{file_metadata.get('size', 0) if file_metadata else 0}"
+            file_hash = hashlib.sha256(file_hash_input.encode()).hexdigest()
+            
+            # Prepare session data with session_code as primary key column
+            session_data = {
+                "session_code": session_code,  # Primary key column
+                "file_path": file_path,
+                "file_hash": file_hash,
+                "file_size_bytes": file_metadata.get("size", 0) if file_metadata else 0,
+                "processing_status": "processing",  # Start as processing
+                "game_metadata": file_metadata or {},  # Store file metadata only
+                "patient_id": patient_id,
+                "therapist_id": therapist_id,
+            }
+            
+            # Create the session
+            created_session = self.create_therapy_session(session_data)
+            
+            # Return both human-readable code and UUID
+            # session_code: For display/logging (P###S###)
+            # session_uuid: For foreign key references (UUID)
+            session_uuid = created_session.get("id")  # The UUID for FK references
+            
+            return session_code, session_uuid, created_session
+            
+        except Exception as e:
+            error_msg = f"Failed to create session with code: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             raise RepositoryError(error_msg) from e
 
@@ -212,6 +351,7 @@ class TherapySessionRepository(
             if error_message:
                 update_data["processing_error_message"] = error_message
 
+            # Update by session_code column (primary key)
             result = (
                 self.client.table("therapy_sessions")
                 .update(update_data)
