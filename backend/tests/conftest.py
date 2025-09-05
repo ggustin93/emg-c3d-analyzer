@@ -157,11 +157,9 @@ def cleanup_database_records():
                     tables_to_clean = [
                         "performance_scores",
                         "emg_statistics", 
-                        "processing_parameters",
-                        "bfr_monitoring_per_channel",
+                        "bfr_monitoring",  # Correct table name (not bfr_monitoring_per_channel)
                         "session_settings",
-                        "c3d_metadata",
-                        "c3d_technical_data",
+                        # c3d_metadata and c3d_technical_data tables removed - data now in therapy_sessions JSONB
                         "therapy_sessions"  # Parent table last
                     ]
                     
@@ -208,3 +206,74 @@ def auto_cleanup_test_artifacts(cleanup_supabase_test_files, cleanup_database_re
             # Everything will be cleaned up automatically after test
     """
     return cleanup_supabase_test_files, cleanup_database_records
+
+
+# =====================================================
+# Shared Mock Fixtures for Testing
+# =====================================================
+
+@pytest.fixture
+def mock_therapy_processor():
+    """Shared fixture providing properly configured TherapySessionProcessor.
+    
+    This fixture follows the DRY principle by providing a single source of truth
+    for processor mock configuration across all integration tests.
+    
+    Returns:
+        TherapySessionProcessor: Processor with properly configured mocks
+    """
+    from unittest.mock import AsyncMock, MagicMock
+    from uuid import uuid4
+    from services.clinical.therapy_session_processor import TherapySessionProcessor
+    
+    # Configure performance service with async methods
+    mock_performance_service = AsyncMock()
+    mock_performance_service.calculate_session_performance.return_value = {
+        "session_id": str(uuid4()),
+        "scoring_config_id": str(uuid4()),  # Required field
+        "overall_score": 85.0,
+        "compliance_score": 88.0,
+        "strength_score": 87.5,
+        "endurance_score": 86.0
+    }
+    
+    # Configure cache service with async methods
+    mock_cache_service = AsyncMock()
+    mock_cache_service.set_json.return_value = True
+    mock_cache_service.set_session_analytics.return_value = True
+    mock_cache_service.get_json.return_value = None  # Default: no cached data
+    
+    # Configure Supabase client with proper response structure
+    # Critical: Must return error=None, not a MagicMock object
+    mock_supabase_client = MagicMock()
+    mock_table = MagicMock()
+    
+    # Create proper response object
+    mock_response = MagicMock()
+    mock_response.error = None  # Critical: Set to None, not MagicMock
+    mock_response.data = [{"id": str(uuid4())}]  # Return sample data
+    
+    # Configure all table operations
+    mock_table.upsert.return_value.execute.return_value = mock_response
+    mock_table.insert.return_value.execute.return_value = mock_response
+    mock_table.select.return_value.execute.return_value = mock_response
+    mock_table.update.return_value.execute.return_value = mock_response
+    mock_table.delete.return_value.execute.return_value = mock_response
+    
+    mock_supabase_client.table.return_value = mock_table
+    
+    # Create processor with all properly configured mocks
+    processor = TherapySessionProcessor(
+        c3d_processor=MagicMock(),
+        emg_data_repo=MagicMock(),
+        session_repo=MagicMock(),
+        cache_service=mock_cache_service,
+        performance_service=mock_performance_service,
+        supabase_client=mock_supabase_client
+    )
+    
+    # Add additional repository attributes that tests expect
+    processor.patient_repo = MagicMock()
+    processor.user_repo = MagicMock()
+    
+    return processor

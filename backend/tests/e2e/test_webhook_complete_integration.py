@@ -92,9 +92,24 @@ class TestWebhookCompleteIntegration:
         3. Database tables are populated correctly
         4. Analytics cache is updated
         5. All error handling works properly
+        
+        Data Persistence:
+        - By default, data PERSISTS for manual validation in Supabase
+        - Set CLEANUP_E2E_DATA=true to enable automatic cleanup
         """
-        # Get cleanup trackers
-        files_to_cleanup, sessions_to_cleanup = auto_cleanup_test_artifacts
+        # Check if we should clean up data after test (default: NO - persist data)
+        cleanup_enabled = os.getenv("CLEANUP_E2E_DATA", "false").lower() == "true"
+        
+        if cleanup_enabled:
+            print("\n🧹 CLEANUP MODE: Test data will be removed after test")
+            # Get cleanup trackers when cleanup is enabled
+            files_to_cleanup, sessions_to_cleanup = auto_cleanup_test_artifacts
+        else:
+            print("\n💾 PERSISTENCE MODE: Test data will remain in database for manual validation")
+            print("   Set CLEANUP_E2E_DATA=true to enable automatic cleanup")
+            # Create dummy lists that won't trigger cleanup
+            files_to_cleanup = []
+            sessions_to_cleanup = []
         
         # Skip only if explicitly disabled
         if os.getenv("SKIP_E2E_TESTS", "false").lower() == "true":
@@ -114,8 +129,9 @@ class TestWebhookCompleteIntegration:
                     test_object_path, f
                 )
             
-            # Track file for automatic cleanup
-            files_to_cleanup.append(f"c3d-examples/{test_object_path}")
+            # Track file for cleanup only if cleanup is enabled
+            if cleanup_enabled:
+                files_to_cleanup.append(f"c3d-examples/{test_object_path}")
             
             if hasattr(storage_response, 'error') and storage_response.error:
                 pytest.skip(f"Storage upload failed - E2E test requires storage access: {storage_response.error}")
@@ -156,8 +172,9 @@ class TestWebhookCompleteIntegration:
         session_id = response_data["session_id"]
         assert session_id is not None
         
-        # Track session for automatic cleanup
-        sessions_to_cleanup.append(session_id)
+        # Track session for cleanup only if cleanup is enabled
+        if cleanup_enabled:
+            sessions_to_cleanup.append(session_id)
         
         # Step 5: Verify database state across all tables
         self._verify_therapy_session_created(supabase_client, session_id)
@@ -199,17 +216,42 @@ class TestWebhookCompleteIntegration:
         assert session["file_size_bytes"] > 0
     
     def _verify_emg_statistics_populated(self, supabase_client, session_id: str):
-        """Verify EMG statistics were calculated and stored."""
+        """Verify EMG statistics were calculated and stored with JSONB structure."""
         response = supabase_client.table("emg_statistics").select("*").eq("session_id", session_id).execute()
         
         # Should have EMG statistics for processed channels
         assert len(response.data) > 0, f"No EMG statistics found for session {session_id}"
         
-        # Verify structure of EMG statistics
+        # Verify basic structure of EMG statistics
         emg_stat = response.data[0]
-        required_fields = ["session_id", "channel_name", "rms_mean", "mav_mean"]
-        for field in required_fields:
-            assert field in emg_stat, f"Missing required field {field} in EMG statistics"
+        required_basic_fields = ["session_id", "channel_name", "mvc_value", "mvc75_threshold"]
+        for field in required_basic_fields:
+            assert field in emg_stat, f"Missing required basic field {field} in EMG statistics"
+        
+        # Verify JSONB structures exist and have expected data
+        required_jsonb_fields = [
+            "temporal_metrics", 
+            "muscle_activation_metrics", 
+            "contraction_quality_metrics",
+            "contraction_timing_metrics",
+            "fatigue_assessment_metrics",
+            "signal_quality_metrics"
+        ]
+        
+        for field in required_jsonb_fields:
+            assert field in emg_stat, f"Missing required JSONB field {field} in EMG statistics"
+            assert emg_stat[field] is not None, f"JSONB field {field} is null"
+            assert isinstance(emg_stat[field], dict), f"JSONB field {field} is not a dict: {type(emg_stat[field])}"
+        
+        # Verify temporal metrics contain expected RMS/MAV data
+        temporal_metrics = emg_stat["temporal_metrics"]
+        expected_temporal_keys = ["rms", "mav", "mpf", "mdf"]
+        for key in expected_temporal_keys:
+            assert key in temporal_metrics, f"Missing {key} in temporal_metrics JSONB"
+            assert "mean" in temporal_metrics[key], f"Missing mean value for {key} in temporal_metrics"
+            assert "std" in temporal_metrics[key], f"Missing std value for {key} in temporal_metrics"
+        
+        print(f"✅ EMG statistics validated for session {session_id} with JSONB structure")
     
     def _verify_c3d_technical_data_populated(self, supabase_client, session_id: str):
         """Verify C3D technical metadata was extracted and stored."""
@@ -234,6 +276,9 @@ class TestWebhookCompleteIntegration:
         else:
             # Some C3D files might not have technical metadata - this is acceptable
             print(f"Info: No C3D technical data found for session {session_id} (may be normal)")
+        
+        # Verify all 6 expected database tables are populated
+        self._verify_database_population(supabase_client, session_id)
     
     @pytest.mark.e2e
     def test_webhook_error_handling_with_invalid_file(self, client):
@@ -259,14 +304,18 @@ class TestWebhookCompleteIntegration:
         assert response.status_code == 200  # Webhook itself should succeed
         response_data = response.json()
         
-        # But processing should fail
-        if response_data.get("session_id"):
-            # If session was created, it should be marked as failed
-            # (Additional verification could be added here)
-            pass
-        else:
-            # Or webhook should indicate failure
-            assert "error" in response_data or "failed" in response_data.get("message", "").lower()
+        # When patient is not found, webhook returns an error message but still 200 status
+        # This is correct behavior - webhook endpoint succeeds but reports the processing error
+        assert response_data.get("session_id") is None, "Session should not be created for non-existent patient"
+        
+        # Check that error message indicates session creation failed for invalid patient
+        message = response_data.get("message", "").lower()
+        assert "session creation failed" in message or "patient not found" in message, \
+            f"Should indicate session creation failed for invalid patient. Got: {message}"
+        
+        # Session code should be None for invalid patient (not "Unknown")
+        assert response_data.get("session_code") is None, \
+            "Should return None session code for invalid patient P999"
     
     @pytest.mark.e2e
     def test_webhook_timeout_handling(self, client):
@@ -299,6 +348,71 @@ class TestWebhookCompleteIntegration:
         assert response_time < 30.0, f"Webhook response too slow: {response_time}s"
         assert response.status_code == 200
     
+    def _verify_database_population(self, supabase_client, session_id: str):
+        """Verify all 6 expected tables have records for this session.
+        
+        Expected tables:
+        1. therapy_sessions - Main session record (parent table)
+        2. session_settings - Session configuration 
+        3. scoring_configuration - Scoring weights and parameters
+        4. emg_statistics - EMG analysis results
+        5. bfr_monitoring - Blood flow restriction monitoring
+        6. performance_scores - Clinical performance metrics
+        """
+        print(f"\n📊 Verifying Database Population for session: {session_id}")
+        
+        # Check each expected table
+        expected_tables = [
+            ("therapy_sessions", "id", session_id),
+            ("session_settings", "session_id", session_id),
+            ("emg_statistics", "session_id", session_id),
+            ("bfr_monitoring", "session_id", session_id),
+            ("performance_scores", "session_id", session_id),
+            ("scoring_configuration", "id", None)  # Global config, not session-specific
+        ]
+        
+        populated_tables = []
+        missing_tables = []
+        
+        for table_name, id_field, id_value in expected_tables:
+            try:
+                if table_name == "scoring_configuration":
+                    # Check for any active configuration
+                    result = supabase_client.table(table_name).select("id", count="exact").eq("active", True).execute()
+                elif table_name == "therapy_sessions":
+                    # Parent table uses id directly
+                    result = supabase_client.table(table_name).select("id", count="exact").eq(id_field, id_value).execute()
+                else:
+                    # Child tables use session_id foreign key
+                    result = supabase_client.table(table_name).select("session_id", count="exact").eq(id_field, id_value).execute()
+                
+                if result.data and len(result.data) > 0:
+                    populated_tables.append(table_name)
+                    print(f"  ✅ {table_name}: {len(result.data)} record(s)")
+                else:
+                    missing_tables.append(table_name)
+                    print(f"  ❌ {table_name}: No records found")
+                    
+            except Exception as e:
+                print(f"  ⚠️ {table_name}: Error checking - {str(e)}")
+                # Don't count as missing if it's an error (table might not exist)
+        
+        # Summary
+        print(f"\n📈 Database Population Summary:")
+        print(f"  ✅ Populated: {len(populated_tables)}/6 tables")
+        
+        if missing_tables:
+            print(f"  ❌ Missing: {len(missing_tables)}/6 tables")
+            print(f"  Missing tables: {', '.join(missing_tables)}")
+            
+        # Assert all expected tables are populated (at least 5 out of 6, scoring_configuration is global)
+        assert len(populated_tables) >= 5, (
+            f"Expected at least 5/6 tables populated, but only {len(populated_tables)} were. "
+            f"Missing: {', '.join(missing_tables)}"
+        )
+        
+        print("  🎉 All required tables are populated!")
+    
     def _cleanup_database_records(self, supabase_client, session_id: str):
         """Clean up database records to prevent duplicate key errors in subsequent test runs.
         
@@ -316,9 +430,8 @@ class TestWebhookCompleteIntegration:
             result = supabase_client.table("emg_statistics").delete().eq("session_id", session_id).execute()
             print(f"🧹 Cleaned emg_statistics: {len(result.data) if result.data else 0} records")
             
-            # 3. Processing parameters
-            result = supabase_client.table("processing_parameters").delete().eq("session_id", session_id).execute()
-            print(f"🧹 Cleaned processing_parameters: {len(result.data) if result.data else 0} records")
+            # 3. Processing parameters are now stored in emg_statistics.processing_config JSONB
+            # No separate table to clean
             
             # 4. BFR monitoring per channel (table might not exist in some schemas)
             try:

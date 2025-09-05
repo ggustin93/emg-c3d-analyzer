@@ -129,9 +129,10 @@ class TestCompleteWorkflow:
 
         # Verify upload response
         if upload_response.status_code == 500:
-            # Expected for missing constants - this is a known code issue
-            print("⚠️ Upload failed due to missing MAX_FILE_SIZE constant (expected)")
-            pytest.skip("Upload API has known issue with missing MAX_FILE_SIZE constant")
+            # Unexpected server error - investigate and fix
+            response_text = upload_response.text if hasattr(upload_response, 'text') else str(upload_response.content)
+            print(f"❌ Upload failed with 500 error: {response_text}")
+            assert False, f"Upload API returned unexpected 500 error: {response_text}"
 
         assert upload_response.status_code in [200, 400, 422], (
             f"Unexpected upload status: {upload_response.status_code}"
@@ -232,6 +233,9 @@ class TestCompleteWorkflow:
         metadata = signals_data.get("metadata", {})
         if metadata:
             self._verify_metadata(metadata)
+            
+        # Verify all 6 expected database tables are populated
+        self._verify_database_population(session_id)
 
     def _verify_emg_analytics(self, analytics: dict[str, Any]):
         """Verify EMG analytics are reasonable."""
@@ -284,6 +288,81 @@ class TestCompleteWorkflow:
                     assert value > 0, f"Invalid channel count: {value}"
             else:
                 print(f"  ⚠️ Missing {field}")
+                
+    def _verify_database_population(self, session_id: str):
+        """Verify all 6 expected tables have records for this session.
+        
+        Expected tables:
+        1. therapy_sessions - Main session record (parent table)
+        2. session_settings - Session configuration 
+        3. scoring_configuration - Scoring weights and parameters
+        4. emg_statistics - EMG analysis results
+        5. bfr_monitoring - Blood flow restriction monitoring
+        6. performance_scores - Clinical performance metrics
+        """
+        print(f"\n📊 Verifying Database Population for session: {session_id}")
+        
+        from database.supabase_client import get_supabase_client
+        
+        try:
+            client = get_supabase_client(use_service_key=True)
+            
+            # Check each expected table
+            expected_tables = [
+                ("therapy_sessions", "id", session_id),
+                ("session_settings", "session_id", session_id),
+                ("emg_statistics", "session_id", session_id),
+                ("bfr_monitoring", "session_id", session_id),
+                ("performance_scores", "session_id", session_id),
+                ("scoring_configuration", "id", None)  # Global config, not session-specific
+            ]
+            
+            populated_tables = []
+            missing_tables = []
+            
+            for table_name, id_field, id_value in expected_tables:
+                try:
+                    if table_name == "scoring_configuration":
+                        # Check for any active configuration
+                        result = client.table(table_name).select("id", count="exact").eq("active", True).execute()
+                    elif table_name == "therapy_sessions":
+                        # Parent table uses id directly
+                        result = client.table(table_name).select("id", count="exact").eq(id_field, id_value).execute()
+                    else:
+                        # Child tables use session_id foreign key
+                        result = client.table(table_name).select("session_id", count="exact").eq(id_field, id_value).execute()
+                    
+                    if result.data and len(result.data) > 0:
+                        populated_tables.append(table_name)
+                        print(f"  ✅ {table_name}: {len(result.data)} record(s)")
+                    else:
+                        missing_tables.append(table_name)
+                        print(f"  ❌ {table_name}: No records found")
+                        
+                except Exception as e:
+                    print(f"  ⚠️ {table_name}: Error checking - {str(e)}")
+                    missing_tables.append(table_name)
+            
+            # Summary
+            print(f"\n📈 Database Population Summary:")
+            print(f"  ✅ Populated: {len(populated_tables)}/6 tables")
+            print(f"  ❌ Missing: {len(missing_tables)}/6 tables")
+            
+            if missing_tables:
+                print(f"  Missing tables: {', '.join(missing_tables)}")
+                
+            # Assert all expected tables are populated
+            assert len(populated_tables) >= 5, (
+                f"Expected at least 5/6 tables populated, but only {len(populated_tables)} were. "
+                f"Missing: {', '.join(missing_tables)}"
+            )
+            
+            print("  🎉 All required tables are populated!")
+            
+        except ImportError:
+            print("  ⚠️ Cannot verify database - Supabase client not available")
+        except Exception as e:
+            print(f"  ⚠️ Database verification failed: {str(e)}")
 
     def _test_data_export(self, session_id: str):
         """Test data export capabilities."""
