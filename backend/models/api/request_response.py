@@ -72,6 +72,25 @@ class ChannelAnalytics(BaseModel):
     mdf_temporal_stats: TemporalAnalysisStats | None = None
     fatigue_index_temporal_stats: TemporalAnalysisStats | None = None
 
+    # Clinical grouping (optional) - Enhanced data structure from JSONB clinical groups
+    # These fields provide a clinical perspective while maintaining backwards compatibility
+    clinical_quality: dict[str, Any] | None = Field(
+        None, 
+        description="Clinical contraction quality metrics: compliance rates, total counts, percentages"
+    )
+    clinical_timing: dict[str, Any] | None = Field(
+        None,
+        description="Clinical timing metrics: durations, time under tension, thresholds"  
+    )
+    clinical_activation: dict[str, Any] | None = Field(
+        None,
+        description="Clinical muscle activation metrics: RMS, MAV, amplitudes with variability"
+    )
+    clinical_fatigue: dict[str, Any] | None = Field(
+        None,
+        description="Clinical fatigue assessment metrics: MPF, MDF, fatigue indices, slopes"
+    )
+
 
 class GameSessionParameters(BaseModel):
     session_mvc_value: float | None = Field(

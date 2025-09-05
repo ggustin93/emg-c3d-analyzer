@@ -139,6 +139,26 @@ class SessionDefaults:
     THERAPIST_CODE: str = "DEV001"  # Development fallback
 
 
+@dataclass(frozen=True)
+class UserDefaults:
+    """
+    Default user codes for testing, development, and fallback scenarios.
+    
+    These codes provide human-readable identifiers for users in the system.
+    Format: [Role][Number] where Role = T (therapist), R (researcher), A (admin)
+    """
+    
+    # Default codes for each role (used in testing/development)
+    DEFAULT_THERAPIST_CODE: str = "T001"
+    DEFAULT_RESEARCHER_CODE: str = "R001"
+    DEFAULT_ADMIN_CODE: str = "A001"
+    
+    # Special codes for fallback scenarios
+    UNKNOWN_THERAPIST_CODE: str = "T000"  # Used when therapist cannot be identified from C3D
+    UNKNOWN_RESEARCHER_CODE: str = "R000"  # Reserved for future use
+    UNKNOWN_ADMIN_CODE: str = "A000"      # Reserved for future use
+
+
 # =============================================================================
 # 4. TECHNICAL INFRASTRUCTURE
 # =============================================================================
@@ -146,7 +166,7 @@ class SessionDefaults:
 SUPPORTED_FILE_EXTENSIONS = [".c3d"]
 TEMP_DIR = "data/temp_uploads"
 ALLOWED_EXTENSIONS = SUPPORTED_FILE_EXTENSIONS
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
 # API configuration
 API_TITLE = "GHOSTLY+ EMG C3D Analyzer"

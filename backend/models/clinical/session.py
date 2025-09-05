@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from models.shared.base import DatabaseBaseModel, TimestampMixin
 from models.shared.enums import ProcessingStatus
@@ -79,51 +79,209 @@ class EMGStatisticsBase(DatabaseBaseModel):
     session_id: UUID
     channel_name: str
 
-    # Contraction metrics
-    total_contractions: int = Field(0, ge=0)
-    good_contractions: int = Field(0, ge=0)
-    mvc75_compliance_rate: int = Field(0, ge=0)  # renamed from mvc_contraction_count
-    duration_compliance_rate: int = Field(0, ge=0)  # renamed from duration_contraction_count
-    compliance_rate: float = Field(0.0, ge=0.0, le=1.0)
-
-    # MVC analysis
+    # Core MVC fields (preserved for backwards compatibility)
     mvc_value: float | None = Field(None, gt=0)
-    mvc_threshold: float | None = Field(None, gt=0)
-    mvc75_threshold: float | None = None  # renamed from mvc_threshold_actual_value
-
-    # Duration analysis
-    duration_threshold_actual_value: float | None = None
-    total_time_under_tension_ms: float | None = Field(None, ge=0)
-    avg_duration_ms: float | None = Field(None, ge=0)
-    max_duration_ms: float | None = Field(None, ge=0)
-    min_duration_ms: float | None = Field(None, ge=0)
-
-    # Amplitude analysis
-    avg_amplitude: float | None = Field(None, ge=0)
-    max_amplitude: float | None = Field(None, ge=0)
-
-    # Temporal statistics
-    rms_mean: float | None = Field(None, ge=0)
-    rms_std: float | None = Field(None, ge=0)
-    mav_mean: float | None = Field(None, ge=0)
-    mav_std: float | None = Field(None, ge=0)
-    mpf_mean: float | None = Field(None, ge=0)
-    mpf_std: float | None = Field(None, ge=0)
-    mdf_mean: float | None = Field(None, ge=0)
-    mdf_std: float | None = Field(None, ge=0)
-
-    # Fatigue analysis
-    fatigue_index_mean: float | None = None
-    fatigue_index_std: float | None = Field(None, ge=0)
-    fatigue_index_fi_nsm5: float | None = None
-
-    # Quality metrics
+    mvc75_threshold: float | None = None
     signal_quality_score: float | None = Field(None, ge=0.0, le=1.0)
-    
-    # New JSONB fields for detailed storage
+
+    # New JSONB clinical groups (primary structure)
+    contraction_quality_metrics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Clinical contraction quality metrics: total counts, compliance rates, MVC75 and duration compliance"
+    )
+    contraction_timing_metrics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Clinical timing metrics: durations (avg, min, max), time under tension, duration thresholds"
+    )
+    muscle_activation_metrics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Clinical muscle activation metrics: RMS, MAV, amplitude measurements with variability measures"
+    )
+    fatigue_assessment_metrics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Clinical fatigue assessment metrics: MPF, MDF frequency analysis, fatigue indices, slopes"
+    )
+
+    # Existing JSONB fields (preserved)
     contractions_detail: list[dict] | None = Field(None, description="Detailed contraction data array")
-    signal_quality_metrics: dict | None = Field(None, description="Signal quality metrics object")  
+    signal_quality_metrics: dict | None = Field(None, description="Signal quality metrics object")
     processing_config: dict | None = Field(None, description="Processing parameters used for analysis")
+    temporal_metrics: dict | None = Field(None, description="Temporal analysis results including slopes and trends")
+
+    # Deprecated fields - maintained temporarily for backwards compatibility
+    # Will be removed in future migration after validation period
+    total_contractions: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.total_contractions")
+    good_contractions: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.overall_compliant_contractions")
+    mvc75_compliance_rate: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.mvc75_compliant_contractions")
+    duration_compliance_rate: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.duration_compliant_contractions")
+    compliance_rate: float = Field(0.0, ge=0.0, le=1.0, description="DEPRECATED: Use computed rate from contraction_quality_metrics")
+
+    # Deprecated MVC fields
+    mvc_threshold: float | None = Field(None, gt=0, description="DEPRECATED: Duplicate of mvc75_threshold")
+    
+    # Deprecated duration fields
+    duration_threshold_actual_value: float | None = Field(None, description="DEPRECATED: Stored in processing_config JSONB")
+    total_time_under_tension_ms: float | None = Field(None, ge=0, description="DEPRECATED: Use contraction_timing_metrics.total_time_under_tension_ms")
+    avg_duration_ms: float | None = Field(None, ge=0, description="DEPRECATED: Use contraction_timing_metrics.avg_duration_ms")
+    max_duration_ms: float | None = Field(None, ge=0, description="DEPRECATED: Use contraction_timing_metrics.max_duration_ms")
+    min_duration_ms: float | None = Field(None, ge=0, description="DEPRECATED: Use contraction_timing_metrics.min_duration_ms")
+
+    # Deprecated amplitude fields
+    avg_amplitude: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.avg_amplitude")
+    max_amplitude: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.max_amplitude")
+    std_amplitude: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.std_amplitude")
+
+    # Deprecated temporal statistics
+    rms_mean: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.rms_mean")
+    rms_std: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.rms_std")
+    mav_mean: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.mav_mean")
+    mav_std: float | None = Field(None, ge=0, description="DEPRECATED: Use muscle_activation_metrics.mav_std")
+    mpf_mean: float | None = Field(None, ge=0, description="DEPRECATED: Use fatigue_assessment_metrics.mpf_mean")
+    mpf_std: float | None = Field(None, ge=0, description="DEPRECATED: Use fatigue_assessment_metrics.mpf_std")
+    mdf_mean: float | None = Field(None, ge=0, description="DEPRECATED: Use fatigue_assessment_metrics.mdf_mean")
+    mdf_std: float | None = Field(None, ge=0, description="DEPRECATED: Use fatigue_assessment_metrics.mdf_std")
+
+    # Deprecated fatigue analysis
+    fatigue_index_mean: float | None = Field(None, description="DEPRECATED: Use fatigue_assessment_metrics.fatigue_index_mean")
+    fatigue_index_std: float | None = Field(None, ge=0, description="DEPRECATED: Use fatigue_assessment_metrics.fatigue_index_std")
+    fatigue_index_fi_nsm5: float | None = Field(None, description="DEPRECATED: Use fatigue_assessment_metrics.fatigue_index_fi_nsm5")
+
+    # New clarity field for backwards compatibility
+    overall_compliant_contractions: int = Field(0, ge=0, description="Number of contractions meeting BOTH MVC75 AND duration criteria (renamed from good_contractions)")
+
+    # JSONB field validators for clinical data integrity
+    @field_validator('contraction_quality_metrics')
+    @classmethod
+    def validate_contraction_quality_metrics(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """Validate contraction quality metrics JSONB structure and clinical bounds."""
+        if not v:
+            return {}
+        
+        # Expected fields with validation
+        expected_fields = {
+            'total_contractions': (int, 0, 1000),  # (type, min, max)
+            'overall_compliant_contractions': (int, 0, 1000),
+            'mvc75_compliant_contractions': (int, 0, 1000),
+            'duration_compliant_contractions': (int, 0, 1000),
+            'mvc75_compliance_percentage': (float, 0.0, 100.0),
+            'duration_compliance_percentage': (float, 0.0, 100.0),
+            'overall_compliance_percentage': (float, 0.0, 100.0)
+        }
+        
+        validated = {}
+        for field, (expected_type, min_val, max_val) in expected_fields.items():
+            if field in v:
+                value = v[field]
+                if isinstance(value, expected_type):
+                    if min_val <= value <= max_val:
+                        validated[field] = value
+                    else:
+                        raise ValueError(f"contraction_quality_metrics.{field} must be between {min_val} and {max_val}, got {value}")
+                else:
+                    raise ValueError(f"contraction_quality_metrics.{field} must be {expected_type.__name__}, got {type(value).__name__}")
+        
+        return validated
+
+    @field_validator('contraction_timing_metrics')
+    @classmethod
+    def validate_contraction_timing_metrics(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """Validate contraction timing metrics JSONB structure and clinical bounds."""
+        if not v:
+            return {}
+        
+        # Expected fields with validation
+        expected_fields = {
+            'avg_duration_ms': (float, 0.0, 30000.0),  # Up to 30 seconds per contraction
+            'max_duration_ms': (float, 0.0, 60000.0),  # Up to 60 seconds max
+            'min_duration_ms': (float, 0.0, 30000.0),
+            'total_time_under_tension_ms': (float, 0.0, 1800000.0),  # Up to 30 minutes total
+            'std_duration_ms': (float, 0.0, 10000.0),
+            'duration_threshold_ms': (float, 100.0, 10000.0)  # Clinical threshold range
+        }
+        
+        validated = {}
+        for field, (expected_type, min_val, max_val) in expected_fields.items():
+            if field in v:
+                value = v[field]
+                if isinstance(value, expected_type):
+                    if min_val <= value <= max_val:
+                        validated[field] = value
+                    else:
+                        raise ValueError(f"contraction_timing_metrics.{field} must be between {min_val} and {max_val}, got {value}")
+                else:
+                    raise ValueError(f"contraction_timing_metrics.{field} must be {expected_type.__name__}, got {type(value).__name__}")
+        
+        return validated
+
+    @field_validator('muscle_activation_metrics')
+    @classmethod
+    def validate_muscle_activation_metrics(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """Validate muscle activation metrics JSONB structure and clinical bounds."""
+        if not v:
+            return {}
+        
+        # Expected fields with validation
+        expected_fields = {
+            'rms_mean': (float, 0.0, 10000.0),  # Clinical EMG range in microvolts
+            'rms_std': (float, 0.0, 5000.0),
+            'mav_mean': (float, 0.0, 10000.0),
+            'mav_std': (float, 0.0, 5000.0),
+            'avg_amplitude': (float, 0.0, 10000.0),
+            'max_amplitude': (float, 0.0, 20000.0),
+            'std_amplitude': (float, 0.0, 5000.0),
+            'rms_coefficient_of_variation': (float, 0.0, 500.0),  # CV% up to 500%
+            'mav_coefficient_of_variation': (float, 0.0, 500.0)
+        }
+        
+        validated = {}
+        for field, (expected_type, min_val, max_val) in expected_fields.items():
+            if field in v:
+                value = v[field]
+                if isinstance(value, expected_type):
+                    if min_val <= value <= max_val:
+                        validated[field] = value
+                    else:
+                        raise ValueError(f"muscle_activation_metrics.{field} must be between {min_val} and {max_val}, got {value}")
+                else:
+                    raise ValueError(f"muscle_activation_metrics.{field} must be {expected_type.__name__}, got {type(value).__name__}")
+        
+        return validated
+
+    @field_validator('fatigue_assessment_metrics')
+    @classmethod
+    def validate_fatigue_assessment_metrics(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """Validate fatigue assessment metrics JSONB structure and clinical bounds."""
+        if not v:
+            return {}
+        
+        # Expected fields with validation
+        expected_fields = {
+            'mpf_mean': (float, 0.0, 500.0),  # Mean Power Frequency in Hz
+            'mpf_std': (float, 0.0, 100.0),
+            'mdf_mean': (float, 0.0, 500.0),  # Median Frequency in Hz
+            'mdf_std': (float, 0.0, 100.0),
+            'fatigue_index_mean': (float, -5.0, 5.0),  # Fatigue index range
+            'fatigue_index_std': (float, 0.0, 10.0),
+            'fatigue_index_fi_nsm5': (float, -5.0, 5.0),
+            'mpf_coefficient_of_variation': (float, 0.0, 200.0),  # CV% 
+            'mdf_coefficient_of_variation': (float, 0.0, 200.0),
+            'fatigue_slope_mpf': (float, -10.0, 10.0),  # Fatigue slope range
+            'fatigue_slope_mdf': (float, -10.0, 10.0)
+        }
+        
+        validated = {}
+        for field, (expected_type, min_val, max_val) in expected_fields.items():
+            if field in v:
+                value = v[field]
+                if isinstance(value, expected_type):
+                    if min_val <= value <= max_val:
+                        validated[field] = value
+                    else:
+                        raise ValueError(f"fatigue_assessment_metrics.{field} must be between {min_val} and {max_val}, got {value}")
+                else:
+                    raise ValueError(f"fatigue_assessment_metrics.{field} must be {expected_type.__name__}, got {type(value).__name__}")
+        
+        return validated
 
 
 class EMGStatisticsCreate(EMGStatisticsBase):
@@ -133,13 +291,75 @@ class EMGStatisticsCreate(EMGStatisticsBase):
 class EMGStatisticsUpdate(BaseModel):
     """Model for updating EMG statistics."""
 
-    total_contractions: int | None = Field(None, ge=0)
-    good_contractions: int | None = Field(None, ge=0)
-    mvc_contraction_count: int | None = Field(None, ge=0)
-    duration_contraction_count: int | None = Field(None, ge=0)
-    compliance_rate: float | None = Field(None, ge=0.0, le=1.0)
+    # New JSONB clinical groups (primary update fields)
+    contraction_quality_metrics: dict[str, Any] | None = Field(
+        None,
+        description="Clinical contraction quality metrics: total counts, compliance rates, MVC75 and duration compliance"
+    )
+    contraction_timing_metrics: dict[str, Any] | None = Field(
+        None,
+        description="Clinical timing metrics: durations (avg, min, max), time under tension, duration thresholds"
+    )
+    muscle_activation_metrics: dict[str, Any] | None = Field(
+        None,
+        description="Clinical muscle activation metrics: RMS, MAV, amplitude measurements with variability measures"
+    )
+    fatigue_assessment_metrics: dict[str, Any] | None = Field(
+        None,
+        description="Clinical fatigue assessment metrics: MPF, MDF frequency analysis, fatigue indices, slopes"
+    )
+
+    # Core fields that may be updated
+    mvc_value: float | None = Field(None, gt=0)
+    mvc75_threshold: float | None = None
     signal_quality_score: float | None = Field(None, ge=0.0, le=1.0)
-    # Add other fields as needed
+    overall_compliant_contractions: int | None = Field(None, ge=0)
+
+    # Existing JSONB fields
+    contractions_detail: list[dict] | None = None
+    signal_quality_metrics: dict | None = None
+    processing_config: dict | None = None
+    temporal_metrics: dict | None = None
+
+    # Deprecated fields - maintained temporarily for backwards compatibility
+    total_contractions: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.total_contractions")
+    good_contractions: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.overall_compliant_contractions")
+    mvc75_compliance_rate: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.mvc75_compliant_contractions")
+    duration_compliance_rate: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.duration_compliant_contractions")
+    compliance_rate: float | None = Field(None, ge=0.0, le=1.0, description="DEPRECATED: Use computed rate from contraction_quality_metrics")
+
+    # Apply the same validators as the base model
+    @field_validator('contraction_quality_metrics')
+    @classmethod
+    def validate_contraction_quality_metrics(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Validate contraction quality metrics JSONB structure and clinical bounds."""
+        if v is None:
+            return None
+        return EMGStatisticsBase.validate_contraction_quality_metrics(v)
+
+    @field_validator('contraction_timing_metrics')
+    @classmethod
+    def validate_contraction_timing_metrics(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Validate contraction timing metrics JSONB structure and clinical bounds."""
+        if v is None:
+            return None
+        return EMGStatisticsBase.validate_contraction_timing_metrics(v)
+
+    @field_validator('muscle_activation_metrics')
+    @classmethod
+    def validate_muscle_activation_metrics(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Validate muscle activation metrics JSONB structure and clinical bounds."""
+        if v is None:
+            return None
+        return EMGStatisticsBase.validate_muscle_activation_metrics(v)
+
+    @field_validator('fatigue_assessment_metrics')
+    @classmethod
+    def validate_fatigue_assessment_metrics(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Validate fatigue assessment metrics JSONB structure and clinical bounds."""
+        if v is None:
+            return None
+        return EMGStatisticsBase.validate_fatigue_assessment_metrics(v)
 
 
 class EMGStatistics(EMGStatisticsBase):

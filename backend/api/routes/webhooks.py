@@ -1,8 +1,24 @@
-"""Clean Webhook System for C3D File Processing.
-===========================================
+"""Webhook System - STATEFUL Database Processing.
+====================================================
 
-SOLID, DRY, KISS implementation for Supabase Storage webhooks.
-Works with actual database schema (therapy_sessions, emg_statistics, etc.)
+PURPOSE: Process C3D files from Supabase Storage events WITH full database persistence.
+
+KEY BEHAVIORS:
+- ✅ STORES: Complete analysis results in database
+- ✅ CREATES: therapy_sessions, emg_statistics records
+- ❌ DOES NOT: Return EMG signals (background processing)
+
+USE CASE: Production workflow where C3D files are uploaded to Supabase Storage
+and need complete database persistence with background processing.
+
+DIFFERENCE FROM UPLOAD:
+- Webhook Route: Stateful processing → Full DB storage → No signal return
+- Upload Route: Stateless processing → No DB storage → Returns signals
+
+SOLID PRINCIPLES: 
+- Single Responsibility: Webhook event handling and DB persistence
+- Open/Closed: Extensible for new webhook types
+- DRY: Reuses TherapySessionProcessor for consistency
 
 Author: EMG C3D Analyzer Team
 Date: 2025-08-14
@@ -21,13 +37,38 @@ from services.clinical.repositories.patient_repository import PatientRepository
 from services.clinical.therapy_session_processor import TherapySessionProcessor
 from services.infrastructure.webhook_security import WebhookSecurity
 
+# Import dependencies for TherapySessionProcessor
+from services.clinical.repositories.emg_data_repository import EMGDataRepository  
+from services.clinical.repositories.therapy_session_repository import TherapySessionRepository
+from services.cache.cache_service import CacheService
+from services.clinical.performance_scoring_service import PerformanceScoringService
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 # Initialize core services
-session_processor = TherapySessionProcessor()
 webhook_security = WebhookSecurity()
+
+
+def get_therapy_session_processor():
+    """Factory function to create TherapySessionProcessor with all dependencies."""
+    supabase_client = get_supabase_client(use_service_key=True)
+    
+    # Initialize all dependencies (c3d_processor will be created per-file)
+    emg_data_repo = EMGDataRepository(supabase_client)
+    session_repo = TherapySessionRepository(supabase_client)
+    cache_service = CacheService()
+    performance_service = PerformanceScoringService(supabase_client)
+    
+    return TherapySessionProcessor(
+        c3d_processor=None,  # Will be created per-file with file_path
+        emg_data_repo=emg_data_repo,
+        session_repo=session_repo,
+        cache_service=cache_service,
+        performance_service=performance_service,
+        supabase_client=supabase_client
+    )
 
 
 # === REQUEST/RESPONSE MODELS ===
@@ -142,6 +183,9 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
 
         # Create therapy session record (immediate response)
         try:
+            # Initialize processor with dependencies
+            session_processor = get_therapy_session_processor()
+            
             session_code = await session_processor.create_session(
                 file_path=f"{event.bucket_id}/{event.object_name}",
                 file_metadata=event.record.get("metadata", {}),
@@ -149,9 +193,14 @@ async def handle_c3d_upload(request: Request, background_tasks: BackgroundTasks)
                 therapist_id=therapist_uuid,
             )
             
-            # Get session details to retrieve UUID (session_id)
-            session_details = await session_processor.get_session_status(session_code)
-            session_id = session_details["id"] if session_details else None
+            # Get the UUID that was created (for FK references)
+            # The processor stores it after creation
+            session_id = getattr(session_processor, '_last_session_uuid', None)
+            
+            # Fallback: query by session_code if UUID not available
+            if not session_id:
+                session_details = await session_processor.get_session_status(session_code)
+                session_id = session_details["id"] if session_details else None
             
         except Exception as e:
             logger.error(f"Failed to create session for {event.object_name}: {e!s}", exc_info=True)
@@ -205,6 +254,8 @@ async def get_processing_status(session_code: str) -> dict:
         Session status and analysis results if available
     """
     try:
+        # Initialize processor with dependencies
+        session_processor = get_therapy_session_processor()
         status = await session_processor.get_session_status(session_code)
 
         if not status:
@@ -247,6 +298,9 @@ async def _process_c3d_background(session_code: str, bucket: str, object_path: s
     try:
         logger.info(f"🔄 Background processing started: {session_code}")
 
+        # Initialize processor with dependencies
+        session_processor = get_therapy_session_processor()
+        
         # Update status to processing
         await session_processor.update_session_status(session_code, "processing")
 
@@ -268,6 +322,9 @@ async def _process_c3d_background(session_code: str, bucket: str, object_path: s
     except Exception as e:
         logger.error(f"❌ Background processing failed: {e!s}", exc_info=True)
 
+        # Initialize processor with dependencies (for error handling)
+        session_processor = get_therapy_session_processor()
+        
         # Update status to failed
         await session_processor.update_session_status(session_code, "failed", error_message=str(e))
 

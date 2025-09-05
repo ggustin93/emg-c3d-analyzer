@@ -1,8 +1,20 @@
-"""Upload Routes.
-============
+"""Upload Routes - STATELESS EMG Processing.
+================================================
 
-C3D file upload and processing endpoints.
-Single responsibility: File upload and EMG analysis.
+PURPOSE: Direct C3D file upload for immediate EMG analysis WITHOUT database storage.
+
+KEY BEHAVIORS:
+- ✅ RETURNS: Full EMG signals and analysis results
+- ❌ DOES NOT: Store data in Supabase database
+- ❌ DOES NOT: Create therapy_sessions records
+
+USE CASE: Testing, preview, or temporary analysis where persistence is not needed.
+
+DIFFERENCE FROM WEBHOOK:
+- Upload Route: Stateless processing → Returns signals → No DB storage
+- Webhook Route: Stateful processing → No signal return → Full DB storage
+
+SINGLE RESPONSIBILITY: Stateless file processing with EMG signal extraction.
 """
 
 import logging
@@ -28,14 +40,15 @@ from models import (
     GameSessionParameters,
     ProcessingOptions,
 )
-from services.clinical.therapy_session_processor import TherapySessionProcessor
+# Direct C3D processing for stateless upload endpoint
+from services.c3d.processor import GHOSTLYC3DProcessor
+from config import PROCESSING_VERSION
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
-# Initialize therapy session processor (same as webhook route)
-session_processor = TherapySessionProcessor()
+
 
 
 @router.post("", response_model=EMGAnalysisResult)  # No slash = exact match on /upload
@@ -85,17 +98,53 @@ async def upload_file(
             shutil.copyfileobj(file.file, tmp)
             tmp_path = tmp.name
 
-        # Process the file using TherapySessionProcessor (SINGLE SOURCE OF TRUTH)
-        # Same processing logic as webhook route - unified approach
-        # Wrap CPU-bound sync processing in thread pool
-        processing_result = await run_in_threadpool(
-            session_processor.process_c3d_file_stateless,
-            file_path=tmp_path,
-            processing_opts=processing_opts,
-            session_params=session_params,
-        )
-
-        result_data = processing_result["processing_result"]
+        # STATELESS C3D Processing - NO database storage, returns signals directly
+        # This is the correct architecture for upload endpoint (vs webhook which uses TherapySessionProcessor)
+        logger.info(f"🔄 Starting stateless C3D processing: {tmp_path}")
+        
+        try:
+            # Initialize C3D processor directly with the temporary file
+            c3d_processor = GHOSTLYC3DProcessor(tmp_path)
+            
+            # Process the file stateless - returns all signals and analytics
+            processing_result = await run_in_threadpool(
+                c3d_processor.process_file,
+                processing_opts=processing_opts if processing_opts else ProcessingOptions(),
+                session_game_params=session_params,
+                include_signals=True  # Always include signals for stateless upload
+            )
+            
+            # Extract all C3D parameters from metadata (where C3DUtils puts them)
+            metadata = processing_result.get("metadata", {})
+            processing_result["c3d_parameters"] = {
+                # Technical parameters from C3D file
+                "sampling_rate": metadata.get("sampling_rate"),
+                "duration": metadata.get("duration_seconds"),  # Note: field name is duration_seconds
+                "frame_count": metadata.get("frame_count"), 
+                "channel_count": metadata.get("channel_count", len(processing_result.get("analytics", {}))),
+                # Game-related fields from C3D file
+                "game_name": metadata.get("game_name"),
+                "level": metadata.get("level"),
+                "therapist_id": metadata.get("therapist_id"),
+                "group_id": metadata.get("group_id"),
+                "player_name": metadata.get("player_name"),
+                "player_id": metadata.get("player_id"),  # If available
+                "time": metadata.get("time"),
+                # Processing metadata
+                "processing_version": PROCESSING_VERSION,
+                "processed_at": datetime.now().isoformat(),
+                "stateless_mode": True
+            }
+            
+            result_data = processing_result
+            logger.info(f"✅ Stateless processing completed: {len(result_data.get('analytics', {}))} channels")
+            
+        except Exception as e:
+            logger.exception(f"❌ C3D processing failed: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"C3D processing failed: {str(e)}"
+            )
 
         # Create result object
         game_metadata = GameMetadata(**result_data["metadata"])
@@ -106,12 +155,16 @@ async def upload_file(
         try:
             c3d_params = result_data.get("c3d_parameters", {})
             if not c3d_params:
-                # Fallback: extract basic parameters from file metadata
+                # Fallback: extract parameters from metadata (where they actually are)
+                metadata = result_data.get("metadata", {})
                 c3d_params = {
-                    "sampling_rate": result_data.get("sampling_rate"),
-                    "duration": result_data.get("duration"),
-                    "frame_count": result_data.get("frame_count"),
-                    "channel_count": len(result_data.get("analytics", {})),
+                    "sampling_rate": metadata.get("sampling_rate"),
+                    "duration": metadata.get("duration_seconds"),
+                    "frame_count": metadata.get("frame_count"),
+                    "channel_count": metadata.get("channel_count", len(result_data.get("analytics", {}))),
+                    "player_name": metadata.get("player_name"),
+                    "therapist_id": metadata.get("therapist_id"),
+                    "level": metadata.get("level"),
                 }
         except Exception as e:
             logger.warning(f"Failed to extract C3D parameters: {e!s}")
