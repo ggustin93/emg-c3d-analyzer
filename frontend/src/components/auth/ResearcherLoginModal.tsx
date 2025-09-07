@@ -25,7 +25,7 @@ const ResearcherLoginModal: React.FC<ResearcherLoginModalProps> = ({
   open,
   onOpenChange
 }) => {
-  const { login, isLoading } = useAuth();
+  const { login, loading } = useAuth();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: ''
@@ -56,15 +56,15 @@ const ResearcherLoginModal: React.FC<ResearcherLoginModalProps> = ({
     setError(null);
 
     try {
-      const response = await login(credentials);
+      const response = await login(credentials.email, credentials.password);
       
-      if (response.success) {
+      if (response.data && !response.error) {
         // Close modal on successful login
         onOpenChange(false);
         // Reset form
         setCredentials({ email: '', password: '' });
       } else {
-        setError(response.error || 'Login failed. Please check your credentials.');
+        setError(response.error?.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -74,14 +74,14 @@ const ResearcherLoginModal: React.FC<ResearcherLoginModalProps> = ({
   };
 
   const handleClose = () => {
-    if (!localLoading && !isLoading) {
+    if (!localLoading && !loading) {
       onOpenChange(false);
       setCredentials({ email: '', password: '' });
       setError(null);
     }
   };
 
-  const isFormLoading = localLoading || isLoading;
+  const isFormLoading = localLoading || loading;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

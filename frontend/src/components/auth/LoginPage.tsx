@@ -19,7 +19,7 @@ interface LoginPageProps {
  * Professional, on-page authentication without modal disruption
  */
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const { login, isLoading } = useAuth();
+  const { login, loading } = useAuth();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: ''
@@ -57,9 +57,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      const response = await login(credentials);
+      const response = await login(credentials.email, credentials.password);
       
-      if (response.success) {
+      if (response.data && !response.error) {
         // Save email if remember me is checked
         if (rememberMe) {
           localStorage.setItem('emg_analyzer_saved_email', credentials.email);
@@ -73,7 +73,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         // Call success callback
         onLoginSuccess?.();
       } else {
-        setError(response.error || 'Login failed. Please check your credentials.');
+        setError(response.error?.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -146,7 +146,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         placeholder="researcher@institution.edu"
                         value={credentials.email}
                         onChange={handleInputChange('email')}
-                        disabled={isLoading}
+                        disabled={loading}
                         className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="email"
                         required
@@ -171,7 +171,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         placeholder="Enter your password"
                         value={credentials.password}
                         onChange={handleInputChange('password')}
-                        disabled={isLoading}
+                        disabled={loading}
                         className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="current-password"
                         required
@@ -196,10 +196,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
                 <Button 
                   type="submit" 
-                  disabled={isLoading || !credentials.email || !credentials.password}
+                  disabled={loading || !credentials.email || !credentials.password}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base transition-colors"
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <div className="flex items-center gap-2">
                       <Spinner />
                       <span>Signing in...</span>

@@ -7,7 +7,6 @@ Core utility functions, configurations, and helper modules following React/TypeS
 ### **Authentication & External Services**
 - `supabase.ts` - Supabase client configuration and connection setup
 - `supabaseSetup.ts` - Advanced Supabase configuration, authentication flows, and storage management
-- `authUtils.ts` - Authentication helper functions and user management utilities
 
 ### **Visual & UI Utilities**  
 - `colorMappings.ts` - Centralized color system for consistent component styling
@@ -32,7 +31,7 @@ import formatters from '@/lib/formatters';
 
 ### **File Responsibilities**
 
-#### **Authentication (`authUtils.ts`, `supabase.ts`, `supabaseSetup.ts`)**
+#### **Authentication (`supabase.ts`, `supabaseSetup.ts`)**
 - User authentication flows
 - Session management
 - File storage operations
@@ -75,13 +74,13 @@ const scoreColor = PERFORMANCE_COLORS.excellent;        // "#22c55e"
 ### **Authentication**
 ```typescript
 import { supabase } from '@/lib/supabase';
-import { getCurrentUser, signOut } from '@/lib/authUtils';
+import { useAuth } from '@/hooks/useAuth';
 
-// Check authentication status
-const user = await getCurrentUser();
+// Use the auth hook for authentication
+const { user, login, logout } = useAuth();
 
-// Secure sign out
-await signOut();
+// Direct Supabase operations
+const { data } = await supabase.from('table').select();
 ```
 
 ## 📋 Maintenance Guidelines

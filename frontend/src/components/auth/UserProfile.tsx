@@ -33,11 +33,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
   className = '', 
   compact = false 
 }) => {
-  const { authState, logout, isLoading } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const { profile, user } = authState;
 
   const handleLogout = async () => {
     // Prevent double-clicking
@@ -96,14 +94,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return null;
   }
 
-  // Fallback profile data if profile is not loaded
-  const displayProfile = profile || {
-    full_name: user.email?.split('@')[0] || 'User',
+  // Simple profile data from user
+  const displayProfile = {
+    full_name: user?.email?.split('@')[0] || 'User',
     institution: 'Unknown',
     department: null,
     role: 'researcher',
     access_level: 'basic',
-    created_at: user.created_at || new Date().toISOString(),
+    created_at: user?.created_at || new Date().toISOString(),
     last_login: null
   };
 
@@ -244,7 +242,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
               variant="outline" 
               size="sm" 
               className="flex-1"
-              disabled={isLoading}
+              disabled={loading}
             >
               <GearIcon className="w-4 h-4 mr-2" />
               Settings
@@ -253,7 +251,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
               variant="outline" 
               size="sm" 
               onClick={() => setShowLogoutDialog(true)}
-              disabled={isLoading}
+              disabled={loading}
               className="flex-1"
             >
               <ExitIcon className="w-4 h-4 mr-2" />

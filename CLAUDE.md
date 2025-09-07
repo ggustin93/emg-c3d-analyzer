@@ -87,6 +87,12 @@ The GHOSTLY+ EMG C3D Analyzer is a rehabilitation technology platform designed t
     - Each domain owns its logic and data.
     - This separation improves scalability and clarity.
 
+13. **Choose the Right Tool for the Task (FastAPI vs Direct Supabase)**
+    - **Use Direct Supabase for**: Simple CRUD, auth, real-time subscriptions, file uploads
+    - **Use FastAPI for**: Complex computations, binary file processing, heavy algorithms, webhooks
+    - **Decision principle**: Follow KISS - use the simplest tool that solves the problem
+    - **Example**: Clinical notes could use direct Supabase, but EMG processing requires FastAPI
+
 #### 1.2.2. Backend Development Best Practices: Python, FastAPI, Supabase
 
 - Leverage Python’s clarity and FastAPI’s performance for robust API development.
@@ -256,7 +262,7 @@ In short, each `/sc:*` or `@agent-*` command automates a step in the development
 
 - **Update Documentation**:  
   `/sc:document --type api`  
-  File path: `docs/domain/DOC_TITLE.md`
+  File path: `docs/domain/current_date_DOC_TITLE.md`
 
 ## 5. Technical Implementation Details
 
@@ -344,6 +350,29 @@ npm run type-check                       # TypeScript validation
   5. **Perplexity** - For AI-powered web search.
   6. **Shadcn-ui** - For UI component library integration.
   7. **Serena** - For natural language processing tasks.
+
+### 5.3. Authentication Best Practices
+
+**Architecture**: Supabase Auth → React Hook → FastAPI (validation only) → RLS (authorization)
+
+1. **Frontend (React)**: 
+   - Use `useAuth` hook for auth state management
+   - Roles used for UI rendering only, not security
+   - Direct Supabase client for most operations
+
+2. **Backend (FastAPI)**: 
+   - JWT validation only via `get_current_user` dependency
+   - No authorization logic - delegates to RLS
+   - Thin authentication layer (84 lines total)
+
+3. **Database (Supabase)**: 
+   - RLS policies as single source of truth for permissions
+   - 18+ comprehensive policies across all tables
+   - Role-based access control at database level
+
+4. **When to Use Direct Supabase vs FastAPI**:
+   - **Direct Supabase**: Auth, CRUD, storage, real-time subscriptions
+   - **FastAPI**: EMG processing, complex logic, external APIs, heavy computation
 
 ---
 

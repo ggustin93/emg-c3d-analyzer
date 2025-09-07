@@ -1,5 +1,4 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { withTimeout, formatAuthError } from '../lib/authUtils'
 import type { 
   LoginCredentials, 
   ResearcherRegistration, 
@@ -59,7 +58,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -75,12 +74,8 @@ export class AuthService {
     try {
       console.log('🔄 Starting Supabase signOut...')
       
-      // Use shorter timeout for better UX
-      const { error } = await withTimeout(
-        supabase.auth.signOut(),
-        3000,
-        'Logout request timeout'
-      )
+      // Direct signOut without timeout wrapper
+      const { error } = await supabase.auth.signOut()
       
       if (error) {
         console.warn('Logout error from Supabase:', error)
@@ -96,7 +91,7 @@ export class AuthService {
       console.log('✅ Supabase signOut completed successfully')
       return { data: null, error: null, success: true }
     } catch (err) {
-      const errorMessage = formatAuthError(err)
+      const errorMessage = err instanceof Error ? err.message : 'Logout error'
       console.error('❌ Logout failed:', errorMessage)
       
       // For timeout errors, treat as success since the user wants to logout
@@ -143,7 +138,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -168,7 +163,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -193,7 +188,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -218,7 +213,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -241,7 +236,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -270,7 +265,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
@@ -300,7 +295,7 @@ export class AuthService {
     } catch (err) {
       return { 
         data: null, 
-        error: formatAuthError(err), 
+        error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
