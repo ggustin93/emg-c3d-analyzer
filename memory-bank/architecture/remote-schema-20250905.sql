@@ -193,6 +193,7 @@ END,
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   last_login timestamp with time zone,
   active boolean DEFAULT true,
+  user_code text UNIQUE CHECK (user_code ~ '^[TRA][0-9]{3}$'::text),
   CONSTRAINT user_profiles_pkey PRIMARY KEY (id),
   CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );

@@ -184,4 +184,6 @@ frontend/coverage/.tmp
 
 # Obsidian
 .obsidian/
-coverage/ 
+coverage/
+
+docs/
