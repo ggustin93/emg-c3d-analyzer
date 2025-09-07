@@ -5,7 +5,8 @@ Common validation patterns and parameter extraction.
 Implements DRY principle for repeated parameter patterns.
 """
 
-
+from uuid import UUID
+from fastapi import Depends, Form
 
 from config import (
     DEFAULT_MIN_DURATION_MS,
@@ -13,7 +14,7 @@ from config import (
     DEFAULT_SMOOTHING_WINDOW,
     DEFAULT_THRESHOLD_FACTOR,
 )
-from fastapi import Form
+from api.dependencies.auth import get_current_user
 
 from models import (
     GameSessionParameters,
@@ -90,3 +91,20 @@ def get_file_metadata(
         dict: File metadata
     """
     return {"user_id": user_id, "patient_id": patient_id, "session_id": session_id}
+
+
+async def get_current_user_id(
+    current_user: dict = Depends(get_current_user)
+) -> UUID:
+    """
+    Extract authenticated user ID from current user.
+    
+    Uses the centralized auth dependency for consistency.
+    
+    Args:
+        current_user: Authenticated user from auth dependency
+        
+    Returns:
+        UUID: Current authenticated user ID
+    """
+    return UUID(current_user['id'])
