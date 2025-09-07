@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from api.routes import (
     analysis,
     cache_monitoring,
+    clinical_notes,
     export,
     health,
     logs,
@@ -114,8 +115,9 @@ def create_app() -> FastAPI:
     app.include_router(scoring_router)  # Scoring configuration
     app.include_router(cache_monitoring.router)  # Cache monitoring
     app.include_router(logs.router)  # Frontend log collection
+    app.include_router(clinical_notes.router)  # Clinical notes management
     
-    logger.info("FastAPI application configured", routes=10)
+    logger.info("FastAPI application configured", routes=11)
     return app
 
 

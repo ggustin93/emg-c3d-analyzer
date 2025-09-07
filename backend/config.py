@@ -227,6 +227,9 @@ PROCESSING_VERSION = "2.1.0"
 # File processing behavior
 ENABLE_FILE_HASH_DEDUPLICATION = os.getenv("ENABLE_FILE_HASH_DEDUPLICATION", "true").lower() == "true"
 
+# Storage configuration
+STORAGE_BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", "c3d-examples")  # Supabase storage bucket for C3D files
+
 
 # =============================================================================
 # 5. ENVIRONMENT-SPECIFIC FUNCTIONS

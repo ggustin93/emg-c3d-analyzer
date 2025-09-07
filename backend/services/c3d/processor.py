@@ -1338,4 +1338,3 @@ class GHOSTLYC3DProcessor:
         except Exception as e:
             logger.warning(f"Failed to extract C3D parameters: {e!s}")
             return {}
-ww
