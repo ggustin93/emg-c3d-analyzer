@@ -24,7 +24,7 @@ interface TherapeuticParametersSettingsProps {
 }
 
 const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps> = ({ muscleChannels, disabled, isTherapistMode, analytics, uploadedFileName }) => {
-  const { authState } = useAuth();
+  const { user } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const [isClinicalParametersOpen, setIsClinicalParametersOpen] = useState(false);
   const [isFullRecalculating, setIsFullRecalculating] = useState(false);
@@ -186,7 +186,7 @@ const TherapeuticParametersSettings: React.FC<TherapeuticParametersSettingsProps
     try {
       // Call the backend /mvc/calibrate endpoint with the selected file
       const response = await MVCService.calibrate(fileToUse, {
-        user_id: authState.user?.id,
+        user_id: user?.id,
         session_id: 'current-session',
         threshold_percentage: 75 // Default threshold percentage
       });

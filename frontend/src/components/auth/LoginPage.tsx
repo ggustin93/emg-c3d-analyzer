@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,11 @@ interface LoginPageProps {
 /**
  * Full-page login interface for EMG C3D Analyzer
  * Professional, on-page authentication without modal disruption
+ * 
+ * Features:
+ * - Concurrent navigation transitions for smooth post-login experience
+ * - Performance optimized callbacks with startTransition
+ * - Non-blocking authentication state updates
  */
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const { login, loading } = useAuth();
@@ -35,19 +40,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
   }, []);
 
-  const handleInputChange = (field: keyof LoginCredentials) => (
+  // Memoized and optimized input change handler
+  const handleInputChange = useCallback((field: keyof LoginCredentials) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const value = e.target.value;
     setCredentials(prev => ({
       ...prev,
-      [field]: e.target.value
+      [field]: value
     }));
-    // Clear error when user starts typing
+    // Clear error when user starts typing (only if error exists)
     if (error) setError(null);
-  };
+  }, [error]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Optimized submit handler with performance logging
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    const submitStart = performance.now();
+    console.debug('[LoginPage] Sign-in initiated');
     
     if (!credentials.email || !credentials.password) {
       setError('Please enter both email and password');
@@ -57,34 +67,57 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
+      // Main authentication call - this is where the delay occurs
       const response = await login(credentials.email, credentials.password);
       
       if (response.data && !response.error) {
-        // Save email if remember me is checked
-        if (rememberMe) {
-          localStorage.setItem('emg_analyzer_saved_email', credentials.email);
-        } else {
-          localStorage.removeItem('emg_analyzer_saved_email');
+        // Optimize localStorage operations - do them asynchronously after success
+        setTimeout(() => {
+          if (rememberMe) {
+            localStorage.setItem('emg_analyzer_saved_email', credentials.email);
+          } else {
+            localStorage.removeItem('emg_analyzer_saved_email');
+          }
+        }, 0);
+        
+        const totalTime = performance.now() - submitStart;
+        console.debug(`[LoginPage] Sign-in completed in ${totalTime.toFixed(2)}ms`);
+        
+        // Skip form clearing - user will be redirected anyway
+        // Call success callback with concurrent transition to prevent blocking
+        if (onLoginSuccess) {
+          startTransition(() => {
+            onLoginSuccess();
+          });
         }
-        
-        // Clear form
-        setCredentials({ email: '', password: '' });
-        
-        // Call success callback
-        onLoginSuccess?.();
       } else {
         setError(response.error?.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     }
-  };
+  }, [credentials, login, onLoginSuccess, rememberMe]);
 
-  const handleDevelopmentBypass = () => {
+  const handleDevelopmentBypass = useCallback(() => {
     // Set a flag in sessionStorage to indicate development bypass
     sessionStorage.setItem('emg_analyzer_dev_bypass', 'true');
     onLoginSuccess?.();
-  };
+  }, [onLoginSuccess]);
+
+  // Memoize form validation to prevent unnecessary recalculations
+  const isFormValid = useMemo(() => {
+    return Boolean(credentials.email && credentials.password);
+  }, [credentials.email, credentials.password]);
+
+  // Memoize button disabled state
+  const isButtonDisabled = useMemo(() => {
+    return loading || !isFormValid;
+  }, [loading, isFormValid]);
+
+  // Memoized remember me handler
+  const handleRememberMeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRememberMe(e.target.checked);
+  }, []);
 
   return (
     <TooltipProvider>
@@ -185,7 +218,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       id="remember-me"
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={handleRememberMeChange}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
@@ -196,7 +229,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
                 <Button 
                   type="submit" 
-                  disabled={loading || !credentials.email || !credentials.password}
+                  disabled={isButtonDisabled}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base transition-colors"
                 >
                   {loading ? (

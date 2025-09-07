@@ -33,7 +33,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   className = '', 
   compact = false 
 }) => {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, userProfile } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -94,15 +94,18 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return null;
   }
 
-  // Simple profile data from user
+  // Use actual profile data with fallbacks
   const displayProfile = {
-    full_name: user?.email?.split('@')[0] || 'User',
-    institution: 'Unknown',
-    department: null,
-    role: 'researcher',
-    access_level: 'basic',
-    created_at: user?.created_at || new Date().toISOString(),
-    last_login: null
+    full_name: userProfile?.full_name || 
+               (userProfile?.first_name && userProfile?.last_name 
+                 ? `${userProfile.first_name} ${userProfile.last_name}` 
+                 : user?.email?.split('@')[0] || 'User'),
+    institution: userProfile?.institution || 'Unknown Institution',
+    department: userProfile?.department || null,
+    role: userProfile?.role || 'researcher',
+    access_level: userProfile?.access_level || 'basic',
+    created_at: userProfile?.created_at || user?.created_at || new Date().toISOString(),
+    last_login: userProfile?.last_login || null
   };
 
   if (compact) {

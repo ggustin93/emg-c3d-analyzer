@@ -62,10 +62,12 @@ describe('ScoringWeightsSettings - Simplified System', () => {
     });
 
     (useAuth as any).mockReturnValue({
-      authState: {
-        user: { id: 'researcher-123' },
-        profile: { role: 'RESEARCHER' }
-      }
+      user: { id: 'researcher-123' },
+      userProfile: { role: 'researcher', id: 'researcher-123' },
+      loading: false,
+      userRole: 'RESEARCHER',
+      login: vi.fn(),
+      logout: vi.fn()
     });
   });
 

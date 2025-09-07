@@ -12,7 +12,8 @@ import {
   CalendarIcon,
   UploadIcon,
   MixerHorizontalIcon,
-  ViewGridIcon
+  ViewGridIcon,
+  FileIcon
 } from '@radix-ui/react-icons';
 import {
   Popover,
@@ -21,7 +22,6 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import SupabaseStorageService from '@/services/supabaseStorage';
-import SupabaseSetup from '@/lib/supabaseSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { TherapySessionsService, TherapySession } from '@/services/therapySessionsService';
 import { logger, LogCategory } from '@/services/logger';
@@ -44,11 +44,17 @@ interface ColumnVisibility {
   size: boolean;
   session_date: boolean;
   upload_date: boolean;
+  clinical_notes: boolean;
 }
 import C3DFileUpload from '@/components/c3d/C3DFileUpload';
 import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
 import C3DFileList from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
+// Clinical Notes integration
+import { useBatchC3DFileNotes } from '@/hooks/useC3DFileNotes';
+
+// Get bucket name from environment variable or use default
+const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 
 interface C3DFileBrowserProps {
   onFileSelect: (filename: string, uploadDate?: string) => void;
@@ -59,7 +65,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   onFileSelect,
   isLoading = false
 }) => {
-  const { authState } = useAuth();
+  const { user, loading } = useAuth();
   
   // Core states
   const [files, setFiles] = useState<C3DFile[]>([]);
@@ -101,9 +107,39 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       therapist_id: true,
       size: true,
       session_date: true,
-      upload_date: false  // Default to false as requested
+      upload_date: false,  // Default to false as requested
+      clinical_notes: true   // Enable clinical notes by default
     };
   });
+
+  // Clinical Notes integration - memoized to prevent infinite re-renders
+  const notesFiles = useMemo(() => 
+    files.map(file => ({
+      path: `${BUCKET_NAME}/${file.name}`,
+      name: file.name,
+      patientCode: resolvePatientId(file)
+    })),
+    [files]
+  );
+
+  const batchNotes = useBatchC3DFileNotes({
+    files: notesFiles,
+    enabled: visibleColumns.clinical_notes
+  });
+
+  // Listen for notes changes and refresh indicators
+  useEffect(() => {
+    const handleNotesRefresh = (event: CustomEvent) => {
+      console.log('Refreshing notes indicators after change:', event.detail);
+      batchNotes.refreshIndicators();
+    };
+
+    window.addEventListener('clinical-notes-changed', handleNotesRefresh as EventListener);
+    
+    return () => {
+      window.removeEventListener('clinical-notes-changed', handleNotesRefresh as EventListener);
+    };
+  }, [batchNotes.refreshIndicators]);
 
   // Load session data for all files
   const loadSessionData = useCallback(async (fileList: C3DFile[]) => {
@@ -111,7 +147,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
     try {
       // Create file paths from storage files (bucket/object format)
-      const filePaths = fileList.map(file => `c3d-examples/${file.name}`);
+      const filePaths = fileList.map(file => `${BUCKET_NAME}/${file.name}`);
       
       
       const sessions = await TherapySessionsService.getSessionsByFilePaths(filePaths);
@@ -125,7 +161,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   // Enhanced session date resolver that uses processed session data with time support
   const resolveEnhancedSessionDate = useCallback((file: C3DFile): string | null => {
-    const filePath = `c3d-examples/${file.name}`;
+    const filePath = `${BUCKET_NAME}/${file.name}`;
     const session = sessionData[filePath];
     
     // Priority 1: Processed session timestamp from therapy_sessions table
@@ -145,7 +181,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Load files from Supabase
   useEffect(() => {
     // Wait for authentication to be fully initialized before attempting to load files
-    if (authState.loading) {
+    if (loading) {
       if (import.meta.env.DEV) {
       }
       return;
@@ -171,7 +207,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         }
 
         // Check if user is authenticated before proceeding
-        if (!authState.user) {
+        if (!user) {
           clearTimeout(timeoutId);
           setFiles([]);
           setError('Please sign in to access the C3D file library.');
@@ -195,7 +231,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         if (supabaseFiles.length === 0) {
           // Bucket exists but is empty
           setFiles([]);
-          setError('Storage bucket c3d-examples is empty. Please upload C3D files to the bucket.');
+          setError(`Storage bucket ${BUCKET_NAME} is empty. Please upload C3D files to the bucket.`);
         } else {
           setFiles(supabaseFiles);
           setError(null);
@@ -229,7 +265,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         } else if (err.message?.includes('JWT expired') || err.message?.includes('Invalid JWT')) {
           errorMessage = 'Authentication expired. Please sign in again to access files.';
         } else if (err.message?.includes('not found') || err.message?.includes('does not exist')) {
-          errorMessage = `Storage bucket 'c3d-examples' not found. Please create this bucket in your Supabase dashboard.`;
+          errorMessage = `Storage bucket '${BUCKET_NAME}' not found. Please create this bucket in your Supabase dashboard.`;
         } else if (err.message?.includes('permission') || err.message?.includes('policy')) {
           errorMessage = 'Permission denied. Please check your authentication status and bucket policies.';
         } else if (err.message?.includes('Authentication required')) {
@@ -257,7 +293,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     };
 
     loadFiles();
-  }, [authState.loading, authState.user]); // Depend on auth state changes
+  }, [loading, user]); // Depend on auth state changes
 
   // Filtered files
   const filteredFiles = useMemo(() => {
@@ -463,7 +499,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         
         if (supabaseFiles.length === 0) {
           setFiles([]);
-          setError('Storage bucket c3d-examples is empty. Please upload C3D files to the bucket.');
+          setError(`Storage bucket ${BUCKET_NAME} is empty. Please upload C3D files to the bucket.`);
         } else {
           setFiles(supabaseFiles);
           setError(null);
@@ -513,16 +549,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     setError(null);
 
     try {
-      // Only create the bucket, don't upload fake files
-      const result = await SupabaseSetup.createBucket();
-      if (result.success) {
-        setError('Bucket created successfully. Upload your C3D files using the button above.');
-        await refreshFiles();
-      } else {
-        setError(result.message);
-      }
+      // Test storage access instead of creating bucket
+      // The bucket already exists, we just need to verify access
+      await refreshFiles();
+      
+      // If refresh works, clear any error
+      setError(null);
+      
     } catch (err: any) {
-      setError(`Setup failed: ${err.message}`);
+      setError(`Storage access test failed: ${err.message}. The bucket exists but you may not have permission to access it.`);
     } finally {
       setIsSettingUp(false);
     }
@@ -556,14 +591,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           <div className="text-center text-red-600">
             <p className="font-medium">Error Loading Files</p>
             <p className="text-sm mt-1 max-w-md mx-auto">{error}</p>
-            {!authState.user && (
+            {!user && (
               <p className="text-xs mt-2 text-orange-600">
                 ⚠️ You may need to sign in to access the file library
               </p>
             )}
-            {authState.user && (
+            {user && (
               <p className="text-xs mt-2 text-slate-500">
-                Signed in as: {authState.user.email}
+                Signed in as: {user.email}
               </p>
             )}
             <div className="flex justify-center gap-2 mt-4">
@@ -596,17 +631,17 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Setting up...
+                      Testing...
                     </div>
                   ) : (
-                    'Setup Storage'
+                    'Test Access'
                   )}
                 </Button>
               )}
             </div>
             {SupabaseStorageService.isConfigured() && (error.includes('not found') || error.includes('empty')) && (
               <p className="text-xs text-slate-500 mt-3">
-                Click "Setup Storage" to {error.includes('not found') ? 'create the bucket and ' : ''}upload sample files
+                Click "Test Access" to verify your storage permissions
               </p>
             )}
           </div>
@@ -616,8 +651,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+    <div className="w-full space-y-4">
+      
+      <Card className="w-full">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
@@ -686,7 +723,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       { key: 'therapist_id', label: 'Therapist ID', icon: PersonIcon },
                       { key: 'size', label: 'File Size', icon: ArchiveIcon },
                       { key: 'session_date', label: 'Session Date', icon: CalendarIcon },
-                      { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon }
+                      { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon },
+                      { key: 'clinical_notes', label: 'Clinical Notes', icon: FileIcon }
                     ].map(({ key, label, icon: Icon }) => (
                       <div key={key} className="flex items-center space-x-2">
                         <Checkbox
@@ -707,7 +745,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                   <div className="pt-2 border-t text-xs text-slate-500">
                     <div className="flex items-center gap-1">
                       <EyeOpenIcon className="w-3 h-3" />
-                      {Object.values(visibleColumns).filter(Boolean).length} of 5 columns visible
+                      {Object.values(visibleColumns).filter(Boolean).length} of 6 columns visible
                     </div>
                   </div>
                 </div>
@@ -739,6 +777,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           onSort={handleSort}
           visibleColumns={visibleColumns}
           resolveSessionDate={resolveEnhancedSessionDate}
+          notesIndicators={batchNotes.indicators}
+          notesLoading={batchNotes.loading}
+          hasNotes={batchNotes.hasNotes}
         />
 
         {/* Pagination Controls */}
@@ -750,7 +791,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           onPageChange={setCurrentPage}
         />
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

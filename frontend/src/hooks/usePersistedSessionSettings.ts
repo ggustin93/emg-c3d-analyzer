@@ -11,8 +11,8 @@ function deriveSessionId(analysisResult: EMGAnalysisResult | null): string | nul
 
 export function usePersistedSessionSettings(analysisResult: EMGAnalysisResult | null) {
   const { sessionParams, setSessionParams } = useSessionStore();
-  const { authState } = useAuth();
-  const userId = authState.user?.id || null;
+  const { user } = useAuth();
+  const userId = user?.id || null;
   const sessionId = useMemo(() => deriveSessionId(analysisResult), [analysisResult]);
   const saveTimerRef = useRef<number | null>(null);
 

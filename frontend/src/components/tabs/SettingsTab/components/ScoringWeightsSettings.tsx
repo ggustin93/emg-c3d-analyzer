@@ -72,7 +72,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
   isTherapistMode = false,
   analysisResult = null
 }) => {
-  const { authState } = useAuth();
+  const { user, userProfile } = useAuth();
   const { sessionParams, setSessionParams } = useSessionStore();
   const { 
     weights: databaseWeights,
@@ -142,11 +142,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
 
   // Role-based editability: Therapist or admin; Debug Mode unlocks
   const canTherapistEdit = useMemo(() => {
-    const role = authState?.profile?.role;
+    const role = userProfile?.role;
     return role === 'therapist' || role === 'admin';
-  }, [authState?.profile?.role]);
+  }, [userProfile?.role]);
 
-  const isResearcher = authState?.profile?.role === 'researcher' || authState?.profile?.role === 'admin';
+  const isResearcher = userProfile?.role === 'researcher' || userProfile?.role === 'admin';
   const canEdit = (isTherapistMode || canTherapistEdit) && !disabled;
   
   // Compliance Score sub-component weights (default: equal weighting)
@@ -391,7 +391,7 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
         case 'patient':
           // Save for specific therapist-patient pair
           // Note: During trial, this is locked for non-researchers
-          const therapistId = authState?.user?.id;
+          const therapistId = user?.id;
           const patientId = sessionParams?.patient_id;
           if (therapistId && patientId) {
             await saveCustomWeights(currentWeights, therapistId, patientId);

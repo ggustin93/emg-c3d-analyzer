@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
  * This helps create the required bucket and set proper policies
  */
 export class SupabaseSetup {
-  private static readonly BUCKET_NAME = 'c3d-examples';
+  // Get bucket name from environment variable or use default
+  private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 
   /**
    * Create the storage bucket if it doesn't exist

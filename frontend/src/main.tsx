@@ -12,5 +12,5 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <TooltipProvider delayDuration={100}>
       <App />
     </TooltipProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 ); 

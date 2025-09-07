@@ -12,14 +12,13 @@ vi.mock('@/services/supabaseStorage');
 vi.mock('@/lib/supabaseSetup');
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(() => ({
-    authState: { user: null, loading: false, error: null },
+    user: null,
+    session: null,
+    userProfile: null,
+    loading: false,
+    userRole: null,
     login: vi.fn(),
-    logout: vi.fn(),
-    register: vi.fn(),
-    refreshSession: vi.fn(),
-    resetPassword: vi.fn(),
-    isAuthenticated: false,
-    isLoading: false
+    logout: vi.fn()
   }))
 }));
 vi.mock('@/services/therapySessionsService');
@@ -46,26 +45,15 @@ const mockSupabaseSetup = SupabaseSetup as any;
 const mockUseAuth = vi.mocked(useAuth);
 const mockTherapySessionsService = TherapySessionsService as any;
 
-// Default mock auth state
-const mockAuthState = {
+const mockAuthContext = {
   user: null,
   session: null,
-  profile: null,
+  userProfile: null,
   loading: false,
-  error: null
-};
-
-const mockAuthContext = {
-  authState: mockAuthState,
-  login: vi.fn(),
-  logout: vi.fn(),
-  register: vi.fn(),
-  refreshSession: vi.fn(),
-  resetPassword: vi.fn(),
-  isAuthenticated: false,
-  isLoading: false,
   userRole: 'RESEARCHER' as const,
-  canViewFeature: vi.fn().mockReturnValue(true)
+  isTransitioning: false,
+  login: vi.fn(),
+  logout: vi.fn()
 };
 
 describe('C3DFileBrowser - Core Functionality Tests', () => {
@@ -105,11 +93,8 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
     // Default mock implementations  
     mockUseAuth.mockReturnValue({
       ...mockAuthContext,
-      authState: { 
-        ...mockAuthState, 
-        user: mockAuthenticatedUser, 
-        loading: false 
-      }
+      user: mockAuthenticatedUser,
+      loading: false
     });
 
     mockSupabaseStorageService.isConfigured.mockReturnValue(true);
@@ -230,16 +215,14 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
 
     it('should handle unauthenticated state', async () => {
       mockUseAuth.mockReturnValue({
-        authState: { user: null, loading: false, session: null, profile: null, error: null },
-        login: vi.fn(),
-        logout: vi.fn(),
-        register: vi.fn(),
-        refreshSession: vi.fn(),
-        resetPassword: vi.fn(),
-        isAuthenticated: false,
-        isLoading: false,
+        user: null,
+        session: null,
+        userProfile: null,
+        loading: false,
         userRole: null,
-        canViewFeature: vi.fn().mockReturnValue(false)
+        isTransitioning: false,
+        login: vi.fn(),
+        logout: vi.fn()
       });
 
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);

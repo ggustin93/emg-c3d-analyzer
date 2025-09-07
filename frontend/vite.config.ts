@@ -18,18 +18,12 @@ export default defineConfig({
     open: true, // Automatically open browser on start
     // Proxy API calls to backend
     proxy: {
-      // Special handling for logs endpoint - don't rewrite path
-      '/api/logs': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false
-      },
-      // All other API routes - strip /api prefix
+      // Proxy all API calls to backend - keep /api prefix
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        secure: false
+        // Don't rewrite the path - backend expects /api prefix
       }
     }
   },
@@ -57,6 +51,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/src/tests/authBestPractices.test.tsx']
+    exclude: ['**/node_modules/**', '**/dist/**']
   }
 })

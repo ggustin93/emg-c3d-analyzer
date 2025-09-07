@@ -1,5 +1,4 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { isMarkedAsLoggedIn } from '../lib/authUtils';
 import { logger, LogCategory } from './logger';
 
 export interface C3DFileInfo {
@@ -17,7 +16,8 @@ export interface C3DFileInfo {
 }
 
 export class SupabaseStorageService {
-  private static readonly BUCKET_NAME = 'c3d-examples';
+  // Get bucket name from environment variable or use default
+  private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 
   /**
    * Check if Supabase is properly configured
@@ -38,30 +38,18 @@ export class SupabaseStorageService {
     try {
       logger.info(LogCategory.API, `📂 Attempting to list files from bucket: ${this.BUCKET_NAME}`);
       
-      // Simple check - if not marked as logged in, don't proceed
-      if (!isMarkedAsLoggedIn()) {
-        throw new Error('Authentication required. Please sign in as a researcher to access C3D files.');
+      // Check if user is authenticated via Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        logger.error(LogCategory.AUTH, 'No valid Supabase session:', sessionError);
+        throw new Error('Please sign in again to access the C3D file library. Your session may have expired.');
       }
       
-      logger.debug(LogCategory.AUTH, 'User is authenticated, proceeding with file listing...');
+      logger.debug(LogCategory.AUTH, `✅ User authenticated: ${session.user.email}`);
       
-      // First check if the bucket exists to provide better error messages
-      logger.debug(LogCategory.API, 'Checking if bucket exists...');
-      try {
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          throw new Error(`Failed to check buckets: ${bucketError.message}`);
-        }
-        
-        const bucketExists = buckets.some(bucket => bucket.name === this.BUCKET_NAME);
-        if (!bucketExists) {
-          throw new Error(`Bucket '${this.BUCKET_NAME}' does not exist. Please create it in your Supabase dashboard.`);
-        }
-        logger.debug(LogCategory.API, '✅ Bucket exists, proceeding with file listing...');
-      } catch (bucketCheckError) {
-        logger.error(LogCategory.API, 'Bucket check failed:', bucketCheckError);
-        throw bucketCheckError;
-      }
+      // Skip bucket existence check - listBuckets() requires special permissions
+      // Instead, we'll directly try to list files from the known bucket
+      logger.debug(LogCategory.API, `✅ Proceeding directly to list files from known bucket: ${this.BUCKET_NAME}`);
       
       // Generic recursive directory discovery approach
       logger.debug(LogCategory.API, '📂 Starting recursive directory discovery...');
@@ -85,10 +73,15 @@ export class SupabaseStorageService {
 
       // If root directory failed and we have no files, throw error
       if (hasError && allFiles.length === 0) {
-        // If bucket doesn't exist, try creating it or provide better error message
+        // Provide better error messages for common storage issues
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
-          logger.warn(LogCategory.API, `Bucket '${this.BUCKET_NAME}' not found. Please create the bucket in Supabase dashboard.`);
-          throw new Error(`Storage bucket '${this.BUCKET_NAME}' not found. Please create it in your Supabase dashboard.`);
+          logger.error(LogCategory.API, `Storage access failed for bucket '${this.BUCKET_NAME}': ${errorMessage}`);
+          throw new Error(`Storage bucket '${this.BUCKET_NAME}' not accessible. Please check your permissions or contact an administrator.`);
+        }
+        
+        if (errorMessage.includes('JWT') || errorMessage.includes('auth') || errorMessage.includes('permission')) {
+          logger.error(LogCategory.API, `Authentication/permission error: ${errorMessage}`);
+          throw new Error(`Permission denied accessing storage. Please sign in again or contact an administrator.`);
         }
         
         throw new Error(`Failed to list files: ${errorMessage}`);

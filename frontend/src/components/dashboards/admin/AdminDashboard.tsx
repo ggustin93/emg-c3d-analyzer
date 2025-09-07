@@ -9,7 +9,7 @@ import { User, Activity } from 'lucide-react'
  * Access: ADMIN role only
  */
 export function AdminDashboard() {
-  const { userRole, canViewFeature } = useAuth()
+  const { userRole } = useAuth()
   
   if (userRole !== 'ADMIN') {
     return (
@@ -54,7 +54,7 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between p-3 rounded border">
                 <span>Global Settings</span>
                 <Badge variant="outline">
-                  {canViewFeature('system-settings') ? 'Full Access' : 'Read Only'}
+                  Full Access
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded border">
@@ -91,7 +91,7 @@ export function AdminDashboard() {
               </div>
               <div className="mt-4">
                 <Badge variant="secondary" className="w-full justify-center p-2">
-                  {canViewFeature('user-management') ? 'User Management Available' : 'Read Only Access'}
+                  User Management Available
                 </Badge>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {canViewFeature('audit-logs') ? (
+              {userRole === 'ADMIN' ? (
                 <div className="space-y-2">
                   <div className="p-3 rounded border">
                     <div className="flex justify-between items-center">

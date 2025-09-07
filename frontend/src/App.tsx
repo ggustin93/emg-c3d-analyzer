@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
@@ -22,9 +22,12 @@ import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { logger, LogCategory } from './services/logger';
 
 // Import dashboard components
-import { AdminDashboard } from './components/dashboards/admin/AdminDashboard';
-import { TherapistDashboard } from './components/dashboards/therapist/TherapistDashboard';
-import { ResearcherDashboard } from './components/dashboards/researcher/ResearcherDashboard';
+// Lazy load dashboard components for better performance
+const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const TherapistDashboard = React.lazy(() => import('./components/dashboards/therapist/TherapistDashboard').then(module => ({ default: module.TherapistDashboard })));
+const ResearcherDashboard = React.lazy(() => import('./components/dashboards/researcher/ResearcherDashboard').then(module => ({ default: module.ResearcherDashboard })));
+
+// Development tools
 
 
 
@@ -37,7 +40,8 @@ function AppContent() {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   
   // Authentication state
-  const { isAuthenticated, userRole, canViewFeature } = useAuth();
+  const { user, loading, userRole } = useAuth();
+  const isAuthenticated = !!user;
   
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
@@ -251,15 +255,18 @@ function AppContent() {
       
       // ONLY use Supabase storage - no local samples fallback
       if (!SupabaseStorageService.isConfigured()) {
-        throw new Error('Supabase not configured. Cannot access c3d-examples bucket.');
+        const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+        throw new Error(`Supabase not configured. Cannot access ${bucketName} bucket.`);
       }
 
-      logger.info(LogCategory.API, '📥 Downloading from Supabase c3d-examples bucket:', filename);
+      const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+      logger.info(LogCategory.API, `📥 Downloading from Supabase ${bucketName} bucket:`, filename);
       
       // Check if the file exists in Supabase
       const fileExists = await SupabaseStorageService.fileExists(filename);
       if (!fileExists) {
-        throw new Error(`File '${filename}' not found in c3d-examples bucket.`);
+        const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+        throw new Error(`File '${filename}' not found in ${bucketName} bucket.`);
       }
 
       // Get file metadata to extract upload date
@@ -445,15 +452,42 @@ function AppContent() {
     }
   }, [handleQuickSelect]);
 
-  // Render the appropriate dashboard based on user role
+  // Render the appropriate dashboard based on user role with lazy loading and performance monitoring
   const renderDashboard = () => {
+    React.useEffect(() => {
+      if (userRole) {
+        console.debug(`[Dashboard] Starting to load ${userRole} dashboard`);
+      }
+    }, [userRole]);
+
+    const DashboardLoadingFallback = (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner />
+          <p className="text-slate-600 mt-2">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+
     switch (userRole) {
       case 'ADMIN':
-        return <AdminDashboard />;
+        return (
+          <React.Suspense fallback={DashboardLoadingFallback}>
+            <AdminDashboard />
+          </React.Suspense>
+        );
       case 'THERAPIST':
-        return <TherapistDashboard />;
+        return (
+          <React.Suspense fallback={DashboardLoadingFallback}>
+            <TherapistDashboard />
+          </React.Suspense>
+        );
       case 'RESEARCHER':
-        return <ResearcherDashboard onQuickSelect={handleAnalysisNavigation} />;
+        return (
+          <React.Suspense fallback={DashboardLoadingFallback}>
+            <ResearcherDashboard onQuickSelect={handleAnalysisNavigation} />
+          </React.Suspense>
+        );
       default:
         return (
           <div className="p-6">
@@ -575,6 +609,7 @@ function App() {
   return (
     <AuthProvider>
       <AppContent />
+      {/* Development test runner */}
     </AuthProvider>
   )
 }

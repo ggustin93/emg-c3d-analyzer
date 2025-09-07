@@ -1,5 +1,4 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { isMarkedAsLoggedIn } from '../lib/authUtils';
 
 export interface TherapySession {
   id: string;
@@ -39,7 +38,8 @@ export class TherapySessionsService {
       return null;
     }
 
-    if (!isMarkedAsLoggedIn()) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       console.warn('User not authenticated');
       return null;
     }
@@ -69,7 +69,12 @@ export class TherapySessionsService {
    * Get multiple therapy sessions by file paths
    */
   static async getSessionsByFilePaths(filePaths: string[]): Promise<Record<string, TherapySession>> {
-    if (!isSupabaseConfigured() || !isMarkedAsLoggedIn()) {
+    if (!isSupabaseConfigured()) {
+      return {};
+    }
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return {};
     }
 
@@ -105,7 +110,12 @@ export class TherapySessionsService {
    * List all therapy sessions with basic info
    */
   static async listAllSessions(): Promise<TherapySession[]> {
-    if (!isSupabaseConfigured() || !isMarkedAsLoggedIn()) {
+    if (!isSupabaseConfigured()) {
+      return [];
+    }
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return [];
     }
 
@@ -131,7 +141,12 @@ export class TherapySessionsService {
    * Get session processing status
    */
   static async getSessionStatus(sessionId: string): Promise<string | null> {
-    if (!isSupabaseConfigured() || !isMarkedAsLoggedIn()) {
+    if (!isSupabaseConfigured()) {
+      return null;
+    }
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return null;
     }
 
