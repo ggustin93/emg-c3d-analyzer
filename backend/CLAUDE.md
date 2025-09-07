@@ -72,6 +72,24 @@ This document establishes the **backend engineering** best practices for our sta
 
 14. **Embrace `async` for All I/O Operations**
     Every call to the Supabase client or any other external service is an I/O operation and **must** use `async def` and `await` to keep the API non-blocking.
+    
+    **Critical Implementation Details:**
+    - All service methods that interact with Supabase **must** be `async def`
+    - API routes calling service methods **must** use `await`
+    - Internal service method calls **must** also use `await`
+    - Example pattern:
+      ```python
+      # Service layer
+      async def get_file_notes(self, file_path: str, author_id: UUID):
+          result = self.supabase.table('clinical_notes').select('*').execute()
+          enriched_notes = await self._enrich_notes_with_patient_codes(notes)
+          return enriched_notes
+      
+      # API route
+      @router.get("/file")
+      async def get_file_notes(...):
+          notes = await notes_service.get_file_notes(file_path, author_id)
+      ```
 
 15. **Implement Resilient and Flexible Logic**
     As demonstrated in the C3D channel handling, design your services to be resilient to variations in input data. Implement fallbacks and flexible mapping to gracefully handle real-world inconsistencies.
