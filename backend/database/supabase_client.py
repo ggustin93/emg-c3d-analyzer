@@ -20,11 +20,12 @@ logger = logging.getLogger(__name__)
 _supabase_client: Client | None = None
 
 
-def get_supabase_client(use_service_key: bool = False) -> Client:
+def get_supabase_client(use_service_key: bool = False, jwt_token: str | None = None) -> Client:
     """Get or create Supabase client instance.
 
     Args:
         use_service_key: If True, use service key for admin operations (bypasses RLS)
+        jwt_token: User's JWT token for authenticated requests (respects RLS)
 
     Returns:
         Configured Supabase client
@@ -33,6 +34,33 @@ def get_supabase_client(use_service_key: bool = False) -> Client:
         ValueError: If environment variables are not set
     """
     global _supabase_client
+
+    # If a JWT token is provided, create an authenticated client (don't cache it)
+    if jwt_token:
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_ANON_KEY")
+        
+        if not supabase_url or not supabase_key:
+            raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY environment variables must be set")
+        
+        try:
+            # Create client with custom headers that include the user's JWT
+            from supabase._sync.client import ClientOptions
+            
+            client = create_client(
+                supabase_url, 
+                supabase_key,
+                options=ClientOptions(
+                    headers={
+                        'Authorization': f'Bearer {jwt_token}'
+                    }
+                )
+            )
+            logger.debug("Created authenticated Supabase client with user JWT headers")
+            return client
+        except Exception as e:
+            logger.error(f"Failed to create authenticated Supabase client: {e!s}")
+            raise
 
     if _supabase_client is None or use_service_key:
         # Get configuration from environment

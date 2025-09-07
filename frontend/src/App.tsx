@@ -452,14 +452,15 @@ function AppContent() {
     }
   }, [handleQuickSelect]);
 
+  // Dashboard loading effect - moved outside renderDashboard function to follow Rules of Hooks
+  useEffect(() => {
+    if (userRole) {
+      console.debug(`[Dashboard] Starting to load ${userRole} dashboard`);
+    }
+  }, [userRole]);
+
   // Render the appropriate dashboard based on user role with lazy loading and performance monitoring
   const renderDashboard = () => {
-    React.useEffect(() => {
-      if (userRole) {
-        console.debug(`[Dashboard] Starting to load ${userRole} dashboard`);
-      }
-    }, [userRole]);
-
     const DashboardLoadingFallback = (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
