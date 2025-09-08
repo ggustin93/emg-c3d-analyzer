@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import ReactMarkdown from 'react-markdown'
+import Editor from 'react-simple-wysiwyg'
 import { cn } from '@/lib/utils'
 import { LoadingSpinner, ErrorState } from './LoadingStates'
 import { useClinicalNotes } from '../../hooks/useClinicalNotes'
+import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor'
+import { ClinicalNotesService } from '../../services/clinicalNotesService'
 import type { NotesModalProps, ClinicalNoteWithPatientCode } from '../../types/clinical-notes'
-import MarkdownEditor from './MarkdownEditor'
 
 /**
  * Clinical Notes Modal
  * 
  * Comprehensive modal for viewing, creating, editing, and deleting clinical notes.
- * Supports both file notes and patient notes with markdown editing.
+ * Supports both file notes and patient notes with simple WYSIWYG editing.
  */
 export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   isOpen,
@@ -35,16 +36,26 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     getTargetDisplayName
   } = useClinicalNotes()
 
-  // Local state
+  // Local state - optimized with better loading management
   const [localNotes, setLocalNotes] = useState<ClinicalNoteWithPatientCode[]>([])
   const [selectedNote, setSelectedNote] = useState<ClinicalNoteWithPatientCode | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [editorContent, setEditorContent] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [modalLoading, setModalLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  
+  // Enhanced loading states with specific operations
+  const [loadingState, setLoadingState] = useState<{
+    notes: boolean
+    saving: boolean
+    deleting: string | null
+  }>({ notes: false, saving: false, deleting: null })
+  
+  // Cache for author email to prevent re-fetching
+  const [authorEmailCache, setAuthorEmailCache] = useState<string | null>(null)
+  
+  // Performance monitoring
+  const { startOperation, endOperation } = usePerformanceMonitor('ClinicalNotesModal')
 
   // Computed values
   const displayName = useMemo(() => {
@@ -54,50 +65,68 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   const hasNotes = localNotes.length > 0
   const canSave = editorContent.trim().length > 0 && validateContent(editorContent).valid
 
-  // Load notes when modal opens
+  // Enhanced notes loading with better performance and error handling
   useEffect(() => {
     if (!isOpen) {
       // Reset state when modal closes
       setSelectedNote(null)
       setLocalNotes([])
-      setModalLoading(false)
+      setLoadingState({ notes: false, saving: false, deleting: null })
       return
     }
 
     const loadNotes = async () => {
+      // Prevent multiple simultaneous loads
+      if (loadingState.notes) return
+      
       try {
-        setModalLoading(true)
+        setLoadingState(prev => ({ ...prev, notes: true }))
+        startOperation('loadNotes')
         clearError()
         let fetchedNotes: ClinicalNoteWithPatientCode[] = []
 
         if (existingNotes.length > 0) {
           // Use provided notes (for performance) - no API call needed
+          startOperation('loadCachedNotes')
           fetchedNotes = existingNotes
+          // Simulate brief loading for consistent UX
+          await new Promise(resolve => setTimeout(resolve, 50))
+          endOperation('loadCachedNotes')
         } else {
-          // Fetch from API
-          if (noteType === 'file') {
-            fetchedNotes = await getFileNotes(targetId)
-          } else {
-            fetchedNotes = await getPatientNotes(targetId)
-          }
+          // Fetch from API with timeout protection
+          startOperation('fetchNotesAPI')
+          const fetchPromise = noteType === 'file' 
+            ? getFileNotes(targetId)
+            : getPatientNotes(targetId)
+          
+          // Add timeout to prevent indefinite loading
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 10000)
+          )
+          
+          fetchedNotes = await Promise.race([fetchPromise, timeoutPromise])
+          endOperation('fetchNotesAPI')
         }
 
         setLocalNotes(fetchedNotes)
 
-        // Auto-select first note if exists
-        if (fetchedNotes.length > 0) {
+        // Auto-select first note if exists and none is selected
+        if (fetchedNotes.length > 0 && !selectedNote) {
           setSelectedNote(fetchedNotes[0])
         }
+        
+        endOperation('loadNotes')
       } catch (err) {
         console.error('Failed to load notes:', err)
+        endOperation('loadNotes', false)
+        // Error is handled by the hook's withLoadingAndError
       } finally {
-        // Always set loading to false, regardless of global loading state
-        setModalLoading(false)
+        setLoadingState(prev => ({ ...prev, notes: false }))
       }
     }
 
     loadNotes()
-  }, [isOpen, noteType, targetId, existingNotes, getFileNotes, getPatientNotes, clearError])
+  }, [isOpen, noteType, targetId, existingNotes.length])
 
   // Handle modal close
   const handleClose = useCallback(() => {
@@ -105,7 +134,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     setIsEditing(false)
     setIsCreating(false)
     setEditorContent('')
-    setShowPreview(false)
+    // Removed setShowPreview - using simple WYSIWYG editor
     setDeleteConfirm(null)
     clearError()
     onClose()
@@ -125,30 +154,48 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     }
   }, [isOpen, handleClose])
 
-  // Create new note
+  // Enhanced note creation with optimistic updates
   const handleCreateNote = useCallback(async () => {
-    if (!canSave || isSaving) return
+    if (!canSave || loadingState.saving) return
+
+    // Optimistic update - create temporary note immediately
+    const tempId = `temp-${Date.now()}`
+    const optimisticNote: ClinicalNoteWithPatientCode = {
+      id: tempId,
+      content: editorContent,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      patient_code: noteType === 'patient' ? targetId : undefined
+    }
 
     try {
-      setIsSaving(true)
-      let newNote: any
+      setLoadingState(prev => ({ ...prev, saving: true }))
+      startOperation('createNote')
+      
+      // Add optimistic note to UI immediately
+      setLocalNotes(prev => [optimisticNote, ...prev])
+      setSelectedNote(optimisticNote)
+      setIsCreating(false)
+      setEditorContent('')
 
+      // Create actual note
+      let newNote: any
       if (noteType === 'file') {
         newNote = await createFileNote(targetId, editorContent)
       } else {
         newNote = await createPatientNote(targetId, editorContent)
       }
 
-      // Add to local notes
+      // Replace optimistic note with real note
       const noteWithCode: ClinicalNoteWithPatientCode = {
         ...newNote,
         patient_code: noteType === 'patient' ? targetId : undefined
       }
 
-      setLocalNotes(prev => [noteWithCode, ...prev])
+      setLocalNotes(prev => prev.map(note => 
+        note.id === tempId ? noteWithCode : note
+      ))
       setSelectedNote(noteWithCode)
-      setIsCreating(false)
-      setEditorContent('')
 
       // Notify parent
       onNotesChanged?.()
@@ -157,61 +204,119 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       window.dispatchEvent(new CustomEvent('clinical-notes-changed', {
         detail: { filePath: targetId, noteType, action: 'create' }
       }))
+      
+      endOperation('createNote')
     } catch (err) {
+      endOperation('createNote', false)
       console.error('Failed to create note:', err)
+      // Revert optimistic update on error
+      setLocalNotes(prev => prev.filter(note => note.id !== tempId))
+      setSelectedNote(null)
+      setIsCreating(true)
+      setEditorContent(editorContent)
     } finally {
-      setIsSaving(false)
+      setLoadingState(prev => ({ ...prev, saving: false }))
     }
-  }, [canSave, isSaving, noteType, targetId, editorContent, createFileNote, createPatientNote, onNotesChanged])
+  }, [canSave, loadingState.saving, noteType, targetId, editorContent])
 
-  // Update existing note
+  // Enhanced note update with optimistic updates
   const handleUpdateNote = useCallback(async () => {
-    if (!selectedNote || !canSave || isSaving) return
+    if (!selectedNote || !canSave || loadingState.saving) return
+
+    // Store original content for rollback
+    const originalContent = selectedNote.content
+    const originalUpdatedAt = selectedNote.updated_at
 
     try {
-      setIsSaving(true)
-      const updatedNote = await updateNote(selectedNote.id, editorContent)
-
-      // Update local state
+      setLoadingState(prev => ({ ...prev, saving: true }))
+      startOperation('updateNote')
+      
+      // Optimistic update - update UI immediately
+      const optimisticUpdate = {
+        ...selectedNote,
+        content: editorContent,
+        updated_at: new Date().toISOString()
+      }
+      
       setLocalNotes(prev =>
         prev.map(note =>
-          note.id === selectedNote.id
-            ? { ...note, content: updatedNote.content, updated_at: updatedNote.updated_at }
-            : note
+          note.id === selectedNote.id ? optimisticUpdate : note
         )
       )
-
-      setSelectedNote(prev => prev ? { ...prev, content: updatedNote.content, updated_at: updatedNote.updated_at } : null)
+      setSelectedNote(optimisticUpdate)
       setIsEditing(false)
       setEditorContent('')
 
+      // Perform actual update
+      const updatedNote = await updateNote(selectedNote.id, editorContent)
+
+      // Replace optimistic update with real data
+      const finalUpdate = {
+        ...selectedNote,
+        content: updatedNote.content,
+        updated_at: updatedNote.updated_at
+      }
+      
+      setLocalNotes(prev =>
+        prev.map(note =>
+          note.id === selectedNote.id ? finalUpdate : note
+        )
+      )
+      setSelectedNote(finalUpdate)
+
       // Notify parent
       onNotesChanged?.()
       
       // Dispatch custom event for batch indicators refresh
       window.dispatchEvent(new CustomEvent('clinical-notes-changed', {
-        detail: { filePath: targetId, noteType, action: 'create' }
+        detail: { filePath: targetId, noteType, action: 'update' }
       }))
+      
+      endOperation('updateNote')
     } catch (err) {
+      endOperation('updateNote', false)
       console.error('Failed to update note:', err)
+      // Revert optimistic update on error
+      const revertedNote = {
+        ...selectedNote,
+        content: originalContent,
+        updated_at: originalUpdatedAt
+      }
+      
+      setLocalNotes(prev =>
+        prev.map(note =>
+          note.id === selectedNote.id ? revertedNote : note
+        )
+      )
+      setSelectedNote(revertedNote)
+      setIsEditing(true)
+      setEditorContent(originalContent)
     } finally {
-      setIsSaving(false)
+      setLoadingState(prev => ({ ...prev, saving: false }))
     }
-  }, [selectedNote, canSave, isSaving, editorContent, updateNote, onNotesChanged])
+  }, [selectedNote, canSave, loadingState.saving, editorContent])
 
-  // Delete note
+  // Enhanced note deletion with loading states
   const handleDeleteNote = useCallback(async (noteId: string) => {
-    try {
-      await deleteNote(noteId)
+    // Store note for potential rollback
+    const noteToDelete = localNotes.find(note => note.id === noteId)
+    if (!noteToDelete) return
 
-      // Update local state
-      setLocalNotes(prev => prev.filter(note => note.id !== noteId))
+    try {
+      setLoadingState(prev => ({ ...prev, deleting: noteId }))
+      startOperation('deleteNote')
+      
+      // Optimistic removal - remove from UI immediately
+      const remainingNotes = localNotes.filter(note => note.id !== noteId)
+      setLocalNotes(remainingNotes)
 
       // Handle selected note deletion
       if (selectedNote?.id === noteId) {
-        const remainingNotes = localNotes.filter(note => note.id !== noteId)
         setSelectedNote(remainingNotes.length > 0 ? remainingNotes[0] : null)
       }
+
+      // Perform actual deletion
+      await deleteNote(noteId)
 
       setDeleteConfirm(null)
 
@@ -220,12 +325,27 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       
       // Dispatch custom event for batch indicators refresh
       window.dispatchEvent(new CustomEvent('clinical-notes-changed', {
-        detail: { filePath: targetId, noteType, action: 'create' }
+        detail: { filePath: targetId, noteType, action: 'delete' }
       }))
+      
+      endOperation('deleteNote')
     } catch (err) {
+      endOperation('deleteNote', false)
       console.error('Failed to delete note:', err)
+      // Revert optimistic deletion on error
+      setLocalNotes(prev => {
+        const restored = [...prev, noteToDelete].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        return restored
+      })
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(noteToDelete)
+      }
+    } finally {
+      setLoadingState(prev => ({ ...prev, deleting: null }))
     }
-  }, [deleteNote, selectedNote, localNotes, onNotesChanged])
+  }, [selectedNote, localNotes])
 
   // Start editing
   const startEditing = useCallback((note?: ClinicalNoteWithPatientCode) => {
@@ -244,7 +364,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     setIsEditing(false)
     setIsCreating(false)
     setEditorContent('')
-    setShowPreview(false)
+    // Removed setShowPreview - using simple WYSIWYG editor
   }, [])
 
   if (!isOpen) return null
@@ -311,19 +431,32 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
                   <div
                     key={note.id}
                     className={cn(
-                      'p-3 border-b border-slate-200 cursor-pointer transition-colors',
-                      selectedNote?.id === note.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-white'
+                      'p-3 border-b border-slate-200 cursor-pointer transition-colors relative',
+                      selectedNote?.id === note.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-white',
+                      loadingState.deleting === note.id && 'opacity-50'
                     )}
-                    onClick={() => setSelectedNote(note)}
+                    onClick={() => !loadingState.deleting && setSelectedNote(note)}
                   >
-                    <div className="text-sm text-slate-800 line-clamp-3 mb-2">
-                      {note.content}
+                    {/* Loading overlay for note being processed */}
+                    {(loadingState.deleting === note.id || (note.id.startsWith('temp-') && loadingState.saving)) && (
+                      <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
+                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                          <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          {loadingState.deleting === note.id ? 'Deleting...' : 'Saving...'}
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-sm text-slate-800 line-clamp-3 mb-2 prose prose-sm max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: note.content }} />
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <div className="flex flex-col gap-0.5">
-                        <span>{new Date(note.created_at).toLocaleDateString()}</span>
-                        {note.author_email && (
-                          <span className="text-slate-400">{note.author_email}</span>
+                        <span>{ClinicalNotesService.formatEuropeanTimestamp(note.created_at)}</span>
+                        {note.patient_code && (
+                          <span className="text-slate-400">Patient: {note.patient_code}</span>
                         )}
                       </div>
                       <div className="flex gap-1">
@@ -332,7 +465,13 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
                             e.stopPropagation()
                             startEditing(note)
                           }}
-                          className="p-1 hover:bg-slate-200 rounded"
+                          disabled={loadingState.saving}
+                          className={cn(
+                            'p-1 rounded transition-colors',
+                            loadingState.saving 
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'hover:bg-slate-200'
+                          )}
                           title="Edit note"
                         >
                           <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
@@ -344,13 +483,26 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
                             e.stopPropagation()
                             setDeleteConfirm(note.id)
                           }}
-                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                          disabled={loadingState.deleting === note.id}
+                          className={cn(
+                            'p-1 rounded transition-colors',
+                            loadingState.deleting === note.id
+                              ? 'bg-red-50 text-red-400 cursor-not-allowed'
+                              : 'hover:bg-red-100 text-red-600'
+                          )}
                           title="Delete note"
                         >
-                          <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                          </svg>
+                          {loadingState.deleting === note.id ? (
+                            <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                              <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -362,17 +514,49 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
-            {/* Temporarily disabled loading spinner for testing */}
-            {false && modalLoading ? (
+            {/* Enhanced loading states with specific messaging */}
+            {loadingState.notes ? (
               <div className="flex-1 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
+                <div className="text-center">
+                  <LoadingSpinner size="lg" className="mb-4" />
+                  <p className="text-sm text-slate-600">
+                    {existingNotes.length > 0 ? 'Preparing notes...' : 'Loading notes...'}
+                  </p>
+                </div>
               </div>
             ) : error ? (
               <div className="flex-1 flex items-center justify-center">
                 <ErrorState
                   title="Failed to load notes"
                   message={error.message}
-                  onRetry={() => window.location.reload()}
+                  onRetry={() => {
+                    setLoadingState(prev => ({ ...prev, notes: true }))
+                    clearError()
+                    // Retry loading with a small delay
+                    setTimeout(() => {
+                      const retryLoad = async () => {
+                        try {
+                          let fetchedNotes: ClinicalNoteWithPatientCode[] = []
+                          if (existingNotes.length > 0) {
+                            fetchedNotes = existingNotes
+                          } else {
+                            fetchedNotes = noteType === 'file' 
+                              ? await getFileNotes(targetId)
+                              : await getPatientNotes(targetId)
+                          }
+                          setLocalNotes(fetchedNotes)
+                          if (fetchedNotes.length > 0 && !selectedNote) {
+                            setSelectedNote(fetchedNotes[0])
+                          }
+                        } catch (err) {
+                          console.error('Retry failed:', err)
+                        } finally {
+                          setLoadingState(prev => ({ ...prev, notes: false }))
+                        }
+                      }
+                      retryLoad()
+                    }, 500)
+                  }}
                 />
               </div>
             ) : isEditing ? (
@@ -382,16 +566,16 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
                 onSave={isCreating ? handleCreateNote : handleUpdateNote}
                 onCancel={cancelEditing}
                 canSave={canSave}
-                showPreview={showPreview}
-                onTogglePreview={() => setShowPreview(!showPreview)}
                 isCreating={isCreating}
-                isSaving={isSaving}
+                isSaving={loadingState.saving}
               />
             ) : selectedNote ? (
               <ClinicalNoteViewer
                 note={selectedNote}
                 onEdit={() => startEditing(selectedNote)}
                 onDelete={() => setDeleteConfirm(selectedNote.id)}
+                authorEmail={authorEmailCache}
+                onAuthorEmailLoad={setAuthorEmailCache}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center">
@@ -452,8 +636,6 @@ interface EditorProps {
   onSave: () => void
   onCancel: () => void
   canSave: boolean
-  showPreview: boolean
-  onTogglePreview: () => void
   isCreating: boolean
   isSaving: boolean
 }
@@ -464,8 +646,6 @@ const ClinicalNotesEditor: React.FC<EditorProps> = ({
   onSave,
   onCancel,
   canSave,
-  showPreview,
-  onTogglePreview,
   isCreating,
   isSaving
 }) => (
@@ -474,39 +654,19 @@ const ClinicalNotesEditor: React.FC<EditorProps> = ({
       <h3 className="font-medium text-slate-800">
         {isCreating ? 'Create Note' : 'Edit Note'}
       </h3>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onTogglePreview}
-          className={cn(
-            'px-3 py-1.5 text-sm rounded-lg transition-colors',
-            showPreview
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          )}
-        >
-          {showPreview ? 'Edit' : 'Preview'}
-        </button>
-      </div>
     </div>
     
     <div className="flex-1 p-4">
-      {showPreview ? (
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown>{content}</ReactMarkdown>
-        </div>
-      ) : (
-        <div className="h-full border border-slate-200 rounded-lg overflow-hidden">
-          <MarkdownEditor
-            value={content}
-            onChange={onChange}
-            placeholder="Write your clinical note here..."
-            rows={8}
-            maxLength={10000}
-            className="h-full"
-            showToolbar={true}
-          />
-        </div>
-      )}
+      <div className="h-full border border-slate-200 rounded-lg overflow-hidden">
+        <Editor
+          value={content}
+          onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
+          placeholder="Write your clinical note here..."
+          containerProps={{ 
+            style: { height: '300px' }
+          }}
+        />
+      </div>
     </div>
     
     <div className="flex justify-between items-center p-4 border-t border-slate-200">
@@ -547,19 +707,68 @@ interface ViewerProps {
   note: ClinicalNoteWithPatientCode
   onEdit: () => void
   onDelete: () => void
+  authorEmail?: string | null
+  onAuthorEmailLoad?: (email: string) => void
 }
 
-const ClinicalNoteViewer: React.FC<ViewerProps> = ({ note, onEdit, onDelete }) => (
+const ClinicalNoteViewer: React.FC<ViewerProps> = ({ 
+  note, 
+  onEdit, 
+  onDelete, 
+  authorEmail: cachedAuthorEmail, 
+  onAuthorEmailLoad 
+}) => {
+  const [localAuthorEmail, setLocalAuthorEmail] = React.useState<string | null>(cachedAuthorEmail || null)
+  const [isLoadingEmail, setIsLoadingEmail] = React.useState(false)
+  
+  React.useEffect(() => {
+    // Only load email if not cached and not already loading
+    if (!localAuthorEmail && !isLoadingEmail) {
+      setIsLoadingEmail(true)
+      ClinicalNotesService.getCurrentUserEmail()
+        .then(email => {
+          setLocalAuthorEmail(email)
+          onAuthorEmailLoad?.(email)
+        })
+        .catch(err => {
+          console.warn('Failed to load author email:', err)
+          setLocalAuthorEmail('Unknown')
+        })
+        .finally(() => setIsLoadingEmail(false))
+    }
+  }, [localAuthorEmail, isLoadingEmail, onAuthorEmailLoad])
+  
+  return (
   <div className="flex flex-col h-full">
     <div className="flex items-center justify-between p-4 border-b border-slate-200">
       <div className="flex items-center gap-3">
         <div>
           <div className="text-sm text-slate-500">
-            Created {new Date(note.created_at).toLocaleDateString()} at {new Date(note.created_at).toLocaleTimeString()}
+            Created: {ClinicalNotesService.formatEuropeanTimestamp(note.created_at)}
           </div>
           {note.updated_at !== note.created_at && (
             <div className="text-sm text-slate-500">
-              Updated {new Date(note.updated_at).toLocaleDateString()} at {new Date(note.updated_at).toLocaleTimeString()}
+              Updated: {ClinicalNotesService.formatEuropeanTimestamp(note.updated_at)}
+            </div>
+          )}
+          {note.patient_code && (
+            <div className="text-sm text-slate-500">
+              Patient: {note.patient_code}
+            </div>
+          )}
+          {isLoadingEmail ? (
+            <div className="text-sm text-slate-500">
+              <span className="inline-flex items-center gap-1">
+                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading author...
+              </span>
+            </div>
+          ) : localAuthorEmail && (
+            <div className="text-sm text-slate-500">
+              Author: {localAuthorEmail}
             </div>
           )}
         </div>
@@ -582,10 +791,11 @@ const ClinicalNoteViewer: React.FC<ViewerProps> = ({ note, onEdit, onDelete }) =
     
     <div className="flex-1 p-4 overflow-y-auto">
       <div className="prose prose-sm max-w-none">
-        <ReactMarkdown>{note.content}</ReactMarkdown>
+        <div dangerouslySetInnerHTML={{ __html: note.content }} />
       </div>
     </div>
   </div>
-)
+  )
+}
 
 export default ClinicalNotesModal
