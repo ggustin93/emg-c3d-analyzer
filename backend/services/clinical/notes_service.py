@@ -10,6 +10,11 @@ Key Features:
 - Batch loading for UI performance optimization
 - Row Level Security (RLS) enforcement
 - Integration with existing EMG C3D Analyzer patterns
+
+IMPORTANT: All methods are SYNCHRONOUS (not async) because:
+- The Supabase Python client (supabase-py) is synchronous by default
+- This follows KISS principle - no unnecessary async complexity
+- All database operations use .execute() directly without await
 """
 
 from typing import List, Dict, Optional, Tuple
@@ -44,7 +49,7 @@ class ClinicalNotesService:
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client
         
-    async def _get_user_email(self, user_id: UUID) -> Optional[str]:
+    def _get_user_email(self, user_id: UUID) -> Optional[str]:
         """
         Get user email from Supabase Auth.
         For now, return a placeholder since we need RLS policy access to auth.users.
@@ -56,7 +61,7 @@ class ClinicalNotesService:
         # 3. Admin client access
         return None
         
-    async def _resolve_patient_code_to_id(self, patient_code: str) -> Optional[UUID]:
+    def _resolve_patient_code_to_id(self, patient_code: str) -> Optional[UUID]:
         """
         Convert patient_code (P001) to patient_id UUID.
         
@@ -105,7 +110,7 @@ class ClinicalNotesService:
             logger.error(f"Error resolving patient_id {patient_id}: {str(e)}")
             return None
     
-    async def _enrich_notes_with_patient_codes(
+    def _enrich_notes_with_patient_codes(
         self, 
         notes: List[ClinicalNote]
     ) -> List[ClinicalNoteWithPatientCode]:
@@ -152,7 +157,7 @@ class ClinicalNotesService:
         
         return enriched_notes
         
-    async def create_file_note(
+    def create_file_note(
         self, 
         file_path: str, 
         content: str, 
@@ -202,7 +207,7 @@ class ClinicalNotesService:
             logger.error(f"Database error creating file note: {str(e)}")
             raise RepositoryError(f"Database error creating file note: {str(e)}")
     
-    async def create_patient_note(
+    def create_patient_note(
         self,
         patient_code: str,
         content: str,
@@ -237,7 +242,7 @@ class ClinicalNotesService:
             raise ValueError("Patient code cannot be empty")
         
         # Convert patient_code to patient_id
-        patient_id = await self._resolve_patient_code_to_id(patient_code)
+        patient_id = self._resolve_patient_code_to_id(patient_code)
         if not patient_id:
             raise ValueError(f"Patient not found: {patient_code}")
         
@@ -261,7 +266,7 @@ class ClinicalNotesService:
             logger.error(f"Database error creating patient note: {str(e)}")
             raise RepositoryError(f"Database error creating patient note: {str(e)}")
     
-    async def get_notes_indicators(
+    def get_notes_indicators(
         self,
         author_id: UUID,
         file_paths: List[str] = None,
@@ -342,7 +347,7 @@ class ClinicalNotesService:
             logger.error(f"Database error retrieving note indicators: {str(e)}")
             raise RepositoryError(f"Database error retrieving note indicators: {str(e)}")
     
-    async def update_note(
+    def update_note(
         self,
         note_id: UUID,
         content: str,
@@ -374,7 +379,7 @@ class ClinicalNotesService:
             logger.error(f"Database error updating note: {str(e)}")
             raise RepositoryError(f"Database error updating note: {str(e)}")
     
-    async def delete_note(self, note_id: UUID, author_id: UUID) -> bool:
+    def delete_note(self, note_id: UUID, author_id: UUID) -> bool:
         """Delete note. RLS ensures user can only delete own notes."""
         logger.info(f"Deleting note: {note_id}, author: {author_id}")
         
@@ -395,7 +400,7 @@ class ClinicalNotesService:
             logger.error(f"Database error deleting note: {str(e)}")
             raise RepositoryError(f"Database error deleting note: {str(e)}")
     
-    async def get_file_notes(
+    def get_file_notes(
         self,
         file_path: str,
         author_id: UUID
@@ -411,7 +416,7 @@ class ClinicalNotesService:
             ).execute()
             
             notes = [ClinicalNote(**note_data) for note_data in (result.data or [])]
-            enriched_notes = await self._enrich_notes_with_patient_codes(notes)
+            enriched_notes = self._enrich_notes_with_patient_codes(notes)
             
             logger.info(f"Retrieved {len(enriched_notes)} file notes")
             return enriched_notes
@@ -420,7 +425,7 @@ class ClinicalNotesService:
             logger.error(f"Database error retrieving file notes: {str(e)}")
             raise RepositoryError(f"Database error retrieving file notes: {str(e)}")
     
-    async def get_patient_notes(
+    def get_patient_notes(
         self,
         patient_code: str,
         author_id: UUID
@@ -432,7 +437,7 @@ class ClinicalNotesService:
         logger.info(f"Getting patient notes for: {patient_code}, author: {author_id}")
         
         # Convert patient_code to patient_id
-        patient_id = await self._resolve_patient_code_to_id(patient_code)
+        patient_id = self._resolve_patient_code_to_id(patient_code)
         if not patient_id:
             logger.warning(f"Patient not found: {patient_code}")
             return []
@@ -445,7 +450,7 @@ class ClinicalNotesService:
             ).execute()
             
             notes = [ClinicalNote(**note_data) for note_data in (result.data or [])]
-            enriched_notes = await self._enrich_notes_with_patient_codes(notes)
+            enriched_notes = self._enrich_notes_with_patient_codes(notes)
             
             logger.info(f"Retrieved {len(enriched_notes)} patient notes")
             return enriched_notes
@@ -454,7 +459,7 @@ class ClinicalNotesService:
             logger.error(f"Database error retrieving patient notes: {str(e)}")
             raise RepositoryError(f"Database error retrieving patient notes: {str(e)}")
     
-    async def extract_patient_code_from_file_path(self, file_path: str) -> Optional[str]:
+    def extract_patient_code_from_file_path(self, file_path: str) -> Optional[str]:
         """
         Extract patient code from file path for UI integration.
         

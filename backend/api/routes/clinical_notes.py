@@ -69,7 +69,7 @@ async def create_file_note(
                 detail="Note type must be 'file' for file notes"
             )
         
-        note = await notes_service.create_file_note(
+        note = notes_service.create_file_note(
             file_path=file_path,
             content=request.content,
             author_id=author_id
@@ -117,7 +117,7 @@ async def create_patient_note(
                 detail="Note type must be 'patient' for patient notes"
             )
         
-        note = await notes_service.create_patient_note(
+        note = notes_service.create_patient_note(
             patient_code=patient_code,
             content=request.content,
             author_id=author_id
@@ -156,7 +156,7 @@ async def get_file_notes(
         NotesListResponse: List of notes with resolved patient codes
     """
     try:
-        notes = await notes_service.get_file_notes(
+        notes = notes_service.get_file_notes(
             file_path=file_path,
             author_id=author_id
         )
@@ -188,7 +188,7 @@ async def get_patient_notes(
         NotesListResponse: List of notes with resolved patient codes
     """
     try:
-        notes = await notes_service.get_patient_notes(
+        notes = notes_service.get_patient_notes(
             patient_code=patient_code,
             author_id=author_id
         )
@@ -224,7 +224,7 @@ async def update_note(
         HTTPException: 400 for validation errors, 404 for note not found, 500 for server errors
     """
     try:
-        note = await notes_service.update_note(
+        note = notes_service.update_note(
             note_id=note_id,
             content=request.content,
             author_id=author_id
@@ -268,7 +268,7 @@ async def delete_note(
         HTTPException: 404 for note not found, 500 for server errors
     """
     try:
-        success = await notes_service.delete_note(
+        success = notes_service.delete_note(
             note_id=note_id,
             author_id=author_id
         )
@@ -307,7 +307,7 @@ async def get_notes_indicators(
         NotesIndicators: Count mappings for files and patients
     """
     try:
-        indicators = await notes_service.get_notes_indicators(
+        indicators = notes_service.get_notes_indicators(
             author_id=author_id,
             file_paths=request.file_paths or [],
             patient_codes=request.patient_codes or []
@@ -342,7 +342,7 @@ async def extract_patient_code_from_file_path(
         dict: Patient code if found in path, None otherwise
     """
     try:
-        patient_code = await notes_service.extract_patient_code_from_file_path(file_path)
+        patient_code = notes_service.extract_patient_code_from_file_path(file_path)
         
         logger.debug(f"Patient code extraction for {file_path}: {patient_code}")
         return {"patient_code": patient_code, "file_path": file_path}

@@ -1,5 +1,11 @@
 """Supabase client configuration for the EMG C3D Analyzer
 Provides centralized database connection management.
+
+IMPORTANT: This project uses the SYNCHRONOUS Supabase Python client.
+- All database operations are synchronous (no async/await needed)
+- Service methods using this client should be regular functions, not async
+- For testing, use Mock from unittest.mock, not AsyncMock
+- This follows KISS principle - keeping it simple without unnecessary async complexity
 """
 
 import logging
