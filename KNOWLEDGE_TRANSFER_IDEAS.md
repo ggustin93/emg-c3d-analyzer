@@ -1,379 +1,298 @@
-# Table of contents
-*To be completed*
-- RLS functions and repositories
-  -> check docs/DATABASE_FUNCTIONS_AND_RLS.md
+# EMG C3D Analyzer - System Architecture Documentation
 
-- RLS rules (Supabase Cloud)
+This document provides essential knowledge transfer for the EMG C3D Analyzer platform, focusing on the core systems that enable rehabilitation therapy through EMG data analysis. Our architecture emphasizes simplicity, security, and performance.
 
-# Authentication System Documentation
+## Table of Contents
 
-## Overview
-The EMG C3D Analyzer implements a **simplified, secure authentication system** following the KISS (Keep It Simple, Stupid) principle. The system uses Supabase Auth for authentication and Row Level Security (RLS) for authorization, creating a clean separation of concerns.
+1. [Navigation System](#1-navigation-system)
+2. [Authentication System](#2-authentication-system)
+3. [Database & RLS Policies](#3-database--rls-policies)
+4. [Architecture Decisions](#4-architecture-decisions)
 
-**Important Note**: The authentication system does **NOT** use Zustand for storing logged users. Authentication state is managed entirely through React hooks (`useAuth`) and React Context API (`AuthContext`), not through Zustand stores.
+---
 
-**Latest Update (2025-01-07)**: Enhanced to fetch full user profile data from `user_profiles` table, fixing the "researcher • Unknown" display issue.
+## 1. Navigation System
 
-## Architecture Principles
+### 1.1 Overview
+The navigation system provides seamless, URL-based routing throughout the application. Built on React Router v7, it ensures fast transitions (<200ms) and intuitive browser behavior with proper back/forward button support.
 
-### 1. Separation of Concerns
-- **Authentication** (Who you are): Handled by frontend with Supabase Auth
-- **Authorization** (What you can do): Handled by database RLS policies
-- **No authorization logic in application code**: Single source of truth in database
+```
+┌─────────────┐     ┌──────────┐     ┌─────────────┐
+│   Browser   │────▶│  Router  │────▶│  Component  │
+│     URL     │     │  Loader  │     │   Render    │
+└─────────────┘     └──────────┘     └─────────────┘
+                          │
+                    Pre-fetch Data
+```
 
-### 2. Technology Stack
-- **Frontend**: React 19 with TypeScript
-- **Auth Provider**: Supabase Auth (JWT-based)
-- **Backend**: FastAPI (thin JWT validation layer)
-- **Database**: PostgreSQL with RLS policies
+### 1.2 Core Architecture
+- **React Router v7**: Declarative routing with loaders and actions
+- **URL-based navigation**: Routes as single source of truth
+- **SSR-ready**: Prepared for server-side rendering
 
-## Implementation Details
+### 1.3 Key Components
 
-### Frontend Authentication (`useAuth` Hook)
-
-**Location**: `frontend/src/hooks/useAuth.ts` (317 lines)
-
-**Key Features**:
-- Direct Supabase integration without unnecessary abstraction
-- Automatic session management with token refresh
-- Session expiration validation on mount
-- **Full profile fetching**: Retrieves complete user profile data from `user_profiles` table
-- Role fetching for UI rendering only (not security)
-- Enhanced error handling with user-friendly messages
-- **Fixed**: Loading state loops and race conditions with `useRef` for initialization tracking
-- **No Zustand**: Authentication state managed via React hooks and Context API only
-
-**Core Functions**:
+#### 1.3.1 Route Structure (`/src/App.tsx`)
 ```typescript
-interface UserProfileData {
-  id: string
-  role: string
-  first_name?: string
-  last_name?: string
-  full_name?: string
-  institution?: string
-  department?: string
-  access_level: string
-  user_code?: string
-  created_at: string
-  updated_at?: string
-  last_login?: string
-}
+createBrowserRouter([
+  {
+    path: '/',
+    element: <RootLayout />,
+    loader: rootLoader,
+    errorElement: <ErrorBoundary />,
+    children: [
+      { path: 'login', element: <PublicLayout />, ... },
+      { path: 'dashboard', element: <DashboardLayout />, ... },
+      { path: 'analysis', element: <DashboardLayout />, ... },
+      { path: 'logout', loader: logoutAction }
+    ]
+  }
+])
+```
 
-interface AuthState {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  userRole: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
-  userProfile: UserProfileData | null  // Full profile data
-}
+#### 1.3.2 Data Loading (`/src/routes/loaders.ts`)
+- **rootLoader**: Fetches auth state for entire application
+- **protectedLoader**: Guards protected routes, redirects if unauthenticated
+- **publicLoader**: Redirects authenticated users from login page
 
-interface AuthActions {
-  login: (email: string, password: string) => Promise<{ data: Session | null; error: Error | null }>
-  logout: () => Promise<{ error: Error | null }>
+#### 1.3.3 Form Actions (`/src/routes/actions.ts`)
+- **loginAction**: Handles authentication form submission
+- **logoutAction**: Clears session and redirects
+
+### 1.4 Layout System
+1. **RootLayout**: Base layout providing auth context
+2. **PublicLayout**: Unauthenticated pages with header (login)
+3. **DashboardLayout**: Authenticated pages with full header and footer
+
+### 1.5 Navigation Flow
+
+### 1.6 Implementation Patterns
+
+#### 1.6.1 Protected Route Pattern
+```typescript
+export async function protectedLoader() {
+  const authData = await AuthService.getAuthData()
+  if (!authData.session) {
+    const from = window.location.pathname
+    throw redirect(`/login?from=${encodeURIComponent(from)}`)
+  }
+  return authData
 }
 ```
 
-**Session Management**:
-- Validates session expiration on app mount
-- Handles TOKEN_REFRESHED events without re-fetching roles
-- Logs token refresh timestamps for debugging
-- Automatic cleanup of expired sessions
+#### 1.6.2 Form Handling
+```tsx
+// LoginPage.tsx
+import { Form, useActionData, useNavigation } from 'react-router-dom'
 
-### Backend JWT Validation
+<Form method="post">
+  <input name="email" type="email" required />
+  <input name="password" type="password" required />
+  <Button type="submit" disabled={navigation.state === 'submitting'}>
+    Sign In
+  </Button>
+</Form>
+```
 
-**Location**: `backend/api/dependencies/auth.py` (84 lines)
+#### 1.6.3 Error Handling
+- **ErrorBoundary component**: Graceful 404 and error pages
+- **User-friendly messages**: Clear navigation options
+- **Fallback routes**: Always provide path back to dashboard
 
-**Key Features**:
-- Thin authentication layer - JWT validation only
-- No role checking or authorization logic
+### 1.7 Performance
+- Route transitions: <200ms
+- No flash of unauthorized content
+- URL-driven state (back/forward buttons work)
+
+### 1.8 Routes
+- **Public**: `/`, `/login`, `/logout`
+- **Protected**: `/dashboard` (role-based), `/analysis?file=<name>&date=<date>`
+
+### 1.9 Auth Integration
+```typescript
+function Dashboard() {
+  const { userRole } = useOutletContext()
+  
+  switch (userRole) {
+    case 'admin': return <AdminDashboard />
+    case 'therapist': return <TherapistDashboard />
+    case 'researcher': return <ResearcherDashboard />
+  }
+}
+```
+
+### 1.10 Quick Reference
+```typescript
+// Navigate programmatically
+const navigate = useNavigate()
+navigate('/dashboard')
+navigate('/analysis?file=test.c3d')
+
+// React Router Links
+<Link to="/dashboard">Dashboard</Link>
+
+// Logout flow
+navigate('/logout')  // → logoutAction → redirect
+```
+
+
+---
+
+## 2. Authentication System
+
+### 2.1 Overview
+The authentication system provides secure, role-based access control with a clear separation between authentication (who you are) and authorization (what you can do). Built on Supabase Auth with PostgreSQL RLS policies, it ensures data security at the database level.
+
+```
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐
+│   Frontend  │───►  │   Supabase   │───►  │  Database   │
+│   (React)   │ JWT  │     Auth     │ RLS  │    (RLS)    │
+└─────────────┘      └──────────────┘      └─────────────┘
+       │                                           │
+       └────────── useAuth Hook ──────────────────┘
+```
+
+### 2.2 Architecture
+- **Authentication**: Frontend with Supabase Auth (who you are)
+- **Authorization**: Database RLS policies (what you can do)
+- **Stack**: React 19 + Supabase Auth + FastAPI (JWT validation) + PostgreSQL RLS
+
+### 2.3 Implementation
+
+#### 2.3.1 Frontend (`useAuth` Hook)
+- Direct Supabase integration
+- Automatic session management with token refresh
+- Full user profile fetching from `user_profiles` table
+- Role-based UI rendering (not for security)
+
+#### 2.3.2 Backend (`get_current_user`)
+- JWT validation only (no authorization logic)
 - Token pass-through for RLS enforcement
-- Clean dependency injection with FastAPI
+- Returns: `{'id': user_id, 'email': email, 'token': token}`
 
-**Core Function**:
-```python
-async def get_current_user(credentials: HTTPAuthorizationCredentials) -> Dict[str, str]:
-    # Validates JWT token with Supabase
-    # Returns: {'id': user_id, 'email': email, 'token': token}
-    # Token is critical for RLS enforcement
+#### 2.3.3 Database (RLS Policies)
+- Single source of truth for permissions
+- Therapists: Access own patients only
+- Admins: Full system access
+- Researchers: Read-only access to anonymized data
+
+### 2.4 User Roles
+- **ADMIN**: Full system access
+- **THERAPIST**: Own patients only
+- **RESEARCHER**: Read-only anonymized data
+- Frontend uses roles for UI only; RLS enforces actual permissions
+
+### 2.5 Authentication Flow
+
+```
+User Login                API Request Flow
+──────────                ─────────────────
+                         
+1. Credentials     ───►   1. React + JWT
+2. Supabase Auth  ◄───    2. FastAPI validates
+3. JWT + Session          3. Database RLS filters
+4. Store in Hook          4. Filtered data returns
 ```
 
-### Database Authorization (RLS)
+### 2.6 Key Practices
+- JWT with automatic refresh
+- RLS as primary authorization
+- No client-side security logic
+- Single `useAuth` hook for all auth needs
+- TypeScript for type safety
 
-**Key Principle**: Database is the single source of truth for permissions
+### 2.7 Common Operations
+```typescript
+// Login
+const { login } = useAuth()
+await login(email, password)
 
-**Policy Examples**:
+// Logout
+const { logout } = useAuth()
+await logout()
+
+// Check auth
+const { user, userRole, userProfile } = useAuth()
+
+// Protected routes handled by loaders
+```
+
+
+### 2.9 Troubleshooting
+- **Invalid token**: Force logout and re-login
+- **Email verification**: Check email for link
+- **Role not loading**: Check user_profiles table
+- **Session expired**: Automatic logout performed
+
+
+### 2.10 Architecture Decision: Direct Supabase vs FastAPI
+
+**Use Direct Supabase for**:
+- Simple CRUD operations
+- Real-time subscriptions
+- File storage
+- Auth state management
+
+**Use FastAPI for**:
+- EMG signal processing
+- Complex computations
+- External API integrations
+- Heavy algorithms (NumPy, SciPy)
+
+---
+
+## 3. Database & RLS Policies
+
+Row Level Security (RLS) serves as the single source of truth for authorization. All data access is filtered at the database level based on user roles and relationships.
+
+### 3.1 Core RLS Pattern
 ```sql
--- Therapists can only view their own patients
+-- Example: Therapists see only their patients
 CREATE POLICY "therapist_own_patients" ON patients
 FOR SELECT USING (therapist_id = auth.uid());
 
--- Admins have full access
-CREATE POLICY "admin_full_access" ON patients
-FOR ALL USING (
-  EXISTS (
-    SELECT 1 FROM user_profiles
-    WHERE id = auth.uid() AND role = 'ADMIN'
-  )
-);
+-- Storage: Files organized by patient code
+public.user_owns_patient(split_part(name, '/', 1))
 ```
 
-## User Roles
+### 3.2 Policy Documentation
+See `docs/DATABASE_FUNCTIONS_AND_RLS.md` for complete RLS implementation.
 
-### Three Role Types
-1. **ADMIN**: Full system access, user management, configuration
-2. **THERAPIST**: Access to own patients and sessions only
-3. **RESEARCHER**: Read-only access to anonymized data
+---
 
-### Role Usage
-- **Frontend**: Roles used for UI conditional rendering only
-- **Backend**: No role checking - delegates to RLS
-- **Database**: RLS policies enforce actual permissions
+## 4. Architecture Decisions
 
-## Authentication Flow
+### 4.1 When to Use Direct Supabase vs FastAPI
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant React
-    participant Supabase Auth
-    participant FastAPI
-    participant Database RLS
-    
-    User->>React: Login credentials
-    React->>Supabase Auth: signInWithPassword()
-    Supabase Auth-->>React: JWT + Session
-    React->>React: Store session, fetch role
-    
-    Note over React: For API calls
-    React->>FastAPI: Request + JWT
-    FastAPI->>Supabase Auth: Validate JWT
-    Supabase Auth-->>FastAPI: User info
-    FastAPI->>Database RLS: Query + JWT
-    Database RLS-->>FastAPI: Filtered data (based on RLS)
-    FastAPI-->>React: Response
+Our architecture follows the KISS principle - use the simplest tool that solves the problem.
+
+```
+Decision Tree
+─────────────
+                    
+Is it computational?  ──Yes──► FastAPI
+        │                     (EMG, C3D, NumPy)
+        No
+        ▼
+Is it simple CRUD?   ──Yes──► Direct Supabase
+        │                     (Notes, profiles)
+        No
+        ▼
+    FastAPI
 ```
 
-## Best Practices Applied
+**Direct Supabase**: Auth, CRUD, real-time, storage  
+**FastAPI**: EMG processing, C3D parsing, heavy computation, webhooks
 
-### Security
-✅ JWT tokens with automatic refresh
-✅ Session expiration validation
-✅ RLS as primary authorization layer
-✅ No client-side security logic
-✅ Secure token pass-through to database
+---
 
-### Performance
-✅ Minimal re-renders with proper React hooks
-✅ Token refresh without role re-fetching
-✅ Direct Supabase client for simple operations
-✅ Efficient session state management
+## Summary
 
-### Developer Experience
-✅ Single `useAuth` hook for all auth needs
-✅ Clear error messages for common failures
-✅ TypeScript for type safety
-✅ Clean separation of concerns
+This architecture provides a robust foundation for the EMG C3D Analyzer platform:
 
-## Common Operations
+- **Navigation**: Fast, URL-based routing with React Router v7
+- **Authentication**: Secure JWT-based auth with Supabase
+- **Authorization**: Database-level RLS policies (single source of truth)
+- **Architecture**: KISS principle - use the simplest tool for each job
 
-### Login
-```typescript
-const { login } = useAuth()
-const { data, error } = await login(email, password)
-// Enhanced error messages for invalid credentials, unverified email, etc.
-```
-
-### Logout
-```typescript
-const { logout } = useAuth()
-await logout() // Cleans up session and local state
-```
-
-### Check Authentication
-```typescript
-const { user, loading, userRole, userProfile } = useAuth()
-if (user) {
-  // User is authenticated
-  // userRole can be used for UI rendering
-  // userProfile contains full profile data (name, institution, etc.)
-  console.log(`Welcome ${userProfile?.full_name || user.email}`)
-}
-```
-
-### Protected Routes
-```tsx
-<AuthGuard>
-  <ProtectedComponent />
-</AuthGuard>
-// AuthGuard handles loading states and redirects
-```
-
-## Migration from Previous Implementation
-
-### Removed Files (Obsolete)
-- ❌ `AuthGuardFixed.tsx` - Duplicate implementation
-- ❌ `useAuthFixed.ts` - Redundant hook
-- ❌ `authUtils.ts` - Unnecessary utilities
-- ❌ Test files - Debug utilities
-
-### Improvements
-- **28% code reduction** in useAuth hook (439 → 317 lines) - now includes profile fetching
-- **86% code reduction** in AuthContext (366 → 50 lines)
-- **Removed** all redundant auth implementations
-- **Enhanced** error handling and session management
-- **Fixed** loading state loops and race conditions
-- **Added** full user profile fetching from `user_profiles` table
-- **Fixed** "researcher • Unknown" display issue in UserProfile component
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Invalid authentication token"**
-   - Token expired or invalid
-   - Solution: Force logout and re-login
-
-2. **"Please verify your email"**
-   - Email confirmation required
-   - Solution: Check email for verification link
-
-3. **Role not loading**
-   - user_profiles table missing entry
-   - Solution: Ensure user profile created on signup
-
-4. **"researcher • Unknown" display**
-   - Fixed: useAuth now fetches full profile data
-   - Profile data includes name, institution, department
-   - UserProfile component displays actual user data
-
-5. **Session expired on mount**
-   - Normal behavior for expired sessions
-   - Automatic logout and cleanup performed
-
-## Future Considerations
-
-### Optional Enhancements
-1. **Session heartbeat** for long-running sessions
-2. **Persistent session** in localStorage
-3. **Multi-factor authentication** support
-4. **OAuth providers** (Google, GitHub, etc.)
-
-### Not Needed (Avoided Complexity)
-- ❌ Complex caching mechanisms
-- ❌ Custom token management
-- ❌ Client-side authorization logic
-- ❌ Role-based route guards (use RLS instead)
-
-## Authentication Architecture Decision
-
-**Decision**: Use Supabase client directly for most operations, FastAPI for complex logic only.
-
-**Rationale**:
-- Reduces complexity and latency by avoiding unnecessary API layers
-- Leverages Supabase RLS as single source of truth for authorization
-- FastAPI only needed for EMG processing and complex business logic
-- Follows KISS principle - simplest solution that works
-
-**Implementation**:
-- **Frontend**: Direct Supabase client for auth, CRUD operations, and storage
-- **Backend**: Thin JWT validation layer, complex processing only (EMG analysis)
-- **Database**: RLS policies handle all authorization decisions
-
-**When to Use Direct Supabase**:
-- Simple CRUD operations (e.g., clinical_notes)
-- Real-time subscriptions
-- File storage operations  
-- Auth state management
-
-**When to Use FastAPI**:
-- Complex business logic (EMG signal processing)
-- Multi-step transactions requiring atomicity
-- External API integrations
-- Heavy computational tasks
-- Custom validation beyond database constraints
-
-----
-
-
-  Policy 1: SELECT (Download/View)
-
-  Policy Name: Therapists can only view their patients files
-Operation: SELECT
-  Target Roles: authenticated
-
-  Policy Definition:
-  ```sql
-  public.user_owns_patient(split_part(name, '/', 1))
-  ```
-
-  Policy 2: INSERT (Upload)
-
-  Policy Name: Therapists can only upload to their patients folders
-  Operation: INSERT
-  Target Roles: authenticated
-
-  Policy Definition:
-  ```sql
-  public.user_owns_patient(split_part(name, '/', 1))
-  ```
-  Policy 3: UPDATE (Replace files)
-
-  Policy Name: Therapists can only update their patients files
-  Operation: UPDATE
-  Target Roles: authenticated
-
-  USING clause:
-
-  ```sql
-  public.user_owns_patient(split_part(name, '/', 1))
-  WITH CHECK clause:
-  public.user_owns_patient(split_part(name, '/', 1))
-  ```
-
-  Policy 4: DELETE (Remove files)
-
-  Policy Name: Therapists can only delete their patients files
-  Operation: DELETE
-  Target Roles: authenticated
-
-  Policy Definition:
-  ```sql
-  public.user_owns_patient(split_part(name, '/', 1))
-  ```
-
-----
-
-## Architecture Decision: FastAPI vs Direct Supabase Client
-
-### When to use Direct Supabase Client
-- **Simple CRUD operations** without business logic
-- **User profiles**, preferences, settings
-- **Real-time subscriptions** for live updates
-- **File uploads** to Supabase Storage
-- **Authentication** flows (login, logout, session)
-
-Example: Clinical notes could technically work with direct Supabase:
-```javascript
-// Direct from frontend
-const { data } = await supabase
-  .from('clinical_notes')
-  .select('*, patients(patient_code)')
-  .eq('author_id', user.id)
-```
-
-### When FastAPI is Required
-- **Complex computations** (EMG signal processing, statistical analysis)
-- **Binary file processing** (C3D files with ezc3d library)
-- **Heavy algorithms** requiring NumPy, SciPy, specialized libraries
-- **Webhook endpoints** for Supabase Storage events
-- **Data transformations** beyond simple queries
-- **Proprietary logic** that shouldn't be exposed in frontend
-
-### Current Implementation
-- **Clinical Notes**: Uses FastAPI for consistency, though direct Supabase would work
-- **EMG Processing**: Absolutely requires FastAPI (signal processing, C3D parsing)
-- **Therapy Sessions**: Requires FastAPI (complex calculations, scoring algorithms)
-
-### Decision Principle
-Follow KISS: Use the simplest tool that solves the problem. Don't add layers just for consistency.
+For new team members: Start by understanding the navigation flow, then explore the authentication system, and finally dive into the specific domain logic (EMG processing) as needed.
