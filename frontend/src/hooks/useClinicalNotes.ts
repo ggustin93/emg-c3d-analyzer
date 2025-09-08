@@ -222,6 +222,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
 
   /**
    * Load notes indicators (batch loading for UI performance)
+   * Uses direct Supabase count for efficiency per KISS principle
    */
   const loadIndicators = useCallback(async (
     filePaths: string[],
@@ -230,6 +231,28 @@ export const useClinicalNotes = (): UseNotesReturn => {
     await withLoadingAndError(
       'Load indicators',
       async () => {
+        // For single items, use direct count for real-time accuracy
+        if (filePaths.length === 1 && patientCodes.length === 0) {
+          const count = await ClinicalNotesService.getNotesCount('file', filePaths[0])
+          const indicators: NotesIndicators = {
+            file_notes: { [filePaths[0]]: count },
+            patient_notes: {}
+          }
+          setIndicators(indicators)
+          return indicators
+        }
+        
+        if (patientCodes.length === 1 && filePaths.length === 0) {
+          const count = await ClinicalNotesService.getNotesCount('patient', patientCodes[0])
+          const indicators: NotesIndicators = {
+            file_notes: {},
+            patient_notes: { [patientCodes[0]]: count }
+          }
+          setIndicators(indicators)
+          return indicators
+        }
+        
+        // For batch operations, use cached indicators for performance
         const fetchedIndicators = await ClinicalNotesService.getCachedIndicators(
           filePaths,
           patientCodes
@@ -261,8 +284,32 @@ export const useClinicalNotes = (): UseNotesReturn => {
 
   /**
    * Get notes count for a specific target
+   * Can use cached indicators or fetch directly for real-time accuracy
    */
-  const getNotesCount = useCallback((
+  const getNotesCount = useCallback(async (
+    targetType: 'file' | 'patient',
+    targetId: string,
+    useCache: boolean = true
+  ): Promise<number> => {
+    // If not using cache, get real-time count from Supabase
+    if (!useCache) {
+      return await ClinicalNotesService.getNotesCount(targetType, targetId)
+    }
+    
+    // Otherwise use cached indicators if available
+    if (!indicators) return 0
+    
+    if (targetType === 'file') {
+      return indicators.file_notes[targetId] || 0
+    } else {
+      return indicators.patient_notes[targetId] || 0
+    }
+  }, [indicators])
+
+  /**
+   * Get notes count synchronously from cache
+   */
+  const getNotesCountSync = useCallback((
     targetType: 'file' | 'patient',
     targetId: string
   ): number => {
@@ -282,8 +329,8 @@ export const useClinicalNotes = (): UseNotesReturn => {
     targetType: 'file' | 'patient',
     targetId: string
   ): boolean => {
-    return getNotesCount(targetType, targetId) > 0
-  }, [getNotesCount])
+    return getNotesCountSync(targetType, targetId) > 0
+  }, [getNotesCountSync])
 
   /**
    * Get display name for target
@@ -340,6 +387,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
     clearError,
     refresh,
     getNotesCount,
+    getNotesCountSync,
     hasNotes,
     getTargetDisplayName,
     extractPatientCode,

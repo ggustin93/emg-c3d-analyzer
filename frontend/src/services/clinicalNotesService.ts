@@ -79,11 +79,15 @@ export class ClinicalNotesService {
       note_type: 'file'
     }
 
-    // Ensure file path includes bucket name if not already present
-    const fullPath = filePath.includes('/') ? filePath : `${this.BUCKET_NAME}/${filePath}`
+    // Always send object key format (without bucket prefix) to maintain consistency
+    // Backend expects and stores exact path - we want object keys only
+    let cleanPath = filePath
+    if (cleanPath.startsWith(`${this.BUCKET_NAME}/`)) {
+      cleanPath = cleanPath.substring(`${this.BUCKET_NAME}/`.length)
+    }
     
     // Use query parameter for file path as expected by backend
-    const params = new URLSearchParams({ file_path: fullPath })
+    const params = new URLSearchParams({ file_path: cleanPath })
     
     return this.apiRequest<ClinicalNote>(`/file?${params}`, {
       method: 'POST',
@@ -113,11 +117,15 @@ export class ClinicalNotesService {
    * Get all file notes for a specific C3D file
    */
   static async getFileNotes(filePath: string): Promise<ClinicalNoteWithPatientCode[]> {
-    // Ensure file path includes bucket name if not already present
-    const fullPath = filePath.includes('/') ? filePath : `${this.BUCKET_NAME}/${filePath}`
+    // Always send object key format (without bucket prefix) to maintain consistency
+    // Backend expects and stores exact path - we want object keys only
+    let cleanPath = filePath
+    if (cleanPath.startsWith(`${this.BUCKET_NAME}/`)) {
+      cleanPath = cleanPath.substring(`${this.BUCKET_NAME}/`.length)
+    }
     
     // Use query parameter for file path as expected by backend
-    const params = new URLSearchParams({ file_path: fullPath })
+    const params = new URLSearchParams({ file_path: cleanPath })
     
     const response = await this.apiRequest<NotesListResponse>(
       `/file?${params}`
@@ -209,8 +217,58 @@ export class ClinicalNotesService {
 
   /**
    * Get notes count for a specific target (file or patient)
+   * Uses direct Supabase client for efficiency (KISS principle)
    */
   static async getNotesCount(
+    targetType: 'file' | 'patient',
+    targetId: string
+  ): Promise<number> {
+    try {
+      // Get current user session for auth
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return 0
+
+      // Build query based on target type
+      let query = supabase
+        .from('clinical_notes')
+        .select('*', { count: 'exact', head: true }) // Efficient count without data
+        .eq('author_id', session.user.id)
+
+      if (targetType === 'file') {
+        // Ensure file path includes bucket name
+        const fullPath = targetId.includes('/') ? targetId : `${this.BUCKET_NAME}/${targetId}`
+        query = query.eq('file_path', fullPath)
+      } else {
+        // For patient notes, we need to get patient_id from patient_code
+        // First, get the patient_id for the patient_code
+        const { data: patientData } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('patient_code', targetId)
+          .single()
+        
+        if (!patientData?.id) return 0
+        query = query.eq('patient_id', patientData.id)
+      }
+
+      const { count, error } = await query
+      
+      if (error) {
+        console.warn(`Failed to get notes count: ${error.message}`)
+        return 0
+      }
+
+      return count || 0
+    } catch (error) {
+      console.warn(`Failed to get notes count for ${targetType}:${targetId}`, error)
+      return 0
+    }
+  }
+
+  /**
+   * Get notes count using batch indicators (fallback for batch operations)
+   */
+  static async getNotesCountBatch(
     targetType: 'file' | 'patient',
     targetId: string
   ): Promise<number> {
@@ -228,7 +286,7 @@ export class ClinicalNotesService {
         return indicators.patient_notes[targetId] || 0
       }
     } catch (error) {
-      console.warn(`Failed to get notes count for ${targetType}:${targetId}`, error)
+      console.warn(`Failed to get notes count batch for ${targetType}:${targetId}`, error)
       return 0
     }
   }
@@ -361,6 +419,30 @@ export class ClinicalNotesService {
     
     // Otherwise, prepend bucket name
     return `${this.BUCKET_NAME}/${fileName}`
+  }
+
+  /**
+   * Format timestamp to European format (DD-MM-YYYY HH:mm)
+   */
+  static formatEuropeanTimestamp(timestamp: string): string {
+    const date = new Date(timestamp)
+    
+    // Format: DD-MM-YYYY HH:mm (24-hour format)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    
+    return `${day}-${month}-${year} ${hours}:${minutes}`
+  }
+
+  /**
+   * Get current user email from Supabase auth
+   */
+  static async getCurrentUserEmail(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.user?.email || null
   }
 }
 

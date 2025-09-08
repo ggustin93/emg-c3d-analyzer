@@ -129,7 +129,8 @@ export interface UseNotesReturn {
   // Utility functions
   clearError: () => void;
   refresh: () => Promise<void>;
-  getNotesCount: (type: 'file' | 'patient', target: string) => number;
+  getNotesCount: (type: 'file' | 'patient', target: string, useCache?: boolean) => Promise<number>;
+  getNotesCountSync: (type: 'file' | 'patient', target: string) => number;
   hasNotes: (type: 'file' | 'patient', target: string) => boolean;
   getTargetDisplayName: (type: 'file' | 'patient', targetId: string) => string;
   extractPatientCode: (filePath: string) => string | null;
