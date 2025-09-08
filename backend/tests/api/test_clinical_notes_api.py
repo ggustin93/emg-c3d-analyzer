@@ -8,7 +8,7 @@ Validates request/response handling, authentication, and error scenarios.
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from datetime import datetime
 
