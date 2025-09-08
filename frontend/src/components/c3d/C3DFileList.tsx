@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/tooltip';
 import SupabaseStorageService from '@/services/supabaseStorage';
 // Clinical Notes integration
-import { ClinicalNotesBadge, AddNoteBadge } from '@/components/shared/ClinicalNotesBadge';
+import ClinicalNotesBadge from '@/components/shared/ClinicalNotesBadge';
+import AddNoteBadge from '@/components/shared/AddNoteBadge';
 import { ClinicalNotesModal } from '@/components/shared/ClinicalNotesModal';
-import { useC3DFileNotes } from '@/hooks/useC3DFileNotes';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   C3DFile,
@@ -37,6 +37,9 @@ import {
   formatFullDate,
   isShortSession
 } from '@/services/C3DFileDataResolver';
+
+// Get bucket name from environment variable or use default (consistent with C3DFileBrowser)
+const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
@@ -63,7 +66,6 @@ interface C3DFileListProps {
   // Clinical Notes props
   notesIndicators?: Record<string, number>;
   notesLoading?: boolean;
-  hasNotes?: (filePath: string) => boolean;
 }
 
 const C3DFileList: React.FC<C3DFileListProps> = ({
@@ -78,8 +80,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   resolveSessionDate: customResolveSessionDate,
   // Clinical Notes props
   notesIndicators = {},
-  notesLoading = false,
-  hasNotes
+  notesLoading = false
 }) => {
   // Auth context for role-based rendering
   const { userRole } = useAuth();
@@ -90,6 +91,18 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   // Clinical Notes modal state
   const [selectedFile, setSelectedFile] = useState<C3DFile | null>(null);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
+  
+  // Helper function to get notes count for a file
+  // Database stores paths without bucket prefix, so we need to strip it for lookup
+  const getNotesCount = useCallback((fileName: string): number => {
+    // Files in database are stored as "P001/file.c3d" but components reference "c3d-examples/P001/file.c3d"
+    // We need to check both formats for compatibility during transition
+    const fullPath = `${BUCKET_NAME}/${fileName}`;
+    const dbPath = fileName; // Database format without bucket prefix
+    
+    // Try database format first (new system), then full path (legacy)
+    return notesIndicators[dbPath] || notesIndicators[fullPath] || 0;
+  }, [notesIndicators]);
   
   // Enhanced session date resolver
   const getSessionDate = useCallback((file: C3DFile): string | null => {
@@ -137,24 +150,11 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     
     // Find the file to get its upload date
     const selectedFile = files.find(file => file.id === fileId);
-    console.log('🔍 C3DFileList - handleFileAnalyze:', {
-      fileId,
-      fileName,
-      selectedFile: selectedFile ? {
-        id: selectedFile.id,
-        name: selectedFile.name,
-        created_at: selectedFile.created_at,
-        created_at_type: typeof selectedFile.created_at
-      } : null,
-      willSetUploadDate: !!selectedFile?.created_at
-    });
     
     if (selectedFile) {
-      console.log('✅ C3DFileList - Upload date found:', selectedFile.created_at);
       // Pass upload date directly to avoid race condition
       onFileSelect(fileName, selectedFile.created_at);
     } else {
-      console.log('❌ C3DFileList - No file found for ID:', fileId);
       onFileSelect(fileName);
     }
   };
@@ -525,24 +525,28 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       {visibleColumns.clinical_notes && (
                         <div className="flex items-center gap-2">
                           <span>Notes:</span>
-                          <ClinicalNotesBadge 
-                            count={notesIndicators[`${import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples'}/${file.name}`] || 0}
-                            type="file"
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setNotesModalOpen(true);
-                            }}
-                            loading={notesLoading}
-                          />
-                          <AddNoteBadge 
-                            type="file"
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setNotesModalOpen(true);
-                            }}
-                            disabled={notesLoading}
-                            className="ml-1"
-                          />
+                          {/* Show badge if notes exist, otherwise show add button */}
+                          {getNotesCount(file.name) > 0 ? (
+                            <ClinicalNotesBadge 
+                              count={getNotesCount(file.name)}
+                              type="file"
+                              onClick={() => {
+                                setSelectedFile(file);
+                                setNotesModalOpen(true);
+                              }}
+                              loading={notesLoading}
+                            />
+                          ) : (
+                            <AddNoteBadge 
+                              type="file"
+                              onClick={() => {
+                                setSelectedFile(file);
+                                setNotesModalOpen(true);
+                              }}
+                              disabled={notesLoading}
+                              className="ml-1"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
@@ -733,23 +737,27 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                     {visibleColumns.clinical_notes && (
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <div className="flex items-center gap-1">
-                          <ClinicalNotesBadge 
-                            count={notesIndicators[`${import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples'}/${file.name}`] || 0}
-                            type="file"
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setNotesModalOpen(true);
-                            }}
-                            loading={notesLoading}
-                          />
-                          <AddNoteBadge 
-                            type="file"
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setNotesModalOpen(true);
-                            }}
-                            disabled={notesLoading}
-                          />
+                          {/* Show badge if notes exist, otherwise show add button */}
+                          {getNotesCount(file.name) > 0 ? (
+                            <ClinicalNotesBadge 
+                              count={getNotesCount(file.name)}
+                              type="file"
+                              onClick={() => {
+                                setSelectedFile(file);
+                                setNotesModalOpen(true);
+                              }}
+                              loading={notesLoading}
+                            />
+                          ) : (
+                            <AddNoteBadge 
+                              type="file"
+                              onClick={() => {
+                                setSelectedFile(file);
+                                setNotesModalOpen(true);
+                              }}
+                              disabled={notesLoading}
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -830,14 +838,12 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
             }}
             noteType="file"
             targetId={selectedFile.name}
-            targetDisplayName={`File: ${selectedFile.name}`}
+            targetDisplayName={`File: ${selectedFile.name.split('/').pop() || selectedFile.name}`}
             onNotesChanged={() => {
-              // Notify parent to refresh batch indicators
-              console.log('Notes changed for:', selectedFile.name);
-              // Call parent refresh if provided
+              // Trigger global refresh event
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('refreshNotesIndicators', { 
-                  detail: { filePath: selectedFile.name } 
+                window.dispatchEvent(new CustomEvent('clinical-notes-changed', { 
+                  detail: { targetId: selectedFile.name } 
                 }));
               }
             }}

@@ -51,7 +51,7 @@ import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
 import C3DFileList from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
 // Clinical Notes integration
-import { useBatchC3DFileNotes } from '@/hooks/useC3DFileNotes';
+import useSimpleNotesCount from '@/hooks/useSimpleNotesCount';
 
 // Get bucket name from environment variable or use default
 const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
@@ -112,26 +112,13 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     };
   });
 
-  // Clinical Notes integration - memoized to prevent infinite re-renders
-  const notesFiles = useMemo(() => 
-    files.map(file => ({
-      path: `${BUCKET_NAME}/${file.name}`,
-      name: file.name,
-      patientCode: resolvePatientId(file)
-    })),
-    [files]
-  );
-
-  const batchNotes = useBatchC3DFileNotes({
-    files: notesFiles,
-    enabled: visibleColumns.clinical_notes
-  });
+  // Simple notes count hook - replaces complex batch system
+  const simpleNotes = useSimpleNotesCount(true);
 
   // Listen for notes changes and refresh indicators
   useEffect(() => {
-    const handleNotesRefresh = (event: CustomEvent) => {
-      console.log('Refreshing notes indicators after change:', event.detail);
-      batchNotes.refreshIndicators();
+    const handleNotesRefresh = () => {
+      simpleNotes.refreshNotes();
     };
 
     window.addEventListener('clinical-notes-changed', handleNotesRefresh as EventListener);
@@ -139,7 +126,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return () => {
       window.removeEventListener('clinical-notes-changed', handleNotesRefresh as EventListener);
     };
-  }, [batchNotes.refreshIndicators]);
+  }, [simpleNotes.refreshNotes]);
 
   // Load session data for all files
   const loadSessionData = useCallback(async (fileList: C3DFile[]) => {
@@ -777,9 +764,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           onSort={handleSort}
           visibleColumns={visibleColumns}
           resolveSessionDate={resolveEnhancedSessionDate}
-          notesIndicators={batchNotes.indicators}
-          notesLoading={batchNotes.loading}
-          hasNotes={batchNotes.hasNotes}
+          notesIndicators={simpleNotes.notesCount}
+          notesLoading={simpleNotes.loading}
         />
 
         {/* Pagination Controls */}
