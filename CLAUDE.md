@@ -374,5 +374,16 @@ npm run type-check                       # TypeScript validation
    - **Direct Supabase**: Auth, CRUD, storage, real-time subscriptions
    - **FastAPI**: EMG processing, complex logic, external APIs, heavy computation
 
+### 5.4. Supabase Python Client Architecture
+
+**Important**: The project uses the **synchronous** Supabase Python client (`supabase-py`), not the async version.
+
+- **Client Import**: `from supabase import Client, create_client` (synchronous)
+- **Client Creation**: Uses standard `create_client()` function, not `acreate_client()`
+- **Method Calls**: All Supabase operations are synchronous - no `async/await` needed
+- **Test Mocking**: Use regular `Mock` from unittest.mock, not `AsyncMock`
+
+This follows the KISS principle - keeping the implementation simple without unnecessary async complexity when the synchronous client meets all requirements.
+
 ---
 

@@ -70,26 +70,32 @@ This document establishes the **backend engineering** best practices for our sta
 13. **Centralize Configuration with Pydantic `BaseSettings`**
     Manage all configuration (including Supabase credentials) through environment variables loaded into a single, type-safe Pydantic `BaseSettings` model (e.g., in `config.py`).
 
-14. **Embrace `async` for All I/O Operations**
-    Every call to the Supabase client or any other external service is an I/O operation and **must** use `async def` and `await` to keep the API non-blocking.
+14. **Supabase Python Client is Synchronous**
+    The project uses the standard **synchronous** `supabase-py` client, not the async version. This is a deliberate choice following the KISS principle.
     
     **Critical Implementation Details:**
-    - All service methods that interact with Supabase **must** be `async def`
-    - API routes calling service methods **must** use `await`
-    - Internal service method calls **must** also use `await`
+    - Import: `from supabase import Client, create_client` (NOT from `supabase._async.client`)
+    - Client creation: `create_client(url, key)` returns a synchronous client
+    - All Supabase operations are synchronous - no `async/await` needed for database calls
+    - Service methods that only use Supabase should be regular functions, not `async def`
     - Example pattern:
       ```python
-      # Service layer
-      async def get_file_notes(self, file_path: str, author_id: UUID):
+      # Service layer - SYNCHRONOUS
+      def get_file_notes(self, file_path: str, author_id: UUID):
           result = self.supabase.table('clinical_notes').select('*').execute()
-          enriched_notes = await self._enrich_notes_with_patient_codes(notes)
+          enriched_notes = self._enrich_notes_with_patient_codes(notes)  # No await
           return enriched_notes
       
-      # API route
+      # API route can still be async for other I/O
       @router.get("/file")
       async def get_file_notes(...):
-          notes = await notes_service.get_file_notes(file_path, author_id)
+          notes = notes_service.get_file_notes(file_path, author_id)  # No await needed
       ```
+    
+    **Testing Implications:**
+    - Use regular `Mock` from `unittest.mock`, not `AsyncMock`
+    - Test methods don't need `@pytest.mark.asyncio` for Supabase operations
+    - Mock chains should return values directly, not coroutines
 
 15. **Implement Resilient and Flexible Logic**
     As demonstrated in the C3D channel handling, design your services to be resilient to variations in input data. Implement fallbacks and flexible mapping to gracefully handle real-world inconsistencies.
