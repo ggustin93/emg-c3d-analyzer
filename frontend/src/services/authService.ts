@@ -361,4 +361,34 @@ export class AuthService {
   static onAuthStateChange(callback: (event: string, session: Session | null) => void) {
     return supabase.auth.onAuthStateChange(callback)
   }
+
+  /**
+   * Check if user is authenticated (for React Router guards)
+   */
+  static async isAuthenticated(): Promise<boolean> {
+    const response = await this.getCurrentSession()
+    return response.success && !!response.data
+  }
+
+  /**
+   * Get auth data for route loaders
+   * Includes both session and profile for role information
+   */
+  static async getAuthData() {
+    const sessionResponse = await this.getCurrentSession()
+    
+    if (!sessionResponse.success || !sessionResponse.data) {
+      return { session: null, profile: null, user: null }
+    }
+    
+    const profileResponse = await this.getResearcherProfile(
+      sessionResponse.data.user.id
+    )
+    
+    return {
+      session: sessionResponse.data,
+      user: sessionResponse.data.user,
+      profile: profileResponse.data
+    }
+  }
 }

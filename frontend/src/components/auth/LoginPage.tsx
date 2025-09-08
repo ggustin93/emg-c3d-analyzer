@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Form, useActionData, useNavigation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Spinner from '@/components/ui/Spinner';
-import { useAuth } from '@/contexts/AuthContext';
-import { LoginCredentials } from '@/types/auth';
 import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon } from '@radix-ui/react-icons';
 
 interface LoginPageProps {
@@ -19,84 +18,50 @@ interface LoginPageProps {
  * Professional, on-page authentication without modal disruption
  * 
  * Features:
- * - Concurrent navigation transitions for smooth post-login experience
- * - Performance optimized callbacks with startTransition
+ * - React Router 7 Form for <200ms navigation
+ * - Server-side action handling with instant redirects
  * - Non-blocking authentication state updates
  */
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const { login, loading } = useAuth();
-  const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState<string | null>(null);
+  const actionData = useActionData() as { error?: string } | undefined;
+  const navigation = useNavigation();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get('from') || '/dashboard';
+  
+  const isSubmitting = navigation.state === 'submitting';
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
   // Load saved email from localStorage if available
   useEffect(() => {
     const savedEmail = localStorage.getItem('emg_analyzer_saved_email');
     if (savedEmail) {
-      setCredentials(prev => ({ ...prev, email: savedEmail }));
+      setEmail(savedEmail);
     }
   }, []);
 
-  // Memoized and optimized input change handler
-  const handleInputChange = useCallback((field: keyof LoginCredentials) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    setCredentials(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    // Clear error when user starts typing (only if error exists)
-    if (error) setError(null);
-  }, [error]);
-
-  // Optimized submit handler with performance logging
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitStart = performance.now();
-    console.debug('[LoginPage] Sign-in initiated');
-    
-    if (!credentials.email || !credentials.password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    setError(null);
-
-    try {
-      // Main authentication call - this is where the delay occurs
-      const response = await login(credentials.email, credentials.password);
-      
-      if (response.data && !response.error) {
-        // Optimize localStorage operations - do them asynchronously after success
-        setTimeout(() => {
-          if (rememberMe) {
-            localStorage.setItem('emg_analyzer_saved_email', credentials.email);
-          } else {
-            localStorage.removeItem('emg_analyzer_saved_email');
-          }
-        }, 0);
-        
-        const totalTime = performance.now() - submitStart;
-        console.debug(`[LoginPage] Sign-in completed in ${totalTime.toFixed(2)}ms`);
-        
-        // Skip form clearing - user will be redirected anyway
-        // Call success callback with concurrent transition to prevent blocking
-        if (onLoginSuccess) {
-          startTransition(() => {
-            onLoginSuccess();
-          });
-        }
+  // Save email preference when form is submitted successfully
+  useEffect(() => {
+    if (navigation.state === 'loading' && !actionData?.error) {
+      // Login was successful, save email if remember me is checked
+      if (rememberMe && email) {
+        localStorage.setItem('emg_analyzer_saved_email', email);
       } else {
-        setError(response.error?.message || 'Login failed. Please check your credentials.');
+        localStorage.removeItem('emg_analyzer_saved_email');
       }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
     }
-  }, [credentials, login, onLoginSuccess, rememberMe]);
+  }, [navigation.state, actionData, rememberMe, email]);
+
+  // Memoized input handlers for optimal performance
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  }, []);
+
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  }, []);
 
   const handleDevelopmentBypass = useCallback(() => {
     // Set a flag in sessionStorage to indicate development bypass
@@ -106,13 +71,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   // Memoize form validation to prevent unnecessary recalculations
   const isFormValid = useMemo(() => {
-    return Boolean(credentials.email && credentials.password);
-  }, [credentials.email, credentials.password]);
+    return Boolean(email && password);
+  }, [email, password]);
 
   // Memoize button disabled state
   const isButtonDisabled = useMemo(() => {
-    return loading || !isFormValid;
-  }, [loading, isFormValid]);
+    return isSubmitting || !isFormValid;
+  }, [isSubmitting, isFormValid]);
 
   // Memoized remember me handler
   const handleRememberMeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,13 +120,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </CardHeader>
 
             <CardContent className="space-y-4 px-4 sm:px-8 pb-5 sm:pb-6">
-              {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
+              {/* Login Form - Using React Router Form for instant navigation */}
+              <Form method="post" className="space-y-4">
+                {/* Include redirect destination */}
+                <input type="hidden" name="from" value={from} />
+                
+                {actionData?.error && (
                   <Alert className="border-red-200 bg-red-50">
                     <ExclamationTriangleIcon className="h-4 w-4 text-red-600" />
                     <div className="text-red-800 text-sm font-medium">
-                      {error}
+                      {actionData.error}
                     </div>
                   </Alert>
                 )}
@@ -175,11 +143,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       <EnvelopeClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="email"
+                        name="email"
                         type="email"
                         placeholder="researcher@institution.edu"
-                        value={credentials.email}
-                        onChange={handleInputChange('email')}
-                        disabled={loading}
+                        value={email}
+                        onChange={handleEmailChange}
+                        disabled={isSubmitting}
                         className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="email"
                         required
@@ -200,11 +169,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="password"
+                        name="password"
                         type="password"
                         placeholder="Enter your password"
-                        value={credentials.password}
-                        onChange={handleInputChange('password')}
-                        disabled={loading}
+                        value={password}
+                        onChange={handlePasswordChange}
+                        disabled={isSubmitting}
                         className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                         autoComplete="current-password"
                         required
@@ -232,7 +202,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   disabled={isButtonDisabled}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base transition-colors"
                 >
-                  {loading ? (
+                  {isSubmitting ? (
                     <div className="flex items-center gap-2">
                       <Spinner />
                       <span>Signing in...</span>
@@ -244,7 +214,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     </>
                   )}
                 </Button>
-              </form>
+              </Form>
 
               {/* Footer Links */}
               <div className="space-y-3 pt-3 border-t">

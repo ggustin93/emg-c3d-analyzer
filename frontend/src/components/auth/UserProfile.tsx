@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   compact = false 
 }) => {
   const { user, logout, loading, userProfile } = useAuth();
+  const navigate = useNavigate();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -47,15 +49,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
     setIsLoggingOut(true);
     setShowLogoutDialog(false); // Close dialog immediately
     
-    // Call logout - Supabase will trigger SIGNED_OUT event which redirects to login
-    try {
-      await logout();
-      // The onAuthStateChange listener will handle the redirect automatically
-    } catch (error) {
-      logger.error(LogCategory.AUTH, 'UserProfile: Logout error:', error);
-    } finally {
-      setIsLoggingOut(false);
-    }
+    // Navigate to logout route which will handle everything
+    navigate('/logout');
   };
 
   const getRoleColor = (role: string) => {
