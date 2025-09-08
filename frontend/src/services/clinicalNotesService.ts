@@ -24,14 +24,20 @@ export class ClinicalNotesService {
 
   /**
    * Get authorization header with current session token
-   * Simple and direct - let Supabase handle token refresh automatically
+   * Attempts to refresh session if needed
    */
   private static async getAuthHeaders(): Promise<Record<string, string>> {
-    // Simply get the current session - Supabase handles refresh automatically
-    const { data: { session } } = await supabase.auth.getSession()
+    // First try to get the current session
+    let { data: { session }, error } = await supabase.auth.getSession()
     
-    if (!session?.access_token) {
-      throw new Error('Authentication required. Please sign in again.')
+    // If no session or error, try to refresh
+    if (!session || error) {
+      const refreshResult = await supabase.auth.refreshSession()
+      session = refreshResult.data.session
+      
+      if (!session?.access_token) {
+        throw new Error('Authentication required. Please sign in again.')
+      }
     }
 
     return {
@@ -46,7 +52,8 @@ export class ClinicalNotesService {
    */
   private static async apiRequest<T>(
     endpoint: string, 
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOnAuth: boolean = true
   ): Promise<T> {
     const headers = await this.getAuthHeaders()
     
@@ -56,15 +63,41 @@ export class ClinicalNotesService {
     })
 
     if (!response.ok) {
+      // Handle authentication errors specially
+      if (response.status === 401 && retryOnAuth) {
+        // Try to refresh the session and retry once
+        const refreshResult = await supabase.auth.refreshSession()
+        if (refreshResult.data.session) {
+          // Retry with new token
+          return this.apiRequest(endpoint, options, false)
+        }
+      }
+      
       const error: ClinicalNotesError = await response.json().catch(() => ({
         error: 'NETWORK_ERROR',
         message: `HTTP ${response.status}: ${response.statusText}`,
         details: { status: response.status }
       }))
+      
+      // Clean up authentication-specific error messages for better UX
+      if (error.message?.includes('Session from session_id claim')) {
+        throw new Error('Your session has expired. Please refresh the page to continue.')
+      }
+      
       throw new Error(error.message)
     }
 
-    return response.json()
+    // Handle empty responses (e.g., when no notes exist)
+    const text = await response.text()
+    if (!text) {
+      return {} as T
+    }
+    
+    try {
+      return JSON.parse(text)
+    } catch {
+      return {} as T
+    }
   }
 
   /**
