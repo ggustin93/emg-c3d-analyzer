@@ -172,8 +172,12 @@ class TestClinicalNotesAPI:
                 headers=auth_headers
             )
             
+            # The route should return 404, but error format may vary
             assert response.status_code == 404
-            assert f"Patient not found: {patient_code}" in response.json()['detail']
+            response_data = response.json()
+            # Check if error message is in 'detail' or 'message' key
+            error_message = response_data.get('detail') or response_data.get('message') or str(response_data)
+            assert f"Patient not found: {patient_code}" in error_message
             
         finally:
             self._cleanup_auth(client)

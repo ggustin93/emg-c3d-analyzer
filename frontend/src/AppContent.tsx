@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
@@ -18,6 +19,7 @@ import { useAuth } from "./contexts/AuthContext";
 import SupabaseStorageService from "./services/supabaseStorage";
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { logger, LogCategory } from './services/logger';
+import FileMetadataBar from './components/layout/FileMetadataBar';
 
 // Import dashboard components
 // Lazy load dashboard components for better performance
@@ -30,6 +32,7 @@ const ResearcherDashboard = React.lazy(() => import('./components/dashboards/res
 
 
 export function AppContent() {
+  const [searchParams] = useSearchParams();
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -48,7 +51,7 @@ export function AppContent() {
   useEffect(() => {
     // This is now handled by the persist middleware in Zustand
   }, [sessionParams]);
-  
+
   // Initialize hooks
   const downsamplingControls = useDataDownsampling(2500);
   const { ensureDefaultMuscleGroups } = useMuscleDefaults();
@@ -372,6 +375,24 @@ export function AppContent() {
     }
   }, [handleSuccess, handleError, sessionParams, setUploadDate]);
 
+  // Auto-load file from URL parameters when navigating to analysis page
+  // NOTE: This useEffect is placed after handleQuickSelect definition to avoid hoisting issues
+  useEffect(() => {
+    const fileParam = searchParams.get('file');
+    const dateParam = searchParams.get('date');
+    
+    // Only auto-load if we have URL parameters, no current analysis, and not already loading
+    if (fileParam && dateParam && !analysisResult && !isLoading && isAuthenticated) {
+      logger.info(LogCategory.LIFECYCLE, '🔗 Auto-loading file from URL parameters', { 
+        file: fileParam, 
+        date: dateParam 
+      });
+      
+      // Decode the file parameter (it's URL encoded)
+      const decodedFilename = decodeURIComponent(fileParam);
+      handleQuickSelect(decodedFilename, dateParam);
+    }
+  }, [searchParams, analysisResult, isLoading, isAuthenticated, handleQuickSelect]);
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {
@@ -491,8 +512,16 @@ export function AppContent() {
               // Show dashboard when no file is loaded
               renderDashboard()
             ) : (
-              // Show EMG analysis tabs when file is loaded
-              <GameSessionTabs
+              <>
+                {/* File metadata bar for analysis view */}
+                <FileMetadataBar
+                  analysisResult={analysisResult}
+                  uploadDate={uploadDate}
+                  onReset={resetState}
+                />
+                
+                {/* Show EMG analysis tabs when file is loaded */}
+                <GameSessionTabs
                   analysisResult={analysisResult}
                   mvcThresholdForPlot={null}
                   muscleChannels={muscleChannels}
@@ -514,6 +543,7 @@ export function AppContent() {
                   appIsLoading={isLoading}
                   uploadedFileName={uploadedFileName}
                 />
+              </>
             )}
           </AuthGuard>
 
@@ -530,49 +560,6 @@ export function AppContent() {
              </div>
           )}
         </main>
-        
-        {/* Footer - only shown when authenticated */}
-        {isAuthenticated && (
-          <footer className="bg-white border-t border-slate-100 py-6 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col items-center justify-center text-center space-y-4">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src="/vub_etro_logo.png" 
-                    alt="VUB ETRO Logo" 
-                    className="h-16 object-contain"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-700 font-medium">
-                    ETRO Electronics & Informatics
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Vrije Universiteit Brussel (VUB)
-                  </p>
-                </div>
-                
-                <div className="text-xs text-slate-400 space-y-1">
-                  <p>Developed for rehabilitation research and therapy assessment</p>
-                  <p>© {new Date().getFullYear()} VUB. All rights reserved.</p>
-                </div>
-                
-                <div className="flex items-center gap-4 pt-2">
-                  <a 
-                    href="https://github.com/ggustin93/emg-c3d-analyzer" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <GitHubLogoIcon className="w-4 h-4" />
-                    <span>GitHub</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </footer>
-        )}
       </div>
     </>
   );
