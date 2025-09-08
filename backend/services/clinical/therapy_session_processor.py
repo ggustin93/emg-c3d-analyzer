@@ -467,7 +467,7 @@ class TherapySessionProcessor:
             return session_code
             
         except Exception as e:
-            logger.warning(f"Failed to generate session code from path '{file_path}': {e!s}")
+            logger.warning(f"Failed to generate session code for patient '{patient_code}': {e!s}")
             # Fallback to UUID-based code
             return f"P001S{uuid4().hex[:6].upper()}"
 

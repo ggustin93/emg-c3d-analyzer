@@ -375,24 +375,36 @@ export function AppContent() {
     }
   }, [handleSuccess, handleError, sessionParams, setUploadDate]);
 
+  // Track if we've already loaded the file from URL to prevent infinite loops
+  const [hasLoadedFromUrl, setHasLoadedFromUrl] = useState(false);
+
   // Auto-load file from URL parameters when navigating to analysis page
   // NOTE: This useEffect is placed after handleQuickSelect definition to avoid hoisting issues
   useEffect(() => {
     const fileParam = searchParams.get('file');
     const dateParam = searchParams.get('date');
     
-    // Only auto-load if we have URL parameters, no current analysis, and not already loading
-    if (fileParam && dateParam && !analysisResult && !isLoading && isAuthenticated) {
+    // Only auto-load if we have URL parameters, no current analysis, not already loading,
+    // and haven't already loaded from URL
+    if (fileParam && dateParam && !analysisResult && !isLoading && isAuthenticated && !hasLoadedFromUrl) {
       logger.info(LogCategory.LIFECYCLE, '🔗 Auto-loading file from URL parameters', { 
         file: fileParam, 
         date: dateParam 
       });
       
+      // Mark that we've loaded from URL to prevent repeated calls
+      setHasLoadedFromUrl(true);
+      
       // Decode the file parameter (it's URL encoded)
       const decodedFilename = decodeURIComponent(fileParam);
       handleQuickSelect(decodedFilename, dateParam);
     }
-  }, [searchParams, analysisResult, isLoading, isAuthenticated, handleQuickSelect]);
+    
+    // Reset the flag when URL params change or are removed
+    if (!fileParam || !dateParam) {
+      setHasLoadedFromUrl(false);
+    }
+  }, [searchParams, analysisResult, isLoading, isAuthenticated, hasLoadedFromUrl, handleQuickSelect]);
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {

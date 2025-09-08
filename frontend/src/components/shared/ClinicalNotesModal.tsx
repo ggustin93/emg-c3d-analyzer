@@ -165,7 +165,9 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       content: editorContent,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      patient_code: noteType === 'patient' ? targetId : undefined
+      patient_code: noteType === 'patient' ? targetId : undefined,
+      author_id: '', // Will be set by backend
+      note_type: noteType
     }
 
     try {
@@ -728,7 +730,9 @@ const ClinicalNoteViewer: React.FC<ViewerProps> = ({
       ClinicalNotesService.getCurrentUserEmail()
         .then(email => {
           setLocalAuthorEmail(email)
-          onAuthorEmailLoad?.(email)
+          if (email && onAuthorEmailLoad) {
+            onAuthorEmailLoad(email)
+          }
         })
         .catch(err => {
           console.warn('Failed to load author email:', err)

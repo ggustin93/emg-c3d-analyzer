@@ -180,7 +180,7 @@ export default function GameSessionTabs({
    */
   const getBFRTabStatus = () => {
     const bfrParams = sessionParams.bfr_parameters;
-    if (!bfrParams) return null;
+    if (!bfrParams || !bfrParams.left || !bfrParams.right) return null;
     // Overall compliance requires both left and right to be compliant
     return bfrParams.left.is_compliant && bfrParams.right.is_compliant;
   };

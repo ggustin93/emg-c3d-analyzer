@@ -325,8 +325,8 @@ class ClinicalNotesRLSTest:
                     self.admin_client.table("clinical_notes").delete()\
                         .eq("id", other_note_id).execute()
                     print("   Cleaned up test note")
-                except:
-                    pass
+                except Exception as e:
+                    print(f"   Failed to clean up test note: {e}")
     
     async def cleanup(self):
         """Clean up test data."""
@@ -337,8 +337,8 @@ class ClinicalNotesRLSTest:
                 self.user_client.table("clinical_notes").delete()\
                     .eq("id", note_id).execute()
                 print(f"   Deleted test note: {note_id}")
-            except:
-                pass
+            except Exception as e:
+                print(f"   Failed to delete test note {note_id}: {e}")
         
         print("✅ Cleanup complete")
     
