@@ -286,6 +286,31 @@ Is it simple CRUD?   ──Yes──► Direct Supabase
 
 ---
 
+## 5. Optimization Opportunities
+
+### 5.1 Clinical Notes API Optimization
+
+**Current State**: The clinical notes system now uses a simplified direct Supabase approach for loading notes counts (single query vs 71 queries), but the modal still uses the FastAPI backend for CRUD operations.
+
+**Opportunity**: Consider migrating the Clinical Notes API to direct Supabase operations.
+
+**Assessment**:
+- **Modal CRUD operations**: Currently use `/api/clinical_notes/` endpoints
+- **Complexity**: Simple CRUD operations (create, read, update, delete)
+- **Real-time potential**: Could benefit from Supabase real-time subscriptions
+- **Performance**: Direct client operations vs FastAPI round-trip
+
+**Implementation Considerations**:
+- Clinical notes CRUD operations are simple database operations
+- RLS policies already secure data access appropriately  
+- Direct Supabase would enable real-time updates across users
+- Would eliminate FastAPI dependency for this feature
+- Could reduce API surface area and simplify deployment
+
+**Decision**: The current FastAPI implementation is working well and provides a clear API contract. This optimization could be considered for future iterations if real-time collaboration or further simplification becomes a priority.
+
+---
+
 ## Summary
 
 This architecture provides a robust foundation for the EMG C3D Analyzer platform:
