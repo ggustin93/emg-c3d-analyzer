@@ -125,7 +125,7 @@ class JSONBMigrationValidator:
         try:
             # Test that clinical view provides computed flat fields
             result = self.client.table("emg_statistics_clinical_view").select(
-                "total_contractions, good_contractions, mvc75_compliance_rate, "
+                "total_contractions, good_contractions, mvc_compliant_count, "
                 "avg_duration_ms, rms_mean, mpf_mean"
             ).limit(1).execute()
             

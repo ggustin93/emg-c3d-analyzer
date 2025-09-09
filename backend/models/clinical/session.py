@@ -112,8 +112,6 @@ class EMGStatisticsBase(DatabaseBaseModel):
     # Will be removed in future migration after validation period
     total_contractions: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.total_contractions")
     good_contractions: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.overall_compliant_contractions")
-    mvc75_compliance_rate: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.mvc75_compliant_contractions")
-    duration_compliance_rate: int = Field(0, ge=0, description="DEPRECATED: Use contraction_quality_metrics.duration_compliant_contractions")
     compliance_rate: float = Field(0.0, ge=0.0, le=1.0, description="DEPRECATED: Use computed rate from contraction_quality_metrics")
 
     # Deprecated MVC fields
@@ -324,8 +322,6 @@ class EMGStatisticsUpdate(BaseModel):
     # Deprecated fields - maintained temporarily for backwards compatibility
     total_contractions: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.total_contractions")
     good_contractions: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.overall_compliant_contractions")
-    mvc75_compliance_rate: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.mvc75_compliant_contractions")
-    duration_compliance_rate: int | None = Field(None, ge=0, description="DEPRECATED: Use contraction_quality_metrics.duration_compliant_contractions")
     compliance_rate: float | None = Field(None, ge=0.0, le=1.0, description="DEPRECATED: Use computed rate from contraction_quality_metrics")
 
     # Apply the same validators as the base model

@@ -1198,8 +1198,8 @@ class GHOSTLYC3DProcessor:
 
             # Re-evaluate each existing contraction against the new thresholds.
             good_contraction_count = 0
-            mvc_contraction_count = 0
-            duration_contraction_count = 0
+            mvc_compliant_count = 0
+            duration_compliant_count = 0
             updated_contractions: list[dict[str, Any]] = []
             try:
                 for c in contractions:
@@ -1226,9 +1226,9 @@ class GHOSTLYC3DProcessor:
                     else:
                         is_good = False
                     if meets_mvc:
-                        mvc_contraction_count += 1
+                        mvc_compliant_count += 1
                     if meets_duration:
-                        duration_contraction_count += 1
+                        duration_compliant_count += 1
                     if is_good:
                         good_contraction_count += 1
                     # Update contraction entry
@@ -1240,9 +1240,9 @@ class GHOSTLYC3DProcessor:
             except Exception:
                 # Fallback to original if malformed
                 updated_contractions = contractions
-                mvc_contraction_count = channel_analytics.get("mvc_contraction_count", 0) or 0
-                duration_contraction_count = (
-                    channel_analytics.get("duration_contraction_count", 0) or 0
+                mvc_compliant_count = channel_analytics.get("mvc_compliant_count", 0) or 0
+                duration_compliant_count = (
+                    channel_analytics.get("duration_compliant_count", 0) or 0
                 )
                 good_contraction_count = channel_analytics.get("good_contraction_count", 0) or 0
 
@@ -1250,8 +1250,8 @@ class GHOSTLYC3DProcessor:
             channel_analytics["mvc75_threshold"] = actual_mvc_threshold
             channel_analytics["duration_threshold_actual_value"] = duration_threshold_ms
             channel_analytics["good_contraction_count"] = good_contraction_count
-            channel_analytics["mvc_contraction_count"] = mvc_contraction_count
-            channel_analytics["duration_contraction_count"] = duration_contraction_count
+            channel_analytics["mvc_compliant_count"] = mvc_compliant_count
+            channel_analytics["duration_compliant_count"] = duration_compliant_count
             channel_analytics["contractions"] = updated_contractions
             channel_analytics["expected_contractions"] = (
                 expected_contractions  # Add expected contractions to analytics

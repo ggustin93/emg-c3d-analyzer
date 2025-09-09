@@ -62,8 +62,8 @@ class ChannelAnalytics(BaseModel):
     mvc75_threshold: float | None = None
     duration_threshold_actual_value: float | None = None
     good_contraction_count: int | None = None  # Meets both MVC and duration criteria
-    mvc75_compliance_rate: int | None = None  # Meets MVC criteria only
-    duration_compliance_rate: int | None = None  # Meets duration criteria only
+    mvc_compliant_count: int | None = None  # Meets MVC criteria only
+    duration_compliant_count: int | None = None  # Meets duration criteria only
 
     # Temporal analysis fields
     rms_temporal_stats: TemporalAnalysisStats | None = None

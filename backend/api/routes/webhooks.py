@@ -95,10 +95,17 @@ class SupabaseStorageEvent(BaseModel):
 
     @property
     def patient_code(self) -> str | None:
-        """Extract patient code from object name path (e.g., P039/file.c3d -> P039)."""
+        """Extract patient code from object name path.
+        
+        Format: PATIENT_CODE/C3D_FILENAME.c3d
+        Example: P001/Ghostly_test.c3d -> P001
+        """
         parts = self.object_name.split("/")
-        if len(parts) >= 2 and parts[0].startswith("P"):
+        
+        # Patient code is the first part of the path
+        if len(parts) >= 2 and parts[0].startswith("P") and len(parts[0]) >= 4 and parts[0][1:4].isdigit():
             return parts[0]
+        
         return None
 
     @property

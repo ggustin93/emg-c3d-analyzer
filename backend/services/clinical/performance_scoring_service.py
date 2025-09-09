@@ -411,12 +411,13 @@ class PerformanceScoringService:
             "left_muscle_compliance": left_muscle_compliance,
             "right_muscle_compliance": right_muscle_compliance,
             "overall_compliance": overall_compliance,
-            "completion_rate_left": left_completion_rate,
-            "completion_rate_right": right_completion_rate,
-            "intensity_rate_left": left_intensity_rate,
-            "intensity_rate_right": right_intensity_rate,
-            "duration_rate_left": left_duration_rate,
-            "duration_rate_right": right_duration_rate,
+            # Normalize all rates to 0.0-1.0 range for database constraints
+            "completion_rate_left": self._normalize_completion_rate(left_completion_rate),
+            "completion_rate_right": self._normalize_completion_rate(right_completion_rate),
+            "intensity_rate_left": min(left_intensity_rate, 1.0),
+            "intensity_rate_right": min(right_intensity_rate, 1.0),
+            "duration_rate_left": min(left_duration_rate, 1.0),
+            "duration_rate_right": min(right_duration_rate, 1.0),
         }
 
     def _calculate_symmetry_score(self, left_compliance: float, right_compliance: float) -> float:

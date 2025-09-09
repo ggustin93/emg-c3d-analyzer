@@ -47,7 +47,13 @@ from config import (
     RMS_OVERLAP_PERCENTAGE,
     MVC_WINDOW_SECONDS,
     NYQUIST_SAFETY_FACTOR,
-    PROCESSING_VERSION
+    PROCESSING_VERSION,
+    DEFAULT_MVC_THRESHOLD_PERCENTAGE,
+    DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS,
+    DEFAULT_TARGET_CONTRACTIONS_CH1,
+    DEFAULT_TARGET_CONTRACTIONS_CH2,
+    MAX_FILE_SIZE,
+    SessionDefaults
 )
 from models.api.request_response import ProcessingOptions, GameSessionParameters
 from services.c3d.processor import GHOSTLYC3DProcessor
@@ -70,11 +76,33 @@ class DatabaseError(TherapySessionError):
     """Raised when database operations fail."""
 
 
-# Configuration Constants
-DEFAULT_MVC_THRESHOLD_PERCENTAGE = 75.0
-DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = 2000.0
-DEFAULT_TARGET_CONTRACTIONS_CH1 = 12
-DEFAULT_TARGET_CONTRACTIONS_CH2 = 12
+# Configuration Constants - sourced from config.py (single source of truth)
+class ProcessingConstants:
+    """Centralized configuration constants for therapy session processing.
+    
+    Values sourced from backend/config.py to maintain single source of truth.
+    """
+    # Core clinical parameters from config.py
+    DEFAULT_MVC_THRESHOLD_PERCENTAGE = DEFAULT_MVC_THRESHOLD_PERCENTAGE  # 75.0
+    DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS  # 2000.0
+    DEFAULT_TARGET_CONTRACTIONS_CH1 = DEFAULT_TARGET_CONTRACTIONS_CH1  # 12
+    DEFAULT_TARGET_CONTRACTIONS_CH2 = DEFAULT_TARGET_CONTRACTIONS_CH2  # 12
+    
+    # Session code generation - prevent infinite loops
+    SESSION_CODE_MAX_ATTEMPTS = 10  # Prevent infinite loops in unique code generation
+    SESSION_CODE_RETRY_DELAY = 0.1  # Seconds between retry attempts
+    
+    # MVC fallback value when none exists (physiologically reasonable minimum)
+    DEFAULT_MVC_FALLBACK = 0.001  # 1mV - minimum MVC value for threshold calculations
+    
+    # Database operation timeouts
+    DB_OPERATION_TIMEOUT = 30.0  # Seconds for database operations
+    
+    # File processing limits - converted from config.py MAX_FILE_SIZE (20MB)
+    MAX_FILE_SIZE_MB = MAX_FILE_SIZE // (1024 * 1024)  # Convert bytes to MB
+    
+    # BFR defaults from SessionDefaults
+    TARGET_PRESSURE_AOP = SessionDefaults.TARGET_PRESSURE_AOP  # 50.0% AOP
 
 logger = logging.getLogger(__name__)
 
@@ -441,35 +469,53 @@ class TherapySessionProcessor:
             
         Returns:
             str: Session code (e.g., P001S001)
+            
+        Raises:
+            TherapySessionError: If unable to generate unique code after max attempts
         """
+        import time
+        
         try:
-            # Try to find next available session number for patient
             session_num = 1
             attempts = 0
-            session_code = f"{patient_code}S{session_num:03d}"
             
-            # Simple collision check (this could be optimized with DB queries)
-            while attempts < 100:  # Limit attempts to avoid infinite loop
+            while attempts < ProcessingConstants.SESSION_CODE_MAX_ATTEMPTS:
+                session_code = f"{patient_code}S{session_num:03d}"
+                
                 try:
                     # Check if this session code already exists
                     existing = self.supabase_client.table("therapy_sessions").select("session_code").eq("session_code", session_code).execute()
                     if not existing.data or len(existing.data) == 0:
-                        break  # Found a unique code
-                except:
-                    # If error checking, just use it
-                    break
-                    
-                # Try next number
+                        logger.info(f"Generated unique session code: {session_code} (attempt {attempts + 1})")
+                        return session_code
+                        
+                except Exception as db_error:
+                    logger.warning(f"Database check failed for session code {session_code}: {db_error!s}")
+                    # If we can't check the database, assume it's unique to avoid hanging
+                    if attempts >= ProcessingConstants.SESSION_CODE_MAX_ATTEMPTS // 2:
+                        logger.info(f"Using session code {session_code} due to DB check failures")
+                        return session_code
+                
+                # Increment and retry with delay
                 session_num = (session_num + 1) % 1000
-                session_code = f"{patient_code}S{session_num:03d}"
                 attempts += 1
+                
+                if attempts < ProcessingConstants.SESSION_CODE_MAX_ATTEMPTS:
+                    time.sleep(ProcessingConstants.SESSION_CODE_RETRY_DELAY)
             
-            return session_code
+            # Max attempts reached - use UUID fallback
+            fallback_code = f"{patient_code}S{uuid4().hex[:6].upper()}"
+            logger.warning(
+                f"Failed to generate session code for '{patient_code}' after {ProcessingConstants.SESSION_CODE_MAX_ATTEMPTS} attempts. "
+                f"Using fallback: {fallback_code}"
+            )
+            return fallback_code
             
         except Exception as e:
-            logger.warning(f"Failed to generate session code for patient '{patient_code}': {e!s}")
-            # Fallback to UUID-based code
-            return f"P001S{uuid4().hex[:6].upper()}"
+            # Ultimate fallback
+            fallback_code = f"P001S{uuid4().hex[:6].upper()}"
+            logger.error(f"Session code generation failed for '{patient_code}': {e!s}. Using fallback: {fallback_code}")
+            return fallback_code
 
     def _generate_file_hash(self, file_path: str, file_metadata: dict[str, Any]) -> str:
         """Generate consistent file hash for duplicate detection.
@@ -518,16 +564,48 @@ class TherapySessionProcessor:
             str: Path to downloaded temporary file
             
         Raises:
-            FileProcessingError: If download fails
+            FileProcessingError: If download fails or path validation fails
         """
         try:
+            # Validate and parse file path to prevent path traversal attacks
+            if not file_path or not isinstance(file_path, str):
+                raise FileProcessingError(f"Invalid file path: {file_path}")
+            
+            # Check for path traversal attempts
+            if ".." in file_path or file_path.startswith("/") or "\\" in file_path:
+                raise FileProcessingError(f"Invalid file path - potential path traversal: {file_path}")
+            
             # Parse bucket and object path
             path_parts = file_path.split("/", 1)
             if len(path_parts) != 2:
-                raise FileProcessingError(f"Invalid file path format: {file_path}")
+                raise FileProcessingError(f"Invalid file path format (expected: bucket/object): {file_path}")
             
             bucket_name, object_path = path_parts
-            logger.info(f"📥 Downloading from bucket '{bucket_name}': {object_path}")
+            
+            # Validate bucket and object names
+            if not bucket_name or not object_path:
+                raise FileProcessingError(f"Empty bucket or object name in path: {file_path}")
+            
+            # Additional validation for suspicious characters (security hardening)
+            suspicious_chars = ['<', '>', '"', '|', '?', '*', ':', ';', '`', '$', '&']
+            if any(char in file_path for char in suspicious_chars):
+                raise FileProcessingError(f"Invalid characters in file path: {file_path}")
+            
+            # Validate bucket and object names match expected patterns (prevent injection)
+            import re
+            if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]$', bucket_name):
+                if len(bucket_name) == 1 and bucket_name.isalnum():
+                    pass  # Single character buckets are ok
+                else:
+                    raise FileProcessingError(f"Invalid bucket name format: {bucket_name}")
+            
+            if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\-_./]*[a-zA-Z0-9]$', object_path):
+                if len(object_path) == 1 and object_path.isalnum():
+                    pass  # Single character object names are ok
+                else:
+                    raise FileProcessingError(f"Invalid object path format: {object_path}")
+            
+            logger.info(f"📥 Downloading validated path from bucket '{bucket_name}': {object_path}")
             
             # Download file content
             response = self.supabase_client.storage.from_(bucket_name).download(object_path)
@@ -542,10 +620,18 @@ class TherapySessionProcessor:
                 with open(temp_path, "wb") as temp_file:
                     temp_file.write(response)
                 
-                # Verify file was written
+                # Verify file was written and is reasonable size
                 file_size = os.path.getsize(temp_path)
                 if file_size == 0:
                     raise FileProcessingError(f"Downloaded file is empty: {file_path}")
+                
+                # Check file size is within reasonable limits (prevent DoS)
+                max_size = ProcessingConstants.MAX_FILE_SIZE_MB * 1024 * 1024  # Convert MB to bytes
+                if file_size > max_size:
+                    os.unlink(temp_path)  # Clean up large file immediately
+                    raise FileProcessingError(
+                        f"Downloaded file too large: {file_size} bytes (max: {max_size} bytes) for {file_path}"
+                    )
                 
                 logger.info(f"✅ Downloaded {file_size} bytes to: {temp_path}")
                 return temp_path
@@ -589,26 +675,41 @@ class TherapySessionProcessor:
             logger.warning(f"Empty analytics data for session {session_code}")
         
         try:
-            # EMG Statistics - Core table with clinical metrics
+            # Parallel execution of independent database operations for better performance
+            # Following asyncio.gather best practices from aiohttp documentation
+            
+            # Step 1: Independent operations that can run in parallel
+            parallel_tasks = []
+            
             if analytics:
-                await self._populate_emg_statistics(
+                emg_task = self._populate_emg_statistics(
                     session_uuid, analytics, session_params, {}
                 )
-                logger.info(f"📊 EMG statistics populated for session {session_code}")
-
-            # Processing parameters are now stored in emg_statistics.processing_config JSONB field
-            # No separate table needed - config is included with statistics
-
-            # Performance Scores - Clinical assessment
-            overall_score = self._calculate_overall_score(processing_result)
-            await self._calculate_and_save_performance_scores(
-                session_code, session_uuid, analytics, processing_result
+                parallel_tasks.append(emg_task)
+            
+            # Session settings and BFR monitoring are independent
+            settings_task = self._populate_session_settings(
+                session_code, session_uuid, processing_opts, session_params
             )
-            logger.info(f"🏆 Performance scores calculated for session {session_code} (overall: {overall_score:.1%})")
-
-            # Schema v2.1 compliance - populate missing tables
-            await self._populate_session_settings(session_code, session_uuid, processing_opts, session_params)
-            await self._populate_bfr_monitoring(session_code, session_uuid, session_params, processing_result)
+            bfr_task = self._populate_bfr_monitoring(
+                session_code, session_uuid, session_params, processing_result
+            )
+            parallel_tasks.extend([settings_task, bfr_task])
+            
+            # Execute independent operations in parallel
+            logger.info(f"🔄 Starting {len(parallel_tasks)} parallel database operations for session {session_code}")
+            await asyncio.gather(*parallel_tasks)
+            logger.info(f"✅ Completed parallel database operations for session {session_code}")
+            
+            # Step 2: Dependent operation (needs EMG data) - run after parallel tasks complete
+            if analytics:
+                overall_score = self._calculate_overall_score(processing_result)
+                await self._calculate_and_save_performance_scores(
+                    session_code, session_uuid, analytics, processing_result
+                )
+                logger.info(f"🏆 Performance scores calculated for session {session_code} (overall: {overall_score:.1%})")
+            else:
+                logger.info(f"📊 EMG statistics populated for session {session_code}")
 
             logger.info(
                 f"✅ All database tables populated for session {session_code}"
@@ -675,8 +776,8 @@ class TherapySessionProcessor:
         if default_mvc_value is not None and default_mvc_value <= 0:
             default_mvc_value = None  # NULL when invalid/missing
         
-        # For threshold calculations, use value if present, otherwise a minimal default
-        channel_mvc_default = default_mvc_value if default_mvc_value and default_mvc_value > 0 else 0.001
+        # For threshold calculations, use value if present, otherwise the configured fallback
+        channel_mvc_default = default_mvc_value if default_mvc_value and default_mvc_value > 0 else ProcessingConstants.DEFAULT_MVC_FALLBACK
 
         # Extract temporal statistics (preserve existing structure)
         temporal_stats = self._extract_temporal_stats(channel_data)
@@ -993,6 +1094,142 @@ class TherapySessionProcessor:
             logger.exception(f"Failed to calculate and save performance scores: {e!s}")
             raise DatabaseError(f"Performance scores calculation failed: {e!s}") from e
 
+    def _create_session_metrics_from_analytics(
+        self, 
+        session_uuid: str, 
+        analytics: dict[str, Any]
+    ):
+        """Create SessionMetrics object directly from analytics data.
+        
+        This avoids database fetch timing issues by using the in-memory analytics data
+        that was just processed.
+        """
+        try:
+            from services.clinical.performance_scoring_service import SessionMetrics
+            
+            # Map CH1 to left and CH2 to right for compatibility
+            left_channel = analytics.get("CH1", {})
+            right_channel = analytics.get("CH2", {})
+            
+            # Check if we have the required channels
+            if not left_channel or not right_channel:
+                logger.warning(f"Missing CH1 or CH2 channel data for session {session_uuid}")
+                logger.debug(f"Available channels: {list(analytics.keys())}")
+                return None
+            
+            # Validate data quality before creating metrics
+            self._validate_analytics_data_quality(left_channel, "CH1", session_uuid)
+            self._validate_analytics_data_quality(right_channel, "CH2", session_uuid)
+            
+            # Create SessionMetrics with data from analytics
+            # IMPORTANT: No fallbacks - each metric uses its specific field only
+            # mvc_contraction_count = contractions meeting MVC/intensity threshold
+            # duration_contraction_count = contractions meeting duration threshold  
+            # good_contraction_count = contractions meeting BOTH thresholds
+            return SessionMetrics(
+                session_id=session_uuid,
+                # Left muscle (CH1) metrics
+                left_total_contractions=left_channel.get("contraction_count", 0),
+                left_good_contractions=left_channel.get("good_contraction_count", 0),
+                left_mvc_contractions=left_channel.get("mvc_compliant_count", 0),  # No fallback
+                left_duration_contractions=left_channel.get("duration_compliant_count", 0),  # No fallback
+                # Right muscle (CH2) metrics  
+                right_total_contractions=right_channel.get("contraction_count", 0),
+                right_good_contractions=right_channel.get("good_contraction_count", 0),
+                right_mvc_contractions=right_channel.get("mvc_compliant_count", 0),  # No fallback
+                right_duration_contractions=right_channel.get("duration_compliant_count", 0),  # No fallback
+                # BFR and subjective data (not available at this stage)
+                bfr_pressure_aop=None,
+                bfr_compliant=True,
+                rpe_post_session=None,
+                game_points_achieved=None,
+                game_points_max=None,
+                # Expected contractions (from config)
+                expected_contractions_per_muscle=12  # Default from config
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to create SessionMetrics from analytics: {e!s}")
+            return None
+    
+    def _validate_analytics_data_quality(
+        self, 
+        channel_data: dict[str, Any], 
+        channel_name: str,
+        session_uuid: str
+    ) -> None:
+        """Validate analytics data quality and log warnings for missing/inconsistent data.
+        
+        This method detects common data quality issues that could affect performance scoring:
+        - Missing mvc_contraction_count when contractions exist
+        - Missing duration_contraction_count when contractions exist
+        - Inconsistent count relationships (e.g., mvc_count > total_count)
+        - Missing critical fields for scoring calculations
+        
+        Args:
+            channel_data: Analytics data for a single channel
+            channel_name: Name of the channel (e.g., "CH1", "CH2")
+            session_uuid: UUID of the session for logging context
+        """
+        contraction_count = channel_data.get("contraction_count", 0)
+        mvc_count = channel_data.get("mvc_compliant_count", 0)
+        duration_count = channel_data.get("duration_compliant_count", 0)
+        good_count = channel_data.get("good_contraction_count", 0)
+        
+        # Check for missing MVC count when contractions exist
+        if contraction_count > 0 and mvc_count == 0:
+            if "mvc_compliant_count" not in channel_data:
+                logger.warning(
+                    f"⚠️ Data quality issue in {channel_name} for session {session_uuid}: "
+                    f"Found {contraction_count} contractions but mvc_compliant_count is missing. "
+                    "This will result in intensity_rate=0. Check EMG processing for MVC threshold detection."
+                )
+        
+        # Check for missing duration count when contractions exist
+        if contraction_count > 0 and duration_count == 0:
+            if "duration_compliant_count" not in channel_data:
+                logger.warning(
+                    f"⚠️ Data quality issue in {channel_name} for session {session_uuid}: "
+                    f"Found {contraction_count} contractions but duration_compliant_count is missing. "
+                    "This will result in duration_rate=0. Check EMG processing for duration threshold detection."
+                )
+        
+        # Check for logical inconsistencies
+        if mvc_count > contraction_count:
+            logger.error(
+                f"❌ Data integrity error in {channel_name} for session {session_uuid}: "
+                f"mvc_contraction_count ({mvc_count}) > total contraction_count ({contraction_count}). "
+                "This indicates a processing error."
+            )
+        
+        if duration_count > contraction_count:
+            logger.error(
+                f"❌ Data integrity error in {channel_name} for session {session_uuid}: "
+                f"duration_contraction_count ({duration_count}) > total contraction_count ({contraction_count}). "
+                "This indicates a processing error."
+            )
+        
+        if good_count > mvc_count or good_count > duration_count:
+            logger.warning(
+                f"⚠️ Data consistency issue in {channel_name} for session {session_uuid}: "
+                f"good_contraction_count ({good_count}) exceeds mvc ({mvc_count}) or duration ({duration_count}) counts. "
+                "Good contractions should be the intersection of both thresholds."
+            )
+        
+        # Check for expected relationships
+        if mvc_count > 0 and duration_count > 0 and good_count == 0:
+            logger.info(
+                f"ℹ️ Performance pattern in {channel_name} for session {session_uuid}: "
+                f"Found contractions meeting MVC ({mvc_count}) and duration ({duration_count}) separately, "
+                f"but none meeting both thresholds (good_count=0). This is clinically valid."
+            )
+        
+        # Log summary for debugging
+        logger.debug(
+            f"📊 {channel_name} contraction summary for session {session_uuid}: "
+            f"total={contraction_count}, mvc={mvc_count}, duration={duration_count}, good={good_count}"
+        )
+    
     async def _populate_performance_scores(
         self,
         session_uuid: str,
@@ -1003,10 +1240,19 @@ class TherapySessionProcessor:
         try:
             logger.info(f"📊 Starting performance score calculation for session {session_uuid}")
             
-            # Use the performance service for comprehensive scoring
-            score_result = await self.performance_service.calculate_session_performance(
-                session_uuid, analytics
-            )
+            # Create SessionMetrics directly from analytics data to avoid database fetch timing issues
+            session_metrics = self._create_session_metrics_from_analytics(session_uuid, analytics)
+            
+            if session_metrics:
+                # Pass metrics directly to avoid database fetch
+                from services.clinical.performance_scoring_service import PerformanceScoringService
+                perf_service = PerformanceScoringService()
+                score_result = perf_service.calculate_performance_scores(session_uuid, session_metrics)
+            else:
+                # Fallback to database fetch if metrics creation fails
+                score_result = await self.performance_service.calculate_session_performance(
+                    session_uuid, analytics
+                )
             
             logger.info(f"📊 Performance service returned: {list(score_result.keys())}")
             
@@ -1102,7 +1348,7 @@ class TherapySessionProcessor:
                 
             logger.info(f"💾 Starting database population for session {session_code}")
             
-            # Simply delegate to the main population method
+            # Simply delegate to the main population method (now with parallel execution)
             await self._populate_all_database_tables(
                 session_code, session_uuid, processing_result, processing_opts, session_params
             )
@@ -1348,26 +1594,28 @@ class TherapySessionProcessor:
                 target_ch1 = metadata.get('target_contractions_ch1') or target_ch1
                 target_ch2 = metadata.get('target_contractions_ch2') or target_ch2
             
-            # Session parameters can override C3D defaults
-            if hasattr(session_params, 'target_contractions_ch1'):
-                target_ch1 = session_params.target_contractions_ch1 or target_ch1
-            if hasattr(session_params, 'target_contractions_ch2'):
-                target_ch2 = session_params.target_contractions_ch2 or target_ch2
+            # Session parameters can override defaults (graceful fallback for missing attributes)
+            if session_params:
+                target_ch1 = getattr(session_params, 'target_contractions_ch1', target_ch1) or target_ch1
+                target_ch2 = getattr(session_params, 'target_contractions_ch2', target_ch2) or target_ch2
 
             # Determine per-channel duration targets with priority cascade
-            # Priority 1: C3D metadata
+            # Priority 1: Session parameters (if available)
             # Priority 2: Patient profile from database
-            # Priority 3: Config default (2000ms)
-            target_duration_ch1 = None
-            target_duration_ch2 = None
+            # Priority 3: Config default from ProcessingConstants
+            target_duration_ch1 = ProcessingConstants.DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
+            target_duration_ch2 = ProcessingConstants.DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
             
-            # Priority 1: Check C3D metadata for duration targets
-            if hasattr(session_params, 'c3d_metadata') and session_params.c3d_metadata:
-                metadata = session_params.c3d_metadata
-                target_duration_ch1 = metadata.get('target_duration_ch1')
-                target_duration_ch2 = metadata.get('target_duration_ch2')
-                if target_duration_ch1 or target_duration_ch2:
-                    logger.info(f"📊 Using duration targets from C3D metadata: CH1={target_duration_ch1}ms, CH2={target_duration_ch2}ms")
+            # Priority 1: Check session parameters for duration targets
+            # Note: c3d_metadata attribute may not exist in current GameSessionParameters
+            # This is handled gracefully with getattr fallback
+            if session_params:
+                c3d_metadata = getattr(session_params, 'c3d_metadata', None)
+                if c3d_metadata:
+                    target_duration_ch1 = c3d_metadata.get('target_duration_ch1', target_duration_ch1)
+                    target_duration_ch2 = c3d_metadata.get('target_duration_ch2', target_duration_ch2)
+                    if c3d_metadata.get('target_duration_ch1') or c3d_metadata.get('target_duration_ch2'):
+                        logger.info(f"📊 Using duration targets from session metadata: CH1={target_duration_ch1}ms, CH2={target_duration_ch2}ms")
             
             # Priority 2: Check patient profile if not found in C3D
             patient_id = getattr(session_params, 'patient_id', None)
@@ -1388,12 +1636,12 @@ class TherapySessionProcessor:
                         target_duration_ch2 = duration_ch2_from_patient
                         logger.info(f"📊 Using CH2 duration from patient profile: {target_duration_ch2}ms")
             
-            # Priority 3: Use config defaults for any missing values
-            if target_duration_ch1 is None:
-                target_duration_ch1 = DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
+            # Priority 3: Ensure values are valid (already set to defaults above)
+            if target_duration_ch1 <= 0:
+                target_duration_ch1 = ProcessingConstants.DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
                 logger.info(f"📊 Using default CH1 duration from config: {target_duration_ch1}ms")
-            if target_duration_ch2 is None:
-                target_duration_ch2 = DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
+            if target_duration_ch2 <= 0:
+                target_duration_ch2 = ProcessingConstants.DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS
                 logger.info(f"📊 Using default CH2 duration from config: {target_duration_ch2}ms")
 
             session_settings_data = {
@@ -1519,14 +1767,16 @@ class TherapySessionProcessor:
             # Create BFR monitoring records for each channel
             for channel_name in ["CH1", "CH2"]:
                 # Get channel-specific BFR data from session parameters or use defaults
-                target_pressure_aop = SessionDefaults.TARGET_PRESSURE_AOP  # 50.0%
-                actual_pressure_aop = SessionDefaults.TARGET_PRESSURE_AOP  # 50.0%
+                target_pressure_aop = ProcessingConstants.TARGET_PRESSURE_AOP  # 50.0% from config
+                actual_pressure_aop = ProcessingConstants.TARGET_PRESSURE_AOP  # 50.0% from config
                 
-                # Check if session_params has per-channel BFR data
-                if hasattr(session_params, 'bfr_pressure_per_channel') and session_params.bfr_pressure_per_channel:
-                    channel_bfr = session_params.bfr_pressure_per_channel.get(channel_name, {})
-                    target_pressure_aop = channel_bfr.get('target_pressure_aop', target_pressure_aop)
-                    actual_pressure_aop = channel_bfr.get('actual_pressure_aop', actual_pressure_aop)
+                # Check if session_params has per-channel BFR data (graceful fallback)
+                if session_params:
+                    bfr_pressure_per_channel = getattr(session_params, 'bfr_pressure_per_channel', None)
+                    if bfr_pressure_per_channel and channel_name in bfr_pressure_per_channel:
+                        channel_bfr = bfr_pressure_per_channel[channel_name]
+                        target_pressure_aop = channel_bfr.get('target_pressure_aop', target_pressure_aop)
+                        actual_pressure_aop = channel_bfr.get('actual_pressure_aop', actual_pressure_aop)
                 
                 # Calculate cuff pressure from AOP percentage (conversion factor: AOP * 3.0)
                 cuff_pressure_mmhg = actual_pressure_aop * 3.0
