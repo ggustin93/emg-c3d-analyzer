@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { getScoreStyle, type ScoreColorScheme } from '@/lib/scoringSystem';
+import { getScoreStyle, type ScoreColorScheme } from '@/lib/performanceColors';
 
 // Re-export types from central configuration
-export type { ScoreColorScheme } from '@/lib/scoringSystem';
+export type { ScoreColorScheme } from '@/lib/performanceColors';
 
 /**
  * Get color schemes based on score thresholds (non-hook version for use in callbacks)
