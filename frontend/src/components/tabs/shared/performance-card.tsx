@@ -291,8 +291,10 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
         expectedShortContractions: 0,
         expectedLongContractions: muscle.components.completion.total,
         averageContractionTime: calculateAverageContractionTime(channelData?.contractions),
-        mvcValue: channelData?.mvc75_threshold || 0,
-        mvcThreshold: 75,
+        // Calculate actual MVC value from the threshold (threshold is 75% of MVC)
+        mvcValue: channelData?.mvc75_threshold ? (channelData.mvc75_threshold / 0.75) : 
+                  channelData?.mvc_estimation?.estimated_mvc_95th_percentile || 0,
+        mvcThreshold: channelData?.mvc75_threshold || 0,
         componentScores: {
           completion: {
             score: muscle.components.completion.value,

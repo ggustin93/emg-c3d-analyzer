@@ -61,13 +61,13 @@ const PALETTES = {
       label: 'Good'
     },
     adequate: { 
-      text: 'text-amber-700', 
+      text: 'text-amber-600', 
       bg: 'bg-amber-50', 
-      border: 'border-amber-300',
-      progress: 'bg-amber-500',
-      hex: '#f59e0b',
-      stroke: '#f59e0b',
-      label: 'Adequate'
+      border: 'border-amber-200',
+      progress: 'bg-amber-400',
+      hex: '#fbbf24',
+      stroke: '#fbbf24',
+      label: 'Satisfactory'
     },
     poor: { 
       text: 'text-red-700', 
@@ -76,7 +76,7 @@ const PALETTES = {
       progress: 'bg-red-500',
       hex: '#ef4444',
       stroke: '#ef4444',
-      label: 'Poor'
+      label: 'Bad'
     }
   },
   
@@ -174,10 +174,10 @@ const getStringHash = (id: string): number => {
 // ============================================================================
 
 const resolveScoreColor = (score: number): ColorScheme => {
-  if (score >= 75) return PALETTES.performance.excellent;
-  if (score >= 50) return PALETTES.performance.good;
-  if (score >= 25) return PALETTES.performance.adequate;
-  return PALETTES.performance.poor;
+  if (score >= 85) return PALETTES.performance.excellent;  // 85-100: Excellent (Emerald)
+  if (score >= 70) return PALETTES.performance.good;       // 70-84: Good (Blue/Cyan)
+  if (score >= 50) return PALETTES.performance.adequate;   // 50-69: Satisfactory (Amber)
+  return PALETTES.performance.poor;                        // 0-49: Bad (Red)
 };
 
 const resolveFatigueColor = (level: number): ColorScheme => {

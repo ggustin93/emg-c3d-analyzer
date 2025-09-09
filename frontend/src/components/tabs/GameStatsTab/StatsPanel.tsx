@@ -405,7 +405,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                             ? 'text-amber-600'
                             : 'text-red-600';
                         const thresholdText = acceptanceRates.mvcThreshold 
-                          ? `≥${acceptanceRates.mvcThreshold.toFixed(3)}mV`
+                          ? `≥${acceptanceRates.mvcThreshold.toExponential(2)}µV`
                           : 'threshold TBD';
                         return (
                           <Card className="relative flex flex-col justify-between h-full">
@@ -424,7 +424,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                 </Tooltip>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {acceptanceRates.mvcThreshold != null ? `≥${(acceptanceRates.mvcThreshold * 1000).toFixed(3)}mV` : 'Threshold: TBD'}
+                                {acceptanceRates.mvcThreshold != null ? `≥${acceptanceRates.mvcThreshold.toExponential(2)}µV` : 'Threshold: TBD'}
                               </div>
                             </CardHeader>
                             <CardContent className="flex items-center justify-center py-5">
