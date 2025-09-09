@@ -4,8 +4,8 @@ export const CHANNEL_COLORS: Record<number, {
   text: string,
   stroke: string // For chart lines
 }> = {
-  0: { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', stroke: '#8884d8' },
-  1: { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700', stroke: '#82ca9d' },
+  0: { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700', stroke: '#06b6d4' },
+  1: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', stroke: '#10b981' },
   2: { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700', stroke: '#ff7675' },
   3: { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', stroke: '#9b59b6' },
 };
@@ -24,9 +24,9 @@ export const MUSCLE_COLORS: Record<string, {
   text: string,
   stroke: string 
 }> = {
-  'Left Quadriceps': { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', stroke: '#3b82f6' },
+  'Left Quadriceps': { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700', stroke: '#06b6d4' },
   'Right Quadriceps': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700', stroke: '#ef4444' },
-  'Left Hamstrings': { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700', stroke: '#10b981' },
+  'Left Hamstrings': { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', stroke: '#10b981' },
   'Right Hamstrings': { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', stroke: '#8b5cf6' },
   'Left Gastrocnemius': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', stroke: '#f97316' },
   'Right Gastrocnemius': { bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-700', stroke: '#ec4899' },
