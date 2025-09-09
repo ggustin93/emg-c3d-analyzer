@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDownIcon, MixerHorizontalIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ClinicalTooltip } from '@/components/ui/clinical-tooltip';
 import { ScoringWeights } from '@/types/emg';
-import { getComponentColors } from '@/lib/performanceColors';
+import { getComponentColors } from '@/lib/unifiedColorSystem';
 import { useSessionStore } from '@/store/sessionStore';
 import { cn } from '@/lib/utils';
 import { formatPercentage } from '@/lib/formatUtils';

@@ -9,8 +9,7 @@ Core utility functions, configurations, and helper modules following React/TypeS
 - `supabaseSetup.ts` - Advanced Supabase configuration, authentication flows, and storage management
 
 ### **Visual & UI Utilities**  
-- `colorMappings.ts` - Centralized color system for consistent component styling
-- `performanceColors.ts` - Performance score color schemes and clinical visualization colors
+- `unifiedColorSystem.ts` - Centralized color system for all component styling and clinical visualization
 - `formatters.ts` - Data formatting functions (numbers, dates, clinical values, scientific notation)
 
 ### **Core Utilities**
@@ -22,7 +21,7 @@ Core utility functions, configurations, and helper modules following React/TypeS
 ```typescript
 // ✅ Preferred: Named imports with clear intent
 import { formatMetricValue, formatScientificNotation } from '@/lib/formatters';
-import { getColorForChannel, PERFORMANCE_COLORS } from '@/lib/colorMappings';
+import { getColorScheme, getPerformanceColors } from '@/lib/unifiedColorSystem';
 import { supabase } from '@/lib/supabase';
 
 // ❌ Avoid: Default imports for utility collections
@@ -37,9 +36,10 @@ import formatters from '@/lib/formatters';
 - File storage operations
 - Database connections
 
-#### **Visual Systems (`colorMappings.ts`, `performanceColors.ts`)**  
-- Consistent color schemes across components
-- Performance score color mappings
+#### **Visual Systems (`unifiedColorSystem.ts`)**  
+- Unified color schemes across all components
+- Performance score, fatigue, and quality color mappings
+- Channel and muscle-specific colors
 - Clinical visualization standards
 - Accessibility-compliant color contrast
 
@@ -62,13 +62,13 @@ const mavValue = formatMetricValue(0.08567, 'MAV');     // "0.086"
 
 ### **Consistent Colors**
 ```typescript
-import { getColorForChannel, PERFORMANCE_COLORS } from '@/lib/colorMappings';
+import { getMuscleColor, getPerformanceColors } from '@/lib/unifiedColorSystem';
 
-// Channel-specific colors for charts
-const channelColor = getColorForChannel('Left_Bicep');  // "#8b5cf6"
+// Muscle-specific colors for charts
+const muscleColor = getMuscleColor('Left Quadriceps');  // Returns color scheme object
 
 // Performance score colors
-const scoreColor = PERFORMANCE_COLORS.excellent;        // "#22c55e"
+const scoreColors = getPerformanceColors(85);          // Returns color scheme for excellent performance
 ```
 
 ### **Authentication**

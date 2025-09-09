@@ -4,13 +4,13 @@ import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { hexToBorderClass } from '@/lib/performanceColors';
+import { hexToBorderClass } from '@/lib/unifiedColorSystem';
 import { useSessionStore } from '@/store/sessionStore';
 import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { formatPercentage } from '@/lib/formatUtils';
 import CircleDisplay from '@/components/shared/CircleDisplay';
-import { getProgressBarColors, SPECIAL_COLORS } from '@/lib/performanceColors';
+import { getProgressBarColors, SPECIAL_COLORS } from '@/lib/unifiedColorSystem';
 
 /**
  * Props for the OverallPerformanceCard component

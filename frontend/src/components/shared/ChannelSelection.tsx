@@ -8,7 +8,24 @@ import {
 } from '../ui/select';
 import MuscleNameDisplay from './MuscleNameDisplay';
 import { GameSessionParameters } from '../../types/emg';
-import { getColorForChannel } from '../../lib/colorMappings';
+import { getChannelColor, getMuscleColor } from '../../lib/unifiedColorSystem';
+
+// Helper function to get color for a channel
+const getColorForChannel = (
+  channelName: string,
+  muscleMapping?: Record<string, string>,
+  customColors?: Record<string, string>
+) => {
+  // Check if there's a muscle mapping for this channel
+  const muscleName = muscleMapping?.[channelName];
+  if (muscleName) {
+    return getMuscleColor(muscleName, customColors);
+  }
+  
+  // Otherwise use channel index color
+  const channelIndex = parseInt(channelName.replace('CH', '')) - 1;
+  return getChannelColor(channelIndex);
+};
 
 interface ChannelSelectionProps {
   availableChannels: string[];

@@ -2,7 +2,7 @@ import React from 'react';
 import { ChannelAnalyticsData, GameSessionParameters } from "@/types/emg";
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import { formatMetricValue } from '@/lib/formatters';
-import { getColorForChannel } from '@/lib/colorMappings';
+import { getChannelColor, getMuscleColor } from '@/lib/unifiedColorSystem';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 
@@ -145,7 +145,12 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
               Metric
             </th>
             {channelsWithData.map((channel) => {
-              const colorStyle = getColorForChannel(channel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);
+              // Get color based on muscle mapping or channel index
+              const baseChannelName = channel.replace(/ (Raw|activated|Processed)$/, '');
+              const muscleName = sessionParams?.channel_muscle_mapping?.[baseChannelName];
+              const colorStyle = muscleName 
+                ? getMuscleColor(muscleName, sessionParams?.muscle_color_mapping)
+                : getChannelColor(parseInt(baseChannelName.replace('CH', '')) - 1);
               return (
                 <th 
                   key={channel} 
@@ -221,7 +226,12 @@ const MuscleComparisonTable: React.FC<MuscleComparisonTableProps> = ({
                     const data = channelsData[channel];
                     const avg_value = metric.avg(data);
                     const std_value = metric.std ? metric.std(data) : null;
-                    const colorStyle = getColorForChannel(channel, sessionParams?.channel_muscle_mapping, sessionParams?.muscle_color_mapping);
+                    // Get color based on muscle mapping or channel index
+                    const baseChannelName = channel.replace(/ (Raw|activated|Processed)$/, '');
+                    const muscleName = sessionParams?.channel_muscle_mapping?.[baseChannelName];
+                    const colorStyle = muscleName 
+                      ? getMuscleColor(muscleName, sessionParams?.muscle_color_mapping)
+                      : getChannelColor(parseInt(baseChannelName.replace('CH', '')) - 1);
                     
                     return (
                       <td 

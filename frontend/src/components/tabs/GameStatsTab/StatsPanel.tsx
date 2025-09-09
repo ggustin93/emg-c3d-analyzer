@@ -13,7 +13,7 @@ import { formatMetricValue } from '@/lib/formatters';
 import { computeAcceptanceRates } from '@/lib/acceptanceRates';
 import RadialProgress from '@/components/ui/radial-progress';
 import DonutGauge from '@/components/ui/donut-gauge';
-import { getPerformanceColors } from '@/lib/performanceColors';
+import { getPerformanceColors, getChannelColor, getMuscleColor } from '@/lib/unifiedColorSystem';
 
 // Visual constants for donut gauges
 const DONUT_SIZE = 128;
@@ -50,7 +50,7 @@ const calculatePerformanceScore = (goodCount: number, expectedCount: number | nu
 // Function to get score label based on percentage using centralized color system
 const getScoreLabel = (score: number): { label: string; color: string } => {
   const colors = getPerformanceColors(score);
-  return { label: colors.label, color: colors.text };
+  return { label: colors.label || 'Unknown', color: colors.text };
 };
 
 // Expert tooltips for clinical metrics
@@ -276,6 +276,26 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
   
   const scoreDetails = performanceScore > 0 ? getScoreLabel(performanceScore) : getScoreLabel(0);
 
+  // Get muscle color for the selected channel (to match the plot colors)
+  const getMuscleColorForChannel = (channelName: string | null): { text: string; bg: string; stroke: string } => {
+    if (!channelName || !sessionParams) {
+      return { text: 'text-gray-600', bg: 'bg-gray-100', stroke: '#6b7280' };
+    }
+    
+    const baseChannelName = channelName.replace(/ (Raw|activated|Processed)$/, '');
+    const muscleName = sessionParams.channel_muscle_mapping?.[baseChannelName];
+    
+    if (muscleName) {
+      return getMuscleColor(muscleName, sessionParams.muscle_color_mapping);
+    }
+    
+    // Fallback to channel index color
+    const channelIndex = parseInt(baseChannelName.replace('CH', '')) - 1;
+    return getChannelColor(channelIndex);
+  };
+
+  const muscleColor = getMuscleColorForChannel(selectedChannel);
+
   /* This handler is now lifted up to the parent
   const handleFilterChange = (mode: FilterMode, channel?: string) => {
     setViewMode(mode);
@@ -325,6 +345,7 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
             />
           ) : (
             <>
+          
               {/* WIP banner removed now that temporal stats are implemented */}
 
               {hasPerformanceData && !isEMGAnalyticsTab && (
@@ -355,10 +376,11 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
               {/* Reorganized metrics by clinical categories */}
               <div className="space-y-6">
                 {/* --- Contraction Quantity & Quality --- */}
-                <div className="p-4 border rounded-lg bg-white">
-                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                <div className="p-4 border rounded-lg bg-white border-l-4" style={{ borderLeftColor: muscleColor.stroke }}>
+                  <h4 className={`font-semibold text-md mb-3 flex items-center justify-between ${muscleColor.text}`}>
                     <div className="flex items-center">
-                      <span>Contraction Quantity & Quality</span>
+                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: muscleColor.stroke }}></div>
+                      <span>Contraction Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.contractionQuantity} />
                     </div>
                   </h4>
@@ -521,9 +543,10 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                 </div>
 
                 {/* --- Duration Metrics --- */}
-                <div className="p-4 border rounded-lg bg-white">
-                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                <div className="p-4 border rounded-lg bg-white border-l-4" style={{ borderLeftColor: muscleColor.stroke }}>
+                  <h4 className={`font-semibold text-md mb-3 flex items-center justify-between ${muscleColor.text}`}>
                     <div className="flex items-center">
+                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: muscleColor.stroke }}></div>
                       <span>Duration Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.durationMetrics} />
                     </div>
@@ -602,10 +625,11 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                 </div>
 
                 {/* --- Amplitude Analysis --- */}
-                <div className="p-4 border rounded-lg bg-white">
-                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                <div className="p-4 border rounded-lg bg-white border-l-4" style={{ borderLeftColor: muscleColor.stroke }}>
+                  <h4 className={`font-semibold text-md mb-3 flex items-center justify-between ${muscleColor.text}`}>
                     <div className="flex items-center">
-                      <span>Amplitude Analysis</span>
+                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: muscleColor.stroke }}></div>
+                      <span>Amplitude Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.amplitudeMetrics} />
                     </div>
                     <div className="flex gap-2" />
@@ -661,10 +685,11 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                 </div>
 
                 {/* --- Fatigue Analysis --- */}
-                <div className="p-4 border rounded-lg bg-white">
-                  <h4 className="font-semibold text-md mb-3 flex items-center justify-between">
+                <div className="p-4 border rounded-lg bg-white border-l-4" style={{ borderLeftColor: muscleColor.stroke }}>
+                  <h4 className={`font-semibold text-md mb-3 flex items-center justify-between ${muscleColor.text}`}>
                     <div className="flex items-center">
-                      <span>Fatigue Analysis</span>
+                      <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: muscleColor.stroke }}></div>
+                      <span>Fatigue Metrics</span>
                       <MetricTooltip tooltip={expertTooltips.fatigueMetrics} />
                     </div>
                     <div className="flex gap-2" />

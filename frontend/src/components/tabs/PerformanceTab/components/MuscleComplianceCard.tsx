@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
-import ContractionTypeBreakdown from './ContractionTypeBreakdown';
+// ContractionTypeBreakdown component was removed - functionality integrated into parent components
 import { GameSessionParameters, Contraction } from '@/types/emg';
 import MuscleNameDisplay from '@/components/shared/MuscleNameDisplay';
 import CircleDisplay from '@/components/shared/CircleDisplay';
@@ -13,7 +13,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercentage, formatClinicalValue } from '@/lib/formatUtils';
 import { cn } from '@/lib/utils';
-import { getProgressBarColors } from '@/lib/performanceColors';
+import { getProgressBarColors } from '@/lib/unifiedColorSystem';
 
 interface MuscleComplianceCardProps {
   channel: string;
@@ -281,18 +281,15 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                   />
                 </div>
 
-                {/* Contraction Type Breakdown - Moved here from bottom section */}
-                <div className="mt-2">
-                  <ContractionTypeBreakdown
-                    shortContractions={shortContractions}
-                    shortGoodContractions={shortGoodContractions}
-                    longContractions={longContractions}
-                    longGoodContractions={longGoodContractions}
-                    expectedShortContractions={expectedShortContractions}
-                    expectedLongContractions={expectedLongContractions}
-                    contractionDurationThreshold={actualDurationThreshold}
-                    color={scoreHexColor}
-                  />
+                {/* Contraction Type Summary - Integrated inline since ContractionTypeBreakdown was removed */}
+                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Contraction Analysis</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div>Short: {shortGoodContractions}/{shortContractions} ({shortContractions > 0 ? Math.round((shortGoodContractions / shortContractions) * 100) : 0}%)</div>
+                    <div>Long: {longGoodContractions}/{longContractions} ({longContractions > 0 ? Math.round((longGoodContractions / longContractions) * 100) : 0}%)</div>
+                    <div className="text-gray-500">Expected Short: {expectedShortContractions}</div>
+                    <div className="text-gray-500">Expected Long: {expectedLongContractions}</div>
+                  </div>
                 </div>
               </CollapsibleContent>
             </Collapsible>

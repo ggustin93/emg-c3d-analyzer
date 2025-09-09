@@ -1,6 +1,6 @@
 import { C3DFileInfo } from '@/services/supabaseStorage';
 import { getMockTherapistName } from '@/lib/devUtils';
-import { getPatientColorClasses, getTherapistColorClasses } from '@/lib/colorUtils';
+import { getPatientColors, getTherapistColors } from '@/lib/unifiedColorSystem';
 import { logger, LogCategory } from '@/services/logger';
 
 /**
@@ -246,7 +246,7 @@ export const resolveSessionDateTime = (file: C3DFile): string | null => {
  * Differentiates between known IDs (blue) and unknown IDs (grey)
  */
 export const getPatientIdBadgeProps = (patientId: string): BadgeProps => {
-  const color = getPatientColorClasses(patientId);
+  const color = getPatientColors(patientId);
   return {
     variant: 'secondary' as const,
     className: `${color.background} ${color.text} ${color.border} text-xs`
@@ -254,7 +254,7 @@ export const getPatientIdBadgeProps = (patientId: string): BadgeProps => {
 };
 
 export const getTherapistIdBadgeProps = (therapistId: string): BadgeProps => {
-  const color = getTherapistColorClasses(therapistId);
+  const color = getTherapistColors(therapistId);
   return {
     variant: 'outline' as const,
     className: `${color.text} ${color.border} text-xs`

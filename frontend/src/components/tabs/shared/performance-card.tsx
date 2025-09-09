@@ -9,7 +9,7 @@ import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMet
 import { useSessionStore } from '@/store/sessionStore';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { perfMonitor } from '@/lib/performanceMonitoring';
-import { getScoreStyle } from '@/lib/performanceColors';
+import { getScoreStyle } from '@/lib/unifiedColorSystem';
 
 
 /**
@@ -276,7 +276,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
       return {
         channelName,
         totalScore: muscle.totalScore,
-        scoreLabel: scoreStyle.label,
+        scoreLabel: scoreStyle.label || 'Unknown',
         scoreTextColor: scoreStyle.text,
         scoreBgColor: scoreStyle.bg,
         scoreHexColor: scoreStyle.hex,
@@ -344,7 +344,7 @@ const PerformanceCard: React.FC<PerformanceCardProps> = ({
     
     const scoreStyle = getScoreStyle(performanceMetrics.overallScore);
     return {
-      label: scoreStyle.label,
+      label: scoreStyle.label || 'Unknown',
       text: scoreStyle.text,
       bg: scoreStyle.bg,
       hex: scoreStyle.hex,

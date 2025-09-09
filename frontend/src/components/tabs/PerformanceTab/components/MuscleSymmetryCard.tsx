@@ -3,7 +3,7 @@ import { MixerHorizontalIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { Progress } from '@/components/ui/progress';
 import { MuscleSymmetryTooltip } from '@/components/ui/clinical-tooltip';
 import { useScoreColors } from '@/hooks/useScoreColors';
-import { getPerformanceColors } from '@/lib/performanceColors';
+import { getPerformanceColors } from '@/lib/unifiedColorSystem';
 
 interface MuscleSymmetryCardProps {
   symmetryScore?: number;
@@ -33,7 +33,7 @@ const MuscleSymmetryCard: React.FC<MuscleSymmetryCardProps> = ({
           <Progress 
             value={symmetryScore} 
             className="h-2" 
-            indicatorClassName={performanceColors.progressLight}
+            indicatorClassName={performanceColors.progress}
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>Imbalanced</span>

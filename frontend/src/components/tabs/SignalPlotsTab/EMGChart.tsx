@@ -12,11 +12,35 @@ import {
   ReferenceDot,
   ReferenceArea
 } from 'recharts';
-import { getColorForChannel } from '@/lib/colorMappings';
+import { getChannelColor, getMuscleColor } from '@/lib/unifiedColorSystem';
 import { FilterMode } from '@/components/shared/ChannelFilter';
 import { GameSessionParameters, ChannelAnalyticsData } from "@/types/emg";
 import { SignalDisplayType } from './ThreeChannelSignalSelector';
-import { getContractionAreaColors, getContractionDotStyle } from '@/lib/qualityColors';
+import { getContractionAreaColors } from '@/lib/unifiedColorSystem';
+
+// Helper function for contraction dot style
+const getContractionDotStyle = (flags: any) => {
+  const colors = getContractionAreaColors(flags);
+  return {
+    fill: colors.fill,
+    stroke: colors.stroke,
+    strokeWidth: 2,
+    r: 4
+  };
+};
+
+// Helper function to get color for channel (backward compatibility)
+const getColorForChannel = (channelName: string, muscleMapping?: Record<string, string>, customColors?: Record<string, string>) => {
+  const baseChannelName = channelName.replace(/ (Raw|activated|Processed)$/, '');
+  const muscleName = muscleMapping?.[baseChannelName];
+  
+  if (muscleName) {
+    return getMuscleColor(muscleName, customColors);
+  }
+  
+  const channelIndex = parseInt(baseChannelName.replace('CH', '')) - 1;
+  return getChannelColor(channelIndex);
+};
 import { EMG_CHART_CONFIG } from '@/config/emgChartConfig';
 import { logger, LogCategory } from '@/services/logger';
 import { useContractionAnalysis } from '@/hooks/useContractionAnalysis';
@@ -660,7 +684,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
               })
               .map((area, index) => {
                 
-                const { fill: fillColor, stroke: strokeColor, symbol } = getContractionDotStyle({
+                const { fill: fillColor, stroke: strokeColor } = getContractionDotStyle({
                   isGood: area.isGood,
                   meetsMvc: area.meetsMvc,
                   meetsDuration: area.meetsDuration
@@ -679,7 +703,7 @@ const EMGChart: React.FC<MultiChannelEMGChartProps> = memo(({
                     strokeWidth={2.25}
                     ifOverflow="discard"
                     label={{
-                      value: symbol,
+                      value: "",  // Remove the "circle" text label
                       position: "top",
                       fill: strokeColor,
                       fontSize: 10,
