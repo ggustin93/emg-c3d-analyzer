@@ -84,9 +84,9 @@ const formatThreshold = (value: number): string => {
 };
 
 const formatConfidence = (confidence: number): { label: string; color: string } => {
-  if (confidence >= 0.8) return { label: 'High', color: 'text-green-600' };
-  if (confidence >= 0.6) return { label: 'Good', color: 'text-blue-600' };
-  if (confidence >= 0.4) return { label: 'Medium', color: 'text-orange-600' };
+  if (confidence >= 0.8) return { label: 'High', color: 'text-emerald-600' };
+  if (confidence >= 0.6) return { label: 'Good', color: 'text-cyan-600' };
+  if (confidence >= 0.4) return { label: 'Medium', color: 'text-amber-600' };
   return { label: 'Low', color: 'text-red-600' };
 };
 

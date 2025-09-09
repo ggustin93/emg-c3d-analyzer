@@ -9,7 +9,7 @@ import { useEnhancedPerformanceMetrics } from '@/hooks/useEnhancedPerformanceMet
 import { useSessionStore } from '@/store/sessionStore';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { perfMonitor } from '@/lib/performanceMonitoring';
-import { getScoreStyle } from '@/lib/scoringSystem';
+import { getScoreStyle } from '@/lib/performanceColors';
 
 
 /**

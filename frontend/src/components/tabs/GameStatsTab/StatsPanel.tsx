@@ -13,6 +13,7 @@ import { formatMetricValue } from '@/lib/formatters';
 import { computeAcceptanceRates } from '@/lib/acceptanceRates';
 import RadialProgress from '@/components/ui/radial-progress';
 import DonutGauge from '@/components/ui/donut-gauge';
+import { getPerformanceColors } from '@/lib/performanceColors';
 
 // Visual constants for donut gauges
 const DONUT_SIZE = 128;
@@ -46,13 +47,10 @@ const calculatePerformanceScore = (goodCount: number, expectedCount: number | nu
   return Math.min(Math.round(ratio * 100), 100); // Cap at 100%
 };
 
-// Function to get score label based on percentage
+// Function to get score label based on percentage using centralized color system
 const getScoreLabel = (score: number): { label: string; color: string } => {
-  if (score >= 90) return { label: "Excellent", color: "text-green-600" };
-  if (score >= 75) return { label: "Good", color: "text-emerald-500" };
-  if (score >= 60) return { label: "Satisfactory", color: "text-amber-500" };
-  if (score >= 40) return { label: "Needs Improvement", color: "text-orange-500" };
-  return { label: "Insufficient", color: "text-red-500" };
+  const colors = getPerformanceColors(score);
+  return { label: colors.label, color: colors.text };
 };
 
 // Expert tooltips for clinical metrics
@@ -374,50 +372,6 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                       error={displayAnalytics.errors?.contractions}
                       variant="primary"
                     />
-                    {/* SINGLE SOURCE OF TRUTH: Good Rate using backend flags */}
-                    {acceptanceRates.total > 0 && (
-                      (() => {
-                        const rate = Math.round(acceptanceRates.goodPct);
-                        const valueClass = rate >= 70
-                          ? 'text-emerald-600'
-                          : rate >= 40
-                            ? 'text-amber-600'
-                            : 'text-red-600';
-                        return (
-                          <Card className="relative flex flex-col justify-between h-full">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <div className="flex items-center">
-                                <CardTitle className="text-sm font-semibold">Good Rate</CardTitle>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
-                                      <InfoCircledIcon className="h-4 w-4" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
-                                    <p>Percent of contractions meeting both MVC and duration criteria (backend SoT).</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-center py-5">
-                              <DonutGauge
-                                percent={rate}
-                                size={DONUT_SIZE}
-                                thickness={DONUT_THICKNESS}
-                                colorHex={valueClass.includes('emerald') ? '#059669' : valueClass.includes('amber') ? '#d97706' : '#dc2626'}
-                                centerRender={(p) => (
-                                  <div className="text-center">
-                                    <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
-                                    <div className="text-xs text-muted-foreground">{`${acceptanceRates.good} of ${acceptanceRates.total}`}</div>
-                                  </div>
-                                )}
-                              />
-                            </CardContent>
-                          </Card>
-                        );
-                      })()
-                    )}
 
                     {/* NEW: MVC Acceptance Rate */}
                     {acceptanceRates.mvcTotal > 0 && (
@@ -510,6 +464,51 @@ const StatsPanel: React.FC<StatsPanelComponentProps> = memo(({
                                   <div className="text-center">
                                     <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
                                     <div className="text-xs text-muted-foreground">{`${acceptanceRates.duration} of ${acceptanceRates.durationTotal}`}</div>
+                                  </div>
+                                )}
+                              />
+                            </CardContent>
+                          </Card>
+                        );
+                      })()
+                    )}
+
+                    {/* SINGLE SOURCE OF TRUTH: Quality Success Rate using backend flags - Now last in the row */}
+                    {acceptanceRates.total > 0 && (
+                      (() => {
+                        const rate = Math.round(acceptanceRates.goodPct);
+                        const valueClass = rate >= 70
+                          ? 'text-emerald-600'
+                          : rate >= 40
+                            ? 'text-amber-600'
+                            : 'text-red-600';
+                        return (
+                          <Card className="relative flex flex-col justify-between h-full">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <div className="flex items-center">
+                                <CardTitle className="text-sm font-semibold">Quality Success Rate</CardTitle>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="ml-1.5 text-slate-400 hover:text-slate-600 focus:outline-none">
+                                      <InfoCircledIcon className="h-4 w-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs p-3 text-sm bg-amber-50 border border-amber-100 shadow-md rounded-md">
+                                    <p>Percentage of contractions that successfully meet therapeutic quality standards (both MVC intensity ≥75% and duration thresholds).</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-center py-5">
+                              <DonutGauge
+                                percent={rate}
+                                size={DONUT_SIZE}
+                                thickness={DONUT_THICKNESS}
+                                colorHex={valueClass.includes('emerald') ? '#059669' : valueClass.includes('amber') ? '#d97706' : '#dc2626'}
+                                centerRender={(p) => (
+                                  <div className="text-center">
+                                    <div className={`text-2xl font-bold ${valueClass}`}>{p}%</div>
+                                    <div className="text-xs text-muted-foreground">{`${acceptanceRates.good} of ${acceptanceRates.total}`}</div>
                                   </div>
                                 )}
                               />

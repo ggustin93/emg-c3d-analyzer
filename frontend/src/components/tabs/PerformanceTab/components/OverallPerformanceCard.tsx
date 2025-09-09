@@ -4,13 +4,13 @@ import { StarIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { OverallPerformanceScoreTooltip, WeightedScoreTooltip } from '@/components/ui/clinical-tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { hexToBorderClass } from '@/lib/scoringSystem';
+import { hexToBorderClass } from '@/lib/performanceColors';
 import { useSessionStore } from '@/store/sessionStore';
 import { useScoringConfiguration } from '@/hooks/useScoringConfiguration';
 import { PerformanceCalculationResult } from '@/lib/performanceUtils';
 import { formatPercentage } from '@/lib/formatUtils';
 import CircleDisplay from '@/components/shared/CircleDisplay';
-import { getEnhancedProgressColors } from '@/lib/progressBarColors';
+import { getProgressBarColors, SPECIAL_COLORS } from '@/lib/performanceColors';
 
 /**
  * Props for the OverallPerformanceCard component
@@ -135,7 +135,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
               const contributionData = [
                 { 
                   key: 'C', 
-                  color: getEnhancedProgressColors(therapeuticComplianceScore ?? 50).bg, 
+                  color: 'bg-emerald-600', // Distinct emerald for compliance
                   label: 'Compliance', 
                   value: contributions.compliance, 
                   weight: weights.compliance,
@@ -143,7 +143,7 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 },
                 { 
                   key: 'S', 
-                  color: getEnhancedProgressColors(symmetryScore ?? 50).bg, 
+                  color: 'bg-cyan-600', // Distinct cyan for symmetry
                   label: 'Symmetry', 
                   value: contributions.symmetry, 
                   weight: weights.symmetry,
@@ -151,20 +151,20 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                 },
                 { 
                   key: 'E', 
-                  color: 'bg-amber-600', // Fixed color for effort since it's subjective 
+                  color: SPECIAL_COLORS.effort.bg, // Amber for effort
                   label: 'Effort', 
                   value: contributions.effort, 
                   weight: weights.effort,
                   rawScore: weightedScores.effort
                 },
-                ...(weights.gameScore > 0 ? [{ 
-                  key: 'G' as const, 
-                  color: 'bg-slate-500', // Neutral color for experimental game score 
+                { 
+                  key: 'G', 
+                  color: SPECIAL_COLORS.game.bg, // Slate gray for game score
                   label: 'Game', 
-                  value: contributions.game, 
+                  value: contributions.game || 0, 
                   weight: weights.gameScore,
-                  rawScore: gameScore
-                }] : []),
+                  rawScore: gameScore || 0
+                },
               ];
               
               const totalContribution = Object.values(contributions).reduce((sum, val) => sum + val, 0);

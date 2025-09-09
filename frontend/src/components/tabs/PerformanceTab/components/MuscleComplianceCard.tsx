@@ -13,7 +13,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercentage, formatClinicalValue } from '@/lib/formatUtils';
 import { cn } from '@/lib/utils';
-import { getEnhancedProgressColors } from '@/lib/progressBarColors';
+import { getProgressBarColors } from '@/lib/performanceColors';
 
 interface MuscleComplianceCardProps {
   channel: string;
@@ -121,14 +121,14 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
   // The `contractionScore` prop is now the source of truth, passed from the hook.
   // The local calculation below is removed to adhere to DRY principles.
   const contractionColors = useScoreColors(contractionScore ?? 0);
-  const contractionProgressColors = getEnhancedProgressColors(contractionScore ?? 0);
+  const contractionProgressColors = getProgressBarColors(contractionScore ?? 0);
 
   // Calculate good contraction percentage with consistent formatting
   const goodContractionPercentage = totalContractions > 0 
     ? Math.round((goodContractionCount / totalContractions) * 100) 
     : 0;
   const goodContractionColors = useScoreColors(goodContractionPercentage);
-  const goodContractionProgressColors = getEnhancedProgressColors(goodContractionPercentage);
+  const goodContractionProgressColors = getProgressBarColors(goodContractionPercentage);
 
   // Calculate duration quality score based on actualDurationThreshold
   let durationCompliantCount = 0;
@@ -145,7 +145,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
     ? Math.round((durationCompliantCount / totalContractions) * 100) 
     : 0;
   const durationQualityColors = useScoreColors(durationQualityPercentage);
-  const durationQualityProgressColors = getEnhancedProgressColors(durationQualityPercentage);
+  const durationQualityProgressColors = getProgressBarColors(durationQualityPercentage);
   
 
   // Get colors for the overall score

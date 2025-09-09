@@ -5,6 +5,7 @@ import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScoreColors } from '@/hooks/useScoreColors';
 import { formatPercentage } from '@/lib/formatUtils';
+import { getProgressBarColors } from '@/lib/performanceColors';
 
 interface TherapeuticComplianceCardProps {
   complianceScore: number;
@@ -24,6 +25,7 @@ const TherapeuticComplianceCard: React.FC<TherapeuticComplianceCardProps> = ({
   goodContractions = 0
 }) => {
   const complianceColors = useScoreColors(complianceScore);
+  const progressColors = getProgressBarColors(complianceScore);
 
   return (
     <TooltipProvider>
@@ -31,7 +33,7 @@ const TherapeuticComplianceCard: React.FC<TherapeuticComplianceCardProps> = ({
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle className="text-lg font-semibold flex items-center text-gray-800">
-              <svg className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Compliance
@@ -96,7 +98,7 @@ const TherapeuticComplianceCard: React.FC<TherapeuticComplianceCardProps> = ({
           <Progress 
             value={complianceScore} 
             className="h-2" 
-            indicatorClassName={complianceColors.bg}
+            indicatorClassName={progressColors.bg}
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>Poor Compliance</span>

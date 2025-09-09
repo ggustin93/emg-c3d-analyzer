@@ -36,7 +36,7 @@ const SubjectiveFatigueCard: React.FC<SubjectiveFatigueCardProps> = ({
           <Progress 
             value={fatiguePercentage} 
             className="h-2" 
-            indicatorClassName={fatigueInfo.bg}
+            indicatorClassName={fatigueInfo.progress}
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>No Exertion</span>
