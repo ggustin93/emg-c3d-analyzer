@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { GameSessionParameters } from '@/types/emg';
 import { cn } from '@/lib/utils';
-import { getMuscleColor } from '@/lib/colorMappings';
+import { getMuscleColor } from '@/lib/unifiedColorSystem';
 import { BarChartIcon, PlusIcon, MinusIcon } from '@radix-ui/react-icons';
 import { useSessionStore } from '@/store/sessionStore';
 import { SignalDisplayType } from './ThreeChannelSignalSelector';

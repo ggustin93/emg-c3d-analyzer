@@ -10,7 +10,14 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getContractionAreaColors, QUALITY_COLORS } from '@/lib/qualityColors';
+import { getContractionAreaColors } from '@/lib/unifiedColorSystem';
+
+// Quality color constants for debug visualization
+const QUALITY_COLORS = {
+  good: { fill: 'rgba(16,185,129,0.28)', stroke: '#047857' },
+  adequate: { fill: 'rgba(245,158,11,0.24)', stroke: '#b45309' },
+  poor: { fill: 'rgba(239,68,68,0.24)', stroke: '#b91c1c' }
+} as const;
 import { logger, LogCategory } from '@/services/logger';
 
 interface TestContraction {

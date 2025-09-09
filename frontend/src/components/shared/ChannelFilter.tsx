@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { GameSessionParameters } from '../../types/emg';
 import { cn } from '@/lib/utils';
-import { getMuscleColor } from '@/lib/colorMappings';
+import { getMuscleColor } from '@/lib/unifiedColorSystem';
 import { BarChartIcon } from '@radix-ui/react-icons';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';

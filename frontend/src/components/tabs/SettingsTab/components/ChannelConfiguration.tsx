@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pencil1Icon, CheckIcon } from '@radix-ui/react-icons';
 import { useSessionStore } from '@/store/sessionStore';
-import { getMuscleColor } from '@/lib/colorMappings';
+import { getMuscleColor } from '@/lib/unifiedColorSystem';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
