@@ -17,6 +17,7 @@ Date: 2025-08-12
 """
 
 import logging
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -24,6 +25,7 @@ from typing import Any
 from config import SessionDefaults, ScoringDefaults
 
 from database.supabase_client import get_supabase_client
+from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +134,7 @@ class PerformanceScoringService:
 
     def __init__(self, supabase_client=None):
         self.client = supabase_client or get_supabase_client(use_service_key=True)
+        self.scoring_repo = ScoringConfigurationRepository(supabase_client)  # Repository for scoring config
         self.weights = ScoringWeights()
         self.rpe_mapping = RPEMapping()  # Default RPE mapping
 
@@ -140,7 +143,25 @@ class PerformanceScoringService:
     def _load_scoring_weights_from_database(self, session_id: str) -> ScoringWeights:
         """Load configurable scoring weights from database using session-based lookup.
         Priority: Session config → Patient config → Global default → System defaults
+        
+        Args:
+            session_id: Therapy session UUID
+            
+        Returns:
+            ScoringWeights object with configured or default weights
+            
+        Raises:
+            ValueError: If session_id is not a valid UUID format
         """
+        # Validate session_id is a valid UUID format  
+        try:
+            if not isinstance(session_id, str):
+                raise ValueError("session_id must be a string")
+            uuid.UUID(session_id)
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"🚨 Invalid session_id format in _load_scoring_weights_from_database: {session_id}")
+            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
+            
         try:
             # First, get the patient_id from the session
             session_query = (
@@ -198,41 +219,44 @@ class PerformanceScoringService:
             return self.weights
 
     def _load_rpe_mapping_from_database(self, session_id: str) -> RPEMapping:
-        """Load configurable RPE mapping from database (researcher role only)
+        """Load configurable RPE mapping from the scoring_configuration.rpe_mapping JSONB field.
+        RPE mappings are stored per scoring configuration, not in a separate table.
         Fallback to defaults if not found.
         """
         try:
-            # Check for researcher-configured RPE mapping
-            rpe_query = (
-                self.client.table("rpe_mapping_configuration")
-                .select("*")
-                .eq("active", True)
-                .order("created_at", desc=True)
+            # Get RPE mapping from the scoring configuration being used for this session
+            scoring_config_id = getattr(self, 'scoring_config_id', None)
+            if not scoring_config_id:
+                logger.info("📊 No scoring config ID available, using default RPE mapping")
+                return self.rpe_mapping
+
+            # Load the scoring configuration's RPE mapping
+            config_query = (
+                self.client.table("scoring_configuration")
+                .select("rpe_mapping")
+                .eq("id", scoring_config_id)
                 .limit(1)
                 .execute()
             )
 
-            if rpe_query.data:
-                config = rpe_query.data[0]
-                logger.info("📊 Loading custom RPE mapping from researcher configuration")
-
-                return RPEMapping(
-                    optimal_range=config.get("optimal_range", [4, 5, 6]),
-                    acceptable_range=config.get("acceptable_range", [3, 7]),
-                    suboptimal_range=config.get("suboptimal_range", [2, 8]),
-                    poor_range=config.get("poor_range", [0, 1, 9, 10]),
-                    optimal_score=config.get("optimal_score", 100.0),
-                    acceptable_score=config.get("acceptable_score", 80.0),
-                    suboptimal_score=config.get("suboptimal_score", 60.0),
-                    poor_score=config.get("poor_score", 20.0),
-                    default_score=config.get("default_score", 50.0),
-                )
+            if config_query.data and config_query.data[0].get("rpe_mapping"):
+                rpe_data = config_query.data[0]["rpe_mapping"]
+                logger.info("📊 Using RPE mapping from scoring configuration JSONB field")
+                
+                # The JSONB format can be used directly - create a simple lookup function
+                def get_rpe_score(rpe_value: int) -> float:
+                    return rpe_data.get(str(rpe_value), {}).get("score", 50.0)
+                
+                # Create a custom RPEMapping that uses the JSONB data directly
+                custom_mapping = RPEMapping()
+                custom_mapping.get_effort_score = get_rpe_score
+                return custom_mapping
             else:
-                logger.info("📊 No custom RPE mapping found, using metricsDefinitions.md defaults")
+                logger.info("📊 No custom RPE mapping in scoring config, using metricsDefinitions.md defaults")
                 return self.rpe_mapping
 
         except Exception as e:
-            logger.warning(f"Failed to load RPE mapping from database: {e}, using defaults")
+            logger.warning(f"Failed to load RPE mapping from scoring configuration: {e}, using defaults")
             return self.rpe_mapping
 
     def calculate_performance_scores(
@@ -246,7 +270,19 @@ class PerformanceScoringService:
 
         Returns:
             Dictionary with calculated scores and sub-components
+            
+        Raises:
+            ValueError: If session_id is not a valid UUID format
         """
+        # Validate session_id is a valid UUID format
+        try:
+            if not isinstance(session_id, str):
+                raise ValueError("session_id must be a string")
+            uuid.UUID(session_id)
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"🚨 Invalid session_id format: {session_id}")
+            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
+            
         logger.info(f"📊 Calculating performance scores for session: {session_id}")
 
         # Step 0: Load configurable weights and RPE mapping from database
@@ -362,10 +398,10 @@ class PerformanceScoringService:
 
         S_comp^muscle = w_comp * R_comp + w_int * R_int + w_dur * R_dur
         """
-        # Left muscle compliance
-        left_completion_rate = (
-            metrics.left_total_contractions / metrics.expected_contractions_per_muscle
-        )
+        # Left muscle compliance - calculate rates and cap them for compliance calculation
+        left_completion_rate = min(
+            metrics.left_total_contractions / metrics.expected_contractions_per_muscle, 1.0
+        )  # Cap at 100% for compliance scoring
         left_intensity_rate = (
             metrics.left_mvc_contractions / metrics.left_total_contractions
             if metrics.left_total_contractions > 0
@@ -383,10 +419,10 @@ class PerformanceScoringService:
             + self.weights.w_duration * left_duration_rate
         ) * 100  # Convert to percentage
 
-        # Right muscle compliance
-        right_completion_rate = (
-            metrics.right_total_contractions / metrics.expected_contractions_per_muscle
-        )
+        # Right muscle compliance - calculate rates and cap them for compliance calculation
+        right_completion_rate = min(
+            metrics.right_total_contractions / metrics.expected_contractions_per_muscle, 1.0
+        )  # Cap at 100% for compliance scoring
         right_intensity_rate = (
             metrics.right_mvc_contractions / metrics.right_total_contractions
             if metrics.right_total_contractions > 0
@@ -488,7 +524,26 @@ class PerformanceScoringService:
             return 0.0
 
     def _fetch_session_metrics(self, session_id: str) -> SessionMetrics | None:
-        """Fetch metrics from database tables."""
+        """Fetch metrics from database tables.
+        
+        Args:
+            session_id: Therapy session UUID
+            
+        Returns:
+            SessionMetrics object with EMG data, or None if not found
+            
+        Raises:
+            ValueError: If session_id is not a valid UUID format
+        """
+        # Validate session_id is a valid UUID format
+        try:
+            if not isinstance(session_id, str):
+                raise ValueError("session_id must be a string")
+            uuid.UUID(session_id)
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"🚨 Invalid session_id format in _fetch_session_metrics: {session_id}")
+            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
+            
         try:
             # Fetch EMG statistics
             emg_stats = (
@@ -581,7 +636,7 @@ class PerformanceScoringService:
         try:
             # Check if GHOSTLY-TRIAL-DEFAULT already exists
             existing = self.client.table("scoring_configuration").select("id").eq(
-                "name", "GHOSTLY-TRIAL-DEFAULT"
+                "configuration_name", "GHOSTLY-TRIAL-DEFAULT"
             ).limit(1).execute()
             
             if existing.data:
@@ -590,7 +645,7 @@ class PerformanceScoringService:
             
             # Create the default configuration from config.py
             config_data = {
-                "name": "GHOSTLY-TRIAL-DEFAULT",
+                "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
                 "description": "Default scoring configuration for GHOSTLY+ trial - auto-created from config.py",
                 "weight_compliance": defaults.WEIGHT_COMPLIANCE,
                 "weight_symmetry": defaults.WEIGHT_SYMMETRY,
@@ -761,7 +816,28 @@ class PerformanceScoringService:
         """Update RPE and/or game data for a session and recalculate scores.
 
         This method is called when subjective data becomes available after initial processing
+        
+        Args:
+            session_id: Therapy session UUID
+            rpe: Rating of Perceived Exertion (0-10 scale)
+            game_points: Points achieved in game
+            game_max: Maximum possible game points
+            
+        Returns:
+            Dictionary with recalculated scores
+            
+        Raises:
+            ValueError: If session_id is not a valid UUID format
         """
+        # Validate session_id is a valid UUID format
+        try:
+            if not isinstance(session_id, str):
+                raise ValueError("session_id must be a string")
+            uuid.UUID(session_id)
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"🚨 Invalid session_id format in update_subjective_data: {session_id}")
+            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
+            
         logger.info(f"📝 Updating subjective data for session: {session_id}")
 
         try:
@@ -877,7 +953,19 @@ class PerformanceScoringService:
             
         Returns:
             Dictionary with calculated scores and sub-components
+            
+        Raises:
+            ValueError: If session_id is not a valid UUID format
         """
+        # Validate session_id is a valid UUID format
+        try:
+            if not isinstance(session_id, str):
+                raise ValueError("session_id must be a string")
+            uuid.UUID(session_id)
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"🚨 Invalid session_id format in calculate_session_performance: {session_id}")
+            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
+            
         try:
             # Call the main sync calculation method
             scores = self.calculate_performance_scores(session_id)

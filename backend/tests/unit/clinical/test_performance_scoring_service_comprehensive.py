@@ -17,6 +17,72 @@ from services.clinical.performance_scoring_service import (
 )
 
 
+class TestUUIDValidation:
+    """Test UUID validation security improvements"""
+
+    def test_calculate_performance_scores_invalid_uuid_raises_error(self):
+        """Test that invalid UUID format raises ValueError directly or in _fetch_session_metrics"""
+        service = PerformanceScoringService()
+        
+        # Test invalid UUID formats - some will fail at UUID validation, others at database call
+        invalid_uuids = [
+            ("not-a-uuid", "direct"),
+            ("12345", "direct"), 
+            ("", "direct"),
+            ("abc-def-ghi", "direct"),
+            (None, "direct"),
+            (123, "direct"),
+        ]
+        
+        for invalid_uuid, test_type in invalid_uuids:
+            if test_type == "direct":
+                # These should raise ValueError directly from UUID validation
+                with pytest.raises(ValueError, match="Invalid session_id format"):
+                    service.calculate_performance_scores(invalid_uuid)
+            else:
+                # For valid UUID format but invalid data, test via _fetch_session_metrics
+                with pytest.raises(ValueError, match="Invalid session_id format"):
+                    service._fetch_session_metrics(invalid_uuid)
+
+    def test_calculate_performance_scores_valid_uuid_proceeds(self):
+        """Test that valid UUID format proceeds to processing"""
+        service = PerformanceScoringService()
+        
+        # Valid UUID should not raise ValueError during validation
+        # (It will fail later due to missing database data, but not due to UUID validation)
+        valid_uuid = "550e8400-e29b-41d4-a716-446655440000"
+        
+        with patch.object(service, '_load_scoring_weights_from_database'), \
+             patch.object(service, '_load_rpe_mapping_from_database'), \
+             patch.object(service, '_fetch_session_metrics', return_value=None):
+            
+            # Should not raise ValueError for UUID validation
+            result = service.calculate_performance_scores(valid_uuid)
+            assert "error" in result  # Will error due to missing metrics, but not UUID validation
+
+    def test_fetch_session_metrics_invalid_uuid_raises_error(self):
+        """Test that _fetch_session_metrics validates UUID format"""
+        service = PerformanceScoringService()
+        
+        with pytest.raises(ValueError, match="Invalid session_id format"):
+            service._fetch_session_metrics("invalid-uuid")
+
+    def test_update_subjective_data_invalid_uuid_raises_error(self):
+        """Test that update_subjective_data validates UUID format"""
+        service = PerformanceScoringService()
+        
+        with pytest.raises(ValueError, match="Invalid session_id format"):
+            service.update_subjective_data("invalid-uuid", rpe=5)
+
+    @pytest.mark.asyncio
+    async def test_calculate_session_performance_invalid_uuid_raises_error(self):
+        """Test that async method also validates UUID format"""
+        service = PerformanceScoringService()
+        
+        with pytest.raises(ValueError, match="Invalid session_id format"):
+            await service.calculate_session_performance("invalid-uuid", {})
+
+
 class TestRPEMapping:
     """Test RPEMapping dataclass and configurable mapping"""
 
@@ -271,7 +337,7 @@ class TestPerformanceScoringService:
         
         mock_table.select.return_value = mock_select
 
-        weights = scoring_service._load_scoring_weights_from_database("test-session")
+        weights = scoring_service._load_scoring_weights_from_database("550e8400-e29b-41d4-a716-446655440001")
 
         # Test that weights are properly structured (flexible for user-configurable values)
         # Main weights should be numbers between 0 and 1
@@ -311,7 +377,7 @@ class TestPerformanceScoringService:
 
         mock_table.select.return_value.order.return_value.limit.return_value.execute.return_value = mock_response
 
-        weights = scoring_service._load_scoring_weights_from_database("test-session")
+        weights = scoring_service._load_scoring_weights_from_database("550e8400-e29b-41d4-a716-446655440001")
 
         # Should use default weights from config.py
         assert weights.w_compliance == ScoringDefaults.WEIGHT_COMPLIANCE
@@ -462,7 +528,7 @@ class TestPerformanceScoringService:
         mock_fetch_metrics.return_value = sample_session_metrics
 
         # Calculate scores
-        result = scoring_service.calculate_performance_scores("test-session-123")
+        result = scoring_service.calculate_performance_scores("550e8400-e29b-41d4-a716-446655440000")
 
         # Verify all components are calculated
         assert "overall_score" in result
@@ -509,7 +575,7 @@ class TestPerformanceScoringService:
         with patch.object(scoring_service, "_fetch_session_metrics", return_value=controlled_metrics):
             with patch.object(scoring_service, "_load_scoring_weights_from_database", return_value=ScoringWeights()):
                 with patch.object(scoring_service, "_load_rpe_mapping_from_database", return_value=RPEMapping()):
-                    result = scoring_service.calculate_performance_scores("formula-test")
+                    result = scoring_service.calculate_performance_scores("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
                 # Manual calculation according to metricsDefinitions.md:
                 # P_overall = w_c × S_compliance + w_s × S_symmetry + w_e × S_effort + w_g × S_game
