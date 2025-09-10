@@ -99,34 +99,16 @@ class GHOSTLYC3DProcessor:
         metadata = {}
 
         try:
-            # Use shared utility for common metadata extraction
+            # Use shared utility for ALL metadata extraction (DRY principle)
             shared_metadata = C3DUtils.extract_game_metadata_from_c3d(self.c3d)
             metadata.update(shared_metadata)
 
-            # Legacy specific logic kept for backward compatibility
-            if "INFO" in self.c3d["parameters"]:
-                info_params = self.c3d["parameters"]["INFO"]
-                # Additional field mappings specific to GHOSTLY processor
-                additional_fields = {}
-                for c3d_field, output_field in additional_fields.items():
-                    if c3d_field in info_params:
-                        metadata[output_field] = str(info_params[c3d_field]["value"][0])
-
-            # Player information
-            if "SUBJECTS" in self.c3d["parameters"]:
-                subject_params = self.c3d["parameters"]["SUBJECTS"]
-                if "PLAYER_NAME" in subject_params:
-                    metadata["player_name"] = str(subject_params["PLAYER_NAME"]["value"][0])
-                if "GAME_SCORE" in subject_params:
-                    metadata["score"] = str(subject_params["GAME_SCORE"]["value"][0])
-
-            # If we couldn't find a level, set a default
-            if "level" not in metadata:
-                metadata["level"] = "1"
-
-            # If we couldn't find a time, use current time
-            if "time" not in metadata:
-                metadata["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Map game_score to score for backward compatibility
+            if "game_score" in metadata and "score" not in metadata:
+                metadata["score"] = metadata["game_score"]
+            
+            # NO MAGIC DEFAULTS - Let consumers handle missing data appropriately
+            # Missing fields should remain missing, not be filled with arbitrary values
 
             self.game_metadata = metadata
             return metadata

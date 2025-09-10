@@ -39,6 +39,8 @@ from typing import Any
 from uuid import uuid4
 import numpy as np
 
+# ezc3d import removed - metadata extraction handled by GHOSTLYC3DProcessor
+
 from config import (
     EMG_HIGH_PASS_CUTOFF,
     DEFAULT_FILTER_ORDER,
@@ -57,6 +59,7 @@ from config import (
 )
 from models.api.request_response import ProcessingOptions, GameSessionParameters
 from services.c3d.processor import GHOSTLYC3DProcessor
+# C3DUtils import removed - metadata extraction handled internally by GHOSTLYC3DProcessor
 
 
 # Custom Exception Classes for Better Error Handling
@@ -248,11 +251,15 @@ class TherapySessionProcessor:
             with open(temp_file_path, 'rb') as f:
                 file_data = f.read()
             
+            # Metadata extraction will be handled by GHOSTLYC3DProcessor
+            # No need to load C3D file twice (DRY principle)
+            
             # Ensure C3D processor is instantiated
             if self.c3d_processor is None:
                 self.c3d_processor = GHOSTLYC3DProcessor(temp_file_path)
             
             # Run the complete C3D processing pipeline
+            # The processor already extracts all metadata via C3DUtils
             processing_result = self.c3d_processor.process_file(
                 processing_opts, session_params, include_signals=False
             )
@@ -373,11 +380,15 @@ class TherapySessionProcessor:
                 mvc_threshold_percentage=DEFAULT_MVC_THRESHOLD_PERCENTAGE
             )
             
+            # Metadata extraction will be handled by GHOSTLYC3DProcessor
+            # No need to load C3D file twice (DRY principle)
+            
             # Ensure C3D processor is instantiated
             if self.c3d_processor is None:
                 self.c3d_processor = GHOSTLYC3DProcessor(temp_file_path)
             
             # Run the complete C3D processing pipeline
+            # The processor already extracts all metadata via C3DUtils
             processing_result = self.c3d_processor.process_file(
                 processing_opts, session_params, include_signals=False
             )

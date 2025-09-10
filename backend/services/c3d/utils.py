@@ -40,10 +40,14 @@ class C3DUtils:
             if "INFO" in c3d_data["parameters"]:
                 info_params = c3d_data["parameters"]["INFO"]
 
-                # Standardized field mappings
+                # Extended field mappings to capture all available metadata
                 field_mappings = {
+                    "SYSTEM": "system",
+                    "EVENT": "event",
                     "GAME_NAME": "game_name",
                     "GAME_LEVEL": "level",
+                    "GAME_LEVEL_NAME": "level_name",
+                    "VERSION": "version",
                     "DURATION": "duration",
                     "THERAPIST_ID": "therapist_id",
                     "GROUP_ID": "group_id",
@@ -52,36 +56,99 @@ class C3DUtils:
 
                 for c3d_field, output_field in field_mappings.items():
                     if c3d_field in info_params:
-                        # Convert to string to prevent type errors
-                        value = info_params[c3d_field]["value"][0]
-                        metadata[output_field] = str(value)
+                        # Handle empty value lists gracefully
+                        value_list = info_params[c3d_field].get("value", [])
+                        if value_list and len(value_list) > 0 and value_list[0] is not None:
+                            value = value_list[0]
+                            # Special handling for DURATION field - convert to float
+                            if output_field == "duration":
+                                try:
+                                    metadata[output_field] = float(value)
+                                except (ValueError, TypeError):
+                                    metadata[output_field] = str(value)
+                            else:
+                                metadata[output_field] = str(value)
 
             # Player information from SUBJECTS parameters
             if "SUBJECTS" in c3d_data["parameters"]:
                 subject_params = c3d_data["parameters"]["SUBJECTS"]
 
-                if "NAMES" in subject_params:
-                    names = subject_params["NAMES"]["value"]
-                    if names and len(names) > 0:
+                # Check for PLAYER_NAME first (as seen in the actual data)
+                if "PLAYER_NAME" in subject_params:
+                    value_list = subject_params["PLAYER_NAME"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0]:
+                        metadata["player_name"] = str(value_list[0])
+                elif "NAMES" in subject_params:
+                    names = subject_params["NAMES"].get("value", [])
+                    if names and len(names) > 0 and names[0]:
                         metadata["player_name"] = str(names[0])
+                
+                # Extract game score if available
+                if "GAME_SCORE" in subject_params:
+                    value_list = subject_params["GAME_SCORE"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0] is not None:
+                        try:
+                            metadata["game_score"] = float(value_list[0])
+                        except (ValueError, TypeError):
+                            metadata["game_score"] = str(value_list[0])
+                
+                # Extract marker set information
+                if "MARKER_SET" in subject_params:
+                    value_list = subject_params["MARKER_SET"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0]:
+                        metadata["marker_set"] = str(value_list[0])
 
-            # Technical metadata
+            # Technical metadata from ANALOG
             if "ANALOG" in c3d_data["parameters"]:
                 analog_params = c3d_data["parameters"]["ANALOG"]
 
                 if "RATE" in analog_params:
-                    metadata["sampling_rate"] = float(analog_params["RATE"]["value"][0])
+                    value_list = analog_params["RATE"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0] is not None:
+                        try:
+                            metadata["sampling_rate"] = float(value_list[0])
+                        except (ValueError, TypeError):
+                            pass
 
                 if "LABELS" in analog_params:
-                    labels = analog_params["LABELS"]["value"]
-                    metadata["channel_names"] = [str(label) for label in labels if label.strip()]
-                    metadata["channel_count"] = len(metadata["channel_names"])
+                    labels = analog_params["LABELS"].get("value", [])
+                    if labels:
+                        # Filter out empty strings and None values
+                        metadata["channel_names"] = [str(label) for label in labels if label and str(label).strip()]
+                        metadata["channel_count"] = len(metadata["channel_names"])
+                
+                if "GEN_SCALE" in analog_params:
+                    value_list = analog_params["GEN_SCALE"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0] is not None:
+                        try:
+                            metadata["gen_scale"] = float(value_list[0])
+                        except (ValueError, TypeError):
+                            pass
 
-            # Frame information
+            # Frame information from POINT
             if "POINT" in c3d_data["parameters"]:
                 point_params = c3d_data["parameters"]["POINT"]
+                
                 if "FRAMES" in point_params:
-                    metadata["frame_count"] = int(point_params["FRAMES"]["value"][0])
+                    value_list = point_params["FRAMES"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0] is not None:
+                        try:
+                            metadata["frame_count"] = int(value_list[0])
+                        except (ValueError, TypeError):
+                            pass
+                
+                if "RATE" in point_params:
+                    value_list = point_params["RATE"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0] is not None:
+                        try:
+                            metadata["point_rate"] = float(value_list[0])
+                        except (ValueError, TypeError):
+                            pass
+                
+                if "DATA_TYPE_LABELS" in point_params:
+                    value_list = point_params["DATA_TYPE_LABELS"].get("value", [])
+                    if value_list and len(value_list) > 0 and value_list[0]:
+                        metadata["data_type_labels"] = str(value_list[0])
 
             # Calculate duration if we have sampling rate and frame count
             if "sampling_rate" in metadata and "frame_count" in metadata:
