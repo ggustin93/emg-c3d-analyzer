@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
 import {
@@ -36,8 +37,8 @@ import {
   Search,
   Filter,
   ChevronDown,
-  SortAsc,
-  SortDesc,
+  ArrowUp as SortAsc,
+  ArrowDown as SortDesc,
   Eye,
   EyeOff,
   Columns3
@@ -283,6 +284,7 @@ function ErrorPatientState({ error }: { error: Error }) {
 
 // Individual patient row component
 function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColumns: ColumnVisibility }) {
+  const navigate = useNavigate()
   const avatarColor = getAvatarColor(patient)
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
   const lastSessionText = formatLastSession(patient.last_session)
@@ -291,7 +293,7 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
   const statusBadgeVariant = patient.patient_status === 'dropped_out' ? 'destructive' : 'secondary'
 
   return (
-    <TableRow>
+    <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => navigate(`/patients/${patient.patient_code}`)}>
       {/* Avatar - always visible */}
       <TableCell>
         <Avatar className="h-10 w-10">
@@ -387,13 +389,16 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/patients/${patient.patient_code}`)
+            }}>
               View Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
               Edit Details
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
               Session History
             </DropdownMenuItem>
           </DropdownMenuContent>

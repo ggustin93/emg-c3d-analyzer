@@ -102,139 +102,380 @@ export class ClinicalNotesService {
 
   /**
    * Create a file note (linked to C3D file path)
+   * OPTIMIZED: Uses direct Supabase for instant saves
    */
   static async createFileNote(
     filePath: string,
     content: string
   ): Promise<ClinicalNote> {
-    const requestData: CreateNoteRequest = {
-      content: content.trim(),
-      note_type: 'file'
-    }
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        throw new Error('Authentication required')
+      }
 
-    // Always send object key format (without bucket prefix) to maintain consistency
-    // Backend expects and stores exact path - we want object keys only
-    let cleanPath = filePath
-    if (cleanPath.startsWith(`${this.BUCKET_NAME}/`)) {
-      cleanPath = cleanPath.substring(`${this.BUCKET_NAME}/`.length)
+      // Ensure file path includes bucket name for consistency
+      const fullPath = filePath.includes('/') ? filePath : `${this.BUCKET_NAME}/${filePath}`
+
+      // Create note directly in Supabase
+      const { data: note, error } = await supabase
+        .from('clinical_notes')
+        .insert({
+          author_id: session.user.id,
+          file_path: fullPath,
+          content: content.trim(),
+          note_type: 'file',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to create file note:', error)
+        throw new Error(error.message)
+      }
+
+      return note
+    } catch (error) {
+      console.error('Failed to create file note:', error)
+      throw error
     }
-    
-    // Use query parameter for file path as expected by backend
-    const params = new URLSearchParams({ file_path: cleanPath })
-    
-    return this.apiRequest<ClinicalNote>(`/file?${params}`, {
-      method: 'POST',
-      body: JSON.stringify(requestData)
-    })
   }
 
   /**
    * Create a patient note (using patient_code for convenience)
+   * OPTIMIZED: Uses direct Supabase for instant saves
    */
   static async createPatientNote(
     patientCode: string,
     content: string
   ): Promise<ClinicalNote> {
-    const requestData: CreateNoteRequest = {
-      content: content.trim(),
-      note_type: 'patient'
-    }
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        throw new Error('Authentication required')
+      }
 
-    return this.apiRequest<ClinicalNote>(`/patient/${patientCode}`, {
-      method: 'POST',
-      body: JSON.stringify(requestData)
-    })
+      // First get patient_id from patient_code
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('patient_code', patientCode)
+        .single()
+
+      if (patientError || !patientData) {
+        console.error('Failed to find patient:', patientError)
+        throw new Error(`Patient ${patientCode} not found`)
+      }
+
+      // Create note directly in Supabase
+      const { data: note, error } = await supabase
+        .from('clinical_notes')
+        .insert({
+          author_id: session.user.id,
+          patient_id: patientData.id,
+          content: content.trim(),
+          note_type: 'patient',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to create patient note:', error)
+        throw new Error(error.message)
+      }
+
+      return note
+    } catch (error) {
+      console.error('Failed to create patient note:', error)
+      throw error
+    }
   }
 
   /**
    * Get all file notes for a specific C3D file
+   * OPTIMIZED: Uses direct Supabase query for read performance
    */
   static async getFileNotes(filePath: string): Promise<ClinicalNoteWithPatientCode[]> {
-    // Always send object key format (without bucket prefix) to maintain consistency
-    // Backend expects and stores exact path - we want object keys only
-    let cleanPath = filePath
-    if (cleanPath.startsWith(`${this.BUCKET_NAME}/`)) {
-      cleanPath = cleanPath.substring(`${this.BUCKET_NAME}/`.length)
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return []
+
+      // Ensure file path includes bucket name for consistency
+      const fullPath = filePath.includes('/') ? filePath : `${this.BUCKET_NAME}/${filePath}`
+      
+      // Direct Supabase query - much faster than API call
+      const { data: notes, error } = await supabase
+        .from('clinical_notes')
+        .select(`
+          *,
+          patients:patient_id (
+            patient_code
+          )
+        `)
+        .eq('file_path', fullPath)
+        .eq('author_id', session.user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Failed to fetch file notes:', error)
+        throw new Error(error.message)
+      }
+
+      // Transform to match expected format
+      return (notes || []).map(note => ({
+        ...note,
+        patient_code: note.patients?.patient_code || null
+      }))
+    } catch (error) {
+      console.error('Failed to get file notes:', error)
+      return []
     }
-    
-    // Use query parameter for file path as expected by backend
-    const params = new URLSearchParams({ file_path: cleanPath })
-    
-    const response = await this.apiRequest<NotesListResponse>(
-      `/file?${params}`
-    )
-    return response.notes
   }
 
   /**
    * Get all patient notes for a specific patient (using patient_code)
+   * OPTIMIZED: Uses direct Supabase query for read performance
    */
   static async getPatientNotes(patientCode: string): Promise<ClinicalNoteWithPatientCode[]> {
-    const response = await this.apiRequest<NotesListResponse>(
-      `/patient/${patientCode}`
-    )
-    return response.notes
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return []
+
+      // First get patient_id from patient_code
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('patient_code', patientCode)
+        .single()
+
+      if (patientError || !patientData) {
+        console.error('Failed to find patient:', patientError)
+        return []
+      }
+
+      // Direct Supabase query for notes
+      const { data: notes, error } = await supabase
+        .from('clinical_notes')
+        .select('*')
+        .eq('patient_id', patientData.id)
+        .eq('author_id', session.user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Failed to fetch patient notes:', error)
+        throw new Error(error.message)
+      }
+
+      // Add patient_code to each note
+      return (notes || []).map(note => ({
+        ...note,
+        patient_code: patientCode
+      }))
+    } catch (error) {
+      console.error('Failed to get patient notes:', error)
+      return []
+    }
   }
 
   /**
    * Get notes by author (current user's notes)
+   * OPTIMIZED: Uses direct Supabase query for read performance
    */
   static async getMyNotes(
     page: number = 1,
     limit: number = 50
   ): Promise<NotesListResponse> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString()
-    })
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        return { notes: [], total_count: 0 }
+      }
 
-    return this.apiRequest<NotesListResponse>(`/my-notes?${params}`)
+      // Calculate pagination
+      const from = (page - 1) * limit
+      const to = from + limit - 1
+
+      // Direct Supabase query with pagination
+      const { data: notes, error, count } = await supabase
+        .from('clinical_notes')
+        .select(`
+          *,
+          patients:patient_id (
+            patient_code
+          )
+        `, { count: 'exact' })
+        .eq('author_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      if (error) {
+        console.error('Failed to fetch user notes:', error)
+        throw new Error(error.message)
+      }
+
+      // Transform to match expected format
+      const transformedNotes = (notes || []).map(note => ({
+        ...note,
+        patient_code: note.patients?.patient_code || null
+      }))
+
+      return {
+        notes: transformedNotes,
+        total_count: count || 0
+      }
+    } catch (error) {
+      console.error('Failed to get user notes:', error)
+      return { notes: [], total_count: 0 }
+    }
   }
 
   /**
    * Update an existing note
+   * OPTIMIZED: Uses direct Supabase for instant updates
    */
   static async updateNote(noteId: string, content: string): Promise<ClinicalNote> {
-    const requestData: UpdateNoteRequest = {
-      content: content.trim()
-    }
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        throw new Error('Authentication required')
+      }
 
-    return this.apiRequest<ClinicalNote>(`/${noteId}`, {
-      method: 'PUT',
-      body: JSON.stringify(requestData)
-    })
+      // Update note directly in Supabase
+      const { data: note, error } = await supabase
+        .from('clinical_notes')
+        .update({
+          content: content.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', noteId)
+        .eq('author_id', session.user.id) // Ensure user owns the note
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to update note:', error)
+        throw new Error(error.message)
+      }
+
+      return note
+    } catch (error) {
+      console.error('Failed to update note:', error)
+      throw error
+    }
   }
 
   /**
    * Delete a note
+   * OPTIMIZED: Uses direct Supabase for instant deletion
    */
   static async deleteNote(noteId: string): Promise<void> {
-    await this.apiRequest<void>(`/${noteId}`, {
-      method: 'DELETE'
-    })
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        throw new Error('Authentication required')
+      }
+
+      // Delete note directly in Supabase
+      const { error } = await supabase
+        .from('clinical_notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('author_id', session.user.id) // Ensure user owns the note
+
+      if (error) {
+        console.error('Failed to delete note:', error)
+        throw new Error(error.message)
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error)
+      throw error
+    }
   }
 
   /**
    * Get note count indicators for UI performance (batch loading)
+   * OPTIMIZED: Uses direct Supabase queries for read performance
    */
   static async getNotesIndicators(
     filePaths: string[] = [],
     patientCodes: string[] = []
   ): Promise<NotesIndicators> {
-    // Ensure file paths include bucket name if not already present
-    const fullPaths = filePaths.map(path => 
-      path.includes('/') ? path : `${this.BUCKET_NAME}/${path}`
-    )
-    
-    const requestData: NotesIndicatorsRequest = {
-      file_paths: fullPaths.length > 0 ? fullPaths : undefined,
-      patient_codes: patientCodes.length > 0 ? patientCodes : undefined
-    }
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) {
+        return { file_notes: {}, patient_notes: {} }
+      }
 
-    return this.apiRequest<NotesIndicators>('/indicators', {
-      method: 'POST',
-      body: JSON.stringify(requestData)
-    })
+      const indicators: NotesIndicators = {
+        file_notes: {},
+        patient_notes: {}
+      }
+
+      // Batch query for file notes if paths provided
+      if (filePaths.length > 0) {
+        const fullPaths = filePaths.map(path => 
+          path.includes('/') ? path : `${this.BUCKET_NAME}/${path}`
+        )
+
+        const { data: fileNotes, error: fileError } = await supabase
+          .from('clinical_notes')
+          .select('file_path', { count: 'exact', head: false })
+          .eq('author_id', session.user.id)
+          .in('file_path', fullPaths)
+
+        if (!fileError && fileNotes) {
+          // Count notes per file path
+          for (const path of fullPaths) {
+            indicators.file_notes[path] = fileNotes.filter(n => n.file_path === path).length
+          }
+        }
+      }
+
+      // Batch query for patient notes if codes provided
+      if (patientCodes.length > 0) {
+        // First get patient IDs for the codes
+        const { data: patients, error: patientError } = await supabase
+          .from('patients')
+          .select('id, patient_code')
+          .in('patient_code', patientCodes)
+
+        if (!patientError && patients) {
+          const patientIds = patients.map(p => p.id)
+          
+          // Get note counts for these patients
+          const { data: patientNotes, error: notesError } = await supabase
+            .from('clinical_notes')
+            .select('patient_id', { count: 'exact', head: false })
+            .eq('author_id', session.user.id)
+            .in('patient_id', patientIds)
+
+          if (!notesError && patientNotes) {
+            // Map counts back to patient codes
+            for (const patient of patients) {
+              const count = patientNotes.filter(n => n.patient_id === patient.id).length
+              indicators.patient_notes[patient.patient_code] = count
+            }
+          }
+        }
+      }
+
+      return indicators
+    } catch (error) {
+      console.error('Failed to get notes indicators:', error)
+      return { file_notes: {}, patient_notes: {} }
+    }
   }
 
   /**
