@@ -358,7 +358,9 @@ async def test_scoring_weights():
         )
 
         service = PerformanceScoringService()
-        test_weights = service._load_scoring_weights_from_database("test-session")
+        # Use a valid UUID format for testing (falls back to defaults when not found)
+        test_session_id = "550e8400-e29b-41d4-a716-446655440001"
+        test_weights = service._load_scoring_weights_from_database(test_session_id)
 
         return {
             "metricsDefinitions_weights": {

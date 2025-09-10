@@ -26,6 +26,7 @@ from config import SessionDefaults, ScoringDefaults
 
 from database.supabase_client import get_supabase_client
 from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
+from services.clinical.weight_manager import WeightManager
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +138,7 @@ class PerformanceScoringService:
         self.scoring_repo = ScoringConfigurationRepository(supabase_client)  # Repository for scoring config
         self.weights = ScoringWeights()
         self.rpe_mapping = RPEMapping()  # Default RPE mapping
+        self.weight_manager = WeightManager(base_weights=self.weights)  # Mathematical weight management
 
         logger.info("🎯 Performance Scoring Service initialized")
 
@@ -319,15 +321,13 @@ class PerformanceScoringService:
         # Step 4: Calculate overall compliance score
         compliance_score = compliance_components["overall_compliance"] * bfr_gate
 
-        # Step 5: Calculate overall performance (if all components available)
-        overall_score = None
-        if all(x is not None for x in [compliance_score, symmetry_score, effort_score, game_score]):
-            overall_score = (
-                self.weights.w_compliance * compliance_score
-                + self.weights.w_symmetry * symmetry_score
-                + self.weights.w_effort * effort_score
-                + self.weights.w_game * game_score
-            )
+        # Step 5: Calculate overall performance using WeightManager (guarantees weight sum = 1.0)
+        overall_score = self.weight_manager.calculate_overall_score(
+            compliance_score=compliance_score,
+            symmetry_score=symmetry_score,
+            effort_score=effort_score,
+            game_score=game_score
+        )
 
         # Step 6: Prepare result
         result = {
@@ -594,19 +594,25 @@ class PerformanceScoringService:
 
             return SessionMetrics(
                 session_id=session_id,
-                left_total_contractions=left["total_contractions"],
-                left_good_contractions=left["good_contractions"],
-                left_mvc_contractions=left.get("mvc_contraction_count", left["good_contractions"]),
-                left_duration_contractions=left.get(
-                    "duration_contraction_count", left["good_contractions"]
+                left_total_contractions=left["contraction_quality_metrics"]["total_contractions"],
+                left_good_contractions=left["contraction_quality_metrics"]["overall_compliant_contractions"],
+                left_mvc_contractions=left["contraction_quality_metrics"].get(
+                    "mvc75_compliant_contractions", 
+                    left["contraction_quality_metrics"]["overall_compliant_contractions"]
                 ),
-                right_total_contractions=right["total_contractions"],
-                right_good_contractions=right["good_contractions"],
-                right_mvc_contractions=right.get(
-                    "mvc_contraction_count", right["good_contractions"]
+                left_duration_contractions=left["contraction_quality_metrics"].get(
+                    "duration_compliant_contractions", 
+                    left["contraction_quality_metrics"]["overall_compliant_contractions"]
                 ),
-                right_duration_contractions=right.get(
-                    "duration_contraction_count", right["good_contractions"]
+                right_total_contractions=right["contraction_quality_metrics"]["total_contractions"],
+                right_good_contractions=right["contraction_quality_metrics"]["overall_compliant_contractions"],
+                right_mvc_contractions=right["contraction_quality_metrics"].get(
+                    "mvc75_compliant_contractions",
+                    right["contraction_quality_metrics"]["overall_compliant_contractions"]
+                ),
+                right_duration_contractions=right["contraction_quality_metrics"].get(
+                    "duration_compliant_contractions",
+                    right["contraction_quality_metrics"]["overall_compliant_contractions"]
                 ),
                 bfr_pressure_aop=bfr_pressure,
                 bfr_compliant=bfr_compliant,
@@ -940,39 +946,9 @@ class PerformanceScoringService:
             logger.exception(f"Error calculating adherence score: {e!s}")
             return {"error": str(e)}
 
-    async def calculate_session_performance(
-        self, session_id: str, analytics: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Async wrapper for calculate_performance_scores method.
-        
-        Used by TherapySessionProcessor to calculate performance scores.
-        
-        Args:
-            session_id: Therapy session UUID
-            analytics: Session analytics data (from EMG processing)
-            
-        Returns:
-            Dictionary with calculated scores and sub-components
-            
-        Raises:
-            ValueError: If session_id is not a valid UUID format
-        """
-        # Validate session_id is a valid UUID format
-        try:
-            if not isinstance(session_id, str):
-                raise ValueError("session_id must be a string")
-            uuid.UUID(session_id)
-        except (ValueError, TypeError, AttributeError) as e:
-            logger.error(f"🚨 Invalid session_id format in calculate_session_performance: {session_id}")
-            raise ValueError(f"Invalid session_id format. Expected valid UUID, got: {session_id}") from e
-            
-        try:
-            # Call the main sync calculation method
-            scores = self.calculate_performance_scores(session_id)
-            return scores
-        except Exception as e:
-            logger.exception(f"Error in async calculate_session_performance: {e!s}")
-            return {"error": str(e)}
+# Removed unnecessary async wrapper - use calculate_performance_scores directly
+    # This method was just an async wrapper around the synchronous calculate_performance_scores
+    # which violates the project's synchronous Supabase architecture
 
 
 # Service wrapper for webhook integration

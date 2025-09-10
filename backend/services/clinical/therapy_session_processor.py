@@ -1251,10 +1251,8 @@ class TherapySessionProcessor:
         try:
             logger.info(f"📊 Starting performance score calculation for session {session_uuid}")
             
-            # Always use the injected performance service which has proper DB connection
-            score_result = await self.performance_service.calculate_session_performance(
-                session_uuid, analytics
-            )
+            # Use the synchronous performance service (follows project's sync Supabase architecture)
+            score_result = self.performance_service.calculate_performance_scores(session_uuid)
             
             logger.info(f"📊 Performance service returned: {list(score_result.keys())}")
             

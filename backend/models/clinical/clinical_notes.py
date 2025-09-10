@@ -8,7 +8,7 @@ Follows existing EMG C3D Analyzer patterns and domain-driven design.
 from typing import Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class ClinicalNoteBase(BaseModel):
@@ -25,13 +25,15 @@ class ClinicalNoteBase(BaseModel):
         description="Type of note: 'file' or 'patient'"
     )
     
-    @validator('note_type')
+    @field_validator('note_type')
+    @classmethod
     def validate_note_type(cls, v):
         if v not in ['file', 'patient']:
             raise ValueError("note_type must be 'file' or 'patient'")
         return v
     
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         if not v or len(v.strip()) == 0:
             raise ValueError("content cannot be empty")
@@ -41,13 +43,14 @@ class ClinicalNoteBase(BaseModel):
 class CreateNoteRequest(ClinicalNoteBase):
     """Request model for creating clinical notes."""
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "content": "**Session Assessment**\n\n- Good muscle activation in CH1\n- Patient reported minimal fatigue",
                 "note_type": "file"
             }
         }
+    )
 
 
 class UpdateNoteRequest(BaseModel):
@@ -60,18 +63,20 @@ class UpdateNoteRequest(BaseModel):
         description="Updated markdown content"
     )
     
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         if not v or len(v.strip()) == 0:
             raise ValueError("content cannot be empty")
         return v.strip()
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "content": "**Updated Assessment**\n\n- Improved muscle activation\n- Patient shows progress"
             }
         }
+    )
 
 
 class ClinicalNote(ClinicalNoteBase):
@@ -88,9 +93,9 @@ class ClinicalNote(ClinicalNoteBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
-    class Config:
-        from_attributes = True
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "author_id": "456e7890-e12c-34d5-b678-901234567890",
@@ -102,6 +107,7 @@ class ClinicalNote(ClinicalNoteBase):
                 "updated_at": "2025-09-05T14:30:22.123Z"
             }
         }
+    )
 
 
 class ClinicalNoteWithPatientCode(ClinicalNote):
@@ -110,8 +116,8 @@ class ClinicalNoteWithPatientCode(ClinicalNote):
     patient_code: Optional[str] = Field(None, description="Resolved patient code (P001, P002, etc.)")
     author_email: Optional[str] = Field(None, description="Author email address from auth system")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "author_id": "456e7890-e12c-34d5-b678-901234567890",
@@ -124,6 +130,7 @@ class ClinicalNoteWithPatientCode(ClinicalNote):
                 "updated_at": "2025-09-05T14:30:22.123Z"
             }
         }
+    )
 
 
 class NotesIndicators(BaseModel):
@@ -138,8 +145,8 @@ class NotesIndicators(BaseModel):
         description="Map of patient_code -> note count"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_notes": {
                     "patients/P001/session_001/recording.c3d": 2,
@@ -151,6 +158,7 @@ class NotesIndicators(BaseModel):
                 }
             }
         }
+    )
 
 
 class NotesIndicatorsRequest(BaseModel):
@@ -165,8 +173,8 @@ class NotesIndicatorsRequest(BaseModel):
         description="List of patient codes to check for notes"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "file_paths": [
                     "patients/P001/session_001/recording.c3d",
@@ -175,6 +183,7 @@ class NotesIndicatorsRequest(BaseModel):
                 "patient_codes": ["P001", "P002", "P003"]
             }
         }
+    )
 
 
 # Response models for API consistency
@@ -197,8 +206,8 @@ class NotesListResponse(BaseModel):
     )
     total_count: int = Field(0, description="Total number of notes")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "notes": [
                     {
@@ -212,6 +221,7 @@ class NotesListResponse(BaseModel):
                 "total_count": 1
             }
         }
+    )
 
 
 # Error models for consistent API responses
@@ -222,11 +232,12 @@ class ClinicalNotesError(BaseModel):
     message: str = Field(..., description="Human-readable error message")
     details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "error": "PATIENT_NOT_FOUND",
                 "message": "Patient P999 not found",
                 "details": {"patient_code": "P999"}
             }
         }
+    )

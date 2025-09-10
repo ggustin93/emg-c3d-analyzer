@@ -69,7 +69,7 @@ class ScoringConfigurationRepository:
         """
         try:
             result = self.client.table("scoring_configuration").select("*").eq(
-                "name", "GHOSTLY-TRIAL-DEFAULT"
+                "configuration_name", "GHOSTLY-TRIAL-DEFAULT"
             ).eq("active", True).limit(1).execute()
             
             if result.data:
