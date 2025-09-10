@@ -4,6 +4,7 @@ import C3DFileBrowser from '../../c3d/C3DFileBrowser'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '../../ui/card'
 import Spinner from '../../ui/Spinner'
+import { PatientManagement } from './PatientManagement'
 
 /**
  * Therapist Dashboard - Patient management and session tracking
@@ -72,23 +73,9 @@ export function TherapistDashboard({ activeTab = 'sessions' }: { activeTab?: str
       
       case 'patients':
         return (
-          <div className="flex items-center justify-center h-full min-h-[600px]">
-            <div className="text-center max-w-md mx-auto p-8">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Patient Management</h2>
-              <p className="text-sm text-gray-500 mb-6">
-                Manage patient records, track progress, and monitor treatment outcomes.
-              </p>
-              <div className="inline-flex items-center px-3 py-1.5 bg-gray-50 text-xs text-gray-600 rounded-full">
-                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Coming Soon
-              </div>
+          <div className="h-full bg-gray-50/30">
+            <div className="p-6">
+              <PatientManagement />
             </div>
           </div>
         )
