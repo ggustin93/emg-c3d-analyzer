@@ -385,6 +385,17 @@ npm run type-check                       # TypeScript validation
   - AsyncMock returns coroutines which cause `TypeError: 'coroutine' object is not iterable`
   - Example: `mock_service = MagicMock()`, NOT `mock_service = AsyncMock()`
 
+### 5.5. Critical Testing & Architecture Lessons (Sep 2025)
+
+**🚨 NEVER Use AsyncMock for Supabase Services**
+- Supabase Python client is synchronous → Use `MagicMock()` only
+- AsyncMock causes coroutine errors: `'coroutine' object is not iterable`
+
+**🔥 Avoid Async Wrappers Anti-Pattern**
+- Don't create async wrappers around synchronous methods
+- Example removed: `async def calculate_session_performance()` wrapping sync `calculate_performance_scores()`
+- Violates KISS principle → Keep sync services sync
+
 This follows the KISS principle - keeping the implementation simple without unnecessary async complexity when the synchronous client meets all requirements.
 
 ---

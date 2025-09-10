@@ -111,6 +111,11 @@ This document establishes the **backend engineering** best practices for our sta
 15. **Implement Resilient and Flexible Logic**
     As demonstrated in the C3D channel handling, design your services to be resilient to variations in input data. Implement fallbacks and flexible mapping to gracefully handle real-world inconsistencies.
 
+16. **🚨 Critical Testing Rules (Sep 2025)**
+    - **NEVER use AsyncMock with Supabase services** → Always use `MagicMock()`
+    - **Avoid async wrappers** → Don't wrap sync methods in async functions
+    - **Keep sync services sync** → Follows KISS principle, prevents coroutine errors
+
 ---
 
 ## 3/ Recommended Backend File Organization
