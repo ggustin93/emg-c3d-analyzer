@@ -20,7 +20,8 @@ const mockExportData: ExportData = {
       includeAnalytics: true,
       includeSessionParams: false,
       includeC3dMetadata: false,
-      includePerformanceAnalysis: false
+      includePerformanceAnalysis: false,
+      format: 'json'
     }
   }
 };
@@ -33,6 +34,7 @@ describe('ExportActions Component', () => {
     exportData: mockExportData,
     originalFilename: 'test_file.c3d',
     hasSelectedData: true,
+    exportFormat: 'json' as 'json' | 'csv',
     onDownloadOriginal: mockOnDownloadOriginal,
     onDownloadExport: mockOnDownloadExport
   };

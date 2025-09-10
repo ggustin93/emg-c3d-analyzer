@@ -20,6 +20,8 @@ interface ExportActionsProps {
   exportData: ExportData | null;
   originalFilename: string;
   hasSelectedData: boolean;
+  exportFormat: 'json' | 'csv';
+  sessionId?: string;
   onDownloadOriginal: () => Promise<void>;
   onDownloadExport: () => Promise<void>;
 }
@@ -28,6 +30,8 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
   exportData,
   originalFilename,
   hasSelectedData,
+  exportFormat,
+  sessionId,
   onDownloadOriginal,
   onDownloadExport,
 }) => {
@@ -56,7 +60,13 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
   const handleDownloadExport = async () => {
     setDownloadStates(prev => ({ ...prev, export: 'downloading' }));
     try {
-      await onDownloadExport();
+      if (exportFormat === 'csv' && sessionId) {
+        // CSV format: Call backend API
+        await downloadCsvFromBackend();
+      } else {
+        // JSON format: Use existing client-side export
+        await onDownloadExport();
+      }
       setDownloadStates(prev => ({ ...prev, export: 'success' }));
       setTimeout(() => {
         setDownloadStates(prev => ({ ...prev, export: 'idle' }));
@@ -67,9 +77,40 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
     }
   };
 
+  const downloadCsvFromBackend = async () => {
+    if (!sessionId) {
+      throw new Error('Session ID required for CSV export');
+    }
+
+    // Call backend API for CSV export
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const response = await fetch(`${apiUrl}/export/session/${sessionId}?format=csv`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to export CSV: ${response.statusText}`);
+    }
+
+    // Get the CSV content as blob
+    const blob = await response.blob();
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${originalFilename.replace('.c3d', '')}_export.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   // Estimate export file size
   const estimatedSize = exportData ? 
-    formatBytes(JSON.stringify(exportData).length * 2) : '0 KB';
+    formatBytes(JSON.stringify(exportData).length * (exportFormat === 'csv' ? 0.5 : 2)) : '0 KB';
 
   return (
     <Card>
@@ -130,7 +171,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
               )}
               {downloadStates.export === 'downloading' ? 'Exporting...' : 
                downloadStates.export === 'success' ? 'Exported!' : 
-               'Export JSON Data'}
+               `Export ${exportFormat.toUpperCase()} Data`}
             </Button>
             
             {hasSelectedData ? (

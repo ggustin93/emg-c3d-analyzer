@@ -11,10 +11,12 @@ import shutil
 import tempfile
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
+from fastapi.responses import JSONResponse, Response
+from typing import Optional, Literal
 
-# from services.data.export_service import EMGDataExporter  # TODO: Implement export service
+from services.data.export_service import EnhancedEMGDataExporter
+from utils.csv_converter import convert_export_to_csv
 from api.dependencies.validation import (
     get_file_metadata,
     get_processing_options,
@@ -113,3 +115,65 @@ async def export_analysis_data(
             await file.close()
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+@router.get("/session/{session_id}")
+async def export_session_data(
+    session_id: str,
+    format: Literal["json", "csv"] = Query("json", description="Export format: json or csv"),
+):
+    """Export existing session data with format selection.
+    
+    MVP implementation: Add missing performance data + CSV format support.
+    Following backend CLAUDE.md: thin controller, business logic in services.
+    
+    Args:
+        session_id: Session UUID to export
+        format: Export format ('json' or 'csv')
+        
+    Returns:
+        JSONResponse or CSV Response with comprehensive session data
+        
+    Raises:
+        HTTPException: 404 for missing session, 500 for processing errors
+    """
+    try:
+        # Import here to avoid circular imports
+        from database.supabase_client import get_supabase_client
+        
+        # Get Supabase client (synchronous - CLAUDE.md #14)
+        supabase = get_supabase_client()
+        
+        # Create enhanced exporter with session-based processor
+        # For now, use a mock processor since we're working with existing session data
+        mock_processor = type('MockProcessor', (), {
+            'latest_analysis_result': type('MockResult', (), {
+                'emg_signals': {},
+                'analytics': {}
+            })()
+        })()
+        
+        export_service = EnhancedEMGDataExporter(mock_processor, supabase)
+        
+        # Get comprehensive export data (includes performance scores + config)
+        export_data = export_service.get_comprehensive_export_data(session_id)
+        
+        if format == "csv":
+            # Convert to CSV format
+            csv_content = convert_export_to_csv(export_data)
+            
+            # Return CSV with appropriate headers
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=session_{session_id}_export.csv"
+                }
+            )
+        else:
+            # Return JSON (existing functionality)
+            return JSONResponse(content=export_data)
+            
+    except Exception as e:
+        logger.error(f"Session export error: {e!s}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error exporting session data: {e!s}")
