@@ -88,7 +88,7 @@ class TestRealC3DPatternsIntegration:
         return processing_opts, session_params
     
     @pytest.fixture
-    def real_processor(self, test_supabase_client, _unique_session_data, real_c3d_file):
+    def real_processor(self, test_supabase_client, unique_session_data, real_c3d_file):
         """Create processor with real services and minimal mocking."""
         # Create session repositories
         session_repo = TherapySessionRepository(test_supabase_client)

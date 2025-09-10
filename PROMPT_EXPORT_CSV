@@ -1,0 +1,9 @@
+/sc:design help me design the following: 
+- The Export Tab is already designed but should be improved :
+1/ Analyze and make sure, from emg_analysis and siganl_processing and perfroamnce_socring_service etc that no important data is missing. We also need ot make sure we save all the scroring_configuration used for claculation performance scores
+
+2/ We should make a web search and Perplexity MCP search to find the best way to export all the JSON data, also in CSV format, taht researchers can easily exploit. Any idea ?
+
+3/ 
+
+Do not hesitate to ask clarifying questiosn
