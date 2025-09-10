@@ -12,6 +12,7 @@ Tests the complete integration:
 - Proper isolation with test-specific data
 """
 
+import logging
 import pytest
 import time
 from pathlib import Path
@@ -20,11 +21,17 @@ from uuid import uuid4
 from datetime import datetime, timezone
 
 from services.clinical.therapy_session_processor import TherapySessionProcessor
-from services.clinical.performance_scoring_service import PerformanceScoringService, SessionMetrics
+from services.clinical.performance_scoring_service import PerformanceScoringService
 from services.clinical.repositories.therapy_session_repository import TherapySessionRepository
-from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
 from services.c3d.processor import GHOSTLYC3DProcessor
 from database.supabase_client import get_supabase_client
+
+# Import TestSampleManager at module level
+try:
+    from conftest import TestSampleManager
+except ImportError:
+    # Fallback if conftest not found
+    TestSampleManager = None
 from models import GameSessionParameters, ProcessingOptions
 
 
@@ -34,16 +41,17 @@ class TestRealC3DPatternsIntegration:
     @pytest.fixture
     def real_c3d_file(self):
         """Path to actual GHOSTLY C3D file for realistic testing."""
-        try:
-            from conftest import TestSampleManager
-            c3d_path = TestSampleManager.ensure_sample_file_exists()
-            return str(c3d_path)
-        except (ImportError, FileNotFoundError):
-            # Fallback for when centralized management is not available
-            c3d_path = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
-            if not c3d_path.exists():
-                pytest.skip(f"C3D file not found: {c3d_path}")
-            return str(c3d_path)
+        if TestSampleManager is not None:
+            try:
+                c3d_path = TestSampleManager.ensure_sample_file_exists()
+                return str(c3d_path)
+            except FileNotFoundError:
+                pass
+        # Fallback when TestSampleManager is not available or file not found
+        c3d_path = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        if not c3d_path.exists():
+            pytest.skip(f"C3D file not found: {c3d_path}")
+        return str(c3d_path)
     
     @pytest.fixture
     def test_supabase_client(self):
@@ -80,11 +88,10 @@ class TestRealC3DPatternsIntegration:
         return processing_opts, session_params
     
     @pytest.fixture
-    def real_processor(self, test_supabase_client, unique_session_data, real_c3d_file):
+    def real_processor(self, test_supabase_client, _unique_session_data, real_c3d_file):
         """Create processor with real services and minimal mocking."""
         # Create session repositories
         session_repo = TherapySessionRepository(test_supabase_client)
-        scoring_repo = ScoringConfigurationRepository(test_supabase_client)
         performance_service = PerformanceScoringService(supabase_client=test_supabase_client)
         
         # Mock c3d_processor for constructor, but we'll use real processors in tests
@@ -126,9 +133,9 @@ class TestRealC3DPatternsIntegration:
             test_supabase_client.table("emg_statistics").delete().eq(
                 "session_id", unique_session_data["session_id"]
             ).execute()
-        except Exception:
-            # Ignore cleanup errors to avoid test pollution
-            pass
+        except Exception as e:
+            # Log cleanup errors but don't fail tests
+            print(f"Warning: Cleanup failed for session {unique_session_data['session_id']}: {e}")
     
     def test_session_metrics_creation_with_real_c3d_processing(self, real_processor, real_c3d_file, unique_session_data, processing_parameters):
         """Test SessionMetrics creation from actual C3D processing."""
@@ -189,12 +196,12 @@ class TestRealC3DPatternsIntegration:
         scoring_service = PerformanceScoringService(supabase_client=test_supabase_client)
         
         # Mock the database calls to avoid session lookup issues
-        with patch.object(scoring_service.scoring_repo, 'get_session_scoring_config', return_value=None), \
-             patch.object(scoring_service, 'client') as mock_client:
+        with patch.object(scoring_service.scoring_repo, "get_session_scoring_config", return_value=None), \
+             patch.object(scoring_service, "client") as mock_client:
             
             # Mock the therapy_sessions lookup to return a fake patient_id
-            mock_session_result = type('MockResult', (), {
-                'data': [{'patient_id': unique_session_data["patient_id"], 'scoring_config_id': None}]
+            mock_session_result = type("MockResult", (), {
+                "data": [{"patient_id": unique_session_data["patient_id"], "scoring_config_id": None}]
             })()
             mock_client.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = mock_session_result
             
@@ -219,7 +226,7 @@ class TestRealC3DPatternsIntegration:
             
             for field in required_fields:
                 assert field in scores, f"Missing required score field: {field}"
-                assert isinstance(scores[field], (int, float)), f"Score field {field} should be numeric"
+                assert isinstance(scores[field], int | float), f"Score field {field} should be numeric"
                 
             # Verify scores are in valid ranges (0-100 for percentages, 0-1 for rates)
             percentage_fields = ["overall_score", "compliance_score", "symmetry_score", 
@@ -314,9 +321,8 @@ class TestRealC3DPatternsIntegration:
         analytics = processing_result["analytics"]
         
         # Capture log messages during validation
-        import logging
-        with patch.object(logging.getLogger('services.clinical.therapy_session_processor'), 'warning') as mock_warning, \
-             patch.object(logging.getLogger('services.clinical.therapy_session_processor'), 'error') as mock_error:
+        with patch.object(logging.getLogger("services.clinical.therapy_session_processor"), "warning") as mock_warning, \
+             patch.object(logging.getLogger("services.clinical.therapy_session_processor"), "error") as mock_error:
             
             # Validate each channel's data quality
             for channel_name, channel_data in analytics.items():
