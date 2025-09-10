@@ -1,15 +1,18 @@
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
+import React, { useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
-import { Badge } from '../../ui/badge'
-import { User, File, Activity } from 'lucide-react'
+import C3DFileBrowser from '../../c3d/C3DFileBrowser'
+import { useNavigate } from 'react-router-dom'
+import { Card, CardContent } from '../../ui/card'
+import Spinner from '../../ui/Spinner'
 
 /**
  * Therapist Dashboard - Patient management and session tracking
  * Access: THERAPIST or ADMIN roles
  */
-export function TherapistDashboard() {
+export function TherapistDashboard({ activeTab = 'sessions' }: { activeTab?: string }) {
   const { userRole } = useAuth()
+  const navigate = useNavigate()
+  const [isNavigatingToAnalysis, setIsNavigatingToAnalysis] = useState(false)
   
   if (userRole !== 'THERAPIST' && userRole !== 'ADMIN') {
     return (
@@ -24,202 +27,162 @@ export function TherapistDashboard() {
     )
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Therapist Dashboard</h1>
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          <Activity className="w-4 h-4 mr-1" />
-          Therapist
-        </Badge>
-      </div>
+  const handleFileSelect = (filename: string, uploadDate?: string) => {
+    setIsNavigatingToAnalysis(true)
+    // Small delay to show loading state before navigation
+    setTimeout(() => {
+      navigate(`/analysis?file=${filename}${uploadDate ? `&date=${uploadDate}` : ''}`)
+    }, 100)
+  }
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* My Patients */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              👥 My Patients
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userRole === 'THERAPIST' || userRole === 'ADMIN' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-2xl font-bold text-blue-600">12</div>
-                      <div className="text-sm text-muted-foreground">Active</div>
-                    </div>
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-2xl font-bold text-gray-600">3</div>
-                      <div className="text-sm text-muted-foreground">Completed</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="p-3 rounded border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">Patient P001</span>
-                          <div className="text-sm text-muted-foreground">Last session: 2 days ago</div>
-                        </div>
-                        <Badge variant="outline">Active</Badge>
-                      </div>
-                    </div>
-                    <div className="p-3 rounded border">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">Patient P002</span>
-                          <div className="text-sm text-muted-foreground">Last session: 1 week ago</div>
-                        </div>
-                        <Badge variant="outline">Active</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center p-6 text-muted-foreground">
-                  <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Patient access required</p>
-                </div>
-              )}
+  // Render content based on active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="flex items-center justify-center h-full min-h-[600px]">
+            <div className="text-center max-w-md mx-auto p-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Overview Dashboard</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Your comprehensive metrics and insights will appear here once configured.
+              </p>
+              <div className="inline-flex items-center px-3 py-1.5 bg-gray-50 text-xs text-gray-600 rounded-full">
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Coming Soon
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Session Results */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              📈 Session Results
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userRole === 'THERAPIST' || userRole === 'ADMIN' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-2xl font-bold text-green-600">47</div>
-                      <div className="text-sm text-muted-foreground">This Week</div>
-                    </div>
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-2xl font-bold text-purple-600">85%</div>
-                      <div className="text-sm text-muted-foreground">Compliance</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="p-3 rounded border">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Average Performance</span>
-                        <Badge variant="outline">7.8/10</Badge>
-                      </div>
-                    </div>
-                    <div className="p-3 rounded border">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">MVC Achievement</span>
-                        <Badge variant="outline">92%</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center p-6 text-muted-foreground">
-                  <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Session access required</p>
-                </div>
-              )}
+          </div>
+        )
+      
+      case 'sessions':
+        return (
+          <div className="h-full bg-gray-50/30">
+            <div className="p-6">
+              <C3DFileBrowser onFileSelect={handleFileSelect} />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Clinical Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <File className="w-5 h-5" />
-              📝 Clinical Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userRole === 'THERAPIST' || userRole === 'ADMIN' ? (
-                <div className="space-y-2">
-                  <div className="p-3 rounded border">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">Session Note - P001</span>
-                        <div className="text-sm text-muted-foreground">Patient showed improvement in contraction control</div>
-                      </div>
-                      <Badge variant="outline">Today</Badge>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded border">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">Progress Note - P002</span>
-                        <div className="text-sm text-muted-foreground">Reached 90% MVC target consistently</div>
-                      </div>
-                      <Badge variant="outline">Yesterday</Badge>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <Badge variant="secondary" className="w-full justify-center p-2">
-                      Notes Editor Available
-                    </Badge>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-6 text-muted-foreground">
-                  <File className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Notes access required</p>
-                </div>
-              )}
+          </div>
+        )
+      
+      case 'patients':
+        return (
+          <div className="flex items-center justify-center h-full min-h-[600px]">
+            <div className="text-center max-w-md mx-auto p-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Patient Management</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Manage patient records, track progress, and monitor treatment outcomes.
+              </p>
+              <div className="inline-flex items-center px-3 py-1.5 bg-gray-50 text-xs text-gray-600 rounded-full">
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Coming Soon
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Upload C3D */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              📤 Upload C3D Files
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userRole === 'THERAPIST' || userRole === 'ADMIN' ? (
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Activity className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-muted-foreground">
-                      Drop C3D files here or click to browse
+          </div>
+        )
+      
+      case 'about':
+        return (
+          <div className="h-full overflow-auto">
+            <div className="max-w-4xl mx-auto p-8">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">About Ghostly+ EMG Analysis Platform</h1>
+                <p className="text-lg text-gray-600">
+                  Advanced rehabilitation technology for evidence-based therapy assessment
+                </p>
+              </div>
+              
+              <div className="space-y-8">
+                {/* Trial Information Section */}
+                <section className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Clinical Trial Information</h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-600">
+                      {/* Content to be added later */}
+                      Trial details and protocol information will be displayed here.
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-lg font-bold">23</div>
-                      <div className="text-sm text-muted-foreground">Files Today</div>
-                    </div>
-                    <div className="p-3 rounded border text-center">
-                      <div className="text-lg font-bold">156MB</div>
-                      <div className="text-sm text-muted-foreground">Total Size</div>
-                    </div>
+                </section>
+                
+                {/* Research Team Section */}
+                <section className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Research Team</h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-600">
+                      {/* Content to be added later */}
+                      Information about the research team and principal investigators.
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center p-6 text-muted-foreground">
-                  <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Upload access required</p>
-                </div>
-              )}
+                </section>
+                
+                {/* Institution Section */}
+                <section className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Institution</h2>
+                  <div className="prose prose-gray max-w-none">
+                    <div className="flex items-center gap-4 mb-4">
+                      <img 
+                        src="/vub_etro_logo.png" 
+                        alt="VUB ETRO Logo" 
+                        className="h-20 object-contain"
+                      />
+                    </div>
+                    <p className="text-gray-600 mb-2">
+                      <strong>ETRO - Electronics and Informatics</strong>
+                    </p>
+                    <p className="text-gray-600">
+                      Vrije Universiteit Brussel (VUB)
+                    </p>
+                  </div>
+                </section>
+                
+                {/* Technology Section */}
+                <section className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Technology</h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-600">
+                      {/* Content to be added later */}
+                      Information about the Ghostly+ system and EMG analysis technology.
+                    </p>
+                  </div>
+                </section>
+                
+                {/* Contact Section */}
+                <section className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-600">
+                      {/* Content to be added later */}
+                      Contact details for the research team and support.
+                    </p>
+                  </div>
+                </section>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        )
+      
+      default:
+        return null
+    }
+  }
+
+  // KISS: Dashboard content only - SideNav is now handled by SidebarLayout in App.tsx
+  // This eliminates duplicate navigation rendering
+  return (
+    <div className="h-full overflow-auto bg-white">
+      {renderContent()}
     </div>
   )
 }

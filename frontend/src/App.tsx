@@ -6,7 +6,9 @@ import {
   useLoaderData,
   useOutletContext,
   Navigate,
-  useNavigate
+  useNavigate,
+  useLocation,
+  useNavigation
 } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { rootLoader, protectedLoader, publicLoader } from './routes/loaders';
@@ -22,15 +24,31 @@ const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/Ad
 const TherapistDashboard = React.lazy(() => import('./components/dashboards/therapist/TherapistDashboard').then(module => ({ default: module.TherapistDashboard })));
 const ResearcherDashboard = React.lazy(() => import('./components/dashboards/researcher/ResearcherDashboard').then(module => ({ default: module.ResearcherDashboard })));
 
-// Import the original AppContent for analysis view
+// Import analysis content and layout
 import { AppContent as AnalysisView } from './AppContent';
+import { SidebarLayout } from './components/layout/SidebarLayout';
+
+// Navigation Progress Bar Component (SOLID: Single Responsibility)
+function NavigationProgress() {
+  const navigation = useNavigation();
+  const isNavigating = navigation.state === 'loading';
+  
+  return isNavigating ? (
+    <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse z-50 shadow-sm" />
+  ) : null;
+}
 
 // Root layout that provides auth context
 function RootLayout() {
   const authData = useLoaderData() as Awaited<ReturnType<typeof rootLoader>>;
   
   // Pass auth data through context for child components
-  return <Outlet context={authData} />;
+  return (
+    <>
+      <NavigationProgress />
+      <Outlet context={authData} />
+    </>
+  );
 }
 
 // Public layout with header for login page
@@ -49,14 +67,34 @@ function PublicLayout() {
 function DashboardLayout() {
   const authData = useLoaderData() as Awaited<ReturnType<typeof protectedLoader>>;
   const userRole = authData?.profile?.role || 'researcher';
+  const location = useLocation();
   
+  // Read activeTab from navigation state for sidebar highlighting
+  const activeTab = location.state?.activeTab || 'sessions';
+  
+  // SOLID: Single Responsibility - One layout handles all protected routes
+  // This eliminates duplicate SideNav rendering by using consistent layout pattern
+  
+  // Admin users get traditional layout with header/footer
+  if (userRole === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+        <Header isAuthenticated={true} />
+        <main className="flex-1">
+          <Outlet context={{ ...authData, userRole }} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  // Therapist and Researcher use SidebarLayout for ALL routes (dashboard + analysis)
+  // This prevents duplicate navigation by having ONE consistent layout
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-      <Header isAuthenticated={true} />
-      <main className="flex-1">
+    <div className="min-h-screen bg-slate-50">
+      <SidebarLayout activeTab={activeTab}>
         <Outlet context={{ ...authData, userRole }} />
-      </main>
-      <Footer />
+      </SidebarLayout>
     </div>
   );
 }
@@ -64,6 +102,10 @@ function DashboardLayout() {
 // Dashboard component that renders based on role
 function Dashboard() {
   const { userRole } = useOutletContext<{ userRole: string }>();
+  const location = useLocation();
+  
+  // Read activeTab from navigation state (for Analytics/About tabs)
+  const activeTab = location.state?.activeTab || 'sessions';
   
   const DashboardLoadingFallback = (
     <div className="p-6 flex items-center justify-center">
@@ -95,14 +137,17 @@ function Dashboard() {
     case 'therapist':
       return (
         <React.Suspense fallback={DashboardLoadingFallback}>
-          <TherapistDashboard />
+          <TherapistDashboard activeTab={activeTab} />
         </React.Suspense>
       );
     case 'researcher':
     default:
       return (
         <React.Suspense fallback={DashboardLoadingFallback}>
-          <ResearcherDashboard onQuickSelect={handleAnalysisNavigation} />
+          <ResearcherDashboard 
+            onQuickSelect={handleAnalysisNavigation} 
+            activeTab={activeTab}
+          />
         </React.Suspense>
       );
   }

@@ -44,6 +44,35 @@ export function AppContent() {
   const { user, userRole } = useAuth();
   const isAuthenticated = !!user;
   
+  // Loading overlay component (KISS: Simple, focused component)
+  const AnalysisLoadingOverlay = () => (
+    <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-4 border border-gray-100">
+        <div className="mb-6">
+          <div className="relative flex justify-center">
+            <div className="w-16 h-16">
+              <Spinner />
+            </div>
+            <div className="absolute inset-0 animate-ping">
+              <div className="w-16 h-16 mx-auto rounded-full border-4 border-blue-200"></div>
+            </div>
+          </div>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">
+          Processing EMG Analysis
+        </h3>
+        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+          Analyzing C3D file and extracting EMG signals...<br />
+          <span className="text-xs text-gray-500">This may take a few moments</span>
+        </p>
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse transition-all duration-1000" 
+               style={{width: '75%'}}></div>
+        </div>
+      </div>
+    </div>
+  );
+  
   // State for session parameters from Zustand store
   const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
   
@@ -515,6 +544,9 @@ export function AppContent() {
 
   return (
     <>
+      {/* Loading overlay - shown during EMG processing (DRY: Reusable component) */}
+      {isLoading && <AnalysisLoadingOverlay />}
+      
       <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
         {/* Header removed - now provided by DashboardLayout in router */}
 
