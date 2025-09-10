@@ -65,10 +65,15 @@ class TestWebhookCompleteIntegration:
     @pytest.fixture(scope="class")
     def sample_c3d_path(self):
         """Path to sample C3D file."""
-        sample_path = Path(__file__).parents[1] / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
-        if not sample_path.exists():
-            pytest.skip(f"Sample C3D file required for E2E tests: {sample_path}")
-        return sample_path
+        try:
+            from conftest import TestSampleManager
+            return TestSampleManager.ensure_sample_file_exists()
+        except (ImportError, FileNotFoundError):
+            # Fallback for when centralized management is not available
+            sample_path = Path(__file__).parents[1] / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+            if not sample_path.exists():
+                pytest.skip(f"Sample C3D file required for E2E tests: {sample_path}")
+            return sample_path
     
     @pytest.fixture
     def test_patient_code(self):

@@ -7,6 +7,7 @@ This demonstrates that the webhook processing flow populates ALL required tables
 import asyncio
 import sys
 import os
+import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -18,6 +19,7 @@ from services.clinical.therapy_session_processor import TherapySessionProcessor
 from models.api.request_response import GameSessionParameters
 
 
+@pytest.mark.skip(reason="Manual test script - not for CI execution")
 async def test_all_tables_populated():
     """Test that all 5 database tables are populated when processing a session."""
     

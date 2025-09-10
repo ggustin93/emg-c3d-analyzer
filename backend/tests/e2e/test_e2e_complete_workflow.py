@@ -59,49 +59,56 @@ class TestCompleteWorkflow:
     @pytest.fixture
     def sample_c3d_file(self):
         """Use the actual GHOSTLY C3D file for realistic E2E testing."""
-        # Use the actual sample file from the specified path
-        sample_path = Path(
-            "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
-        )
-
-        if sample_path.exists():
-            print(f"✅ Using actual C3D file: {sample_path}")
+        try:
+            from conftest import TestSampleManager
+            sample_path = TestSampleManager.ensure_sample_file_exists()
+            print(f"✅ Using centrally managed C3D file: {sample_path}")
             print(f"📊 File size: {sample_path.stat().st_size / (1024 * 1024):.2f} MB")
             return sample_path
-        else:
-            # Fallback to relative path
-            relative_path = (
-                Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        except (ImportError, FileNotFoundError):
+            # Fallback to manual path resolution
+            sample_path = Path(
+                "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
             )
-            if relative_path.exists():
-                print(f"✅ Using actual C3D file (relative): {relative_path}")
-                print(f"📊 File size: {relative_path.stat().st_size / (1024 * 1024):.2f} MB")
-                return relative_path
+
+            if sample_path.exists():
+                print(f"✅ Using actual C3D file: {sample_path}")
+                print(f"📊 File size: {sample_path.stat().st_size / (1024 * 1024):.2f} MB")
+                return sample_path
             else:
-                # Create a minimal mock C3D file if the real one isn't available
-                print("⚠️ Real C3D file not found, creating mock file for testing")
-                if np is None:
-                    pytest.skip("NumPy not available and real C3D file not found")
+                # Fallback to relative path
+                relative_path = (
+                    Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+                )
+                if relative_path.exists():
+                    print(f"✅ Using actual C3D file (relative): {relative_path}")
+                    print(f"📊 File size: {relative_path.stat().st_size / (1024 * 1024):.2f} MB")
+                    return relative_path
+                else:
+                    # Create a minimal mock C3D file if the real one isn't available
+                    print("⚠️ Real C3D file not found, creating mock file for testing")
+                    if np is None:
+                        pytest.skip("NumPy not available and real C3D file not found")
 
-                with tempfile.NamedTemporaryFile(suffix=".c3d", delete=False) as tmp_file:
-                    # Write minimal C3D header structure
-                    header = bytearray(512)  # C3D header is typically 512 bytes
-                    header[0:8] = b"GHOSTLY\x00"  # Mock signature
-                    header[8:12] = (990).to_bytes(4, "little")  # Sampling rate
-                    header[12:16] = (124000).to_bytes(4, "little")  # Frame count
-                    header[16:20] = (2).to_bytes(4, "little")  # Channel count
+                    with tempfile.NamedTemporaryFile(suffix=".c3d", delete=False) as tmp_file:
+                        # Write minimal C3D header structure
+                        header = bytearray(512)  # C3D header is typically 512 bytes
+                        header[0:8] = b"GHOSTLY\x00"  # Mock signature
+                        header[8:12] = (990).to_bytes(4, "little")  # Sampling rate
+                        header[12:16] = (124000).to_bytes(4, "little")  # Frame count
+                        header[16:20] = (2).to_bytes(4, "little")  # Channel count
 
-                    # Write some mock EMG data
-                    mock_data = (
-                        np.random.randn(124000, 2).astype(np.float32) * 0.001
-                    )  # Realistic EMG amplitude
+                        # Write some mock EMG data
+                        mock_data = (
+                            np.random.randn(124000, 2).astype(np.float32) * 0.001
+                        )  # Realistic EMG amplitude
 
-                    tmp_file.write(header)
-                    tmp_file.write(mock_data.tobytes())
-                    tmp_file.flush()
+                        tmp_file.write(header)
+                        tmp_file.write(mock_data.tobytes())
+                        tmp_file.flush()
 
-                    print(f"📄 Created mock C3D file: {tmp_file.name}")
-                    return Path(tmp_file.name)
+                        print(f"📄 Created mock C3D file: {tmp_file.name}")
+                        return Path(tmp_file.name)
 
     def test_complete_emg_analysis_workflow(self, sample_c3d_file):
         """Test the complete EMG analysis workflow from upload to results.

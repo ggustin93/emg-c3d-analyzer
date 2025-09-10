@@ -207,7 +207,7 @@ class TestPerformanceScoresPopulation:
         
         # Patch both the direct PerformanceScoringService and fallback path
         with patch('services.clinical.performance_scoring_service.PerformanceScoringService') as MockPerfService, \
-             patch.object(processor.performance_service, 'calculate_session_performance', new_callable=AsyncMock, return_value=mock_scores) as mock_calc, \
+             patch.object(processor.performance_service, 'calculate_performance_scores', new_callable=MagicMock, return_value=mock_scores) as mock_calc, \
              patch.object(processor, '_upsert_table', new_callable=AsyncMock) as mock_upsert:
             
             # Setup the mock service instance
@@ -247,7 +247,7 @@ class TestPerformanceScoresPopulation:
             "error": "No analytics data",
             "scoring_config_id": str(uuid4())  # Include even in error case
         }
-        with patch.object(processor.performance_service, 'calculate_session_performance', new_callable=AsyncMock, return_value=mock_result):
+        with patch.object(processor.performance_service, 'calculate_performance_scores', new_callable=MagicMock, return_value=mock_result):
             
             # Execute - should not raise exception
             session_code = "P001S001"

@@ -2,10 +2,14 @@
 
 This module provides a single source of truth for FastAPI app imports
 across all test files, eliminating code duplication and import complexity.
+
+Additionally provides robust C3D sample file management to ensure reliable
+testing with actual C3D data across all test scenarios.
 """
 
 import os
 import sys
+import shutil
 import importlib.util
 from pathlib import Path
 from typing import List, Optional, Generator
@@ -61,6 +65,115 @@ def get_fastapi_app():
 # Create the app instance once for all tests
 # This will be imported by all test files
 app = get_fastapi_app()
+
+
+# =====================================================
+# C3D Sample File Management
+# =====================================================
+
+class TestSampleManager:
+    """
+    Centralized manager for C3D sample files.
+    
+    Ensures reliable access to sample files across all tests with fallback
+    location resolution and automatic copying when needed.
+    """
+    
+    SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+    
+    @classmethod
+    def get_primary_sample_path(cls) -> Path:
+        """Get the primary backend test samples path."""
+        return Path(__file__).parent / "samples" / cls.SAMPLE_FILENAME
+    
+    @classmethod
+    def get_fallback_locations(cls) -> List[Path]:
+        """Get list of fallback locations to search for sample files."""
+        project_root = Path(__file__).resolve().parents[2]
+        
+        return [
+            # Frontend samples (most likely to exist)
+            project_root / "frontend" / "public" / "samples" / cls.SAMPLE_FILENAME,
+            project_root / "frontend" / "src" / "tests" / "samples" / cls.SAMPLE_FILENAME,
+            project_root / "frontend" / "build" / "samples" / cls.SAMPLE_FILENAME,
+            # Backend samples
+            project_root / "backend" / "tests" / "samples" / cls.SAMPLE_FILENAME,
+        ]
+    
+    @classmethod
+    def ensure_sample_file_exists(cls) -> Path:
+        """
+        Ensure sample file exists in primary location, copying from fallback if needed.
+        
+        Returns:
+            Path: Absolute path to the existing sample file
+            
+        Raises:
+            FileNotFoundError: If no sample file can be found in any location
+        """
+        primary_path = cls.get_primary_sample_path()
+        
+        # Check if primary location already exists
+        if primary_path.exists():
+            return primary_path.resolve()
+        
+        # Ensure directory exists
+        primary_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Search fallback locations
+        for fallback_path in cls.get_fallback_locations():
+            if fallback_path.exists():
+                # Copy from fallback to primary location
+                shutil.copy2(fallback_path, primary_path)
+                print(f"✅ Sample file copied from {fallback_path} to {primary_path}")
+                return primary_path.resolve()
+        
+        # No file found anywhere
+        raise FileNotFoundError(
+            f"Sample file '{cls.SAMPLE_FILENAME}' not found in any location.\n"
+            f"Searched locations:\n" +
+            f"  Primary: {primary_path}\n" +
+            "\n".join(f"  Fallback: {loc}" for loc in cls.get_fallback_locations())
+        )
+    
+    @classmethod
+    def get_file_size(cls) -> int:
+        """Get the expected file size of the sample file."""
+        sample_path = cls.ensure_sample_file_exists()
+        return sample_path.stat().st_size
+
+
+@pytest.fixture
+def sample_c3d_file() -> Path:
+    """
+    Provide path to C3D sample file, ensuring it exists.
+    
+    This fixture guarantees that a valid C3D sample file is available for testing,
+    copying from fallback locations if necessary.
+    
+    Returns:
+        Path: Absolute path to the sample C3D file
+    """
+    return TestSampleManager.ensure_sample_file_exists()
+
+
+@pytest.fixture
+def sample_c3d_info() -> dict:
+    """
+    Provide information about the sample C3D file.
+    
+    Returns:
+        dict: File information including path, size, and metadata
+    """
+    sample_path = TestSampleManager.ensure_sample_file_exists()
+    
+    return {
+        "path": sample_path,
+        "filename": TestSampleManager.SAMPLE_FILENAME,
+        "size": sample_path.stat().st_size,
+        "exists": sample_path.exists(),
+        "is_readable": os.access(sample_path, os.R_OK)
+    }
 
 
 # =====================================================
@@ -277,3 +390,49 @@ def mock_therapy_processor():
     processor.user_repo = MagicMock()
     
     return processor
+
+
+# =====================================================
+# Pytest Configuration Hooks
+# =====================================================
+
+def pytest_configure(config):
+    """
+    Pytest configuration hook to validate test setup.
+    
+    Ensures that critical test dependencies are available before
+    running any tests.
+    """
+    try:
+        # Validate sample file availability
+        TestSampleManager.ensure_sample_file_exists()
+        print(f"✅ Test configuration validated - sample file available")
+        
+    except FileNotFoundError as e:
+        pytest.exit(f"❌ Test configuration failed: {e}")
+
+
+def pytest_collection_modifyitems(config, items):
+    """
+    Modify test collection to add markers for better organization.
+    
+    This adds automatic markers to tests based on their location,
+    enabling better test filtering and organization.
+    """
+    for item in items:
+        # Add markers based on test location
+        test_path = str(item.fspath)
+        
+        if "unit" in test_path:
+            item.add_marker(pytest.mark.unit)
+        elif "integration" in test_path:
+            item.add_marker(pytest.mark.integration)
+        elif "e2e" in test_path:
+            item.add_marker(pytest.mark.e2e)
+            
+        if "webhook" in test_path:
+            item.add_marker(pytest.mark.webhook)
+        if "c3d" in test_path:
+            item.add_marker(pytest.mark.c3d)
+        if "clinical" in test_path:
+            item.add_marker(pytest.mark.clinical)

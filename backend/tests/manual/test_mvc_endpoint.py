@@ -11,6 +11,7 @@ Usage:
 
 import requests
 import json
+import pytest
 from pathlib import Path
 import sys
 
@@ -18,6 +19,7 @@ import sys
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 
+@pytest.mark.skip(reason="Manual test script requiring live server - not for CI execution")
 def test_mvc_endpoint():
     """Test the MVC calibration endpoint with sample data."""
     

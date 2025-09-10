@@ -74,13 +74,9 @@ class TestUUIDValidation:
         with pytest.raises(ValueError, match="Invalid session_id format"):
             service.update_subjective_data("invalid-uuid", rpe=5)
 
-    @pytest.mark.asyncio
-    async def test_calculate_session_performance_invalid_uuid_raises_error(self):
-        """Test that async method also validates UUID format"""
-        service = PerformanceScoringService()
-        
-        with pytest.raises(ValueError, match="Invalid session_id format"):
-            await service.calculate_session_performance("invalid-uuid", {})
+    # NOTE: Removed test_calculate_session_performance_invalid_uuid_raises_error
+    # because the async wrapper method was removed as part of architectural cleanup.
+    # UUID validation is now tested via the synchronous calculate_performance_scores method above.
 
 
 class TestRPEMapping:
@@ -420,13 +416,13 @@ class TestPerformanceScoringService:
         """Test compliance calculation with realistic clinical data"""
         components = scoring_service._calculate_compliance_components(sample_session_metrics)
 
-        # Left muscle: 167% completion, 75% intensity, 80% duration
-        # Compliance = (0.333 * 1.67 + 0.333 * 0.75 + 0.334 * 0.80) * 100
-        expected_left = (0.333 * (20/12) + 0.333 * (15/20) + 0.334 * (16/20)) * 100
+        # Left muscle: 100% completion (capped from 167%), 75% intensity, 80% duration
+        # Compliance = (0.333 * 1.0 + 0.333 * 0.75 + 0.334 * 0.80) * 100
+        expected_left = (0.333 * min(20/12, 1.0) + 0.333 * (15/20) + 0.334 * (16/20)) * 100
         assert abs(components["left_muscle_compliance"] - expected_left) < 0.1
 
-        # Right muscle: 150% completion, 78% intensity, 83% duration
-        expected_right = (0.333 * (18/12) + 0.333 * (14/18) + 0.334 * (15/18)) * 100
+        # Right muscle: 100% completion (capped from 150%), 78% intensity, 83% duration
+        expected_right = (0.333 * min(18/12, 1.0) + 0.333 * (14/18) + 0.334 * (15/18)) * 100
         assert abs(components["right_muscle_compliance"] - expected_right) < 0.1
 
         # Overall compliance should be average of left and right

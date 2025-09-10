@@ -36,12 +36,17 @@ class TestC3DMetadataExtraction(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """One-time setup for all tests (DRY principle)."""
-        # Use real C3D file for integration confidence
-        cls.sample_file = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
-        
-        if not cls.sample_file.exists():
-            # Try alternative path
-            cls.sample_file = Path(PROJECT_ROOT) / "tests" / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        # Use centralized sample file management for reliable access
+        try:
+            from conftest import TestSampleManager
+            cls.sample_file = TestSampleManager.ensure_sample_file_exists()
+        except ImportError:
+            # Fallback for when conftest is not available (standalone test execution)
+            cls.sample_file = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+            
+            if not cls.sample_file.exists():
+                # Try alternative path
+                cls.sample_file = Path(PROJECT_ROOT) / "tests" / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
         
         if HAS_EZC3D and cls.sample_file.exists():
             try:
