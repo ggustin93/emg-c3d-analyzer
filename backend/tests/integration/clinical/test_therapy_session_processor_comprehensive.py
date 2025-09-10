@@ -288,29 +288,26 @@ class TestTherapySessionProcessorComprehensive:
             "duration_rate_right": 0.0  # 0% met duration
         }
         
-        # Mock both the new direct path and fallback
-        with patch('services.clinical.performance_scoring_service.PerformanceScoringService') as MockPerfService:
-            mock_perf_instance = MagicMock()
-            mock_perf_instance.calculate_performance_scores.return_value = expected_scores
-            MockPerfService.return_value = mock_perf_instance
-            
-            # Call with positional arguments: session_code, session_uuid, analytics, processing_result
-            await processor._calculate_and_save_performance_scores(
-                "S001",  # session_code
-                session_id,  # session_uuid
-                sample_processing_result["analytics"],  # analytics
-                sample_processing_result  # processing_result
-            )
-            
-            # Verify the synchronous calculation method was called
-            assert mock_perf_instance.calculate_performance_scores.called
-            
-            # Verify the upsert was attempted (through _populate_performance_scores)
-            processor.supabase_client.table.assert_called()
-            
-            # Verify the scores included all expected fields
-            assert expected_scores["overall_score"] == 0.75
-            assert expected_scores["scoring_config_id"] is not None
+        # Configure the mock performance service that's injected via the fixture
+        processor.performance_service.calculate_performance_scores.return_value = expected_scores
+        
+        # Call with positional arguments: session_code, session_uuid, analytics, processing_result
+        await processor._calculate_and_save_performance_scores(
+            "S001",  # session_code
+            session_id,  # session_uuid
+            sample_processing_result["analytics"],  # analytics
+            sample_processing_result  # processing_result
+        )
+        
+        # Verify the synchronous calculation method was called (check the injected mock)
+        assert processor.performance_service.calculate_performance_scores.called
+        
+        # Verify the upsert was attempted (through _populate_performance_scores)
+        processor.supabase_client.table.assert_called()
+        
+        # Verify the scores included all expected fields
+        assert expected_scores["overall_score"] == 0.75
+        assert expected_scores["scoring_config_id"] is not None
 
     @pytest.mark.asyncio
     async def test_redis_caching_integration(
