@@ -107,6 +107,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return (
       <>
         <div className={`flex items-center gap-3 ${className}`}>
+          <Badge 
+            variant="secondary" 
+            className={`${getRoleColor(displayProfile.role)} font-medium`}
+          >
+            {displayProfile.role.charAt(0).toUpperCase() + displayProfile.role.slice(1)}
+          </Badge>
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
             <PersonIcon className="w-4 h-4 text-blue-600" />
           </div>
@@ -115,7 +121,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
               {displayProfile.full_name || user.email?.split('@')[0] || 'Researcher'}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              {displayProfile.role.replace('_', ' ')} • {displayProfile.institution || 'Academic'}
+              {displayProfile.institution || 'Academic'}
             </p>
           </div>
           <Button
