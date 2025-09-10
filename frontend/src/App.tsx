@@ -28,6 +28,9 @@ const ResearcherDashboard = React.lazy(() => import('./components/dashboards/res
 import { AppContent as AnalysisView } from './AppContent';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 
+// Import patient profile component
+import { PatientProfile } from './components/dashboards/therapist/PatientProfile';
+
 // Navigation Progress Bar Component (SOLID: Single Responsibility)
 function NavigationProgress() {
   const navigation = useNavigation();
@@ -241,6 +244,17 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <AnalysisView />
+          }
+        ]
+      },
+      {
+        path: 'patients/:patientId',
+        element: <DashboardLayout />,
+        loader: protectedLoader,
+        children: [
+          {
+            index: true,
+            element: <PatientProfile />
           }
         ]
       },

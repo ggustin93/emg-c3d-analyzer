@@ -5,12 +5,12 @@ import Spinner from '@/components/ui/Spinner';
 import { 
   FileIcon,
   CalendarIcon,
-  ActivityIcon,
+  ActivityLogIcon,
   EyeOpenIcon,
   ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  AlertCircleIcon
+  CheckCircledIcon,
+  CrossCircledIcon,
+  ExclamationTriangleIcon
 } from '@radix-ui/react-icons';
 import { Badge } from '@/components/ui/badge';
 import SupabaseStorageService from '@/services/supabaseStorage';
