@@ -270,7 +270,7 @@ class TherapySessionProcessor:
             )
             
             # Update session status and metadata
-            await self._update_session_metadata(session_uuid, processing_result)
+            await self._update_session_metadata(session_code, processing_result)
             self.session_repo.update_therapy_session(
                 session_code, {"processing_status": "completed"}
             )
@@ -1251,19 +1251,10 @@ class TherapySessionProcessor:
         try:
             logger.info(f"📊 Starting performance score calculation for session {session_uuid}")
             
-            # Create SessionMetrics directly from analytics data to avoid database fetch timing issues
-            session_metrics = self._create_session_metrics_from_analytics(session_uuid, analytics)
-            
-            if session_metrics:
-                # Pass metrics directly to avoid database fetch
-                from services.clinical.performance_scoring_service import PerformanceScoringService
-                perf_service = PerformanceScoringService()
-                score_result = perf_service.calculate_performance_scores(session_uuid, session_metrics)
-            else:
-                # Fallback to database fetch if metrics creation fails
-                score_result = await self.performance_service.calculate_session_performance(
-                    session_uuid, analytics
-                )
+            # Always use the injected performance service which has proper DB connection
+            score_result = await self.performance_service.calculate_session_performance(
+                session_uuid, analytics
+            )
             
             logger.info(f"📊 Performance service returned: {list(score_result.keys())}")
             
@@ -1402,11 +1393,12 @@ class TherapySessionProcessor:
                 "cache_version": "2.1"
             }
             
-            # Store in cache with analytics key structure
-            await self.cache_service.set_session_analytics(session_uuid, cache_data)
+            # Note: Caching disabled - method not implemented in CacheService
+            # This is non-critical for the workflow as noted in the exception handler
+            # await self.cache_service.set_session_analytics(session_uuid, cache_data)
             
             logger.info(
-                f"🗄️ Session analytics cached for {session_uuid}: "
+                f"📊 Session analytics processed for {session_uuid}: "
                 f"{len(analytics)} channels, {summary['overall_compliance']:.1%} overall compliance"
             )
             
@@ -1416,7 +1408,7 @@ class TherapySessionProcessor:
 
     async def _update_session_metadata(
         self,
-        session_uuid: str,
+        session_code: str,
         processing_result: dict[str, Any]
     ) -> None:
         """Update session metadata with processing results."""
@@ -1441,15 +1433,15 @@ class TherapySessionProcessor:
             
             update_data = {
                 "game_metadata": metadata,
-                "processing_duration_ms": processing_result.get("processing_time_ms", 0)
+                "processing_time_ms": processing_result.get("processing_time_ms", 0)
             }
             
             if session_date:
                 update_data["session_date"] = session_date
             
-            await self.session_repo.update_therapy_session(session_uuid, update_data)
+            self.session_repo.update_therapy_session(session_code, update_data)
             
-            logger.info(f"📊 Session metadata updated for {session_uuid}")
+            logger.info(f"📊 Session metadata updated for {session_code}")
             
         except Exception as e:
             logger.exception(f"Failed to update session metadata: {e!s}")
