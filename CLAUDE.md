@@ -381,7 +381,9 @@ npm run type-check                       # TypeScript validation
 - **Client Import**: `from supabase import Client, create_client` (synchronous)
 - **Client Creation**: Uses standard `create_client()` function, not `acreate_client()`
 - **Method Calls**: All Supabase operations are synchronous - no `async/await` needed
-- **Test Mocking**: Use regular `Mock` from unittest.mock, not `AsyncMock`
+- **Test Mocking**: **NEVER use AsyncMock** - Always use regular `Mock` or `MagicMock` from unittest.mock
+  - AsyncMock returns coroutines which cause `TypeError: 'coroutine' object is not iterable`
+  - Example: `mock_service = MagicMock()`, NOT `mock_service = AsyncMock()`
 
 This follows the KISS principle - keeping the implementation simple without unnecessary async complexity when the synchronous client meets all requirements.
 

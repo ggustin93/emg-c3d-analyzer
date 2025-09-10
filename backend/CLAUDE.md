@@ -93,9 +93,20 @@ This document establishes the **backend engineering** best practices for our sta
       ```
     
     **Testing Implications:**
-    - Use regular `Mock` from `unittest.mock`, not `AsyncMock`
+    - **Use AsyncMock ONLY for services with async methods that are awaited in the code**
+    - **Use MagicMock for Supabase client operations** (synchronous)
+    - AsyncMock returns coroutines, set `return_value` to expected dict/result
     - Test methods don't need `@pytest.mark.asyncio` for Supabase operations
-    - Mock chains should return values directly, not coroutines
+    - Example: 
+      ```python
+      # For services with async methods
+      mock_service = AsyncMock()
+      mock_service.async_method.return_value = {"result": "data"}
+      
+      # For Supabase client (synchronous)
+      mock_supabase = MagicMock()
+      mock_supabase.table().select().execute.return_value.data = [{}]
+      ```
 
 15. **Implement Resilient and Flexible Logic**
     As demonstrated in the C3D channel handling, design your services to be resilient to variations in input data. Implement fallbacks and flexible mapping to gracefully handle real-world inconsistencies.
