@@ -178,6 +178,8 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
             exportData={generateExportData(false)} 
             originalFilename={originalFilename}
             hasSelectedData={hasSelectedData}
+            exportFormat={exportOptions.format}
+            sessionId={sessionParams?.session_id}
             onDownloadOriginal={downloadOriginalFile}
             onDownloadExport={downloadExportData}
           />

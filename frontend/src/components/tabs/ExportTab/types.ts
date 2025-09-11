@@ -8,6 +8,7 @@ export interface ExportOptions {
   includeSessionParams: boolean;
   includePerformanceAnalysis: boolean;
   includeC3dMetadata: boolean;
+  format: 'json' | 'csv';
 }
 
 export interface DownsamplingOptions {

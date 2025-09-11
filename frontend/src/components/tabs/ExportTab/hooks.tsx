@@ -84,9 +84,15 @@ export function useExportData(
     );
   }, [channelSelection]);
 
-  // Check if any export data is selected
+  // Check if any export data is selected (exclude format field from check)
   const hasSelectedData = useMemo(() => {
-    const hasExportOptions = Object.values(exportOptions).some(Boolean);
+    const dataOptions = {
+      includeAnalytics: exportOptions.includeAnalytics,
+      includeSessionParams: exportOptions.includeSessionParams,
+      includePerformanceAnalysis: exportOptions.includePerformanceAnalysis,
+      includeC3dMetadata: exportOptions.includeC3dMetadata,
+    };
+    const hasExportOptions = Object.values(dataOptions).some(Boolean);
     return hasExportOptions || hasSelectedChannels;
   }, [exportOptions, hasSelectedChannels]);
 
