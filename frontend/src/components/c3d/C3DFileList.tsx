@@ -239,24 +239,14 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
         {/* Table Header */}
         <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-3 pt-2">
           <div className="relative" style={{ width: `${filenameColumnWidth}px` }}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={() => onSort('name')}
-                  className="flex items-center hover:text-slate-800 transition-colors"
-                >
-                  <FileIcon className="w-4 h-4 mr-2" />
-                  File Name
-                  {getSortIcon('name')}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="font-medium">C3D File Names</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Often contain date patterns (YYYYMMDD) used for session date extraction. Column is resizable.
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            <button 
+              onClick={() => onSort('name')}
+              className="flex items-center hover:text-slate-800 transition-colors"
+            >
+              <FileIcon className="w-4 h-4 mr-2" />
+              File Name
+              {getSortIcon('name')}
+            </button>
             {/* Resize handle */}
             <div
               className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-300 transition-colors group flex items-center justify-center"
@@ -267,130 +257,76 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
           </div>
           {visibleColumns.patient_id && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onSort('patient_id')}
-                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <PersonIcon className="w-4 h-4 mr-1" />
-                    Patient
-                    {getSortIcon('patient_id')}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-medium">Intelligent Patient ID Resolution</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Priority: 1) Folder structure (P005, P008, etc.) → 2) C3D analysis → 3) Storage metadata
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+              <button 
+                onClick={() => onSort('patient_id')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <PersonIcon className="w-4 h-4 mr-1" />
+                Patient
+                {getSortIcon('patient_id')}
+              </button>
             </div>
           )}
           {visibleColumns.therapist_id && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onSort('therapist_id')}
-                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <PersonIcon className="w-4 h-4 mr-1" />
-                    Therapist
-                    {getSortIcon('therapist_id')}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-medium">Therapist ID Resolution</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Resolved from C3D metadata when available, otherwise from storage metadata
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+              <button 
+                onClick={() => onSort('therapist_id')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <PersonIcon className="w-4 h-4 mr-1" />
+                Therapist
+                {getSortIcon('therapist_id')}
+              </button>
             </div>
           )}
           {visibleColumns.size && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onSort('size')}
-                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <ArchiveIcon className="w-4 h-4 mr-1" />
-                    Size
-                    {getSortIcon('size')}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>File size - smaller files may indicate incomplete sessions</p>
-                </TooltipContent>
-              </Tooltip>
+              <button 
+                onClick={() => onSort('size')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <ArchiveIcon className="w-4 h-4 mr-1" />
+                Size
+                {getSortIcon('size')}
+              </button>
             </div>
           )}
           {visibleColumns.session_date && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onSort('session_date')}
-                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-1" />
-                    Session Date
-                    {getSortIcon('session_date')}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-medium">Actual Therapy Session Date</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Extracted from C3D metadata or filename patterns. Shows "N/A" until analyzed.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+              <button 
+                onClick={() => onSort('session_date')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <CalendarIcon className="w-4 h-4 mr-1" />
+                Session Date
+                {getSortIcon('session_date')}
+              </button>
             </div>
           )}
           {visibleColumns.upload_date && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onSort('created_at')}
-                    className="flex items-center hover:text-slate-800 transition-colors text-xs"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-1" />
-                    Upload Date
-                    {getSortIcon('created_at')}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>When the file was uploaded to the research platform</p>
-                </TooltipContent>
-              </Tooltip>
+              <button 
+                onClick={() => onSort('created_at')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <CalendarIcon className="w-4 h-4 mr-1" />
+                Upload Date
+                {getSortIcon('created_at')}
+              </button>
             </div>
           )}
           {visibleColumns.clinical_notes && (
             <div className="flex-1 min-w-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center text-xs">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14,2 14,8 20,8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/>
-                      <line x1="16" y1="17" x2="8" y2="17"/>
-                      <polyline points="10,9 9,9 8,9"/>
-                    </svg>
-                    Clinical Notes
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-medium">Clinical Notes</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Add therapeutic observations and insights for files or patients
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex items-center text-xs">
+                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                Clinical Notes
+              </div>
             </div>
           )}
           <div className="w-20 text-xs">
@@ -510,16 +446,9 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       {visibleColumns.upload_date && (
                         <div className="flex items-center gap-2">
                           <span>Upload:</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="text-slate-600 text-xs cursor-help hover:text-slate-800 transition-colors">
-                                {formatDate(file.created_at)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>File upload date: {formatFullDate(file.created_at)}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <span className="text-slate-600 text-xs">
+                            {formatDate(file.created_at)}
+                          </span>
                         </div>
                       )}
                       {visibleColumns.clinical_notes && (
@@ -619,49 +548,42 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       className="px-3 py-2 flex-shrink-0"
                       style={{ width: `${filenameColumnWidth}px` }}
                     >
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center cursor-help">
-                            {loadingFileId === file.id ? (
-                              <div className="relative mr-3 flex-shrink-0">
-                                <FileIcon className="w-4 h-4 text-primary" />
-                                <div className="absolute -top-1 -right-1">
-                                  <svg 
-                                    className="animate-spin w-2 h-2 text-primary" 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    fill="none" 
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <circle 
-                                      className="opacity-25" 
-                                      cx="12" 
-                                      cy="12" 
-                                      r="10" 
-                                      stroke="currentColor" 
-                                      strokeWidth="4"
-                                    />
-                                    <path 
-                                      className="opacity-75" 
-                                      fill="currentColor" 
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    />
-                                  </svg>
-                                </div>
-                              </div>
-                            ) : (
-                              <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
-                            )}
-                            <span className={`text-sm font-semibold truncate ${
-                              loadingFileId === file.id ? 'text-primary' : 'text-slate-900'
-                            }`}>
-                              {file.name}
-                            </span>
+                      <div className="flex items-center">
+                        {loadingFileId === file.id ? (
+                          <div className="relative mr-3 flex-shrink-0">
+                            <FileIcon className="w-4 h-4 text-primary" />
+                            <div className="absolute -top-1 -right-1">
+                              <svg 
+                                className="animate-spin w-2 h-2 text-primary" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                              >
+                                <circle 
+                                  className="opacity-25" 
+                                  cx="12" 
+                                  cy="12" 
+                                  r="10" 
+                                  stroke="currentColor" 
+                                  strokeWidth="4"
+                                />
+                                <path 
+                                  className="opacity-75" 
+                                  fill="currentColor" 
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                            </div>
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{file.name}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                        ) : (
+                          <FileIcon className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
+                        )}
+                        <span className={`text-sm font-semibold truncate ${
+                          loadingFileId === file.id ? 'text-primary' : 'text-slate-900'
+                        }`}>
+                          {file.name}
+                        </span>
+                      </div>
                     </div>
                     {visibleColumns.patient_id && (
                       <div className="px-3 py-2 flex-1 min-w-0">
@@ -722,16 +644,9 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                     )}
                     {visibleColumns.upload_date && (
                       <div className="px-3 py-2 flex-1 min-w-0">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-slate-600 text-xs cursor-help hover:text-slate-800 transition-colors">
-                              {formatDate(file.created_at)}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Upload date: {formatFullDate(file.created_at)}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <span className="text-slate-600 text-xs">
+                          {formatDate(file.created_at)}
+                        </span>
                       </div>
                     )}
                     {visibleColumns.clinical_notes && (
