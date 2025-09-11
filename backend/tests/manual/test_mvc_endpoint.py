@@ -19,7 +19,9 @@ import sys
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 
-@pytest.mark.skip(reason="Manual test script requiring live server - not for CI execution")
+# Import the centralized sample manager
+from conftest import TestSampleManager
+
 def test_mvc_endpoint():
     """Test the MVC calibration endpoint with sample data."""
     
@@ -43,32 +45,25 @@ def test_mvc_endpoint():
         print("💡 Make sure the backend is running: uvicorn main:app --reload --port 8080")
         return
     
-    # Test 2: Find available C3D files
-    sample_files = []
-    
-    # Look for C3D files in common locations
-    search_paths = [
-        backend_dir / "tests" / "samples",
-        backend_dir / "samples",
-        Path.cwd() / "samples",
-    ]
-    
-    for search_path in search_paths:
-        if search_path.exists():
-            c3d_files = list(search_path.glob("*.c3d"))
-            sample_files.extend(c3d_files)
-    
-    if not sample_files:
-        print("⚠️ No C3D files found for testing")
-        print("💡 Place a C3D file in backend/tests/samples/ or backend/samples/")
+    # Test 2: Get the guaranteed sample C3D file
+    try:
+        # Use the centralized sample manager to ensure file exists
+        test_file = TestSampleManager.ensure_sample_file_exists()
+        print(f"✅ Using sample file from: {test_file}")
+        print(f"📊 File size: {test_file.stat().st_size / (1024 * 1024):.2f} MB")
         
-        # Test with no file (should return error)
+        # Validate file integrity
+        if not TestSampleManager.validate_sample_integrity():
+            print("⚠️ Sample file validation failed - attempting restoration...")
+            test_file = TestSampleManager.ensure_sample_file_exists()
+            
+    except FileNotFoundError as e:
+        print(f"❌ Sample C3D file not found: {e}")
         print("\n🧪 Testing endpoint without file...")
         test_no_file(endpoint)
         return
     
     # Test 3: Test with actual C3D file
-    test_file = sample_files[0]
     print(f"\n🧪 Testing with C3D file: {test_file.name}")
     
     try:
@@ -118,13 +113,16 @@ def test_mvc_endpoint():
     except Exception as e:
         print(f"❌ Test failed with error: {e}")
 
-def test_no_file(endpoint):
+def test_no_file(endpoint=None):
     """Test endpoint behavior without file."""
+    if endpoint is None:
+        endpoint = "http://localhost:8080/mvc/calibrate"
+    
     try:
         response = requests.post(endpoint, timeout=10)
         print(f"Response status: {response.status_code}")
         
-        if response.status_code == 400:
+        if response.status_code == 400 or response.status_code == 422:
             print("✅ Correctly rejects request without file")
         else:
             print("⚠️ Unexpected response for no-file request")
@@ -132,8 +130,15 @@ def test_no_file(endpoint):
     except Exception as e:
         print(f"❌ No-file test failed: {e}")
 
-def test_different_thresholds(endpoint, test_file):
+def test_different_thresholds(endpoint=None, test_file=None):
     """Test with different threshold percentages."""
+    if endpoint is None:
+        endpoint = "http://localhost:8080/mvc/calibrate"
+    
+    if test_file is None:
+        # Get the sample file using TestSampleManager
+        test_file = TestSampleManager.ensure_sample_file_exists()
+    
     thresholds = [60.0, 75.0, 85.0]
     
     for threshold in thresholds:

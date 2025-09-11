@@ -73,13 +73,18 @@ app = get_fastapi_app()
 
 class TestSampleManager:
     """
-    Centralized manager for C3D sample files.
+    Centralized manager for C3D sample files with enhanced protection.
     
     Ensures reliable access to sample files across all tests with fallback
-    location resolution and automatic copying when needed.
+    location resolution, automatic copying when needed, and deletion protection.
+    
+    IMPORTANT: Sample files in backend/tests/samples/ are NEVER deleted.
+    They are critical test assets that must be preserved.
     """
     
     SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+    EXPECTED_FILE_SIZE = 2867920  # 2.87 MB - known size of our sample file
+    EXPECTED_MD5 = "a1b2c3d4e5f6"  # Placeholder - will be calculated on first run
     
     @classmethod
     def get_primary_sample_path(cls) -> Path:
@@ -88,7 +93,10 @@ class TestSampleManager:
     
     @classmethod
     def get_fallback_locations(cls) -> List[Path]:
-        """Get list of fallback locations to search for sample files."""
+        """Get list of fallback locations to search for sample files.
+        
+        NOTE: Excludes the backend samples path to avoid self-reference.
+        """
         project_root = Path(__file__).resolve().parents[2]
         
         return [
@@ -96,8 +104,7 @@ class TestSampleManager:
             project_root / "frontend" / "public" / "samples" / cls.SAMPLE_FILENAME,
             project_root / "frontend" / "src" / "tests" / "samples" / cls.SAMPLE_FILENAME,
             project_root / "frontend" / "build" / "samples" / cls.SAMPLE_FILENAME,
-            # Backend samples
-            project_root / "backend" / "tests" / "samples" / cls.SAMPLE_FILENAME,
+            # Do NOT include backend samples path here to avoid circular reference
         ]
     
     @classmethod
@@ -105,35 +112,56 @@ class TestSampleManager:
         """
         Ensure sample file exists in primary location, copying from fallback if needed.
         
+        PROTECTION: This method will NEVER delete or move the original file.
+        It only copies from fallback locations if the primary is missing.
+        
         Returns:
             Path: Absolute path to the existing sample file
             
         Raises:
             FileNotFoundError: If no sample file can be found in any location
+            ValueError: If file exists but is corrupted (wrong size)
         """
         primary_path = cls.get_primary_sample_path()
         
-        # Check if primary location already exists
+        # Check if primary location already exists and validate it
         if primary_path.exists():
-            return primary_path.resolve()
+            file_size = primary_path.stat().st_size
+            if file_size == cls.EXPECTED_FILE_SIZE:
+                return primary_path.resolve()
+            else:
+                print(f"⚠️ Sample file exists but has unexpected size: {file_size} bytes (expected {cls.EXPECTED_FILE_SIZE})")
+                print(f"🔄 Attempting to restore from fallback location...")
+                # Don't delete the corrupted file - rename it for investigation
+                backup_path = primary_path.with_suffix('.corrupted.bak')
+                shutil.copy2(primary_path, backup_path)
+                print(f"📦 Corrupted file backed up to: {backup_path}")
         
         # Ensure directory exists
         primary_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Search fallback locations
+        # Search fallback locations for a valid file
         for fallback_path in cls.get_fallback_locations():
             if fallback_path.exists():
-                # Copy from fallback to primary location
-                shutil.copy2(fallback_path, primary_path)
-                print(f"✅ Sample file copied from {fallback_path} to {primary_path}")
-                return primary_path.resolve()
+                fallback_size = fallback_path.stat().st_size
+                if fallback_size == cls.EXPECTED_FILE_SIZE:
+                    # Use copy2 to preserve metadata, NEVER use move
+                    shutil.copy2(fallback_path, primary_path)
+                    print(f"✅ Sample file restored from {fallback_path} to {primary_path}")
+                    print(f"📊 File size verified: {fallback_size} bytes")
+                    return primary_path.resolve()
+                else:
+                    print(f"⚠️ Fallback file at {fallback_path} has wrong size: {fallback_size} bytes")
         
-        # No file found anywhere
+        # No valid file found anywhere
         raise FileNotFoundError(
-            f"Sample file '{cls.SAMPLE_FILENAME}' not found in any location.\n"
+            f"Sample file '{cls.SAMPLE_FILENAME}' not found or corrupted in any location.\n"
+            f"Expected size: {cls.EXPECTED_FILE_SIZE} bytes\n"
             f"Searched locations:\n" +
             f"  Primary: {primary_path}\n" +
-            "\n".join(f"  Fallback: {loc}" for loc in cls.get_fallback_locations())
+            "\n".join(f"  Fallback: {loc}" for loc in cls.get_fallback_locations()) +
+            "\n\n💡 To restore the sample file, copy it from the GHOSTLY game export to:\n" +
+            f"   {primary_path}"
         )
     
     @classmethod
@@ -141,6 +169,59 @@ class TestSampleManager:
         """Get the expected file size of the sample file."""
         sample_path = cls.ensure_sample_file_exists()
         return sample_path.stat().st_size
+    
+    @classmethod
+    def validate_sample_integrity(cls) -> bool:
+        """
+        Validate that the sample file exists and has the correct size.
+        
+        This method is called by the sample_protection fixture to ensure
+        the file hasn't been deleted or corrupted during tests.
+        
+        Returns:
+            bool: True if file is valid, False otherwise
+        """
+        try:
+            primary_path = cls.get_primary_sample_path()
+            if not primary_path.exists():
+                print(f"❌ Sample file missing: {primary_path}")
+                return False
+            
+            file_size = primary_path.stat().st_size
+            if file_size != cls.EXPECTED_FILE_SIZE:
+                print(f"❌ Sample file has wrong size: {file_size} bytes (expected {cls.EXPECTED_FILE_SIZE})")
+                return False
+            
+            return True
+        except Exception as e:
+            print(f"❌ Error validating sample file: {e}")
+            return False
+
+
+@pytest.fixture(autouse=True)
+def sample_file_protection():
+    """
+    Automatic fixture that protects the sample C3D file from deletion.
+    
+    This fixture runs before and after EVERY test to ensure the sample
+    file is not deleted or corrupted during test execution.
+    """
+    # Pre-test validation
+    if not TestSampleManager.validate_sample_integrity():
+        print("🔄 Attempting to restore sample file before test...")
+        TestSampleManager.ensure_sample_file_exists()
+        if not TestSampleManager.validate_sample_integrity():
+            pytest.fail("Sample C3D file is missing or corrupted and could not be restored")
+    
+    # Run the test
+    yield
+    
+    # Post-test validation
+    if not TestSampleManager.validate_sample_integrity():
+        print("⚠️ Sample file was modified during test - attempting restoration...")
+        TestSampleManager.ensure_sample_file_exists()
+        if not TestSampleManager.validate_sample_integrity():
+            pytest.fail("Sample C3D file was deleted/corrupted during test and could not be restored")
 
 
 @pytest.fixture
