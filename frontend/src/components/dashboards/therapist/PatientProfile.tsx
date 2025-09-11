@@ -18,34 +18,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Separator } from '../../ui/separator'
 import Spinner from '../../ui/Spinner'
 import {
-  ArrowLeftIcon as ArrowLeft,
-  UserIcon as User,
-  CalendarIcon as Calendar,
-  ActivityIcon as Activity,
+  ChevronLeftIcon as ArrowLeft,
+  PersonIcon as User,
+  CalendarIcon,
+  ActivityLogIcon as Activity,
   FileTextIcon as FileText,
-  BarChartIcon as ChartBar,
+  BarChartIcon,
   ClockIcon as Clock,
   TargetIcon as Target,
-  TrendingUpIcon as TrendingUp,
-  AlertCircleIcon as AlertCircle,
-  CheckCircle2Icon as CheckCircle2,
-  XCircleIcon as XCircle,
-  BarChart3Icon as BarChart3,
-  BrainIcon as Brain,
+  RocketIcon as TrendingUp,
+  ExclamationTriangleIcon as AlertCircle,
+  CheckCircledIcon as CheckCircle2,
+  CrossCircledIcon as XCircle,
+  QuestionMarkCircledIcon as Brain,
   HeartIcon as Heart,
-  FootprintsIcon as Footprints,
-  PillIcon as Pill,
+  MoveIcon as Footprints,
+  MixIcon as Pill,
   HomeIcon as Home,
-  MapPinIcon as MapPin,
-  PhoneIcon as Phone,
-  MailIcon as Mail,
-  CalendarDaysIcon as CalendarDays,
+  PinBottomIcon as MapPin,
+  MobileIcon as Phone,
+  EnvelopeClosedIcon as Mail,
   TimerIcon as Timer,
-  ZapIcon as Zap,
-  MessageSquareIcon as MessageSquare,
-  EditIcon as Edit,
+  LightningBoltIcon as Zap,
+  ChatBubbleIcon as MessageSquare,
+  Pencil1Icon as Edit,
   PlusIcon as Plus
-} from 'lucide-react'
+} from '@radix-ui/react-icons'
 
 interface PatientProfileData {
   patient_code: string
@@ -362,7 +360,7 @@ export function PatientProfile() {
                     </div>
                     {age && (
                       <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
+                        <CalendarIcon className="h-4 w-4" />
                         <span>{age} years old</span>
                       </div>
                     )}
@@ -472,7 +470,7 @@ export function PatientProfile() {
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <CalendarDays className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <CalendarIcon className="h-4 w-4 mt-0.5 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Admission Date</div>
                       <div className="text-sm text-muted-foreground">
@@ -527,7 +525,7 @@ export function PatientProfile() {
                   Sessions
                 </TabsTrigger>
                 <TabsTrigger value="progress" className="flex items-center gap-2">
-                  <ChartBar className="h-4 w-4" />
+                  <BarChartIcon className="h-4 w-4" />
                   Progress Tracking
                 </TabsTrigger>
                 <TabsTrigger value="notes" className="flex items-center gap-2">
@@ -549,10 +547,7 @@ export function PatientProfile() {
                   {/* Patient-filtered C3D File Browser */}
                   <PatientSessionBrowser 
                     patientCode={patient.patient_code}
-                    onFileSelect={(filename) => {
-                      // Handle file selection - could navigate to analysis view
-                      console.log('Selected file:', filename)
-                    }}
+                    // No onFileSelect prop - component will handle analysis internally
                   />
                 </div>
               </TabsContent>
@@ -563,7 +558,7 @@ export function PatientProfile() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Progress Overview</h3>
                     <Button size="sm" variant="outline">
-                      <BarChart3 className="h-4 w-4 mr-2" />
+                      <BarChartIcon className="h-4 w-4 mr-2" />
                       Generate Report
                     </Button>
                   </div>
@@ -571,7 +566,7 @@ export function PatientProfile() {
                   {/* Placeholder for Progress Tracking */}
                   <div className="border-2 border-dashed border-gray-200 rounded-lg p-12">
                     <div className="text-center">
-                      <ChartBar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <BarChartIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h4 className="text-lg font-medium text-gray-900 mb-2">Progress Tracking</h4>
                       <p className="text-sm text-gray-500 max-w-sm mx-auto">
                         Visualize patient progress over time with charts, metrics, and trend analysis. 

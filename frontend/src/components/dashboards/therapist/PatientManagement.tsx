@@ -29,20 +29,19 @@ import { Checkbox } from '../../ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import Spinner from '../../ui/Spinner'
 import { 
-  MoreHorizontal, 
-  User, 
-  Users, 
-  Calendar, 
-  File, 
-  Search,
-  Filter,
-  ChevronDown,
-  ArrowUp as SortAsc,
-  ArrowDown as SortDesc,
-  Eye,
-  EyeOff,
-  Columns3
-} from 'lucide-react'
+  DotsHorizontalIcon as MoreHorizontal, 
+  PersonIcon as User, 
+  GroupIcon as Users, 
+  CalendarIcon as Calendar, 
+  FileIcon as File, 
+  MagnifyingGlassIcon as Search,
+  MixerHorizontalIcon as Filter,
+  ChevronDownIcon,
+  ChevronUpIcon as SortAsc,
+  EyeOpenIcon as Eye,
+  EyeClosedIcon as EyeOff,
+  ViewGridIcon as Columns3
+} from '@radix-ui/react-icons'
 import { Patient, PatientManagementProps } from './types'
 
 type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'patient_status'
@@ -601,7 +600,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     <Button variant="outline" size="sm">
                       <Columns3 className="h-4 w-4 mr-2" />
                       Columns
-                      <ChevronDown className="h-4 w-4 ml-2" />
+                      <ChevronDownIcon className="h-4 w-4 ml-2" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-52">
@@ -643,7 +642,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     <Button variant="outline" size="sm">
                       <Filter className="h-4 w-4 mr-2" />
                       Filters
-                      <ChevronDown className="h-4 w-4 ml-2" />
+                      <ChevronDownIcon className="h-4 w-4 ml-2" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-56">
@@ -745,7 +744,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   <Button variant="outline" size="sm">
                     <Columns3 className="h-4 w-4 mr-2" />
                     Columns
-                    <ChevronDown className="h-4 w-4 ml-2" />
+                    <ChevronDownIcon className="h-4 w-4 ml-2" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-52">
@@ -787,7 +786,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   <Button variant="outline" size="sm">
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    <ChevronDown className="h-4 w-4 ml-2" />
+                    <ChevronDownIcon className="h-4 w-4 ml-2" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56">
@@ -854,7 +853,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Patient ID
                         {sortField === 'patient_code' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
@@ -870,7 +869,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Name
                         {sortField === 'display_name' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
@@ -886,7 +885,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Age
                         {sortField === 'age' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
@@ -902,7 +901,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Sessions
                         {sortField === 'session_count' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
@@ -918,7 +917,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Last Session
                         {sortField === 'last_session' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
@@ -938,7 +937,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       >
                         Status
                         {sortField === 'patient_status' && (
-                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <SortDesc className="ml-2 h-4 w-4" />
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>
                     </TableHead>
