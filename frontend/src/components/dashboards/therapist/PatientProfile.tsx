@@ -7,7 +7,6 @@ import PatientSessionBrowser from './PatientSessionBrowser'
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
   CardTitle 
 } from '../../ui/card'
@@ -15,34 +14,19 @@ import { Avatar, AvatarFallback } from '../../ui/avatar'
 import { Badge } from '../../ui/badge'
 import { Button } from '../../ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
-import { Separator } from '../../ui/separator'
 import Spinner from '../../ui/Spinner'
 import {
-  ChevronLeftIcon as ArrowLeft,
-  PersonIcon as User,
-  CalendarIcon,
-  ActivityLogIcon as Activity,
-  FileTextIcon as FileText,
+  PersonIcon,
+  ActivityLogIcon,
+  FileTextIcon,
   BarChartIcon,
-  ClockIcon as Clock,
-  TargetIcon as Target,
-  RocketIcon as TrendingUp,
-  ExclamationTriangleIcon as AlertCircle,
-  CheckCircledIcon as CheckCircle2,
-  CrossCircledIcon as XCircle,
-  QuestionMarkCircledIcon as Brain,
-  HeartIcon as Heart,
-  MoveIcon as Footprints,
-  MixIcon as Pill,
-  HomeIcon as Home,
-  PinBottomIcon as MapPin,
-  MobileIcon as Phone,
-  EnvelopeClosedIcon as Mail,
-  TimerIcon as Timer,
-  LightningBoltIcon as Zap,
-  ChatBubbleIcon as MessageSquare,
-  Pencil1Icon as Edit,
-  PlusIcon as Plus
+  ExclamationTriangleIcon,
+  PlusIcon,
+  CalendarIcon,
+  HeartIcon,
+  InfoCircledIcon,
+  Pencil1Icon,
+  ChevronRightIcon
 } from '@radix-ui/react-icons'
 
 interface PatientProfileData {
@@ -58,7 +42,7 @@ interface PatientProfileData {
   bmi_value: number | null
   bmi_status: 'underweight' | 'normal' | 'overweight' | 'obese' | null
   cognitive_status: 'alert' | 'confused' | 'impaired' | 'unresponsive' | null
-  patient_status: 'active' | 'dropped_out' | 'completed' | 'on_hold'
+  active: boolean  // Simple active/inactive status for clinical trial
   therapist_name?: string
   total_sessions: number
   completed_sessions: number
@@ -109,48 +93,52 @@ function formatDate(dateString: string | null): string {
   })
 }
 
-// Get status badge variant
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+
+// Get mobility status label
+function getMobilityStatus(status: string | null): string {
   switch (status) {
-    case 'active': return 'default'
-    case 'completed': return 'secondary'
-    case 'on_hold': return 'outline'
-    case 'dropped_out': return 'destructive'
-    default: return 'outline'
+    case 'ambulatory': return 'Ambulatory'
+    case 'wheelchair': return 'Wheelchair'
+    case 'bed_rest': return 'Bed Rest'
+    case 'assisted': return 'Assisted'
+    default: return 'Not specified'
   }
 }
 
-// Get mobility icon
-function getMobilityIcon(status: string | null) {
-  switch (status) {
-    case 'ambulatory': return <Footprints className="h-4 w-4" />
-    case 'wheelchair': return <Heart className="h-4 w-4" />
-    case 'bed_rest': return <Home className="h-4 w-4" />
-    case 'assisted': return <Activity className="h-4 w-4" />
-    default: return <User className="h-4 w-4" />
-  }
-}
 
-// Get cognitive status color
-function getCognitiveStatusColor(status: string | null): string {
-  switch (status) {
-    case 'alert': return 'text-green-600'
-    case 'confused': return 'text-amber-600'
-    case 'impaired': return 'text-orange-600'
-    case 'unresponsive': return 'text-red-600'
-    default: return 'text-gray-600'
-  }
-}
 
-// Get BMI status color
-function getBMIStatusColor(status: string | null): string {
-  switch (status) {
-    case 'normal': return 'text-green-600'
-    case 'underweight': return 'text-blue-600'
-    case 'overweight': return 'text-amber-600'
-    case 'obese': return 'text-red-600'
-    default: return 'text-gray-600'
+// Status Badge Component with better styling
+const StatusBadge = ({ status }: { status?: string }) => {
+  if (!status || status === 'N/A') {
+    return <span className="text-sm text-muted-foreground">N/A</span>
   }
+
+  let badgeClass = ''
+  switch (status.toLowerCase()) {
+    case 'good':
+    case 'high':
+    case 'excellent':
+    case 'improving':
+      badgeClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700'
+      break
+    case 'fair':
+    case 'medium':
+      badgeClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
+      break
+    case 'declining':
+    case 'poor':
+    case 'low':
+      badgeClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-300 dark:border-red-700'
+      break
+    default:
+      badgeClass = 'border-border'
+  }
+
+  return (
+    <Badge variant="outline" className={`font-medium ${badgeClass}`}>
+      {status}
+    </Badge>
+  )
 }
 
 export function PatientProfile() {
@@ -181,6 +169,7 @@ export function PatientProfile() {
             patient_code,
             therapist_id,
             created_at,
+            active,
             patient_medical_info (
               first_name,
               last_name,
@@ -193,7 +182,6 @@ export function PatientProfile() {
               bmi_value,
               bmi_status,
               cognitive_status,
-              patient_status,
               total_sessions_planned
             )
           `)
@@ -234,7 +222,7 @@ export function PatientProfile() {
           bmi_value: medical?.bmi_value || null,
           bmi_status: medical?.bmi_status || null,
           cognitive_status: medical?.cognitive_status || null,
-          patient_status: medical?.patient_status || 'active',
+          active: patientData.active ?? true,  // Default to active if null
           total_sessions: medical?.total_sessions_planned || 0,
           completed_sessions: completedSessions,
           last_session_date: lastSession || null,
@@ -294,7 +282,7 @@ export function PatientProfile() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Unable to load patient profile</h3>
               <p className="text-muted-foreground mb-4">{error || 'Patient not found'}</p>
               <Button onClick={() => navigate('/dashboard', { state: { activeTab: 'patients' } })}>
@@ -316,334 +304,345 @@ export function PatientProfile() {
     : patient.patient_code.substring(0, 2).toUpperCase()
   const avatarColor = getAvatarColor(displayName)
 
+  // Calculate treatment metrics
+  const totalPrescribedSessions = patient.total_sessions || 0
+  const completedSessionsCount = patient.completed_sessions || 0
+  const adherencePercentage = patient.adherence_percentage || 0
+  const averagePerformance = patient.average_performance || 0
+
+  const getAdherenceStatus = (percentage: number): string => {
+    if (percentage >= 80) return 'High'
+    if (percentage >= 50) return 'Medium'
+    if (percentage > 0) return 'Low'
+    return 'N/A'
+  }
+
+  const getComplianceStatus = (score: number): string => {
+    if (score >= 85) return 'Excellent'
+    if (score >= 70) return 'Good'
+    if (score > 0) return 'Fair'
+    return 'N/A'
+  }
+
+  // Calculate missed sessions based on expected vs completed
+  const expectedSessions = Math.min(
+    totalPrescribedSessions,
+    patient.active ? Math.floor((Date.now() - new Date(patient.admission_date || Date.now()).getTime()) / (1000 * 60 * 60 * 24 * 7)) : totalPrescribedSessions
+  )
+  const missedSessions = Math.max(0, expectedSessions - completedSessionsCount)
+
   return (
-    <div className="min-h-screen bg-gray-50/30">
-      <div className="container mx-auto p-6 max-w-7xl">
-        {/* Header Navigation */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dashboard', { state: { activeTab: 'patients' } })}
-              className="p-0 h-auto font-normal hover:text-foreground"
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* Breadcrumb Navigation */}
+      <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/dashboard', { state: { activeTab: 'patients' } })}
+          className="p-0 h-auto font-normal hover:text-foreground transition-colors font-medium"
+        >
+          All Patients
+        </Button>
+        <ChevronRightIcon className="h-4 w-4" />
+        <span className="text-foreground font-medium">{displayName}</span>
+      </nav>
+
+      {/* Patient Header */}
+      <div className="flex flex-col justify-between sm:flex-row sm:items-center">
+        <div className="flex items-center space-x-4 mx-auto sm:mx-0">
+          <Avatar className="h-16 w-16 border-2 border-primary/20">
+            <AvatarFallback 
+              className={`${avatarColor} text-white text-lg font-semibold flex items-center justify-center h-full w-full`}
             >
-              Patients
-            </Button>
-            <span>/</span>
-            <span className="text-foreground font-medium">{displayName}</span>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl font-bold md:text-3xl mb-1">{displayName}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              {patient.active ? (
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 border-green-300 dark:border-green-600">
+                  Active
+                </Badge>
+              ) : (
+                <Badge className="bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 border-red-300 dark:border-red-600">
+                  Inactive
+                </Badge>
+              )}
+              <span className="text-sm text-muted-foreground">
+                ID: {patient.patient_code}
+              </span>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Patient Header Card */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Avatar and Basic Info */}
-              <div className="flex items-start gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarFallback className={`${avatarColor} text-white text-2xl font-bold`}>
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-bold">{displayName}</h1>
-                    <Badge variant={getStatusVariant(patient.patient_status)}>
-                      {patient.patient_status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
-                      <span>ID: {patient.patient_code}</span>
-                    </div>
-                    {age && (
-                      <div className="flex items-center gap-1">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>{age} years old</span>
-                      </div>
-                    )}
-                    {patient.gender && patient.gender !== 'not_specified' && (
-                      <div className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        <span className="capitalize">{patient.gender.replace('_', ' ')}</span>
-                      </div>
-                    )}
-                    {patient.room_number && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>Room {patient.room_number}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+      {/* Information Cards Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Demographics Card */}
+        <Card className="overflow-hidden h-full flex flex-col relative">
+          <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-8 w-8 opacity-60 hover:opacity-100 z-10">
+            <Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+          </Button>
+          <CardHeader className="pb-3 pr-12">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                <PersonIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:ml-auto">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">
-                    {patient.completed_sessions}/{patient.total_sessions}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Sessions</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {patient.adherence_percentage}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">Adherence</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {patient.average_performance || 'N/A'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Avg Score</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-semibold">
-                    {patient.last_session_date ? formatDate(patient.last_session_date) : 'Never'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Last Session</div>
-                </div>
-              </div>
+              <CardTitle className="text-base font-semibold">Demographics</CardTitle>
             </div>
-
-            <Separator className="my-6" />
-
-            {/* Medical Information Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Diagnosis & Condition */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Medical Information</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Heart className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Primary Diagnosis</div>
-                      <div className="text-sm text-muted-foreground">
-                        {patient.primary_diagnosis || 'Not specified'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    {getMobilityIcon(patient.mobility_status)}
-                    <div>
-                      <div className="text-sm font-medium">Mobility Status</div>
-                      <div className="text-sm text-muted-foreground capitalize">
-                        {patient.mobility_status?.replace('_', ' ') || 'Not specified'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Brain className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Cognitive Status</div>
-                      <div className={`text-sm capitalize ${getCognitiveStatusColor(patient.cognitive_status)}`}>
-                        {patient.cognitive_status || 'Not specified'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          </CardHeader>
+          <CardContent className="pt-0 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Age</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {age ? `${age} years` : 'N/A'}
+                </span>
               </div>
-
-              {/* Physical Metrics */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Physical Metrics</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">BMI</div>
-                      <div className="text-sm">
-                        {patient.bmi_value ? (
-                          <>
-                            <span className="font-medium">{patient.bmi_value.toFixed(1)}</span>
-                            <span className={`ml-2 ${getBMIStatusColor(patient.bmi_status)}`}>
-                              ({patient.bmi_status})
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">Not recorded</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CalendarIcon className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Admission Date</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDate(patient.admission_date)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Gender</span>
+                <span className="text-sm font-semibold text-gray-900 capitalize">
+                  {patient.gender?.replace('_', ' ') || 'N/A'}
+                </span>
               </div>
-
-              {/* Treatment Plan */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Treatment Plan</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Total Sessions Planned</div>
-                      <div className="text-sm text-muted-foreground">{patient.total_sessions} sessions</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600" />
-                    <div>
-                      <div className="text-sm font-medium">Sessions Completed</div>
-                      <div className="text-sm text-muted-foreground">{patient.completed_sessions} sessions</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <TrendingUp className="h-4 w-4 mt-0.5 text-blue-600" />
-                    <div>
-                      <div className="text-sm font-medium">Progress</div>
-                      <div className="text-sm">
-                        <span className="font-medium">{patient.adherence_percentage}%</span>
-                        <span className="text-muted-foreground ml-1">adherence rate</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Room</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {patient.room_number || 'N/A'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Admission</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {formatDate(patient.admission_date)}
+                </span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tabs Section */}
-        <Card>
-          <CardContent className="p-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
-                <TabsTrigger value="sessions" className="flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Sessions
-                </TabsTrigger>
-                <TabsTrigger value="progress" className="flex items-center gap-2">
-                  <BarChartIcon className="h-4 w-4" />
-                  Progress Tracking
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Clinical Notes
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Sessions Tab */}
-              <TabsContent value="sessions" className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Session History</h3>
-                    <div className="text-sm text-muted-foreground">
-                      Showing C3D files for patient {patient.patient_code}
-                    </div>
-                  </div>
-                  
-                  {/* Patient-filtered C3D File Browser */}
-                  <PatientSessionBrowser 
-                    patientCode={patient.patient_code}
-                    // No onFileSelect prop - component will handle analysis internally
-                  />
+        {/* Medical Info Card */}
+        <Card className="overflow-hidden h-full flex flex-col relative">
+          <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-8 w-8 opacity-60 hover:opacity-100 z-10">
+            <Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+          </Button>
+          <CardHeader className="pb-3 pr-12">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                <HeartIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <CardTitle className="text-base font-semibold">Medical Info</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Diagnosis</span>
+                <span className="text-sm font-semibold text-right max-w-[65%] truncate" title={patient.primary_diagnosis || 'N/A'}>
+                  {patient.primary_diagnosis || 'N/A'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Mobility</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {getMobilityStatus(patient.mobility_status)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">BMI</span>
+                  <InfoCircledIcon className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground transition-colors" />
                 </div>
-              </TabsContent>
+                {patient.bmi_value ? (
+                  <Badge variant="outline" className={`font-medium ${
+                    patient.bmi_status === 'normal' ? 'bg-green-100 text-green-800 border-green-300' :
+                    patient.bmi_status === 'underweight' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                    patient.bmi_status === 'overweight' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                    'bg-red-100 text-red-800 border-red-300'
+                  }`}>
+                    {patient.bmi_value.toFixed(1)} kg/m²
+                  </Badge>
+                ) : (
+                  <span className="text-sm font-semibold text-gray-900">N/A</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">Cognitive</span>
+                  <InfoCircledIcon className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground transition-colors" />
+                </div>
+                <Badge variant="outline" className={`font-medium capitalize ${
+                  patient.cognitive_status === 'alert' ? 'bg-green-100 text-green-800 border-green-300' :
+                  patient.cognitive_status === 'confused' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                  patient.cognitive_status === 'impaired' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                  patient.cognitive_status === 'unresponsive' ? 'bg-red-100 text-red-800 border-red-300' :
+                  'bg-gray-100 text-gray-800 border-gray-300'
+                }`}>
+                  {patient.cognitive_status || 'N/A'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              {/* Progress Tracking Tab */}
-              <TabsContent value="progress" className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Progress Overview</h3>
-                    <Button size="sm" variant="outline">
-                      <BarChartIcon className="h-4 w-4 mr-2" />
-                      Generate Report
-                    </Button>
-                  </div>
-                  
-                  {/* Placeholder for Progress Tracking */}
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-12">
-                    <div className="text-center">
-                      <BarChartIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">Progress Tracking</h4>
-                      <p className="text-sm text-gray-500 max-w-sm mx-auto">
-                        Visualize patient progress over time with charts, metrics, and trend analysis. 
-                        Monitor improvement in strength, endurance, and compliance.
-                      </p>
-                      <div className="mt-6 flex justify-center gap-3">
-                        <Badge variant="outline">Charts</Badge>
-                        <Badge variant="outline">Trends</Badge>
-                        <Badge variant="outline">Analytics</Badge>
-                      </div>
-                    </div>
+        {/* Treatment Summary Card */}
+        <Card className="overflow-hidden h-full flex flex-col">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                <ActivityLogIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <CardTitle className="text-base font-semibold">Treatment Summary</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Sessions</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {completedSessionsCount} / {totalPrescribedSessions} completed
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Last Session</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {formatDate(patient.last_session_date)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Compliance</span>
+                <StatusBadge status={getComplianceStatus(averagePerformance)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Adherence</span>
+                <StatusBadge status={getAdherenceStatus(adherencePercentage)} />
+              </div>
+              {missedSessions > 0 && (
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-950/20 p-3 border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-orange-800 dark:text-orange-200">Missed Sessions</span>
+                    <span className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                      {missedSessions} in last 7 days
+                    </span>
                   </div>
                 </div>
-              </TabsContent>
-
-              {/* Clinical Notes Tab */}
-              <TabsContent value="notes" className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Clinical Notes</h3>
-                    <Button size="sm" onClick={() => setIsNotesModalOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Note
-                    </Button>
-                  </div>
-                  
-                  {/* Display existing notes or placeholder */}
-                  {patientNotes.length > 0 ? (
-                    <div className="space-y-4">
-                      {patientNotes.map((note: any) => (
-                        <Card key={note.id}>
-                          <CardContent className="pt-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="text-sm text-muted-foreground mb-2">
-                                  {new Date(note.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </div>
-                                <div className="prose prose-sm max-w-none" 
-                                     dangerouslySetInnerHTML={{ __html: note.content }} />
-                              </div>
-                              <Badge variant="outline" className="ml-4">
-                                {note.note_type}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-12">
-                      <div className="text-center">
-                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h4 className="text-lg font-medium text-gray-900 mb-2">No Clinical Notes Yet</h4>
-                        <p className="text-sm text-gray-500 max-w-sm mx-auto">
-                          Document clinical observations, treatment adjustments, and patient feedback. 
-                          Click "Add Note" to create your first note.
-                        </p>
-                        <div className="mt-6 flex justify-center gap-3">
-                          <Badge variant="outline">SOAP Notes</Badge>
-                          <Badge variant="outline">Observations</Badge>
-                          <Badge variant="outline">Plans</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Tabs Section */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="sessions" className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            Sessions
+          </TabsTrigger>
+          <TabsTrigger value="progress" className="flex items-center gap-2">
+            <BarChartIcon className="h-4 w-4" />
+            Progress
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="flex items-center gap-2">
+            <FileTextIcon className="h-4 w-4" />
+            Notes
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Sessions Tab */}
+        <TabsContent value="sessions">
+          <Card>
+            <CardContent className="p-6">
+              <PatientSessionBrowser 
+                patientCode={patient.patient_code}
+                // No onFileSelect prop - component will handle analysis internally
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Progress Tracking Tab */}
+        <TabsContent value="progress">
+          <Card>
+            <CardContent className="p-6">
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-12">
+                <div className="text-center">
+                  <BarChartIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Progress Analytics</h4>
+                  <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                    Visualize patient progress over time with charts, metrics, and trend analysis. 
+                    Monitor improvement in strength, endurance, and compliance.
+                  </p>
+                  <div className="mt-6 flex justify-center gap-3">
+                    <Badge variant="outline">Charts</Badge>
+                    <Badge variant="outline">Trends</Badge>
+                    <Badge variant="outline">Analytics</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Clinical Notes Tab */}
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                  <FileTextIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                Clinical Notes
+              </CardTitle>
+              <Button size="sm" onClick={() => setIsNotesModalOpen(true)}>
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Add Note
+              </Button>
+            </CardHeader>
+            <CardContent>
+              
+              {patientNotes.length > 0 ? (
+                <div className="space-y-6">
+                  {patientNotes.map((note: any) => (
+                    <div key={note.id} className="rounded-lg border border-gray-200 p-6 bg-white hover:shadow-sm transition-shadow">
+                      <div className="mb-4 flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-semibold text-gray-900">{note.note_type || 'Clinical Note'}</h4>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {note.note_type || 'Note'}
+                          </Badge>
+                        </div>
+                        <time className="text-sm text-gray-500 font-medium">
+                          {new Date(note.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </time>
+                      </div>
+                      <div className="text-sm text-gray-700 leading-relaxed" 
+                           dangerouslySetInnerHTML={{ __html: note.content }} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No Notes Yet</h4>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Start documenting patient progress by adding clinical notes.
+                  </p>
+                  <Button onClick={() => setIsNotesModalOpen(true)}>
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Add First Note
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       
       {/* Clinical Notes Modal */}
       {patient && (
