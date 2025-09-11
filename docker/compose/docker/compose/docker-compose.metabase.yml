@@ -1,0 +1,112 @@
+# Metabase Analytics Platform for EMG Research
+# Business Intelligence and data visualization for researchers
+version: '3.8'
+
+services:
+  # Metabase Analytics Platform
+  metabase:
+    image: metabase/metabase:latest
+    container_name: emg-metabase
+    hostname: metabase
+    restart: unless-stopped
+    ports:
+      - "3001:3000"  # Access Metabase at http://localhost:3001
+    environment:
+      # Metabase Application Database (stores dashboards, questions, settings)
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase_app
+      MB_DB_PORT: 5432
+      MB_DB_USER: ${METABASE_DB_USER:-metabase}
+      MB_DB_PASS: ${METABASE_DB_PASS:-metabase_secret}
+      MB_DB_HOST: metabase-postgres
+      
+      # Java Options for Performance
+      JAVA_OPTS: "-Xmx2g -XX:+UseG1GC -XX:G1HeapRegionSize=32m"
+      
+      # Metabase Configuration
+      MB_SITE_NAME: "EMG Analytics Platform"
+      MB_APPLICATION_NAME: "EMG Research Analytics"
+      MB_ANON_TRACKING_ENABLED: false
+      MB_ENABLE_PUBLIC_SHARING: true
+      MB_ENABLE_EMBEDDING: true
+      
+    volumes:
+      - metabase-data:/metabase-data
+      - /dev/urandom:/dev/random:ro  # Better randomness for cryptography
+    depends_on:
+      metabase-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-I", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - emg-analytics
+
+  # PostgreSQL for Metabase Application Data
+  # This stores Metabase's own data (dashboards, users, etc.)
+  metabase-postgres:
+    image: postgres:15-alpine
+    container_name: emg-metabase-postgres
+    hostname: metabase-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metabase_app
+      POSTGRES_USER: ${METABASE_DB_USER:-metabase}
+      POSTGRES_PASSWORD: ${METABASE_DB_PASS:-metabase_secret}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - metabase-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${METABASE_DB_USER:-metabase} -d metabase_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - emg-analytics
+
+volumes:
+  metabase-data:
+    driver: local
+  metabase-postgres-data:
+    driver: local
+
+networks:
+  emg-analytics:
+    driver: bridge
+    name: emg-analytics-network
+
+# ============================================
+# Supabase Connection Configuration
+# ============================================
+# After Metabase starts, configure connection to Supabase:
+# 
+# 1. Access Metabase at http://localhost:3001
+# 2. Complete initial setup (create admin account)
+# 3. Add Database Connection:
+#    - Type: PostgreSQL
+#    - Display Name: "EMG Research Database"
+#    - Host: Your Supabase host (e.g., db.xxxxx.supabase.co)
+#    - Port: 5432
+#    - Database name: postgres
+#    - Username: postgres or your db user
+#    - Password: Your Supabase database password
+#    - Use SSL: Yes (Required for Supabase)
+#    - SSL Mode: require
+#    - Additional options: sslmode=require
+#
+# 4. Configure Schema Access:
+#    - Include schemas: public, auth (if needed)
+#    - Exclude internal schemas: storage, graphql, etc.
+#
+# ============================================
+# Production Deployment with Coolify
+# ============================================
+# For Coolify deployment:
+# 1. Use this compose file in your Coolify project
+# 2. Set environment variables in Coolify UI
+# 3. Configure persistent volumes for data
+# 4. Enable automatic SSL with Let's Encrypt
+# 5. Set up backup strategy for Metabase database
