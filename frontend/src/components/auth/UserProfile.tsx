@@ -52,11 +52,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
     try {
       // Use the logout function from useAuth hook
       await logout();
-      // The auth state listener will handle navigation to /login
       logger.info(LogCategory.AUTH, 'Logout successful');
+      // Always navigate to login for immediate feedback
+      navigate('/login');
     } catch (error) {
       logger.error(LogCategory.AUTH, 'Logout failed:', error);
-      // Fallback: manually navigate to login on error
+      // Still navigate to login even on error
       navigate('/login');
     } finally {
       setIsLoggingOut(false);

@@ -84,10 +84,11 @@ export function SideNav({
     try {
       // Use the logout function from useAuth hook
       await logout()
-      // The auth state listener will handle navigation to /login
+      // Always navigate to login for immediate feedback
+      navigate('/login')
     } catch (error) {
       console.error('Logout failed:', error)
-      // Fallback: manually navigate to login on error
+      // Still navigate to login even on error
       navigate('/login')
     } finally {
       setIsLoggingOut(false)
