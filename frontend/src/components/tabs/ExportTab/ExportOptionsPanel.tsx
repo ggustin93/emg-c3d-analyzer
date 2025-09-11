@@ -75,7 +75,7 @@ export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
           <Label className="text-sm font-medium">Export Format</Label>
           <div className="grid grid-cols-2 gap-2">
             <Button
-              variant={options.format === 'json' ? 'default' : 'outline'}
+              variant={options.format === 'json' ? 'secondary' : 'outline'}
               onClick={() => handleFormatChange('json')}
               className="flex items-center justify-start space-x-2 h-auto p-3"
             >
@@ -88,7 +88,7 @@ export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
               </div>
             </Button>
             <Button
-              variant={options.format === 'csv' ? 'default' : 'outline'}
+              variant={options.format === 'csv' ? 'secondary' : 'outline'}
               onClick={() => handleFormatChange('csv')}
               className="flex items-center justify-start space-x-2 h-auto p-3"
             >

@@ -60,8 +60,11 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
   const handleDownloadExport = async () => {
     setDownloadStates(prev => ({ ...prev, export: 'downloading' }));
     try {
-      if (exportFormat === 'csv' && sessionId) {
-        // CSV format: Call backend API
+      if (exportFormat === 'csv') {
+        // CSV format: Requires session ID for backend API call
+        if (!sessionId) {
+          throw new Error('Session ID is required for CSV export. Please ensure a valid session is loaded.');
+        }
         await downloadCsvFromBackend();
       } else {
         // JSON format: Use existing client-side export
@@ -155,11 +158,11 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
             </p>
           </div>
 
-          {/* Export JSON Download */}
+          {/* Export Data Download */}
           <div className="space-y-2">
             <Button
               onClick={handleDownloadExport}
-              disabled={!hasSelectedData || downloadStates.export === 'downloading'}
+              disabled={!hasSelectedData || downloadStates.export === 'downloading' || (exportFormat === 'csv' && !sessionId)}
               size="sm"
               variant="outline"
               className="w-full justify-start gap-2 border-primary text-primary hover:bg-primary/5"
@@ -174,16 +177,22 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
                `Export ${exportFormat.toUpperCase()} Data`}
             </Button>
             
-            {hasSelectedData ? (
-              <p className="text-xs text-muted-foreground px-2">
-                Estimated size: {estimatedSize}
-              </p>
-            ) : (
+            {!hasSelectedData ? (
               <Alert className="mt-2">
                 <AlertDescription className="text-xs">
                   Select at least one export option or EMG channel to enable export.
                 </AlertDescription>
               </Alert>
+            ) : exportFormat === 'csv' && !sessionId ? (
+              <Alert className="mt-2">
+                <AlertDescription className="text-xs">
+                  CSV export requires a valid session. Please load a C3D file with session data to enable CSV export.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <p className="text-xs text-muted-foreground px-2">
+                Estimated size: {estimatedSize}
+              </p>
             )}
           </div>
         </div>
