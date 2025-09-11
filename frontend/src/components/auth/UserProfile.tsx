@@ -49,8 +49,18 @@ const UserProfile: React.FC<UserProfileProps> = ({
     setIsLoggingOut(true);
     setShowLogoutDialog(false); // Close dialog immediately
     
-    // Navigate to logout route which will handle everything
-    navigate('/logout');
+    try {
+      // Use the logout function from useAuth hook
+      await logout();
+      // The auth state listener will handle navigation to /login
+      logger.info(LogCategory.AUTH, 'Logout successful');
+    } catch (error) {
+      logger.error(LogCategory.AUTH, 'Logout failed:', error);
+      // Fallback: manually navigate to login on error
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const getRoleColor = (role: string) => {

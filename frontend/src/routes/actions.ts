@@ -20,11 +20,3 @@ export async function loginAction({ request }: { request: Request }) {
   // Return error for display in form
   return { error: response.error }
 }
-
-/**
- * Logout action
- */
-export async function logoutAction() {
-  await AuthService.logout()
-  return redirect('/login')
-}

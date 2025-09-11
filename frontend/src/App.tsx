@@ -12,7 +12,7 @@ import {
 } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { rootLoader, protectedLoader, publicLoader } from './routes/loaders';
-import { loginAction, logoutAction } from './routes/actions';
+import { loginAction } from './routes/actions';
 import LoginPage from './components/auth/LoginPage';
 import Header from './components/layout/Header';
 import Spinner from './components/ui/Spinner';
@@ -257,13 +257,6 @@ const router = createBrowserRouter([
             element: <PatientProfile />
           }
         ]
-      },
-      {
-        path: 'logout',
-        loader: async () => {
-          // Perform logout and redirect to login
-          return logoutAction();
-        }
       }
     ]
   }

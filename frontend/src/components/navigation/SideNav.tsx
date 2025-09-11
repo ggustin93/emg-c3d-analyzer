@@ -71,7 +71,7 @@ export function SideNav({
   items = defaultItems,
   className 
 }: SideNavProps) {
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, logout } = useAuth()
   const navigate = useNavigate()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -80,7 +80,18 @@ export function SideNav({
     if (isLoggingOut) return
     setIsLoggingOut(true)
     setShowLogoutDialog(false)
-    navigate('/logout')
+    
+    try {
+      // Use the logout function from useAuth hook
+      await logout()
+      // The auth state listener will handle navigation to /login
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Fallback: manually navigate to login on error
+      navigate('/login')
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   const displayProfile = {
