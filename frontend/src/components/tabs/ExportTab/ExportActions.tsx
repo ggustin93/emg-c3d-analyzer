@@ -15,6 +15,7 @@ import {
 } from '@radix-ui/react-icons';
 import { ExportData } from './types';
 import { formatBytes } from './utils';
+import { generateCsvFromExportData, canGenerateCsv, estimateCsvSize } from './csvGenerator';
 
 interface ExportActionsProps {
   exportData: ExportData | null;
@@ -61,11 +62,11 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
     setDownloadStates(prev => ({ ...prev, export: 'downloading' }));
     try {
       if (exportFormat === 'csv') {
-        // CSV format: Requires session ID for backend API call
-        if (!sessionId) {
-          throw new Error('Session ID is required for CSV export. Please ensure a valid session is loaded.');
+        // CSV format: Use client-side generation (same as JSON approach)
+        if (!exportData || !canGenerateCsv(exportData)) {
+          throw new Error('Export data is not available for CSV generation.');
         }
-        await downloadCsvFromBackend();
+        generateCsvFromExportData(exportData, originalFilename);
       } else {
         // JSON format: Use existing client-side export
         await onDownloadExport();
@@ -80,40 +81,10 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
     }
   };
 
-  const downloadCsvFromBackend = async () => {
-    if (!sessionId) {
-      throw new Error('Session ID required for CSV export');
-    }
-
-    // Call backend API for CSV export
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${apiUrl}/export/session/${sessionId}?format=csv`, {
-      method: 'GET',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to export CSV: ${response.statusText}`);
-    }
-
-    // Get the CSV content as blob
-    const blob = await response.blob();
-    
-    // Create download link
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${originalFilename.replace('.c3d', '')}_export.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up
-    URL.revokeObjectURL(url);
-  };
 
   // Estimate export file size
   const estimatedSize = exportData ? 
-    formatBytes(JSON.stringify(exportData).length * (exportFormat === 'csv' ? 0.5 : 2)) : '0 KB';
+    (exportFormat === 'csv' ? estimateCsvSize(exportData) : formatBytes(JSON.stringify(exportData).length * 2)) : '0 KB';
 
   return (
     <Card>
@@ -162,7 +133,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
           <div className="space-y-2">
             <Button
               onClick={handleDownloadExport}
-              disabled={!hasSelectedData || downloadStates.export === 'downloading' || (exportFormat === 'csv' && !sessionId)}
+              disabled={!hasSelectedData || downloadStates.export === 'downloading' || (exportFormat === 'csv' && !canGenerateCsv(exportData))}
               size="sm"
               variant="outline"
               className="w-full justify-start gap-2 border-primary text-primary hover:bg-primary/5"
@@ -183,10 +154,10 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
                   Select at least one export option or EMG channel to enable export.
                 </AlertDescription>
               </Alert>
-            ) : exportFormat === 'csv' && !sessionId ? (
+            ) : exportFormat === 'csv' && !canGenerateCsv(exportData) ? (
               <Alert className="mt-2">
                 <AlertDescription className="text-xs">
-                  CSV export requires a valid session. Please load a C3D file with session data to enable CSV export.
+                  CSV export requires export data with analytics or metadata.
                 </AlertDescription>
               </Alert>
             ) : (

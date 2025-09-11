@@ -11,13 +11,7 @@ interface SessionState {
 }
 
 const defaultSessionParams: GameSessionParameters = {
-  session_mvc_value: null, // Use null to indicate "not yet calculated"
-  session_mvc_threshold_percentage: 75,
-  session_expected_contractions: 24,
-  session_expected_contractions_ch1: 12,
-  session_expected_contractions_ch2: 12,
-  subjective_fatigue_level: 5,
-  contraction_duration_threshold: 2000, // Default to 2000ms to match backend clinical standard
+  // UI state only - no therapeutic defaults
   channel_muscle_mapping: {
     "CH1": "Left Quadriceps",
     "CH2": "Right Quadriceps"
@@ -26,29 +20,9 @@ const defaultSessionParams: GameSessionParameters = {
     "Left Quadriceps": "#3b82f6", // Blue
     "Right Quadriceps": "#ef4444"  // Red
   },
+  // All therapeutic parameters will come from backend
   session_mvc_values: {},
-  session_mvc_threshold_percentages: {},
-  post_session_rpe: 6, // Moderate to hard perceived exertion after game session (RPE 1-10 scale)
-  bfr_parameters: {
-    left: {
-      aop_measured: 165,
-      applied_pressure: 82,
-      percentage_aop: 49.7,
-      is_compliant: true,
-      therapeutic_range_min: 40,
-      therapeutic_range_max: 60,
-      application_time_minutes: 15
-    },
-    right: {
-      aop_measured: 195,
-      applied_pressure: 98,
-      percentage_aop: 50.3,
-      is_compliant: true,
-      therapeutic_range_min: 40,
-      therapeutic_range_max: 60,
-      application_time_minutes: 15
-    }
-  }
+  session_mvc_threshold_percentages: {}
 };
 
 export const useSessionStore = create<SessionState>()(

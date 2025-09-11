@@ -209,10 +209,10 @@ export function SideNav({
           </div>
         </div>
         
-        {/* Role badge on new line with full name */}
-        <div className="mb-3">
+        {/* Role badge centered below name with smaller font */}
+        <div className="mb-3 text-center">
           <span className={cn(
-            "inline-flex text-xs px-3 py-1.5 rounded-md font-medium capitalize",
+            "inline-flex text-[11px] px-2.5 py-1 rounded-md font-medium capitalize",
             displayProfile.role === 'therapist' 
               ? "bg-green-100 text-green-700" 
               : displayProfile.role === 'admin'
@@ -223,21 +223,12 @@ export function SideNav({
           </span>
         </div>
         
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="flex-1 text-xs h-8 text-gray-500 hover:text-gray-700"
-          >
-            <GearIcon className="w-3.5 h-3.5 mr-1.5" />
-            Settings
-          </Button>
+        <div className="flex justify-center">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowLogoutDialog(true)}
-            className="flex-1 text-xs h-8 text-gray-500 hover:text-red-600 hover:bg-red-50/70 transition-colors"
+            className="text-xs h-8 px-4 text-gray-500 hover:text-red-600 hover:bg-red-50/70 transition-colors"
           >
             <ExitIcon className="w-3.5 h-3.5 mr-1.5" />
             Sign Out

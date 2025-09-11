@@ -30,8 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import Spinner from '../../ui/Spinner'
 import { 
   DotsHorizontalIcon as MoreHorizontal, 
-  PersonIcon as User, 
-  GroupIcon as Users, 
+  PersonIcon, 
   CalendarIcon as Calendar, 
   FileIcon as File, 
   MagnifyingGlassIcon as Search,
@@ -44,13 +43,12 @@ import {
 } from '@radix-ui/react-icons'
 import { Patient, PatientManagementProps } from './types'
 
-type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'patient_status'
+type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active'
 type SortDirection = 'asc' | 'desc'
 
 interface FilterState {
   searchTerm: string
-  statusFilter: string[]
-  showDroppedOut: boolean
+  showInactive: boolean  // Simple toggle for inactive patients
 }
 
 interface ColumnVisibility {
@@ -77,11 +75,11 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
     .select(`
       patient_code,
       created_at,
+      active,
       patient_medical_info (
         first_name,
         last_name,
-        date_of_birth,
-        patient_status
+        date_of_birth
       ),
       therapy_sessions (processed_at)
     `)
@@ -118,11 +116,11 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
       created_at: patient.created_at,
       session_count: sessionCount,
       last_session: lastSession,
+      active: patient.active ?? true, // Default to active if null
       // Medical info (will be null for researchers due to RLS)
       first_name: medical?.first_name || null,
       last_name: medical?.last_name || null,
       age: age,
-      patient_status: medical?.patient_status || 'active',
       // UI helpers
       display_name: medical?.first_name && medical?.last_name 
         ? `${medical.first_name} ${medical.last_name}`
@@ -214,7 +212,7 @@ function PatientTableLoading() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5" />
           Patient Management
         </CardTitle>
       </CardHeader>
@@ -236,13 +234,13 @@ function EmptyPatientState() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5" />
           Patient Management
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-center py-12">
-          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <PersonIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No patients found</h3>
           <p className="text-muted-foreground">
             Patients assigned to you will appear here once they complete their first session.
@@ -259,7 +257,7 @@ function ErrorPatientState({ error }: { error: Error }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5" />
           Patient Management
         </CardTitle>
       </CardHeader>
@@ -288,8 +286,9 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
   const lastSessionText = formatLastSession(patient.last_session)
   
-  // Get status badge variant
-  const statusBadgeVariant = patient.patient_status === 'dropped_out' ? 'destructive' : 'secondary'
+  // Get status badge variant based on active boolean
+  const statusBadgeVariant = patient.active ? 'default' : 'secondary'
+  const statusText = patient.active ? 'Active' : 'Inactive'
 
   return (
     <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => navigate(`/patients/${patient.patient_code}`)}>
@@ -372,8 +371,8 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
       {/* Patient Status */}
       {visibleColumns.status && (
         <TableCell className="hidden lg:table-cell text-center">
-          <Badge variant={statusBadgeVariant} className="capitalize">
-            {patient.patient_status?.replace('_', ' ')}
+          <Badge variant={statusBadgeVariant}>
+            {statusText}
           </Badge>
         </TableCell>
       )}
@@ -417,8 +416,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
   // Filter and sort states
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
-    statusFilter: ['active', 'completed', 'on_hold'], // Don't show dropped_out by default
-    showDroppedOut: false
+    showInactive: false  // Only show active patients by default
   })
   const [sortField, setSortField] = useState<SortField>('last_session')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -461,17 +459,9 @@ export function PatientManagement({ className }: PatientManagementProps) {
         if (!matchesSearch) return false
       }
 
-      // Status filter logic
-      const patientStatus = patient.patient_status || 'active'
-      
-      // Handle dropped out patients separately
-      if (patientStatus === 'dropped_out') {
-        return filters.showDroppedOut  // Only show if explicitly enabled
-      }
-      
-      // For other statuses, check if they're in the statusFilter
-      if (filters.statusFilter.length > 0 && !filters.statusFilter.includes(patientStatus)) {
-        return false
+      // Simple active/inactive filter
+      if (!patient.active && !filters.showInactive) {
+        return false  // Hide inactive patients unless explicitly shown
       }
 
       return true
@@ -502,9 +492,9 @@ export function PatientManagement({ className }: PatientManagementProps) {
           aValue = a.age || 0
           bValue = b.age || 0
           break
-        case 'patient_status':
-          aValue = a.patient_status || 'active'
-          bValue = b.patient_status || 'active'
+        case 'active':
+          aValue = a.active ? 1 : 0  // Convert boolean to number for sorting
+          bValue = b.active ? 1 : 0
           break
         default:
           aValue = a.last_session ? new Date(a.last_session).getTime() : 0
@@ -575,7 +565,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <PersonIcon className="h-5 w-5" />
               Patient Management
               <Badge variant="secondary" className="ml-auto">
                 {patients.length} total
@@ -648,41 +638,17 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   <PopoverContent className="w-56">
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <h4 className="font-medium text-sm">Patient Status</h4>
+                        <h4 className="font-medium text-sm">Patient Visibility</h4>
                         <div className="space-y-2">
-                          {(['active', 'completed', 'on_hold'] as const).map((status) => (
-                            <div key={status} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={status}
-                                checked={filters.statusFilter.includes(status)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setFilters(prev => ({
-                                      ...prev,
-                                      statusFilter: [...prev.statusFilter, status]
-                                    }))
-                                  } else {
-                                    setFilters(prev => ({
-                                      ...prev,
-                                      statusFilter: prev.statusFilter.filter(s => s !== status)
-                                    }))
-                                  }
-                                }}
-                              />
-                              <label htmlFor={status} className="text-sm capitalize">
-                                {status.replace('_', ' ')}
-                              </label>
-                            </div>
-                          ))}
                           <div className="flex items-center space-x-2">
                             <Checkbox 
-                              id="dropped_out"
-                              checked={filters.showDroppedOut}
-                              onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showDroppedOut: !!checked }))}
+                              id="show_inactive"
+                              checked={filters.showInactive}
+                              onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showInactive: !!checked }))}
                             />
-                            <label htmlFor="dropped_out" className="text-sm">
-                              {filters.showDroppedOut ? <Eye className="h-4 w-4 inline mr-1" /> : <EyeOff className="h-4 w-4 inline mr-1" />}
-                              Show Dropped Out
+                            <label htmlFor="show_inactive" className="text-sm">
+                              {filters.showInactive ? <Eye className="h-4 w-4 inline mr-1" /> : <EyeOff className="h-4 w-4 inline mr-1" />}
+                              Show Inactive Patients
                             </label>
                           </div>
                         </div>
@@ -702,7 +668,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                 variant="outline" 
                 size="sm"
                 className="mt-4"
-                onClick={() => setFilters({ searchTerm: '', statusFilter: ['active', 'completed', 'on_hold'], showDroppedOut: false })}
+                onClick={() => setFilters({ searchTerm: '', showInactive: false })}
               >
                 Clear filters
               </Button>
@@ -719,7 +685,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <PersonIcon className="h-5 w-5" />
             Patient Management
             <Badge variant="secondary" className="ml-auto">
               {filteredAndSortedPatients.length} of {patients.length} patients
@@ -792,41 +758,17 @@ export function PatientManagement({ className }: PatientManagementProps) {
                 <PopoverContent className="w-56">
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Patient Status</h4>
+                      <h4 className="font-medium text-sm">Patient Visibility</h4>
                       <div className="space-y-2">
-                        {(['active', 'completed', 'on_hold'] as const).map((status) => (
-                          <div key={status} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={status}
-                              checked={filters.statusFilter.includes(status)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setFilters(prev => ({
-                                    ...prev,
-                                    statusFilter: [...prev.statusFilter, status]
-                                  }))
-                                } else {
-                                  setFilters(prev => ({
-                                    ...prev,
-                                    statusFilter: prev.statusFilter.filter(s => s !== status)
-                                  }))
-                                }
-                              }}
-                            />
-                            <label htmlFor={status} className="text-sm capitalize">
-                              {status.replace('_', ' ')}
-                            </label>
-                          </div>
-                        ))}
                         <div className="flex items-center space-x-2">
                           <Checkbox 
-                            id="dropped_out"
-                            checked={filters.showDroppedOut}
-                            onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showDroppedOut: !!checked }))}
+                            id="show_inactive"
+                            checked={filters.showInactive}
+                            onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showInactive: !!checked }))}
                           />
-                          <label htmlFor="dropped_out" className="text-sm">
-                            {filters.showDroppedOut ? <Eye className="h-4 w-4 inline mr-1" /> : <EyeOff className="h-4 w-4 inline mr-1" />}
-                            Show Dropped Out
+                          <label htmlFor="show_inactive" className="text-sm">
+                            {filters.showInactive ? <Eye className="h-4 w-4 inline mr-1" /> : <EyeOff className="h-4 w-4 inline mr-1" />}
+                            Show Inactive Patients
                           </label>
                         </div>
                       </div>
@@ -933,10 +875,10 @@ export function PatientManagement({ className }: PatientManagementProps) {
                         variant="ghost"
                         size="sm"
                         className="h-8 data-[state=open]:bg-accent"
-                        onClick={() => handleSort('patient_status')}
+                        onClick={() => handleSort('active')}
                       >
                         Status
-                        {sortField === 'patient_status' && (
+                        {sortField === 'active' && (
                           sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
                       </Button>

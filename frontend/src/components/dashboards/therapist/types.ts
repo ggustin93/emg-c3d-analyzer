@@ -16,8 +16,8 @@ export interface Patient {
   last_session: string | null
   created_at: string
   
-  // Status and metrics (from screenshot)
-  patient_status?: 'active' | 'dropped_out' | 'completed' | 'on_hold'
+  // Status and metrics - simplified for clinical trial
+  active: boolean  // Simple active/inactive status
   compliance_status?: 'excellent' | 'good' | 'fair' | 'low'
   adherence_level?: 'high' | 'moderate' | 'low' | 'no_data'
   
@@ -44,7 +44,7 @@ export interface PatientMedicalInfo {
   
   // Treatment Summary (from screenshot)
   total_sessions_planned: number
-  patient_status: 'active' | 'dropped_out' | 'completed' | 'on_hold'
+  // Note: patient status moved to simple boolean 'active' field in patients table
 }
 
 export interface PatientManagementProps {

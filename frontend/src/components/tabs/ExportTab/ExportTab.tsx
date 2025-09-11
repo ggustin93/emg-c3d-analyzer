@@ -179,7 +179,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
             originalFilename={originalFilename}
             hasSelectedData={hasSelectedData}
             exportFormat={exportOptions.format}
-            sessionId={sessionParams?.session_id}
+            sessionId={analysisResult?.session_id || undefined}
             onDownloadOriginal={downloadOriginalFile}
             onDownloadExport={downloadExportData}
           />

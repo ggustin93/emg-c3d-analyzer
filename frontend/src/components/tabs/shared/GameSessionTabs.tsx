@@ -41,7 +41,6 @@ import PerformanceCard from './performance-card';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
-import { usePersistedSessionSettings } from '@/hooks/usePersistedSessionSettings';
 import { BFRMonitoringTab } from '../BFRMonitoringTab';
 import ExportTab from '../ExportTab/ExportTab';
 
@@ -143,7 +142,6 @@ export default function GameSessionTabs({
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
   const liveAnalytics = useLiveAnalytics(analysisResult);
-  usePersistedSessionSettings(analysisResult);
 
   // Initialize BFR parameters with default values on first load
   useEffect(() => {

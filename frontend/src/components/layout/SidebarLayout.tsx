@@ -92,7 +92,7 @@ export function SidebarLayout({ children, activeTab = 'sessions' }: SidebarLayou
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Side Navigation */}
-      <div className="w-72 flex-shrink-0">
+      <div className="w-64 flex-shrink-0">
         <SideNav 
           activeTab={activeTab} 
           onTabChange={handleTabChange}
