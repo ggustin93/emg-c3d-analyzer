@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse, Response
 from typing import Optional, Literal
 
 from services.data.export_service import EnhancedEMGDataExporter
-from utils.csv_converter import convert_export_to_csv
+from services.data.converters import convert_export_to_csv
 from api.dependencies.validation import (
     get_file_metadata,
     get_processing_options,

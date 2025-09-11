@@ -7,7 +7,7 @@ Test architecture follows backend CLAUDE.md: comprehensive validation, no AsyncM
 import pytest
 import pandas as pd
 from io import StringIO
-from utils.csv_converter import convert_export_to_csv, validate_csv_for_research, apply_research_friendly_names
+from services.data.converters import convert_export_to_csv, validate_csv_for_research, apply_research_friendly_names
 
 
 class TestCSVExport:
