@@ -398,5 +398,34 @@ npm run type-check                       # TypeScript validation
 
 This follows the KISS principle - keeping the implementation simple without unnecessary async complexity when the synchronous client meets all requirements.
 
+### 5.6. Icon Library Decision (Sep 2025)
+
+**Standard**: Use `@radix-ui/react-icons` for all UI icons
+
+**Rationale**:
+- Consistency: 51+ existing components already use @radix-ui/react-icons
+- TypeScript compatibility: No type definition issues
+- Integration: Works seamlessly with Radix UI components (shadcn/ui)
+- Single source of truth: Avoid mixing multiple icon libraries
+
+**Implementation**:
+```typescript
+// ✅ Correct: Use @radix-ui/react-icons
+import { PersonIcon, CalendarIcon, FileIcon } from '@radix-ui/react-icons'
+
+// ❌ Avoid: Don't use lucide-react
+import { User, Calendar, File } from 'lucide-react'
+```
+
+**Common Icon Mappings**:
+- User → PersonIcon
+- Users → GroupIcon  
+- Search → MagnifyingGlassIcon
+- Filter → MixerHorizontalIcon
+- ChevronDown → ChevronDownIcon
+- Eye/EyeOff → EyeOpenIcon/EyeClosedIcon
+- Check → CheckIcon
+- Plus → PlusIcon
+
 ---
 

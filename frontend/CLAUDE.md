@@ -112,7 +112,37 @@ This document merges **frontend engineering** (React, TypeScript) and **UX/UI de
 
 ---
 
-## 5/ Available tools in Claude Code CLI
+## 5/ Icon Library Standard
+
+**Use @radix-ui/react-icons exclusively** for all UI icons in this project.
+
+### Rationale
+- **Consistency**: 51+ components already use @radix-ui/react-icons
+- **TypeScript Compatibility**: No type definition issues  
+- **Integration**: Works seamlessly with Radix UI components (shadcn/ui)
+- **Single Source**: Avoid mixing multiple icon libraries
+
+### Implementation
+```typescript
+// ✅ CORRECT: Use @radix-ui/react-icons
+import { PersonIcon, CalendarIcon, FileIcon } from '@radix-ui/react-icons'
+
+// ❌ AVOID: Don't use lucide-react or other icon libraries
+import { User, Calendar, File } from 'lucide-react'
+```
+
+### Common Icon Mappings
+- User → PersonIcon
+- Users → GroupIcon
+- Search → MagnifyingGlassIcon  
+- Filter → MixerHorizontalIcon
+- ChevronDown → ChevronDownIcon
+- Eye/EyeOff → EyeOpenIcon/EyeClosedIcon
+- MoreHorizontal → DotsHorizontalIcon
+- Check → CheckIcon
+- Plus → PlusIcon
+
+## 6/ Available tools in Claude Code CLI
 
 Your AI agent has access to the following MCP (Model Context Protocol) tools to improve automation, screenshots, and design iteration:
 
