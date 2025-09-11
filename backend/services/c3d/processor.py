@@ -47,7 +47,9 @@ from config import (
     ACTIVATED_THRESHOLD_FACTOR,
     DEFAULT_SAMPLING_RATE,
     MERGE_THRESHOLD_MS,
+    PROCESSING_VERSION,
     REFRACTORY_PERIOD_MS,
+    ScoringDefaults,
 )
 
 from emg.emg_analysis import (
@@ -61,6 +63,8 @@ from emg.signal_processing import (
     preprocess_emg_signal,
 )
 from models import GameSessionParameters
+
+# Clinical services imported inside methods to avoid circular imports
 
 
 class GHOSTLYC3DProcessor:
@@ -118,6 +122,299 @@ class GHOSTLYC3DProcessor:
             default_metadata = {"level": "1", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             self.game_metadata = default_metadata
             return default_metadata
+
+    def extract_session_settings(self) -> dict:
+        """Extract session settings from C3D metadata with fallback hierarchy.
+        
+        Returns a dictionary of session parameters extracted from C3D file
+        or defaults from ClinicalDefaults if not found.
+        """
+        from config import ClinicalDefaults
+        
+        if not self.c3d:
+            self.load_file()
+        
+        # Initialize with system defaults
+        defaults = ClinicalDefaults()
+        settings = {}
+        
+        try:
+            # Extract from C3D parameters if available
+            params = self.c3d.get("parameters", {})
+            
+            # Try to get MVC values from C3D metadata
+            if "THERAPY" in params and "MVC" in params["THERAPY"]:
+                mvc_params = params["THERAPY"]["MVC"]
+                if "CH1" in mvc_params:
+                    settings["mvc_ch1"] = float(mvc_params["CH1"]["value"][0])
+                else:
+                    settings["mvc_ch1"] = defaults.MVC_CH1
+                    
+                if "CH2" in mvc_params:
+                    settings["mvc_ch2"] = float(mvc_params["CH2"]["value"][0])
+                else:
+                    settings["mvc_ch2"] = defaults.MVC_CH2
+            else:
+                settings["mvc_ch1"] = defaults.MVC_CH1
+                settings["mvc_ch2"] = defaults.MVC_CH2
+            
+            # Try to get MVC threshold percentage
+            if "THERAPY" in params and "MVC_THRESHOLD" in params["THERAPY"]:
+                settings["mvc_threshold_percentage"] = float(
+                    params["THERAPY"]["MVC_THRESHOLD"]["value"][0]
+                )
+            else:
+                settings["mvc_threshold_percentage"] = defaults.MVC_THRESHOLD_PERCENTAGE
+            
+            # Try to get duration thresholds from C3D
+            if "THERAPY" in params and "DURATION_THRESHOLD" in params["THERAPY"]:
+                duration_params = params["THERAPY"]["DURATION_THRESHOLD"]
+                if "CH1" in duration_params:
+                    settings["target_duration_ch1_ms"] = int(duration_params["CH1"]["value"][0])
+                else:
+                    settings["target_duration_ch1_ms"] = defaults.TARGET_DURATION_CH1_MS
+                    
+                if "CH2" in duration_params:
+                    settings["target_duration_ch2_ms"] = int(duration_params["CH2"]["value"][0])
+                else:
+                    settings["target_duration_ch2_ms"] = defaults.TARGET_DURATION_CH2_MS
+            else:
+                settings["target_duration_ch1_ms"] = defaults.TARGET_DURATION_CH1_MS
+                settings["target_duration_ch2_ms"] = defaults.TARGET_DURATION_CH2_MS
+            
+            # Try to get contraction targets
+            if "THERAPY" in params and "TARGET_CONTRACTIONS" in params["THERAPY"]:
+                targets = params["THERAPY"]["TARGET_CONTRACTIONS"]
+                if "CH1" in targets:
+                    settings["target_contractions_ch1"] = int(targets["CH1"]["value"][0])
+                else:
+                    settings["target_contractions_ch1"] = defaults.TARGET_CONTRACTIONS_CH1
+                    
+                if "CH2" in targets:
+                    settings["target_contractions_ch2"] = int(targets["CH2"]["value"][0])
+                else:
+                    settings["target_contractions_ch2"] = defaults.TARGET_CONTRACTIONS_CH2
+            else:
+                settings["target_contractions_ch1"] = defaults.TARGET_CONTRACTIONS_CH1
+                settings["target_contractions_ch2"] = defaults.TARGET_CONTRACTIONS_CH2
+                
+            # BFR parameters if available
+            if "THERAPY" in params and "BFR" in params["THERAPY"]:
+                bfr_params = params["THERAPY"]["BFR"]
+                settings["bfr_enabled"] = True
+                settings["bfr_pressure_aop"] = float(
+                    bfr_params.get("PRESSURE_AOP", {"value": [defaults.TARGET_PRESSURE_AOP]})["value"][0]
+                )
+            else:
+                settings["bfr_enabled"] = False
+                settings["bfr_pressure_aop"] = defaults.TARGET_PRESSURE_AOP
+            
+        except Exception as e:
+            # Log extraction error but return defaults
+            print(f"Warning: Could not extract session settings from C3D: {e}")
+            # Return all defaults on error
+            settings = {
+                "mvc_ch1": defaults.MVC_CH1,
+                "mvc_ch2": defaults.MVC_CH2,
+                "mvc_threshold_percentage": defaults.MVC_THRESHOLD_PERCENTAGE,
+                "target_duration_ch1_ms": defaults.TARGET_DURATION_CH1_MS,
+                "target_duration_ch2_ms": defaults.TARGET_DURATION_CH2_MS,
+                "target_contractions_ch1": defaults.TARGET_CONTRACTIONS_CH1,
+                "target_contractions_ch2": defaults.TARGET_CONTRACTIONS_CH2,
+                "bfr_enabled": False,
+                "bfr_pressure_aop": defaults.TARGET_PRESSURE_AOP
+            }
+        
+        return settings
+
+    def _extract_processing_parameters(self, processing_opts, session_game_params: GameSessionParameters) -> dict:
+        """Extract and document processing parameters used in analysis.
+        
+        Args:
+            processing_opts: Processing options passed to process_file
+            session_game_params: Session parameters including MVC settings
+            
+        Returns:
+            Dictionary with complete processing parameters documentation
+        """
+        try:
+            # Get sampling rate from metadata
+            sampling_rate = self.game_metadata.get("sampling_rate", DEFAULT_SAMPLING_RATE)
+            
+            # Document processing parameters based on ProcessingParametersBase model
+            processing_params = {
+                # Technical parameters
+                "sampling_rate_hz": sampling_rate,
+                "processing_version": PROCESSING_VERSION,
+                
+                # Filter configuration (from processing_opts or defaults)
+                "filter_low_cutoff_hz": getattr(processing_opts, 'filter_low_cutoff_hz', 20.0),
+                "filter_high_cutoff_hz": getattr(processing_opts, 'filter_high_cutoff_hz', 500.0),
+                "filter_order": getattr(processing_opts, 'filter_order', 4),
+                
+                # RMS configuration (from processing_opts or defaults)
+                "rms_window_ms": getattr(processing_opts, 'rms_window_ms', 50.0),
+                "rms_overlap_percent": getattr(processing_opts, 'rms_overlap_percent', 50.0),
+                
+                # MVC configuration (from session params or defaults)
+                "mvc_window_seconds": getattr(processing_opts, 'mvc_window_seconds', 3.0),
+                "mvc_threshold_percentage": getattr(session_game_params, 'session_mvc_threshold_percentage', 75.0),
+                
+                # Analysis parameters used in this processing
+                "threshold_factor": processing_opts.threshold_factor,
+                "min_duration_ms": processing_opts.min_duration_ms,
+                "smoothing_window": processing_opts.smoothing_window,
+                "activated_threshold_factor": ACTIVATED_THRESHOLD_FACTOR,
+                "merge_threshold_ms": MERGE_THRESHOLD_MS,
+                "refractory_period_ms": REFRACTORY_PERIOD_MS,
+            }
+            
+            logger.info(f"📋 Documented {len(processing_params)} processing parameters")
+            return processing_params
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract processing parameters: {e}")
+            # Return minimal parameters on error
+            return {
+                "processing_version": PROCESSING_VERSION,
+                "sampling_rate_hz": self.game_metadata.get("sampling_rate", DEFAULT_SAMPLING_RATE),
+                "error": f"Parameter extraction failed: {str(e)}"
+            }
+
+    def _calculate_performance_analysis(self, session_game_params: GameSessionParameters) -> dict:
+        """Calculate performance analysis using GHOSTLY-TRIAL-DEFAULT configuration.
+        
+        Args:
+            session_game_params: Session parameters for analysis
+            
+        Returns:
+            Dictionary with performance analysis results
+        """
+        try:
+            # Import clinical services locally to avoid circular imports
+            from database.supabase_client import get_supabase_client
+            from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
+            from services.clinical.performance_scoring_service import PerformanceScoringService, SessionMetrics
+            
+            # Get Supabase client for scoring configuration access
+            supabase_client = get_supabase_client()
+            scoring_repo = ScoringConfigurationRepository(supabase_client)
+            
+            # Load GHOSTLY-TRIAL-DEFAULT configuration (same as system fallback)
+            scoring_config = scoring_repo.get_default_scoring_config()
+            if not scoring_config:
+                # Fallback to config.py defaults if database unavailable
+                logger.warning("GHOSTLY-TRIAL-DEFAULT not found in database, using config.py defaults")
+                scoring_defaults = ScoringDefaults()
+                scoring_config = {
+                    "configuration_name": "GHOSTLY-TRIAL-DEFAULT-FALLBACK",
+                    "weight_compliance": scoring_defaults.WEIGHT_COMPLIANCE,
+                    "weight_symmetry": scoring_defaults.WEIGHT_SYMMETRY,
+                    "weight_effort": scoring_defaults.WEIGHT_EFFORT,
+                    "weight_game": scoring_defaults.WEIGHT_GAME,
+                    "weight_completion": scoring_defaults.WEIGHT_COMPLETION,
+                    "weight_intensity": scoring_defaults.WEIGHT_INTENSITY,
+                    "weight_duration": scoring_defaults.WEIGHT_DURATION,
+                }
+            
+            # Extract session metrics from analytics for performance calculation
+            session_metrics = self._extract_session_metrics_from_analytics()
+            
+            # Initialize performance scoring service for stateless calculation
+            performance_service = PerformanceScoringService(supabase_client)
+            
+            # Calculate performance scores (stateless - no database persistence)
+            performance_result = {
+                "scoring_configuration_used": scoring_config.get("configuration_name", "UNKNOWN"),
+                "scoring_weights": {
+                    "compliance": scoring_config.get("weight_compliance", 0.5),
+                    "symmetry": scoring_config.get("weight_symmetry", 0.25),
+                    "effort": scoring_config.get("weight_effort", 0.25),
+                    "game": scoring_config.get("weight_game", 0.0),
+                },
+                "session_metrics": session_metrics,
+                "performance_scores": {
+                    "overall_score": 0.0,  # Will be calculated based on components
+                    "compliance_score": 0.0,
+                    "symmetry_score": 0.0, 
+                    "effort_score": 50.0,  # Default for missing RPE
+                    "game_score": 0.0,
+                },
+                "therapeutic_recommendation": "Analysis completed - review individual metrics for clinical insights",
+                "analysis_timestamp": datetime.now().isoformat(),
+            }
+            
+            # Calculate actual scores based on session metrics and scoring configuration
+            # TODO: Implement detailed scoring calculation similar to PerformanceScoring service
+            # For now, provide basic compliance scoring based on analytics
+            if session_metrics.get("total_contractions", 0) > 0:
+                compliance_rate = min(session_metrics.get("compliant_contractions", 0) / session_metrics["total_contractions"], 1.0)
+                performance_result["performance_scores"]["compliance_score"] = compliance_rate * 100.0
+                performance_result["performance_scores"]["overall_score"] = compliance_rate * 100.0 * scoring_config.get("weight_compliance", 0.5)
+            
+            logger.info(f"📊 Performance analysis completed using {scoring_config.get('configuration_name', 'fallback')} configuration")
+            return performance_result
+            
+        except Exception as e:
+            logger.exception(f"Failed to calculate performance analysis: {e}")
+            # Return minimal performance data on error
+            return {
+                "scoring_configuration_used": "ERROR-FALLBACK",
+                "error": f"Performance calculation failed: {str(e)}",
+                "session_metrics": {},
+                "performance_scores": {
+                    "overall_score": 0.0,
+                    "compliance_score": 0.0,
+                    "symmetry_score": 0.0,
+                    "effort_score": 0.0,
+                    "game_score": 0.0,
+                },
+                "analysis_timestamp": datetime.now().isoformat(),
+            }
+
+    def _extract_session_metrics_from_analytics(self) -> dict:
+        """Extract session metrics from analytics for performance calculation.
+        
+        Returns:
+            Dictionary with session metrics extracted from self.analytics
+        """
+        try:
+            total_contractions = 0
+            compliant_contractions = 0
+            total_duration_ms = 0
+            
+            # Aggregate metrics across all channels
+            for channel_name, channel_analytics in self.analytics.items():
+                if isinstance(channel_analytics, dict) and "contraction_count" in channel_analytics:
+                    channel_contractions = channel_analytics.get("contraction_count", 0)
+                    total_contractions += channel_contractions
+                    
+                    # Count compliant contractions (those meeting MVC/duration thresholds)
+                    good_contractions = channel_analytics.get("good_contraction_count", 0)
+                    if good_contractions is not None:
+                        compliant_contractions += good_contractions
+                    
+                    # Aggregate total time under tension
+                    total_duration_ms += channel_analytics.get("total_time_under_tension_ms", 0)
+            
+            return {
+                "total_contractions": total_contractions,
+                "compliant_contractions": compliant_contractions,
+                "total_time_under_tension_ms": total_duration_ms,
+                "channel_count": len(self.analytics),
+                "analysis_quality": "complete" if total_contractions > 0 else "no_contractions_detected",
+            }
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract session metrics from analytics: {e}")
+            return {
+                "total_contractions": 0,
+                "compliant_contractions": 0,
+                "total_time_under_tension_ms": 0,
+                "channel_count": len(self.analytics) if hasattr(self, 'analytics') else 0,
+                "analysis_quality": "error",
+                "error": str(e),
+            }
 
     def extract_emg_data(self) -> dict[str, dict]:
         """Extract raw and activated EMG data from the C3D file."""
@@ -985,16 +1282,32 @@ class GHOSTLYC3DProcessor:
         self.emg_data = self.extract_emg_data()
 
         self.analytics = self.calculate_analytics(
-            threshold_factor=processing_opts.threshold_factor,
-            min_duration_ms=processing_opts.min_duration_ms,
-            smoothing_window=processing_opts.smoothing_window,
+            threshold_factor=getattr(processing_opts, 'threshold_factor', ACTIVATED_THRESHOLD_FACTOR),
+            min_duration_ms=getattr(processing_opts, 'min_duration_ms', 100),
+            smoothing_window=getattr(processing_opts, 'smoothing_window', 5),
             session_params=session_game_params,
         )
+
+        # Extract session parameters from C3D metadata with fallback hierarchy
+        session_parameters = self.extract_session_settings()
+        logger.info(f"📋 Extracted session parameters: {list(session_parameters.keys())}")
+        
+        # Document processing parameters used in analysis
+        processing_parameters = self._extract_processing_parameters(processing_opts, session_game_params)
+        logger.info(f"⚙️ Documented processing parameters: {list(processing_parameters.keys())}")
+        
+        # Calculate performance scores using GHOSTLY-TRIAL-DEFAULT configuration
+        performance_analysis = self._calculate_performance_analysis(session_game_params)
+        logger.info(f"📊 Calculated performance analysis: {list(performance_analysis.keys())}")
 
         result = {
             "metadata": self.game_metadata,
             "analytics": self.analytics,
             "available_channels": list(self.emg_data.keys()),
+            # NEW: Complete clinical analysis for CSV export
+            "session_parameters": session_parameters,
+            "processing_parameters": processing_parameters,
+            "performance_analysis": performance_analysis,
         }
 
         if include_signals:

@@ -111,20 +111,29 @@ class ScoringDefaults:
 # 4. SESSION DEFAULTS & FALLBACKS
 # =============================================================================
 @dataclass(frozen=True)
-class SessionDefaults:
+class ClinicalDefaults:
     """
-    Session defaults for C3D metadata structure and development fallbacks.
+    Single source of truth for all clinical defaults and therapeutic parameters.
     
     Thread-safe, immutable configuration for consistent session parameters.
-    In production: C3D files provide these values
-    In development: These defaults used when C3D metadata incomplete
+    Fallback hierarchy:
+    1. C3D metadata (if available)
+    2. Previous session from same patient (if exists)
+    3. These system defaults
     """
     
     # MVC values (development fallback, production from C3D/database)
     MVC_CH1: float = 1.5e-4  # 150μV development default
     MVC_CH2: float = 1.5e-4  # 150μV development default
     
-    # Therapeutic targets (per-channel flexibility for asymmetric rehabilitation)
+    # MVC threshold percentage (percentage of MVC for therapeutic activation)
+    MVC_THRESHOLD_PERCENTAGE: float = 75.0  # 75% MVC
+    
+    # Therapeutic duration thresholds (explicit per-channel naming)
+    TARGET_DURATION_CH1_MS: int = 2000  # 2 seconds for channel 1
+    TARGET_DURATION_CH2_MS: int = 2000  # 2 seconds for channel 2
+    
+    # Therapeutic contraction targets (per-channel flexibility for asymmetric rehabilitation)
     TARGET_CONTRACTIONS_CH1: int = 12
     TARGET_CONTRACTIONS_CH2: int = 12
     
@@ -133,10 +142,16 @@ class SessionDefaults:
     
     # BFR (Blood Flow Restriction) pressure defaults
     TARGET_PRESSURE_AOP: float = 50.0  # 50% AOP (middle of 40-60% safe range)
+    BFR_RANGE_MIN: float = 40.0  # Minimum therapeutic range
+    BFR_RANGE_MAX: float = 60.0  # Maximum therapeutic range
+    BFR_APPLICATION_TIME_MINUTES: int = 15  # Standard application time
     
     # Therapist identification (from C3D metadata in production)
     THERAPIST_ID: Optional[str] = None
     THERAPIST_CODE: str = "DEV001"  # Development fallback
+
+# Legacy alias for backward compatibility
+SessionDefaults = ClinicalDefaults
 
 
 @dataclass(frozen=True)
