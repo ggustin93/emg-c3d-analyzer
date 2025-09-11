@@ -167,13 +167,13 @@ jobs:
           # Execute tests with coverage
           python -m pytest tests/${{ matrix.test-category }}/ \
             --cov=. \
-            --cov-report=term \
+            --cov-report=term-missing:skip-covered \
             --cov-report=xml:coverage-${{ matrix.test-category }}.xml \
             --cov-report=html:htmlcov-${{ matrix.test-category }} \
             --junit-xml=test-results-${{ matrix.test-category }}.xml \
-            -v --tb=short \
-            --maxfail=10 \
-            --color=yes || TEST_RESULT=$?
+            --tb=short \
+            --maxfail=5 \
+            --quiet || TEST_RESULT=$?
           
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
@@ -270,7 +270,7 @@ jobs:
           echo "::group::🧪 Running frontend tests"
           START_TIME=$(date +%s)
           
-          npm test -- --run --coverage --reporter=verbose
+          npm test -- --run --coverage --reporter=basic
           
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
@@ -707,8 +707,8 @@ jobs:
           export PYTHONPATH="${{ github.workspace }}/backend"
           
           python -m pytest tests/integration/ \
-            -v --tb=short \
-            --color=yes
+            --tb=short \
+            --quiet
           
           echo "::endgroup::"
         env:
