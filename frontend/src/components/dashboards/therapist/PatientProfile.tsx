@@ -576,21 +576,29 @@ export function PatientProfile() {
       </div>
 
       {/* Tabs Section */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="sessions" className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4" />
-            Sessions
-          </TabsTrigger>
-          <TabsTrigger value="progress" className="flex items-center gap-2">
-            <BarChartIcon className="h-4 w-4" />
-            Progress
-          </TabsTrigger>
-          <TabsTrigger value="notes" className="flex items-center gap-2">
-            <FileTextIcon className="h-4 w-4" />
-            Notes
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="border-l border-r border-b border-blue-500 rounded-lg shadow-sm bg-white overflow-hidden">
+        <div className="border-b mb-4 relative">
+          <TabsList className="w-full flex justify-between border border-primary">
+            <TabsTrigger value="sessions" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                <span>Sessions</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <BarChartIcon className="h-4 w-4" />
+                <span>Progress</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <FileTextIcon className="h-4 w-4" />
+                <span>Notes</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Sessions Tab */}
         <TabsContent value="sessions">
@@ -638,7 +646,8 @@ export function PatientProfile() {
                   </div>
                   <h2 className="text-lg font-semibold text-gray-900">Clinical Notes</h2>
                 </div>
-                <Button size="sm" onClick={handleAddNote}>
+                <Button variant="outline" size="sm" onClick={handleAddNote} 
+                        className="border-teal-400 text-teal-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-500">
                   <PlusIcon className="mr-2 h-4 w-4" />
                   Add Note
                 </Button>
@@ -750,7 +759,8 @@ export function PatientProfile() {
                   <p className="text-sm text-gray-500 mb-4">
                     Start documenting patient progress by adding clinical notes.
                   </p>
-                  <Button onClick={handleAddNote}>
+                  <Button variant="outline" onClick={handleAddNote} 
+                          className="border-teal-400 text-teal-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-500">
                     <PlusIcon className="mr-2 h-4 w-4" />
                     Add First Note
                   </Button>
