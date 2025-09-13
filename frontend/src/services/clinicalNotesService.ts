@@ -106,6 +106,7 @@ export class ClinicalNotesService {
    */
   static async createFileNote(
     filePath: string,
+    title: string,
     content: string
   ): Promise<ClinicalNote> {
     try {
@@ -124,6 +125,7 @@ export class ClinicalNotesService {
         .insert({
           author_id: session.user.id,
           file_path: fullPath,
+          title: title.trim(),
           content: content.trim(),
           note_type: 'file',
           created_at: new Date().toISOString(),
@@ -150,6 +152,7 @@ export class ClinicalNotesService {
    */
   static async createPatientNote(
     patientCode: string,
+    title: string,
     content: string
   ): Promise<ClinicalNote> {
     try {
@@ -177,6 +180,7 @@ export class ClinicalNotesService {
         .insert({
           author_id: session.user.id,
           patient_id: patientData.id,
+          title: title.trim(),
           content: content.trim(),
           note_type: 'patient',
           created_at: new Date().toISOString(),
@@ -286,6 +290,73 @@ export class ClinicalNotesService {
   }
 
   /**
+   * Get all notes related to a patient (both patient notes and session notes)
+   * Combines patient-specific notes and file notes that contain the patient code
+   * OPTIMIZED: Uses direct Supabase for comprehensive patient view
+   */
+  static async getPatientRelatedNotes(patientCode: string): Promise<ClinicalNoteWithPatientCode[]> {
+    try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return []
+
+      // First get patient_id from patient_code
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('patient_code', patientCode)
+        .single()
+
+      if (patientError) {
+        console.warn('Patient not found:', patientError)
+        // Continue without patient_id to still get file notes
+      }
+
+      // Get all notes (both patient and file types) for this user
+      const { data: allNotes, error } = await supabase
+        .from('clinical_notes')
+        .select(`
+          *,
+          patients:patient_id (
+            patient_code
+          )
+        `)
+        .eq('author_id', session.user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Failed to fetch notes:', error)
+        throw new Error(error.message)
+      }
+
+      // Filter notes related to this patient
+      const relatedNotes = (allNotes || []).filter(note => {
+        // Include patient notes for this specific patient
+        if (note.note_type === 'patient' && note.patients?.patient_code === patientCode) {
+          return true
+        }
+        
+        // Include file notes where the file path contains the patient code
+        if (note.note_type === 'file' && note.file_path) {
+          const extractedPatientCode = this.extractPatientCodeFromPath(note.file_path)
+          return extractedPatientCode === patientCode
+        }
+        
+        return false
+      })
+
+      // Transform to match expected format
+      return relatedNotes.map(note => ({
+        ...note,
+        patient_code: note.patients?.patient_code || this.extractPatientCodeFromPath(note.file_path || '') || patientCode
+      }))
+    } catch (error) {
+      console.error('Failed to get patient related notes:', error)
+      return []
+    }
+  }
+
+  /**
    * Get notes by author (current user's notes)
    * OPTIMIZED: Uses direct Supabase query for read performance
    */
@@ -342,7 +413,7 @@ export class ClinicalNotesService {
    * Update an existing note
    * OPTIMIZED: Uses direct Supabase for instant updates
    */
-  static async updateNote(noteId: string, content: string): Promise<ClinicalNote> {
+  static async updateNote(noteId: string, title: string, content: string): Promise<ClinicalNote> {
     try {
       // Get current user session
       const { data: { session } } = await supabase.auth.getSession()
@@ -354,6 +425,7 @@ export class ClinicalNotesService {
       const { data: note, error } = await supabase
         .from('clinical_notes')
         .update({
+          title: title.trim(),
           content: content.trim(),
           updated_at: new Date().toISOString()
         })

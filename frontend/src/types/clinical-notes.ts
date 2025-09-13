@@ -11,6 +11,7 @@ export interface ClinicalNote {
   author_id: string;
   file_path?: string;
   patient_id?: string;
+  title: string;
   content: string;
   note_type: 'file' | 'patient';
   created_at: string;
@@ -29,11 +30,13 @@ export interface NotesIndicators {
 
 // API request/response types
 export interface CreateNoteRequest {
+  title: string;
   content: string;
   note_type: 'file' | 'patient';
 }
 
 export interface UpdateNoteRequest {
+  title?: string;
   content: string;
 }
 
@@ -79,6 +82,8 @@ export interface NotesModalProps {
   targetDisplayName?: string; // for UI display
   existingNotes?: ClinicalNoteWithPatientCode[];
   onNotesChanged?: () => void; // callback for parent refresh
+  initialMode?: 'list' | 'create' | 'edit'; // initial view mode
+  initialNoteToEdit?: ClinicalNoteWithPatientCode; // note to edit directly
 }
 
 export interface MarkdownEditorProps {
@@ -114,15 +119,16 @@ export interface UseNotesReturn {
   error: ClinicalNotesError | null;
   
   // File note operations
-  createFileNote: (filePath: string, content: string) => Promise<ClinicalNote>;
+  createFileNote: (filePath: string, title: string, content: string) => Promise<ClinicalNote>;
   getFileNotes: (filePath: string) => Promise<ClinicalNoteWithPatientCode[]>;
   
   // Patient note operations (using patient_code for user convenience)
-  createPatientNote: (patientCode: string, content: string) => Promise<ClinicalNote>;
+  createPatientNote: (patientCode: string, title: string, content: string) => Promise<ClinicalNote>;
   getPatientNotes: (patientCode: string) => Promise<ClinicalNoteWithPatientCode[]>;
+  getPatientRelatedNotes: (patientCode: string) => Promise<ClinicalNoteWithPatientCode[]>;
   
   // General operations
-  updateNote: (noteId: string, content: string) => Promise<ClinicalNote>;
+  updateNote: (noteId: string, title: string, content: string) => Promise<ClinicalNote>;
   deleteNote: (noteId: string) => Promise<boolean>;
   loadIndicators: (filePaths: string[], patientCodes: string[]) => Promise<void>;
   

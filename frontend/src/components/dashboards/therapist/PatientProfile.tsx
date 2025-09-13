@@ -26,7 +26,10 @@ import {
   HeartIcon,
   InfoCircledIcon,
   Pencil1Icon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ClockIcon,
+  FileIcon,
+  TrashIcon
 } from '@radix-ui/react-icons'
 
 interface PatientProfileData {
@@ -86,7 +89,7 @@ function calculateAge(dateOfBirth: string | null): number | null {
 // Format date for display
 function formatDate(dateString: string | null): string {
   if (!dateString) return 'Not set'
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -150,8 +153,12 @@ export function PatientProfile() {
   const [activeTab, setActiveTab] = useState('sessions')
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
   const [patientNotes, setPatientNotes] = useState<any[]>([])
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
+  const [modalMode, setModalMode] = useState<'list' | 'create' | 'edit'>('list')
+  const [noteToEdit, setNoteToEdit] = useState<any>(null)
   
-  const { getPatientNotes } = useClinicalNotes()
+  const { getPatientRelatedNotes, updateNote, deleteNote } = useClinicalNotes()
 
   useEffect(() => {
     if (!patientId) return
@@ -253,7 +260,7 @@ export function PatientProfile() {
   const loadPatientNotes = async () => {
     if (!patientId) return
     try {
-      const notes = await getPatientNotes(patientId)
+      const notes = await getPatientRelatedNotes(patientId)
       setPatientNotes(notes || [])
     } catch (err) {
       console.error('Error loading patient notes:', err)
@@ -263,6 +270,41 @@ export function PatientProfile() {
   const handleNotesChanged = () => {
     // Reload notes after changes
     loadPatientNotes()
+  }
+
+  const handleEditNote = (note: any) => {
+    setNoteToEdit(note)
+    setModalMode('edit')
+    setIsNotesModalOpen(true)
+  }
+
+  const handleAddNote = () => {
+    setNoteToEdit(null)
+    setModalMode('create')
+    setIsNotesModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsNotesModalOpen(false)
+    setModalMode('list')
+    setNoteToEdit(null)
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette note ? Cette action ne peut pas être annulée.')) {
+      return
+    }
+    
+    setDeletingNoteId(noteId)
+    try {
+      await deleteNote(noteId)
+      await loadPatientNotes() // Refresh the list
+    } catch (err) {
+      console.error('Error deleting note:', err)
+      alert('Erreur lors de la suppression de la note')
+    } finally {
+      setDeletingNoteId(null)
+    }
   }
 
   if (isLoading) {
@@ -588,41 +630,116 @@ export function PatientProfile() {
         {/* Clinical Notes Tab */}
         <TabsContent value="notes">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
-                  <FileTextIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                    <FileTextIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-900">Clinical Notes</h2>
                 </div>
-                Clinical Notes
-              </CardTitle>
-              <Button size="sm" onClick={() => setIsNotesModalOpen(true)}>
-                <PlusIcon className="mr-2 h-4 w-4" />
-                Add Note
-              </Button>
+                <Button size="sm" onClick={handleAddNote}>
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Add Note
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               
               {patientNotes.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {patientNotes.map((note: any) => (
-                    <div key={note.id} className="rounded-lg border border-gray-200 p-6 bg-white hover:shadow-sm transition-shadow">
-                      <div className="mb-4 flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <h4 className="font-semibold text-gray-900">{note.note_type || 'Clinical Note'}</h4>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {note.note_type || 'Note'}
-                          </Badge>
+                    <div key={note.id} className="group relative rounded-xl border border-gray-200/80 bg-white/50 backdrop-blur-sm hover:border-gray-300/80 hover:bg-white/80 hover:shadow-lg transition-all duration-200 ease-in-out">
+                      {/* Header Section avec hiérarchie visuelle améliorée */}
+                      <div className="p-6 pb-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900 truncate leading-tight">
+                                {note.title}
+                              </h3>
+                              <Badge 
+                                variant="outline" 
+                                className={`shrink-0 font-medium text-xs px-2 py-0.5 ${
+                                  note.note_type === 'patient' 
+                                    ? "bg-purple-50 text-purple-700 border-purple-300 hover:bg-purple-100"
+                                    : "bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100"
+                                }`}
+                              >
+                                {note.note_type === 'patient' ? 'Patient' : 'Session'}
+                              </Badge>
+                            </div>
+                            
+                            {/* Métadonnées condensées et élégantes */}
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                              <time className="flex items-center gap-1.5 font-medium">
+                                <CalendarIcon className="h-3.5 w-3.5 text-gray-400" />
+                                {new Date(note.created_at).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })} • {new Date(note.created_at).toLocaleTimeString('fr-FR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </time>
+                              
+                              {note.updated_at && note.updated_at !== note.created_at && (
+                                <span className="flex items-center gap-1.5 text-orange-600">
+                                  <ClockIcon className="h-3.5 w-3.5" />
+                                  Modifié {new Date(note.updated_at).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short'
+                                  })}
+                                </span>
+                              )}
+                              
+                              {note.file_path && (
+                                <span className="flex items-center gap-1.5 text-blue-600">
+                                  <FileIcon className="h-3.5 w-3.5" />
+                                  {note.file_path.split('/').pop()?.replace('.c3d', '') || 'Session'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions boutons repositionnés et stylisés */}
+                          <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditNote(note)}
+                              className="h-8 px-3 text-slate-600 hover:text-blue-700 hover:bg-blue-50/80 transition-colors"
+                            >
+                              <Pencil1Icon className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteNote(note.id)}
+                              disabled={deletingNoteId === note.id}
+                              className="h-8 px-3 text-slate-600 hover:text-red-700 hover:bg-red-50/80 transition-colors disabled:opacity-50"
+                            >
+                              {deletingNoteId === note.id ? (
+                                <div className="animate-spin h-3.5 w-3.5 border-2 border-red-600 border-t-transparent rounded-full" />
+                              ) : (
+                                <TrashIcon className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                        <time className="text-sm text-gray-500 font-medium">
-                          {new Date(note.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </time>
                       </div>
-                      <div className="text-sm text-gray-700 leading-relaxed" 
-                           dangerouslySetInnerHTML={{ __html: note.content }} />
+                      
+                      {/* Contenu principal avec meilleure lisibilité */}
+                      <div className="px-6 pb-6">
+                        <div 
+                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed
+                                   prose-headings:text-gray-900 prose-headings:font-semibold
+                                   prose-p:mb-3 prose-ul:mb-3 prose-ol:mb-3
+                                   prose-li:mb-1 prose-strong:text-gray-900"
+                          dangerouslySetInnerHTML={{ __html: note.content }} 
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -633,7 +750,7 @@ export function PatientProfile() {
                   <p className="text-sm text-gray-500 mb-4">
                     Start documenting patient progress by adding clinical notes.
                   </p>
-                  <Button onClick={() => setIsNotesModalOpen(true)}>
+                  <Button onClick={handleAddNote}>
                     <PlusIcon className="mr-2 h-4 w-4" />
                     Add First Note
                   </Button>
@@ -648,12 +765,14 @@ export function PatientProfile() {
       {patient && (
         <ClinicalNotesModal
           isOpen={isNotesModalOpen}
-          onClose={() => setIsNotesModalOpen(false)}
+          onClose={handleCloseModal}
           noteType="patient"
           targetId={patient.patient_code}
           targetDisplayName={displayName}
           existingNotes={patientNotes}
           onNotesChanged={handleNotesChanged}
+          initialMode={modalMode}
+          initialNoteToEdit={noteToEdit}
         />
       )}
     </div>

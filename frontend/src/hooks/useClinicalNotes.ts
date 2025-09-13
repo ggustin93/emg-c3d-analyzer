@@ -85,6 +85,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
    */
   const createFileNote = useCallback(async (
     filePath: string,
+    title: string,
     content: string
   ): Promise<ClinicalNote> => {
     const validation = ClinicalNotesService.validateNoteContent(content)
@@ -94,7 +95,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
 
     const result = await withLoadingAndError(
       'Create file note',
-      () => ClinicalNotesService.createFileNote(filePath, content)
+      () => ClinicalNotesService.createFileNote(filePath, title, content)
     )
 
     if (!result) {
@@ -109,6 +110,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
    */
   const createPatientNote = useCallback(async (
     patientCode: string,
+    title: string,
     content: string
   ): Promise<ClinicalNote> => {
     const validation = ClinicalNotesService.validateNoteContent(content)
@@ -118,7 +120,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
 
     const result = await withLoadingAndError(
       'Create patient note',
-      () => ClinicalNotesService.createPatientNote(patientCode, content)
+      () => ClinicalNotesService.createPatientNote(patientCode, title, content)
     )
 
     if (!result) {
@@ -165,10 +167,29 @@ export const useClinicalNotes = (): UseNotesReturn => {
   }, [withLoadingAndError])
 
   /**
+   * Get all notes related to a patient (both patient notes and session notes)
+   */
+  const getPatientRelatedNotes = useCallback(async (
+    patientCode: string
+  ): Promise<ClinicalNoteWithPatientCode[]> => {
+    const result = await withLoadingAndError(
+      'Get patient related notes',
+      async () => {
+        const fetchedNotes = await ClinicalNotesService.getPatientRelatedNotes(patientCode)
+        setNotes(fetchedNotes)
+        return fetchedNotes
+      }
+    )
+
+    return result || []
+  }, [withLoadingAndError])
+
+  /**
    * Update a note
    */
   const updateNote = useCallback(async (
     noteId: string,
+    title: string,
     content: string
   ): Promise<ClinicalNote> => {
     const validation = ClinicalNotesService.validateNoteContent(content)
@@ -179,13 +200,13 @@ export const useClinicalNotes = (): UseNotesReturn => {
     const result = await withLoadingAndError(
       'Update note',
       async () => {
-        const updatedNote = await ClinicalNotesService.updateNote(noteId, content)
+        const updatedNote = await ClinicalNotesService.updateNote(noteId, title, content)
         
         // Update local state
         setNotes(prevNotes =>
           prevNotes.map(note =>
             note.id === noteId
-              ? { ...note, content: updatedNote.content, updated_at: updatedNote.updated_at }
+              ? { ...note, title: updatedNote.title, content: updatedNote.content, updated_at: updatedNote.updated_at }
               : note
           )
         )
@@ -377,6 +398,7 @@ export const useClinicalNotes = (): UseNotesReturn => {
     // Patient note operations
     createPatientNote,
     getPatientNotes,
+    getPatientRelatedNotes,
 
     // General operations
     updateNote,

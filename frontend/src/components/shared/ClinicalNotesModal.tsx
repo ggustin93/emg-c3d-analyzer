@@ -20,7 +20,9 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   targetId,
   targetDisplayName,
   existingNotes = [],
-  onNotesChanged
+  onNotesChanged,
+  initialMode = 'list',
+  initialNoteToEdit
 }) => {
   const {
     notes,
@@ -41,6 +43,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   const [selectedNote, setSelectedNote] = useState<ClinicalNoteWithPatientCode | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [noteTitle, setNoteTitle] = useState('')
   const [editorContent, setEditorContent] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   
@@ -63,7 +66,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   }, [targetDisplayName, noteType, targetId, getTargetDisplayName])
 
   const hasNotes = localNotes.length > 0
-  const canSave = editorContent.trim().length > 0 && validateContent(editorContent).valid
+  const canSave = noteTitle.trim().length > 0 && editorContent.trim().length > 0 && validateContent(editorContent).valid
 
   // Enhanced notes loading with better performance and error handling
   useEffect(() => {
@@ -128,11 +131,32 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     loadNotes()
   }, [isOpen, noteType, targetId, existingNotes.length])
 
+  // Handle initial mode and direct editing
+  useEffect(() => {
+    if (!isOpen) return
+
+    // Handle initial mode
+    if (initialMode === 'create') {
+      setIsEditing(true)
+      setIsCreating(true)
+      setNoteTitle('')
+      setEditorContent('')
+      setSelectedNote(null)
+    } else if (initialMode === 'edit' && initialNoteToEdit) {
+      setSelectedNote(initialNoteToEdit)
+      setIsEditing(true)
+      setIsCreating(false)
+      setNoteTitle(initialNoteToEdit.title)
+      setEditorContent(initialNoteToEdit.content)
+    }
+  }, [isOpen, initialMode, initialNoteToEdit])
+
   // Handle modal close
   const handleClose = useCallback(() => {
     setSelectedNote(null)
     setIsEditing(false)
     setIsCreating(false)
+    setNoteTitle('')
     setEditorContent('')
     // Removed setShowPreview - using simple WYSIWYG editor
     setDeleteConfirm(null)
@@ -162,6 +186,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     const tempId = `temp-${Date.now()}`
     const optimisticNote: ClinicalNoteWithPatientCode = {
       id: tempId,
+      title: noteTitle,
       content: editorContent,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -178,14 +203,15 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       setLocalNotes(prev => [optimisticNote, ...prev])
       setSelectedNote(optimisticNote)
       setIsCreating(false)
+      setNoteTitle('')
       setEditorContent('')
 
       // Create actual note
       let newNote: any
       if (noteType === 'file') {
-        newNote = await createFileNote(targetId, editorContent)
+        newNote = await createFileNote(targetId, noteTitle, editorContent)
       } else {
-        newNote = await createPatientNote(targetId, editorContent)
+        newNote = await createPatientNote(targetId, noteTitle, editorContent)
       }
 
       // Replace optimistic note with real note
@@ -226,6 +252,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
     if (!selectedNote || !canSave || loadingState.saving) return
 
     // Store original content for rollback
+    const originalTitle = selectedNote.title
     const originalContent = selectedNote.content
     const originalUpdatedAt = selectedNote.updated_at
 
@@ -236,6 +263,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       // Optimistic update - update UI immediately
       const optimisticUpdate = {
         ...selectedNote,
+        title: noteTitle,
         content: editorContent,
         updated_at: new Date().toISOString()
       }
@@ -247,14 +275,16 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       )
       setSelectedNote(optimisticUpdate)
       setIsEditing(false)
+      setNoteTitle('')
       setEditorContent('')
 
       // Perform actual update
-      const updatedNote = await updateNote(selectedNote.id, editorContent)
+      const updatedNote = await updateNote(selectedNote.id, noteTitle, editorContent)
 
       // Replace optimistic update with real data
       const finalUpdate = {
         ...selectedNote,
+        title: updatedNote.title,
         content: updatedNote.content,
         updated_at: updatedNote.updated_at
       }
@@ -281,6 +311,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
       // Revert optimistic update on error
       const revertedNote = {
         ...selectedNote,
+        title: originalTitle,
         content: originalContent,
         updated_at: originalUpdatedAt
       }
@@ -353,8 +384,10 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   const startEditing = useCallback((note?: ClinicalNoteWithPatientCode) => {
     if (note) {
       setSelectedNote(note)
+      setNoteTitle(note.title)
       setEditorContent(note.content)
     } else {
+      setNoteTitle('')
       setEditorContent('')
     }
     setIsEditing(true)
@@ -365,6 +398,7 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
   const cancelEditing = useCallback(() => {
     setIsEditing(false)
     setIsCreating(false)
+    setNoteTitle('')
     setEditorContent('')
     // Removed setShowPreview - using simple WYSIWYG editor
   }, [])
@@ -451,8 +485,13 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
                         </div>
                       </div>
                     )}
-                    <div className="text-sm text-slate-800 line-clamp-3 mb-2 prose prose-sm max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                    <div className="mb-2">
+                      <h4 className="text-sm font-medium text-slate-800 mb-1 line-clamp-1">
+                        {note.title}
+                      </h4>
+                      <div className="text-xs text-slate-600 line-clamp-2 prose prose-xs max-w-none">
+                        <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <div className="flex flex-col gap-0.5">
@@ -563,7 +602,9 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
               </div>
             ) : isEditing ? (
               <ClinicalNotesEditor
+                title={noteTitle}
                 content={editorContent}
+                onTitleChange={setNoteTitle}
                 onChange={setEditorContent}
                 onSave={isCreating ? handleCreateNote : handleUpdateNote}
                 onCancel={cancelEditing}
@@ -633,7 +674,9 @@ export const ClinicalNotesModal: React.FC<NotesModalProps> = ({
 // Sub-components for better organization
 
 interface EditorProps {
+  title: string
   content: string
+  onTitleChange: (title: string) => void
   onChange: (content: string) => void
   onSave: () => void
   onCancel: () => void
@@ -643,7 +686,9 @@ interface EditorProps {
 }
 
 const ClinicalNotesEditor: React.FC<EditorProps> = ({
+  title,
   content,
+  onTitleChange,
   onChange,
   onSave,
   onCancel,
@@ -658,16 +703,41 @@ const ClinicalNotesEditor: React.FC<EditorProps> = ({
       </h3>
     </div>
     
-    <div className="flex-1 p-4">
-      <div className="h-full border border-slate-200 rounded-lg overflow-hidden">
-        <Editor
-          value={content}
-          onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
-          placeholder="Write your clinical note here..."
-          containerProps={{ 
-            style: { height: '300px' }
-          }}
+    <div className="flex-1 p-4 space-y-4">
+      {/* Title Input Field */}
+      <div>
+        <label htmlFor="note-title" className="block text-sm font-medium text-slate-700 mb-2">
+          Titre de la note
+        </label>
+        <input
+          id="note-title"
+          type="text"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          placeholder="Entrez le titre de la note..."
+          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          maxLength={255}
         />
+        <div className="text-xs text-slate-500 mt-1">
+          {title.length}/255 caractères
+        </div>
+      </div>
+
+      {/* Content Editor */}
+      <div className="flex-1">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Contenu
+        </label>
+        <div className="h-64 border border-slate-200 rounded-lg overflow-hidden">
+          <Editor
+            value={content}
+            onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
+            placeholder="Rédigez votre note clinique ici..."
+            containerProps={{ 
+              style: { height: '240px' }
+            }}
+          />
+        </div>
       </div>
     </div>
     
@@ -747,6 +817,9 @@ const ClinicalNoteViewer: React.FC<ViewerProps> = ({
     <div className="flex items-center justify-between p-4 border-b border-slate-200">
       <div className="flex items-center gap-3">
         <div>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">
+            {note.title}
+          </h3>
           <div className="text-sm text-slate-500">
             Created: {ClinicalNotesService.formatEuropeanTimestamp(note.created_at)}
           </div>
