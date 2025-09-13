@@ -113,9 +113,12 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
     URL.revokeObjectURL(url);
   }, [analysisResult?.source_filename]);
 
+  // Memoize export data to prevent recreation on every render
+  const fullExportData = useMemo(() => generateExportData(false), [generateExportData]);
+
   // Download export data as JSON (complete data)
   const downloadExportData = useCallback(async (): Promise<void> => {
-    const exportData = generateExportData(false); // isPreview = false for complete data
+    const exportData = fullExportData;
     if (!exportData) {
       throw new Error('No export data available');
     }
@@ -132,7 +135,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
     document.body.removeChild(link);
     
     URL.revokeObjectURL(url);
-  }, [generateExportData, originalFilename]);
+  }, [fullExportData, originalFilename]);
 
   // Auto-generate preview when selection changes
   React.useEffect(() => {
@@ -175,7 +178,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
         <div className="space-y-6">
           {/* Export Actions */}
           <ExportActions
-            exportData={generateExportData(false)} 
+            exportData={fullExportData} 
             originalFilename={originalFilename}
             hasSelectedData={hasSelectedData}
             exportFormat={exportOptions.format}

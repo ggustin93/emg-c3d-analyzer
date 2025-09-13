@@ -169,9 +169,14 @@ export function useExportData(
       exportData.analytics = analyticsWithMvc;
     }
 
-    // Include session parameters if selected
-    if (exportOptions.includeSessionParams && sessionParams) {
-      exportData.sessionParameters = sessionParams;
+    // Include session parameters if selected - prioritize backend data
+    if (exportOptions.includeSessionParams) {
+      // Use backend-provided session parameters if available, fallback to frontend params
+      if (analysisResult.session_parameters) {
+        exportData.sessionParameters = analysisResult.session_parameters;
+      } else if (sessionParams) {
+        exportData.sessionParameters = sessionParams;
+      }
     }
 
     // Include C3D metadata if selected
@@ -180,49 +185,60 @@ export function useExportData(
       exportData.c3dParameters = analysisResult.c3d_parameters;
     }
 
-    // Include performance analysis if selected
-    if (exportOptions.includePerformanceAnalysis && analysisResult.analytics) {
-      const performanceData: { [key: string]: any } = {};
-      
-      Object.keys(analysisResult.analytics).forEach((channelName, index) => {
-        const analytics = analysisResult.analytics[channelName];
-        if (!analytics) return;
-
-        const expectedContractions = getExpectedContractions(sessionParams, index);
-        const durationThreshold = sessionParams?.session_duration_threshold || 2000;
+    // Include performance analysis if selected - prioritize backend data
+    if (exportOptions.includePerformanceAnalysis) {
+      // Use backend-provided performance analysis if available
+      if (analysisResult.performance_analysis) {
+        exportData.performanceAnalysis = analysisResult.performance_analysis;
+      } else if (analysisResult.analytics) {
+        // Fallback to frontend calculation if backend data not available
+        const performanceData: { [key: string]: any } = {};
         
-        performanceData[channelName] = {
-          compliance_subscores: calculateMusclePerformance(
-            analytics, 
-            expectedContractions, 
-            durationThreshold
-          ),
-          raw_metrics: {
-            contractions: {
-              total: analytics.contraction_count || 0,
-              good: analytics.good_contraction_count || 0,
-              poor: (analytics.contraction_count || 0) - (analytics.good_contraction_count || 0),
-              expected: expectedContractions
-            },
-            timing: {
-              average_duration_ms: analytics.avg_duration_ms || 0,
-              total_active_time_ms: analytics.total_time_under_tension_ms || 0,
-              min_duration_ms: analytics.min_duration_ms || 0,
-              max_duration_ms: analytics.max_duration_ms || 0
-            },
-            intensity: {
-              average_amplitude: analytics.avg_amplitude || 0,
-              max_amplitude: analytics.max_amplitude || 0,
-              mvc_threshold: sessionParams?.[`session_mvc_${channelName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`] || 100,
-              mvc_percentage_achieved: 0 // Not available in current analytics
-            },
-            // Note: Fatigue analysis is available in main analytics section
-            // fatigue_index_fi_nsm5 = ${analytics.fatigue_index_fi_nsm5 || 'not available'}
-          }
-        };
-      });
+        Object.keys(analysisResult.analytics).forEach((channelName, index) => {
+          const analytics = analysisResult.analytics[channelName];
+          if (!analytics) return;
 
-      exportData.performanceAnalysis = performanceData;
+          const expectedContractions = getExpectedContractions(sessionParams, index);
+          const durationThreshold = sessionParams?.session_duration_threshold || 2000;
+          
+          performanceData[channelName] = {
+            compliance_subscores: calculateMusclePerformance(
+              analytics, 
+              expectedContractions, 
+              durationThreshold
+            ),
+            raw_metrics: {
+              contractions: {
+                total: analytics.contraction_count || 0,
+                good: analytics.good_contraction_count || 0,
+                poor: (analytics.contraction_count || 0) - (analytics.good_contraction_count || 0),
+                expected: expectedContractions
+              },
+              timing: {
+                average_duration_ms: analytics.avg_duration_ms || 0,
+                total_active_time_ms: analytics.total_time_under_tension_ms || 0,
+                min_duration_ms: analytics.min_duration_ms || 0,
+                max_duration_ms: analytics.max_duration_ms || 0
+              },
+              intensity: {
+                average_amplitude: analytics.avg_amplitude || 0,
+                max_amplitude: analytics.max_amplitude || 0,
+                mvc_threshold: sessionParams?.[`session_mvc_${channelName.toLowerCase().replace(/[^a-z0-1]/g, '_')}`] || 100,
+                mvc_percentage_achieved: 0 // Not available in current analytics
+              },
+              // Note: Fatigue analysis is available in main analytics section
+              // fatigue_index_fi_nsm5 = ${analytics.fatigue_index_fi_nsm5 || 'not available'}
+            }
+          };
+        });
+
+        exportData.performanceAnalysis = performanceData;
+      }
+    }
+
+    // Include processing parameters if available from backend
+    if (analysisResult.processing_parameters) {
+      exportData.processingParameters = analysisResult.processing_parameters;
     }
 
     // Include selected EMG signals

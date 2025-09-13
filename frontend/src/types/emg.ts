@@ -285,4 +285,8 @@ export interface EMGAnalysisResult {
   patient_id?: string | null;
   overall_score?: number;
   symmetry_score?: number;
+  // NEW: Clinical data integration from enhanced backend
+  session_parameters?: { [key: string]: any };      // Session configuration from C3D metadata  
+  processing_parameters?: { [key: string]: any };   // Processing parameters documentation
+  performance_analysis?: { [key: string]: any };    // Performance scoring analysis
 } 
