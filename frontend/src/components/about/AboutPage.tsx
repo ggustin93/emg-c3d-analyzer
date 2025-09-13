@@ -8,7 +8,7 @@ import {
 import { 
   ActivityLogIcon, 
   LightningBoltIcon, 
-  GroupIcon, 
+  PersonIcon, 
   ComponentInstanceIcon, 
   HomeIcon,
   ChatBubbleIcon,
@@ -19,7 +19,7 @@ import {
 const iconMap: Record<string, React.ReactNode> = {
   'clinical-trial': <ActivityLogIcon className="w-4 h-4 text-blue-600" />, // Clinical data/trials
   'research-problem': <LightningBoltIcon className="w-4 h-4 text-blue-600" />, // Innovation/breakthrough
-  'research-team': <GroupIcon className="w-4 h-4 text-blue-600" />, // Team/consortium
+  'research-team': <PersonIcon className="w-4 h-4 text-blue-600" />, // Team/consortium - using PersonIcon (reliable)
   'technology': <ComponentInstanceIcon className="w-4 h-4 text-blue-600" />, // Technology/EMG components
   'institution': <HomeIcon className="w-4 h-4 text-blue-600" />, // Institution/university
   'contact': <ChatBubbleIcon className="w-4 h-4 text-blue-600" /> // Contact/communication
