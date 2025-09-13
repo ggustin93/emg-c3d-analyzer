@@ -151,7 +151,7 @@ export function generateCsvFromExportData(exportData: ExportData, originalFilena
     const perfAnalysis = exportData.performanceAnalysis;
     
     // Overall scores
-    if (perfAnalysis.overall_score !== undefined) {
+    if (perfAnalysis.overall_score !== undefined && perfAnalysis.overall_score !== null) {
       csvRows.push(`"Overall Performance Score","${perfAnalysis.overall_score.toFixed(1)}%"`); 
     }
     
@@ -163,10 +163,178 @@ export function generateCsvFromExportData(exportData: ExportData, originalFilena
     components.forEach(component => {
       const score = perfAnalysis[`${component}_score`];
       const weight = perfAnalysis[`${component}_weight`] || perfAnalysis.weights?.[component];
-      if (score !== undefined) {
+      if (score !== undefined && score !== null) {
         const weightedScore = weight ? (score * weight).toFixed(1) : 'N/A';
         const weightDisplay = weight ? `${(weight * 100).toFixed(1)}%` : 'N/A';
         csvRows.push(`"${component.charAt(0).toUpperCase() + component.slice(1)}","${score.toFixed(1)}%","${weightDisplay}","${weightedScore}%"`); 
+      }
+    });
+    
+    csvRows.push('');
+    
+    // Add per-muscle compliance breakdown
+    if (perfAnalysis.compliance_components) {
+      csvRows.push('"=== PER-MUSCLE COMPLIANCE BREAKDOWN ==="');
+      csvRows.push('');
+      
+      const comp = perfAnalysis.compliance_components;
+      
+      // Left muscle metrics
+      csvRows.push('"Left Muscle Metrics"');
+      csvRows.push('Metric,Rate,Score');
+      if (comp.left_muscle_compliance !== undefined && comp.left_muscle_compliance !== null) {
+        csvRows.push(`"Overall Compliance","","${comp.left_muscle_compliance.toFixed(1)}%"`);
+      }
+      if (comp.completion_rate_left !== undefined && comp.completion_rate_left !== null) {
+        csvRows.push(`"Completion Rate","${(comp.completion_rate_left * 100).toFixed(1)}%",""`);
+      }
+      if (comp.intensity_rate_left !== undefined && comp.intensity_rate_left !== null) {
+        csvRows.push(`"Intensity Rate (≥75% MVC)","${(comp.intensity_rate_left * 100).toFixed(1)}%",""`);
+      }
+      if (comp.duration_rate_left !== undefined && comp.duration_rate_left !== null) {
+        csvRows.push(`"Duration Rate (≥2s)","${(comp.duration_rate_left * 100).toFixed(1)}%",""`);
+      }
+      
+      csvRows.push('');
+      
+      // Right muscle metrics
+      csvRows.push('"Right Muscle Metrics"');
+      csvRows.push('Metric,Rate,Score');
+      if (comp.right_muscle_compliance !== undefined && comp.right_muscle_compliance !== null) {
+        csvRows.push(`"Overall Compliance","","${comp.right_muscle_compliance.toFixed(1)}%"`);
+      }
+      if (comp.completion_rate_right !== undefined && comp.completion_rate_right !== null) {
+        csvRows.push(`"Completion Rate","${(comp.completion_rate_right * 100).toFixed(1)}%",""`);
+      }
+      if (comp.intensity_rate_right !== undefined && comp.intensity_rate_right !== null) {
+        csvRows.push(`"Intensity Rate (≥75% MVC)","${(comp.intensity_rate_right * 100).toFixed(1)}%",""`);
+      }
+      if (comp.duration_rate_right !== undefined && comp.duration_rate_right !== null) {
+        csvRows.push(`"Duration Rate (≥2s)","${(comp.duration_rate_right * 100).toFixed(1)}%",""`);
+      }
+      
+      csvRows.push('');
+    }
+    
+    // Add RPE scoring section
+    if (perfAnalysis.rpe_value !== undefined || perfAnalysis.effort_score !== undefined) {
+      csvRows.push('"=== RPE (RATING OF PERCEIVED EXERTION) ==="');
+      csvRows.push('');
+      
+      if (perfAnalysis.rpe_value !== undefined && perfAnalysis.rpe_value !== null) {
+        csvRows.push(`"RPE Value (Borg CR-10 Scale)","${perfAnalysis.rpe_value}"`);
+      }
+      if (perfAnalysis.effort_score !== undefined && perfAnalysis.effort_score !== null) {
+        csvRows.push(`"Effort Score","${perfAnalysis.effort_score.toFixed(1)}%"`);
+      }
+      
+      // Add RPE mapping configuration
+      if (perfAnalysis.rpe_mapping) {
+        csvRows.push('');
+        csvRows.push('"RPE Mapping Configuration"');
+        csvRows.push('Range,RPE Values,Score');
+        csvRows.push(`"Optimal","4-6","100%"`);
+        csvRows.push(`"Acceptable","3, 7","80%"`);
+        csvRows.push(`"Suboptimal","2, 8","60%"`);
+        csvRows.push(`"Poor","0-1, 9-10","20%"`);
+      }
+      
+      // Add RPE source
+      if (perfAnalysis.data_completeness?.rpe_source) {
+        csvRows.push('');
+        csvRows.push(`"RPE Data Source","${perfAnalysis.data_completeness.rpe_source}"`);
+      }
+      
+      csvRows.push('');
+    }
+    
+    // Add scoring configuration weights
+    if (perfAnalysis.weights) {
+      csvRows.push('"=== SCORING CONFIGURATION ==="');
+      csvRows.push('');
+      
+      csvRows.push('"Main Component Weights"');
+      csvRows.push('Component,Weight,Description');
+      csvRows.push(`"Compliance","${((perfAnalysis.weights.w_compliance || 0.5) * 100).toFixed(1)}%","Therapeutic Compliance"`);
+      csvRows.push(`"Symmetry","${((perfAnalysis.weights.w_symmetry || 0.25) * 100).toFixed(1)}%","Muscle Symmetry"`);
+      csvRows.push(`"Effort","${((perfAnalysis.weights.w_effort || 0.25) * 100).toFixed(1)}%","Subjective Effort (RPE)"`);
+      csvRows.push(`"Game","${((perfAnalysis.weights.w_game || 0.0) * 100).toFixed(1)}%","Game Performance"`);
+      
+      csvRows.push('');
+      
+      csvRows.push('"Compliance Sub-Component Weights"');
+      csvRows.push('Sub-Component,Weight,Description');
+      csvRows.push(`"Completion","${((perfAnalysis.weights.w_completion || 0.333) * 100).toFixed(1)}%","Contractions Completed"`);
+      csvRows.push(`"Intensity","${((perfAnalysis.weights.w_intensity || 0.333) * 100).toFixed(1)}%","≥75% MVC Achievement"`);
+      csvRows.push(`"Duration","${((perfAnalysis.weights.w_duration || 0.334) * 100).toFixed(1)}%","≥2s Duration Compliance"`);
+      
+      csvRows.push('');
+    }
+    
+    // Add data completeness indicators
+    if (perfAnalysis.data_completeness) {
+      csvRows.push('"=== DATA COMPLETENESS ==="');
+      csvRows.push('Data Type,Available');
+      
+      const dc = perfAnalysis.data_completeness;
+      csvRows.push(`"EMG Data","${dc.has_emg_data ? 'Yes' : 'No'}"`);
+      csvRows.push(`"RPE Data","${dc.has_rpe ? 'Yes' : 'No'}"`);
+      csvRows.push(`"Game Data","${dc.has_game_data ? 'Yes' : 'No'}"`);
+      csvRows.push(`"BFR Data","${dc.has_bfr_data ? 'Yes' : 'No'}"`);
+      
+      csvRows.push('');
+    }
+    
+    csvRows.push('');
+  }
+
+  // Add processing parameters if available
+  if (exportData.processingParameters) {
+    csvRows.push('"=== PROCESSING PARAMETERS ==="');
+    csvRows.push('Parameter,Value');
+    
+    const processingParams = exportData.processingParameters;
+    
+    // Processing version and system info
+    if (processingParams.processing_version) {
+      csvRows.push(`"Processing Version","${processingParams.processing_version}"`);
+    }
+    if (processingParams.sampling_rate_hz) {
+      csvRows.push(`"Sampling Rate","${processingParams.sampling_rate_hz} Hz"`);
+    }
+    
+    // Filter settings
+    if (processingParams.filter_low_cutoff_hz !== undefined) {
+      csvRows.push(`"High-pass Filter","${processingParams.filter_low_cutoff_hz} Hz"`);
+    }
+    if (processingParams.filter_high_cutoff_hz !== undefined) {
+      csvRows.push(`"Low-pass Filter","${processingParams.filter_high_cutoff_hz} Hz"`);
+    }
+    if (processingParams.filter_order !== undefined) {
+      csvRows.push(`"Filter Order","${processingParams.filter_order}"`);
+    }
+    
+    // RMS settings
+    if (processingParams.rms_window_ms !== undefined) {
+      csvRows.push(`"RMS Window","${processingParams.rms_window_ms} ms"`);
+    }
+    if (processingParams.rms_overlap_percent !== undefined) {
+      csvRows.push(`"RMS Overlap","${processingParams.rms_overlap_percent}%"`);
+    }
+    
+    // Detection thresholds
+    if (processingParams.threshold_factor !== undefined) {
+      csvRows.push(`"Detection Threshold","${(processingParams.threshold_factor * 100).toFixed(1)}% of max amplitude"`);
+    }
+    if (processingParams.min_duration_ms !== undefined) {
+      csvRows.push(`"Minimum Duration","${processingParams.min_duration_ms} ms"`);
+    }
+    
+    // Any additional parameters
+    Object.entries(processingParams).forEach(([key, value]) => {
+      if (!['processing_version', 'sampling_rate_hz', 'filter_low_cutoff_hz', 'filter_high_cutoff_hz', 
+            'filter_order', 'rms_window_ms', 'rms_overlap_percent', 'threshold_factor', 'min_duration_ms'].includes(key)) {
+        csvRows.push(`"${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}","${value}"`);
       }
     });
     

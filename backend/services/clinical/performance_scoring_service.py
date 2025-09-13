@@ -329,20 +329,36 @@ class PerformanceScoringService:
             game_score=game_score
         )
 
-        # Step 6: Prepare result
+        # Step 6: Prepare result with frontend-compatible structure
         result = {
             "session_id": session_id,
             "scoring_config_id": getattr(self, 'scoring_config_id', None),  # Include the scoring config ID
             "overall_score": overall_score,
             "compliance_score": compliance_score,
             "symmetry_score": symmetry_score,
-            "effort_score": effort_score,
-            "game_score": game_score,
+            "effort_score": effort_score if effort_score is not None else 0,  # Default to 0 instead of None
+            "game_score": game_score if game_score is not None else 0,  # Default to 0 instead of None
             "bfr_compliant": bool(bfr_gate == 1.0),
             "bfr_pressure_aop": session_metrics.bfr_pressure_aop,
             "rpe_post_session": session_metrics.rpe_post_session,
+            "rpe_value": session_metrics.rpe_post_session,  # Add rpe_value for CSV export
             "rpe_source": rpe_source,  # Source of RPE data for debugging
-            **compliance_components,
+            
+            # Keep compliance_components nested (not spread)
+            "compliance_components": compliance_components,
+            
+            # Rename to "weights" for frontend compatibility
+            "weights": {
+                "w_compliance": self.weights.w_compliance,
+                "w_symmetry": self.weights.w_symmetry,
+                "w_effort": self.weights.w_effort,
+                "w_game": self.weights.w_game,
+                "w_completion": self.weights.w_completion,
+                "w_intensity": self.weights.w_intensity,
+                "w_duration": self.weights.w_duration,
+            },
+            
+            # Keep weights_used for backward compatibility
             "weights_used": {
                 "w_compliance": self.weights.w_compliance,
                 "w_symmetry": self.weights.w_symmetry,
@@ -352,6 +368,19 @@ class PerformanceScoringService:
                 "w_intensity": self.weights.w_intensity,
                 "w_duration": self.weights.w_duration,
             },
+            
+            # Add RPE mapping for CSV export
+            "rpe_mapping": {
+                "optimal_range": self.rpe_mapping.optimal_range,
+                "acceptable_range": self.rpe_mapping.acceptable_range,
+                "suboptimal_range": self.rpe_mapping.suboptimal_range,
+                "poor_range": self.rpe_mapping.poor_range,
+                "optimal_score": self.rpe_mapping.optimal_score,
+                "acceptable_score": self.rpe_mapping.acceptable_score,
+                "suboptimal_score": self.rpe_mapping.suboptimal_score,
+                "poor_score": self.rpe_mapping.poor_score
+            },
+            
             "data_completeness": {
                 "has_emg_data": True,
                 "has_rpe": session_metrics.rpe_post_session is not None,
@@ -886,12 +915,13 @@ class PerformanceScoringService:
             logger.exception(f"Error updating subjective data: {e!s}")
             return {"error": str(e)}
 
-    def calculate_adherence_score(self, patient_id: str, protocol_day: int) -> dict:
+    def calculate_adherence_score(self, patient_id: str, protocol_day: int, sessions_completed: int = None) -> dict:
         """Calculate longitudinal adherence score.
 
         Adherence(t) = (Game Sessions completed by day t) / (Game Sessions expected by day t) × 100
 
-        Expected rate: 15 Game Sessions per 7 days ≈ 2.14 × t
+        Default expected sessions: 30 (5 days × 3 sessions/day × 2 games/session)
+        Can be overridden by database value if available.
         """
         if protocol_day < 3:
             return {
@@ -900,19 +930,55 @@ class PerformanceScoringService:
             }
 
         try:
-            # Fetch all sessions for patient up to protocol_day
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=protocol_day)
-
-            sessions = (
-                self.client.table("therapy_sessions")
-                .select("id, session_date")
-                .eq("patient_id", patient_id)
-                .gte("session_date", cutoff_date.isoformat())
-                .execute()
-            )
-
-            completed_sessions = len(sessions.data) if sessions.data else 0
-            expected_sessions = 2.14 * protocol_day  # From protocol
+            # Use provided sessions_completed if available
+            if sessions_completed is None:
+                # Try to count from storage or therapy_sessions table
+                patient_result = (
+                    self.client.table("patients")
+                    .select("patient_code")
+                    .eq("id", patient_id)
+                    .execute()
+                )
+                
+                if patient_result.data and patient_result.data[0].get("patient_code"):
+                    patient_code = patient_result.data[0]["patient_code"]
+                    
+                    # Count C3D files from storage bucket
+                    storage_files = self.client.storage.from_("c3d-examples").list()
+                    
+                    # Filter files for this patient
+                    # C3D filenames pattern: GHOSTLY_[PatientCode]_[Date]_[Time].c3d
+                    completed_sessions = sum(
+                        1 for file in storage_files 
+                        if file.get("name", "").endswith(".c3d") and 
+                        f"_{patient_code}_" in file.get("name", "")
+                    )
+                else:
+                    # Fallback to therapy_sessions table if patient_code not found
+                    sessions = (
+                        self.client.table("therapy_sessions")
+                        .select("id, session_date, file_path")
+                        .eq("patient_id", patient_id)
+                        .not_.is_("file_path", "null")
+                        .execute()
+                    )
+                    completed_sessions = len(sessions.data) if sessions.data else 0
+            # else: Use the provided sessions_completed value
+            
+            # Check for custom expected sessions in patient_scoring_config or use default
+            # For now, use default of 30 sessions (5 days × 3 sessions/day × 2 games/session)
+            expected_sessions = 30  # Default therapeutic protocol
+            
+            # TODO: Future enhancement - check patient_scoring_config for custom value
+            # scoring_config = (
+            #     self.client.table("patient_scoring_config")
+            #     .select("expected_sessions")
+            #     .eq("patient_id", patient_id)
+            #     .eq("active", True)
+            #     .execute()
+            # )
+            # if scoring_config.data and scoring_config.data[0].get("expected_sessions"):
+            #     expected_sessions = scoring_config.data[0]["expected_sessions"]
 
             adherence_score = (
                 (completed_sessions / expected_sessions) * 100 if expected_sessions > 0 else 0

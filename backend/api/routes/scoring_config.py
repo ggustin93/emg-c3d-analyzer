@@ -386,3 +386,65 @@ async def test_scoring_weights():
     except Exception as e:
         logger.exception(f"Failed to test scoring weights: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/adherence/{patient_code}")
+async def get_patient_adherence(patient_code: str, sessions_completed: int = None):
+    """Get adherence score for a patient by patient_code.
+    
+    Args:
+        patient_code: Patient identifier (e.g., P001)
+        sessions_completed: Optional number of completed sessions (C3D files).
+                          If not provided, will attempt to count from storage.
+    """
+    try:
+        from services.clinical.performance_scoring_service import PerformanceScoringService
+        
+        supabase = get_supabase_client(use_service_key=True)
+        
+        # Convert patient_code to patient_id (UUID)
+        patient_result = (
+            supabase.table("patients")
+            .select("id, created_at")
+            .eq("patient_code", patient_code)
+            .execute()
+        )
+        
+        if not patient_result.data:
+            raise HTTPException(status_code=404, detail=f"Patient not found: {patient_code}")
+        
+        patient_id = patient_result.data[0]["id"]
+        
+        # Calculate protocol day based on patient creation date
+        from datetime import datetime
+        created_at = patient_result.data[0]["created_at"]
+        # Handle various datetime formats from Supabase
+        if '+' in created_at and '.' in created_at:
+            # Fix microseconds if they have too many digits
+            parts = created_at.split('.')
+            microsec_and_tz = parts[1].split('+')
+            microsec = microsec_and_tz[0][:6].ljust(6, '0')  # Ensure exactly 6 digits
+            created_at = f"{parts[0]}.{microsec}+{microsec_and_tz[1]}"
+        
+        first_session = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+        current_date = datetime.now(first_session.tzinfo)
+        protocol_day = max(1, (current_date - first_session).days + 1)
+        
+        # Use provided sessions_completed or let service count them
+        service = PerformanceScoringService()
+        adherence_data = service.calculate_adherence_score(
+            patient_id, 
+            protocol_day,
+            sessions_completed=sessions_completed
+        )
+        
+        # Override patient_id with patient_code for frontend compatibility
+        adherence_data['patient_id'] = patient_code
+        
+        return adherence_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to calculate adherence for patient {patient_code}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

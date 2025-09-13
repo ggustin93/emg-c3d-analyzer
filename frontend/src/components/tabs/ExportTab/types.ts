@@ -86,6 +86,7 @@ export interface ExportData {
   analytics?: any;
   processedSignals?: any;
   performanceAnalysis?: any;
+  processingParameters?: any;  // NEW: Processing parameters from backend
   c3dParameters?: any;
 }
 
