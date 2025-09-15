@@ -405,7 +405,7 @@ async def get_patient_adherence(patient_code: str, sessions_completed: int = Non
         # Convert patient_code to patient_id (UUID)
         patient_result = (
             supabase.table("patients")
-            .select("id, created_at")
+            .select("id, created_at, treatment_start_date, total_sessions_planned")
             .eq("patient_code", patient_code)
             .execute()
         )
@@ -415,20 +415,41 @@ async def get_patient_adherence(patient_code: str, sessions_completed: int = Non
         
         patient_id = patient_result.data[0]["id"]
         
-        # Calculate protocol day based on patient creation date
-        from datetime import datetime
-        created_at = patient_result.data[0]["created_at"]
-        # Handle various datetime formats from Supabase
-        if '+' in created_at and '.' in created_at:
+        # Calculate protocol day based on treatment start date (production-ready with error handling)
+        from datetime import datetime, timezone
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Get treatment configuration with proper fallback
+        treatment_start_str = patient_result.data[0].get("treatment_start_date")
+        if not treatment_start_str:
+            logger.warning(f"No treatment_start_date for patient {patient_code}, using created_at as fallback")
+            treatment_start_str = patient_result.data[0]["created_at"]
+        
+        # Get total sessions planned (will be from patients table after migration)
+        total_sessions_planned = patient_result.data[0].get("total_sessions_planned", 30)
+        
+        # Handle various datetime formats from Supabase with timezone safety
+        if '+' in treatment_start_str and '.' in treatment_start_str:
             # Fix microseconds if they have too many digits
-            parts = created_at.split('.')
+            parts = treatment_start_str.split('.')
             microsec_and_tz = parts[1].split('+')
             microsec = microsec_and_tz[0][:6].ljust(6, '0')  # Ensure exactly 6 digits
-            created_at = f"{parts[0]}.{microsec}+{microsec_and_tz[1]}"
+            treatment_start_str = f"{parts[0]}.{microsec}+{microsec_and_tz[1]}"
         
-        first_session = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-        current_date = datetime.now(first_session.tzinfo)
-        protocol_day = max(1, (current_date - first_session).days + 1)
+        # Parse datetime and calculate protocol day
+        treatment_start = datetime.fromisoformat(treatment_start_str.replace('Z', '+00:00'))
+        current_date = datetime.now(timezone.utc)
+        days_since_start = (current_date - treatment_start).days + 1
+        
+        # Cap protocol_day at 14 for the GHOSTLY+ 14-day trial protocol
+        # After day 14, patients are considered to have completed the trial period
+        protocol_day = min(14, max(1, days_since_start))
+        
+        # Log if patient is beyond the trial period
+        if days_since_start > 14:
+            logger.info(f"Patient {patient_code} is beyond 14-day trial period (day {days_since_start}), using day 14 for adherence calculation")
         
         # Use provided sessions_completed or let service count them
         service = PerformanceScoringService()
@@ -440,6 +461,11 @@ async def get_patient_adherence(patient_code: str, sessions_completed: int = Non
         
         # Override patient_id with patient_code for frontend compatibility
         adherence_data['patient_id'] = patient_code
+        
+        # Add protocol day and trial information to response
+        adherence_data['protocol_day'] = protocol_day
+        adherence_data['trial_duration'] = 14  # 14-day trial period
+        adherence_data['total_sessions_planned'] = total_sessions_planned
         
         return adherence_data
 

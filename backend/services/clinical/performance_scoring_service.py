@@ -930,7 +930,7 @@ class PerformanceScoringService:
             }
 
         try:
-            # Use provided sessions_completed if available
+            # Use provided sessions_completed if available, otherwise count from database
             if sessions_completed is None:
                 # Try to count from storage or therapy_sessions table
                 patient_result = (
@@ -963,22 +963,15 @@ class PerformanceScoringService:
                         .execute()
                     )
                     completed_sessions = len(sessions.data) if sessions.data else 0
-            # else: Use the provided sessions_completed value
+            else:
+                # Use the provided sessions_completed value
+                completed_sessions = sessions_completed
             
-            # Check for custom expected sessions in patient_scoring_config or use default
-            # For now, use default of 30 sessions (5 days × 3 sessions/day × 2 games/session)
-            expected_sessions = 30  # Default therapeutic protocol
-            
-            # TODO: Future enhancement - check patient_scoring_config for custom value
-            # scoring_config = (
-            #     self.client.table("patient_scoring_config")
-            #     .select("expected_sessions")
-            #     .eq("patient_id", patient_id)
-            #     .eq("active", True)
-            #     .execute()
-            # )
-            # if scoring_config.data and scoring_config.data[0].get("expected_sessions"):
-            #     expected_sessions = scoring_config.data[0]["expected_sessions"]
+            # Calculate expected sessions using the specification formula
+            # Expected rate: 15 Game Sessions per 7 days ≈ 2.14 × protocol_day
+            # From metricsDefinitions.md: Expected rate: 15 Game Sessions per 7 days ≈ 2.14 × t
+            expected_sessions_per_day = 15.0 / 7.0  # ≈ 2.14 sessions per day
+            expected_sessions = expected_sessions_per_day * protocol_day
 
             adherence_score = (
                 (completed_sessions / expected_sessions) * 100 if expected_sessions > 0 else 0
