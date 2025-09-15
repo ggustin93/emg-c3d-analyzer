@@ -566,6 +566,7 @@ export function AppContent() {
                   therapistDisplay={selectedFileData?.therapistDisplay}
                   fileSize={selectedFileData?.fileSize}
                   clinicalNotesCount={selectedFileData?.clinicalNotesCount}
+                  userRole={userRole}
                 />
                 
                 {/* Show EMG analysis tabs when file is loaded */}

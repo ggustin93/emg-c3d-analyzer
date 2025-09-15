@@ -45,6 +45,7 @@ interface FileMetadataBarProps {
   fileSize?: number; // File size in bytes
   therapistDisplay?: string; // Therapist name from therapistCache
   clinicalNotesCount?: number; // Number of clinical notes
+  userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null; // User role for privacy controls
 }
 
 /**
@@ -58,7 +59,8 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({
   patientName,
   fileSize,
   therapistDisplay,
-  clinicalNotesCount 
+  clinicalNotesCount,
+  userRole
 }) => {
   const { source_filename, metadata, patient_id, file_id } = analysisResult;
   
@@ -182,8 +184,8 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({
             </div>
           )}
 
-          {/* Patient Name - Use prop from C3DFileBrowser */}
-          {patientName && (
+          {/* Patient Name - Use prop from C3DFileBrowser, only for ADMIN and THERAPIST */}
+          {(userRole === 'ADMIN' || userRole === 'THERAPIST') && patientName && (
             <div className="flex items-center gap-1.5">
               <PersonIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
               <span className="text-secondary-foreground font-medium">{patientName}</span>
