@@ -268,7 +268,7 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
                 placeholder="From"
                 value={dateFromFilter}
                 onChange={(e) => onFiltersChange({ dateFromFilter: e.target.value })}
-                className={`transition-all text-xs ${dateFromFilter ? 'ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
+                className={`transition-all text-xs focus-visible:ring-0 focus-visible:ring-offset-0 ${dateFromFilter ? 'ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
                 aria-label="Filter from date"
               />
               <Input
@@ -277,7 +277,7 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
                 placeholder="To"
                 value={dateToFilter}
                 onChange={(e) => onFiltersChange({ dateToFilter: e.target.value })}
-                className={`transition-all text-xs ${dateToFilter ? 'ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
+                className={`transition-all text-xs focus-visible:ring-0 focus-visible:ring-offset-0 ${dateToFilter ? 'ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
                 aria-label="Filter to date"
               />
             </div>
