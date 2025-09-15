@@ -377,8 +377,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       let matchesClinicalNotes = true;
       if (filters.clinicalNotesFilter !== 'all') {
         // Check if the current user (author) has any clinical notes for this file
-        const filePath = `c3d-examples/${file.name}`;
-        const userNotesCount = simpleNotes.notesCount[filePath] || 0;
+        // Apply same dual-path logic as C3DFileList.getNotesCount() for compatibility
+        const fullPath = `${BUCKET_NAME}/${file.name}`;  // Legacy format: "c3d-examples/file.c3d"
+        const dbPath = file.name;                         // Database format: "file.c3d"
+        const userNotesCount = simpleNotes.notesCount[dbPath] || simpleNotes.notesCount[fullPath] || 0;
         const hasUserNotes = userNotesCount > 0;
         
         if (filters.clinicalNotesFilter === 'with_notes') {
@@ -491,17 +493,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
   };
 
-  // Calculate active filter count for badge display
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (filters.searchTerm) count++;
-    if (filters.patientIdFilter && filters.patientIdFilter !== 'all') count++;
-    if (filters.therapistIdFilter && filters.therapistIdFilter !== 'all') count++;
-    if (filters.dateFromFilter || filters.dateToFilter) count++;
-    if (filters.timeFromFilter || filters.timeToFilter) count++;
-    if (filters.sizeFilter && filters.sizeFilter !== 'all') count++;
-    return count;
-  }, [filters]);
 
   // Get unique therapist names for filter dropdown (using useMemo for performance)
   const uniqueTherapistNames = useMemo(() => {
