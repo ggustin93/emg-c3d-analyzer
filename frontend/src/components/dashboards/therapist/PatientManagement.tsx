@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
+import C3DSessionsService from '../../../services/c3dSessionsService'
 import {
   Table,
   TableBody,
@@ -12,24 +13,24 @@ import {
 } from '../../ui/table'
 import { Avatar, AvatarFallback } from '../../ui/avatar'
 import { Badge } from '../../ui/badge'
+import { Progress } from '../../ui/progress'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../ui/dropdown-menu'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '../../ui/popover'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../ui/tooltip'
 import { Checkbox } from '../../ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import Spinner from '../../ui/Spinner'
 import { 
-  DotsHorizontalIcon as MoreHorizontal, 
   PersonIcon, 
   CalendarIcon as Calendar, 
   FileIcon as File, 
@@ -39,11 +40,14 @@ import {
   ChevronUpIcon as SortAsc,
   EyeOpenIcon as Eye,
   EyeClosedIcon as EyeOff,
-  ViewGridIcon as Columns3
+  ViewGridIcon as Columns3,
+  InfoCircledIcon
 } from '@radix-ui/react-icons'
 import { Patient, PatientManagementProps } from './types'
+import { useAdherence } from '../../../hooks/useAdherence'
+import { getAdherenceThreshold, AdherenceData } from '../../../services/adherenceService'
 
-type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active'
+type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend'
 type SortDirection = 'asc' | 'desc'
 
 interface FilterState {
@@ -55,9 +59,12 @@ interface ColumnVisibility {
   patient_id: boolean
   name: boolean
   age: boolean
+  treatment_start: boolean
   sessions: boolean
   last_session: boolean
   adherence: boolean
+  protocol_day: boolean
+  progress_trend: boolean
   status: boolean
 }
 
@@ -67,21 +74,24 @@ interface ColumnVisibility {
  * Follows KISS principles with inline avatar and simple state management
  */
 
-// Fetch therapist's patients with session data and medical info
+// Fetch therapist's patients with C3D-based session data and medical info
+// Uses actual C3D files for accurate session counts (matches C3DFileBrowser data)
 async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
   
+  // Get basic patient info from database
   const { data, error } = await supabase
     .from('patients')
     .select(`
       patient_code,
       created_at,
+      treatment_start_date,
+      total_sessions_planned,
       active,
       patient_medical_info (
         first_name,
         last_name,
         date_of_birth
-      ),
-      therapy_sessions (processed_at)
+      )
     `)
     .eq('therapist_id', therapistId)
 
@@ -90,17 +100,39 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
     throw error
   }
 
-  // Transform data to include session count, last session, and medical info
+  if (!data || data.length === 0) {
+    return []
+  }
+
+  // Get patient codes for C3D session data lookup
+  const patientCodes = data.map((patient: any) => patient.patient_code)
+  
+  // Get accurate session data from C3D files (matches PatientSessionBrowser logic)
+  let sessionDataMap = new Map<string, { session_count: number; last_session: string | null }>()
+  
+  try {
+    const patientSessionData = await C3DSessionsService.getPatientSessionData(patientCodes)
+    
+    // Create map of patient session data
+    patientSessionData.forEach(sessionData => {
+      sessionDataMap.set(sessionData.patient_code, {
+        session_count: sessionData.session_count,
+        last_session: sessionData.last_session
+      })
+    })
+    
+    console.log('C3D session data loaded for patients:', sessionDataMap)
+  } catch (error) {
+    console.error('Error fetching C3D session data:', error)
+    // Continue with zero sessions if C3D service fails
+  }
+
+  // Transform data to include C3D-based session counts and medical info
   const patientsWithSessions = data?.map((patient: any) => {
-    const sessions = patient.therapy_sessions || []
-    const sessionCount = sessions.length
-    const lastSession = sessions.length > 0 
-      ? sessions
-          .map((session: any) => session.processed_at)
-          .filter(Boolean)
-          .sort()
-          .pop()
-      : null
+    // Get accurate session data from C3D files
+    const sessionData = sessionDataMap.get(patient.patient_code)
+    const sessionCount = sessionData?.session_count || 0
+    const lastSession = sessionData?.last_session || null
 
     // Handle medical info - it might be an array or single object
     const medical = Array.isArray(patient.patient_medical_info) 
@@ -121,6 +153,9 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
       first_name: medical?.first_name || null,
       last_name: medical?.last_name || null,
       age: age,
+      // Treatment configuration
+      treatment_start_date: patient.treatment_start_date || patient.created_at,
+      total_sessions_planned: patient.total_sessions_planned || 30,
       // UI helpers
       display_name: medical?.first_name && medical?.last_name 
         ? `${medical.first_name} ${medical.last_name}`
@@ -183,7 +218,7 @@ function getPatientInitials(patientCode: string): string {
   return `P${number}`
 }
 
-// Format date for display
+// Format date for display with European/French format (DD/MM/YYYY)
 function formatLastSession(dateString: string | null): string {
   if (!dateString) return 'Never'
   
@@ -192,11 +227,16 @@ function formatLastSession(dateString: string | null): string {
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
   
   if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
+  if (diffDays === 1) return 'Yesterday'  
   if (diffDays < 7) return `${diffDays} days ago`
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
   
-  return date.toLocaleDateString()
+  // Use European date format (DD/MM/YY)
+  return date.toLocaleDateString('en-GB', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: '2-digit' 
+  })
 }
 
 // Session count badge variant based on count
@@ -279,15 +319,23 @@ function ErrorPatientState({ error }: { error: Error }) {
   )
 }
 
-// Individual patient row component
-function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColumns: ColumnVisibility }) {
+// Individual patient row component with adherence data
+interface PatientRowProps {
+  patient: Patient
+  visibleColumns: ColumnVisibility
+  adherence?: AdherenceData
+}
+
+function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
   const navigate = useNavigate()
   const avatarColor = getAvatarColor(patient)
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
   const lastSessionText = formatLastSession(patient.last_session)
   
-  // Get status badge variant based on active boolean
-  const statusBadgeVariant = patient.active ? 'default' : 'secondary'
+  // Get subtle status badge styling - more muted appearance
+  const statusBadgeClass = patient.active 
+    ? 'bg-gray-50 text-gray-600 border-gray-200' 
+    : 'bg-gray-100 text-gray-500 border-gray-300'
   const statusText = patient.active ? 'Active' : 'Inactive'
 
   return (
@@ -329,12 +377,35 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
         </TableCell>
       )}
 
-      {/* Session Count */}
+      {/* Treatment Start Date */}
+      {visibleColumns.treatment_start && (
+        <TableCell>
+          <div className="text-sm text-muted-foreground">
+            {patient.treatment_start_date 
+              ? new Date(patient.treatment_start_date).toLocaleDateString('en-GB', { 
+                  day: '2-digit', 
+                  month: '2-digit', 
+                  year: '2-digit' 
+                })
+              : '-'}
+          </div>
+        </TableCell>
+      )}
+
+      {/* Session Count with Total Planned */}
       {visibleColumns.sessions && (
         <TableCell>
-          <Badge variant={sessionBadgeVariant} className="font-mono">
-            {patient.session_count}
-          </Badge>
+          <div className="space-y-1">
+            <div className="text-sm">
+              <span className="font-medium">{patient.session_count}</span>
+              <span className="text-muted-foreground"> of {patient.total_sessions_planned} sessions</span>
+            </div>
+            <Progress 
+              value={(patient.session_count / patient.total_sessions_planned) * 100} 
+              className="h-2 w-full max-w-[120px]"
+              indicatorClassName="bg-blue-500"
+            />
+          </div>
         </TableCell>
       )}
 
@@ -348,59 +419,133 @@ function PatientRow({ patient, visibleColumns }: { patient: Patient; visibleColu
         </TableCell>
       )}
 
-      {/* Adherence Level */}
+      {/* Adherence Score with Clinical Thresholds */}
       {visibleColumns.adherence && (
         <TableCell className="hidden lg:table-cell text-center">
-          {patient.adherence_level ? (
-            <Badge 
-              variant={
-                patient.adherence_level === 'high' ? 'default' : 
-                patient.adherence_level === 'moderate' ? 'secondary' : 
-                'outline'
-              }
-              className="capitalize"
-            >
-              {patient.adherence_level}
-            </Badge>
+          {adherence?.adherence_score !== null && adherence?.adherence_score !== undefined ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant={
+                      adherence.clinical_threshold === 'Excellent' ? 'default' : 
+                      adherence.clinical_threshold === 'Good' ? 'secondary' : 
+                      adherence.clinical_threshold === 'Moderate' ? 'outline' :
+                      'destructive'
+                    }
+                    className={
+                      adherence.adherence_score >= 85 ? 'bg-green-100 text-green-800 border-green-200 cursor-help' : 
+                      adherence.adherence_score >= 70 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 cursor-help' : 
+                      adherence.adherence_score >= 50 ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-help' :
+                      'bg-red-100 text-red-800 border-red-200 cursor-help'
+                    }
+                  >
+                    {Math.round(adherence.adherence_score)}%
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-sm">
+                    <p className="font-semibold">{adherence.clinical_threshold}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {adherence.sessions_completed} of {adherence.sessions_expected} sessions completed
+                    </p>
+                    {adherence.clinical_threshold === 'Excellent' && (
+                      <p className="text-xs mt-1">Patient is following protocol consistently</p>
+                    )}
+                    {adherence.clinical_threshold === 'Good' && (
+                      <p className="text-xs mt-1">Minor gaps in therapy schedule</p>
+                    )}
+                    {adherence.clinical_threshold === 'Moderate' && (
+                      <p className="text-xs mt-1">Consider reaching out to patient</p>
+                    )}
+                    {adherence.clinical_threshold === 'Poor' && (
+                      <p className="text-xs mt-1">Intervention recommended</p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           ) : (
             <span className="text-xs text-muted-foreground">No Data</span>
           )}
         </TableCell>
       )}
 
+      {/* Trial Progress */}
+      {visibleColumns.protocol_day && (
+        <TableCell className="hidden lg:table-cell text-center">
+          {adherence?.protocol_day ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm cursor-help">
+                    {adherence.protocol_day >= (adherence.trial_duration || 14) ? (
+                      <div className="flex items-center gap-1 justify-center">
+                        <span className="font-medium">
+                          Day {Math.min(adherence.protocol_day, adherence.trial_duration || 14)}/{adherence.trial_duration || 14}
+                        </span>
+                        <span className="text-green-600">✓</span>
+                      </div>
+                    ) : (
+                      <span className="font-medium">
+                        Day {adherence.protocol_day}/{adherence.trial_duration || 14}
+                      </span>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-sm">
+                    <p className="font-semibold">Treatment Protocol Progress</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {adherence.protocol_day >= (adherence.trial_duration || 14) 
+                        ? `Trial completed (Day ${adherence.protocol_day})`
+                        : `Day ${adherence.protocol_day} of ${adherence.trial_duration || 14}-day trial`}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Expected: {Math.round((adherence.total_sessions_planned || 30) / 14 * Math.min(adherence.protocol_day, adherence.trial_duration || 14))} sessions
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Completed: {adherence.sessions_completed} sessions
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <span className="text-xs text-muted-foreground">--</span>
+          )}
+        </TableCell>
+      )}
+
+      {/* Performance Score - Placeholder for Future Implementation */}
+      {visibleColumns.progress_trend && (
+        <TableCell className="hidden lg:table-cell text-center">
+          <span className="text-muted-foreground">—</span>
+        </TableCell>
+      )}
+
       {/* Patient Status */}
       {visibleColumns.status && (
         <TableCell className="hidden lg:table-cell text-center">
-          <Badge variant={statusBadgeVariant}>
+          <Badge variant="outline" className={statusBadgeClass}>
             {statusText}
           </Badge>
         </TableCell>
       )}
 
       {/* Actions */}
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu for {patient.display_name}</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/patients/${patient.patient_code}`)
-            }}>
-              View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-              Edit Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-              Session History
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <TableCell className="text-center">
+        <Button 
+          variant="default" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/patients/${patient.patient_code}`)
+          }}
+        >
+          <PersonIcon className="h-4 w-4 mr-1" />
+          View
+        </Button>
       </TableCell>
     </TableRow>
   )
@@ -412,6 +557,15 @@ export function PatientManagement({ className }: PatientManagementProps) {
   const [patients, setPatients] = useState<Patient[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  
+  // Get patient IDs and session counts for optimized adherence fetching
+  const patientCodes = patients.map(p => p.patient_code)
+  const sessionCountsMap = new Map(patients.map(p => [p.patient_code, p.session_count]))
+  const { adherenceData, loading: adherenceLoading } = useAdherence(
+    patientCodes, 
+    patientCodes.length > 0,
+    sessionCountsMap
+  )
   
   // Filter and sort states
   const [filters, setFilters] = useState<FilterState>({
@@ -426,13 +580,16 @@ export function PatientManagement({ className }: PatientManagementProps) {
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
     const saved = localStorage.getItem('patient-management-visible-columns')
     return saved ? JSON.parse(saved) : {
-      patient_id: true,
+      patient_id: false,  // Hidden - technical ID
       name: true,
       age: true,
+      treatment_start: false,  // Hidden - not needed daily
       sessions: true,
-      last_session: true,
+      last_session: false,  // Hidden - secondary info
       adherence: true,
-      status: true
+      protocol_day: true,
+      progress_trend: false,  // Hidden - not functional yet
+      status: false  // Hidden - less critical for daily workflow
     }
   })
 
@@ -496,6 +653,25 @@ export function PatientManagement({ className }: PatientManagementProps) {
           aValue = a.active ? 1 : 0  // Convert boolean to number for sorting
           bValue = b.active ? 1 : 0
           break
+        case 'adherence_score':
+          // Get adherence data for each patient
+          const aAdherence = adherenceData.find(ad => ad.patient_id === a.patient_code)
+          const bAdherence = adherenceData.find(ad => ad.patient_id === b.patient_code)
+          aValue = aAdherence?.adherence_score ?? -1  // Put null values at the end
+          bValue = bAdherence?.adherence_score ?? -1
+          break
+        case 'protocol_day':
+          // Get protocol day for each patient
+          const aProtocol = adherenceData.find(ad => ad.patient_id === a.patient_code)
+          const bProtocol = adherenceData.find(ad => ad.patient_id === b.patient_code)
+          aValue = aProtocol?.protocol_day ?? -1  // Put null values at the end
+          bValue = bProtocol?.protocol_day ?? -1
+          break
+        case 'progress_trend':
+          // For now, all have the same value (placeholder), so maintain existing order
+          aValue = 0
+          bValue = 0
+          break
         default:
           aValue = a.last_session ? new Date(a.last_session).getTime() : 0
           bValue = b.last_session ? new Date(b.last_session).getTime() : 0
@@ -511,7 +687,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
     })
 
     return filtered
-  }, [patients, filters, sortField, sortDirection])
+  }, [patients, filters, sortField, sortDirection, adherenceData])
 
   // Sort handler
   const handleSort = (field: SortField) => {
@@ -604,6 +780,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
                           sessions: 'Sessions', 
                           last_session: 'Last Session',
                           adherence: 'Adherence',
+                          protocol_day: 'Trial Day',
+                          progress_trend: 'Performance Score',
                           status: 'Status'
                         }).map(([key, label]) => (
                           <div key={key} className="flex items-center space-x-2">
@@ -721,9 +899,12 @@ export function PatientManagement({ className }: PatientManagementProps) {
                         patient_id: 'Patient ID',
                         name: 'Name',
                         age: 'Age',
-                        sessions: 'Sessions', 
-                        last_session: 'Last Session',
-                        adherence: 'Adherence',
+                        treatment_start: 'Treatment Start',
+                        sessions: 'Sessions Completed', 
+                        last_session: 'Last Activity',
+                        adherence: 'Adherence Score',
+                        protocol_day: 'Trial Day',
+                        progress_trend: 'Performance Trend',
                         status: 'Status'
                       }).map(([key, label]) => (
                         <div key={key} className="flex items-center space-x-2">
@@ -783,10 +964,10 @@ export function PatientManagement({ className }: PatientManagementProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Avatar</TableHead>
+                  <TableHead className="w-12"></TableHead>
                   
                   {visibleColumns.patient_id && (
-                    <TableHead className="w-32">
+                    <TableHead className="w-24">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -802,7 +983,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   )}
                   
                   {visibleColumns.name && (
-                    <TableHead>
+                    <TableHead className="min-w-[100px]">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -818,7 +999,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   )}
                   
                   {visibleColumns.age && (
-                    <TableHead className="w-16 text-center">
+                    <TableHead className="w-14 text-center">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -833,15 +1014,31 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     </TableHead>
                   )}
                   
+                  {visibleColumns.treatment_start && (
+                    <TableHead className="w-28">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 data-[state=open]:bg-accent"
+                        onClick={() => handleSort('treatment_start_date')}
+                      >
+                        Treatment Start
+                        {sortField === 'treatment_start_date' && (
+                          sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableHead>
+                  )}
+                  
                   {visibleColumns.sessions && (
-                    <TableHead className="w-24">
+                    <TableHead className="min-w-[150px]">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 data-[state=open]:bg-accent"
                         onClick={() => handleSort('session_count')}
                       >
-                        Sessions
+                        Sessions Completed
                         {sortField === 'session_count' && (
                           sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
@@ -850,7 +1047,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   )}
                   
                   {visibleColumns.last_session && (
-                    <TableHead className="hidden md:table-cell w-40">
+                    <TableHead className="hidden md:table-cell w-32">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -866,7 +1063,139 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   )}
                   
                   {visibleColumns.adherence && (
-                    <TableHead className="hidden lg:table-cell w-28 text-center">Adherence</TableHead>
+                    <TableHead className="hidden lg:table-cell w-28 text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 data-[state=open]:bg-accent"
+                              onClick={() => handleSort('adherence_score')}
+                            >
+                              <div className="inline-flex items-center gap-1">
+                                <span>Adherence Score</span>
+                                <InfoCircledIcon className="h-3 w-3 text-muted-foreground" />
+                                {sortField === 'adherence_score' && (
+                                  sortDirection === 'asc' ? <SortAsc className="ml-1 h-4 w-4" /> : <ChevronDownIcon className="ml-1 h-4 w-4" />
+                                )}
+                              </div>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-2">
+                              <p className="font-semibold">Longitudinal Adherence ("How often?")</p>
+                              <p className="text-sm">
+                                Measures protocol consistency: actual vs expected therapy sessions completed.
+                                Target: 5 therapy sessions/week (15 game sessions/week).
+                              </p>
+                              <div className="text-xs space-y-1 border-t pt-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-green-100 text-green-800 border-green-200">≥85%</Badge>
+                                  <span>Excellent - Meeting frequency</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">70-84%</Badge>
+                                  <span>Good - Adequate with minor gaps</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">50-69%</Badge>
+                                  <span>Moderate - Suboptimal, consider intervention</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-red-100 text-red-800 border-red-200">&lt;50%</Badge>
+                                  <span>Poor - Significant concern, support needed</span>
+                                </div>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
+                  )}
+                  
+                  {visibleColumns.protocol_day && (
+                    <TableHead className="hidden lg:table-cell w-24 text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 data-[state=open]:bg-accent"
+                              onClick={() => handleSort('protocol_day')}
+                            >
+                              <div className="inline-flex items-center gap-1">
+                                <span>Trial Day</span>
+                                <InfoCircledIcon className="h-3 w-3 text-muted-foreground" />
+                                {sortField === 'protocol_day' && (
+                                  sortDirection === 'asc' ? <SortAsc className="ml-1 h-4 w-4" /> : <ChevronDownIcon className="ml-1 h-4 w-4" />
+                                )}
+                              </div>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-2">
+                              <p className="font-semibold">Current Protocol Day</p>
+                              <p className="text-sm">
+                                Progress through the 14-day GHOSTLY+ clinical trial protocol.
+                                Adherence calculation begins from day 3 for measurement stability.
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
+                  )}
+                  
+                  {visibleColumns.progress_trend && (
+                    <TableHead className="hidden lg:table-cell w-24 text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 data-[state=open]:bg-accent"
+                              onClick={() => handleSort('progress_trend')}
+                            >
+                              <div className="inline-flex items-center gap-1">
+                                <span>Performance Trend</span>
+                                <InfoCircledIcon className="h-3 w-3 text-muted-foreground" />
+                                {sortField === 'progress_trend' && (
+                                  sortDirection === 'asc' ? <SortAsc className="ml-1 h-4 w-4" /> : <ChevronDownIcon className="ml-1 h-4 w-4" />
+                                )}
+                              </div>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-2">
+                              <p className="font-semibold">Performance Trend</p>
+                              <p className="text-sm">
+                                Trend analysis of the Overall Performance Score across the last 6 game sessions.
+                              </p>
+                              <div className="text-xs space-y-1 border-t pt-2 mt-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Increasing:</span>
+                                  <span>Performance improving over time</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Steady:</span>
+                                  <span>Consistent performance maintained</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Decreasing:</span>
+                                  <span>Performance declining, may need intervention</span>
+                                </div>
+                              </div>
+                              <div className="text-xs text-blue-600 mt-2 italic">
+                                Coming soon - based on recent session analysis.
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
                   )}
                   
                   {visibleColumns.status && (
@@ -885,13 +1214,21 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     </TableHead>
                   )}
                   
-                  <TableHead className="w-12">Actions</TableHead>
+                  <TableHead className="w-24 text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedPatients.map((patient) => (
-                  <PatientRow key={patient.patient_code} patient={patient} visibleColumns={visibleColumns} />
-                ))}
+                {filteredAndSortedPatients.map((patient) => {
+                  const patientAdherence = adherenceData.find(a => a.patient_id === patient.patient_code)
+                  return (
+                    <PatientRow 
+                      key={patient.patient_code} 
+                      patient={patient} 
+                      visibleColumns={visibleColumns}
+                      adherence={patientAdherence}
+                    />
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -899,4 +1236,4 @@ export function PatientManagement({ className }: PatientManagementProps) {
       </Card>
     </div>
   )
-}
+} 

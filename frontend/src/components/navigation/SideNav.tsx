@@ -110,12 +110,12 @@ export function SideNav({
       className
     )}>
       {/* Logo Section - Balanced spacing */}
-      <div className="p-5 pb-4">
+      <div className="p-1">
         <div className="flex items-center justify-center">
           <img 
             src="/ghostly_logo.png" 
             alt="Ghostly+ Logo" 
-            className="h-28 w-28 object-contain"
+            className="h-40 w-40 object-contain"
           />
         </div>
       </div>

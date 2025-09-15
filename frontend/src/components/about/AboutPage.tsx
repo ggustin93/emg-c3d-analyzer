@@ -341,7 +341,7 @@ export const AboutPage: React.FC = () => {
             >
               <AccordionTrigger className="px-6 py-4 hover:bg-gray-50">
                 <span className="flex items-center gap-3 text-left font-semibold text-gray-900">
-                  {iconMap[section.id] || <MixIcon className="w-4 h-4 text-blue-600" />}
+                  {iconMap[section.id] || <ComponentInstanceIcon className="w-4 h-4 text-blue-600" />}
                   {section.title}
                 </span>
               </AccordionTrigger>

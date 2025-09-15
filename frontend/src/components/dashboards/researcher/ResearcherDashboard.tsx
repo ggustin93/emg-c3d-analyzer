@@ -4,6 +4,7 @@ import C3DSourceSelector from '../../c3d/C3DSourceSelector'
 import { useSessionStore } from '../../../store/sessionStore'
 import { SideNav } from '../../navigation/SideNav'
 import { Card, CardContent } from '../../ui/card'
+import { AboutPage } from '../../about/AboutPage'
 import { 
   ArchiveIcon,
   BarChartIcon,
@@ -124,62 +125,7 @@ export function ResearcherDashboard({
         )
       
       case 'about':
-        return (
-          <div className="h-full overflow-auto">
-            <div className="max-w-4xl mx-auto p-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">About Ghostly+ EMG Analysis Platform</h1>
-                <p className="text-lg text-gray-600">
-                  Advanced rehabilitation technology for evidence-based therapy assessment
-                </p>
-              </div>
-              
-              <div className="space-y-8">
-                {/* Research Information Section */}
-                <section className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Research Protocol</h2>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-600">
-                      {/* Content to be added later */}
-                      Research protocol and methodology information will be displayed here.
-                    </p>
-                  </div>
-                </section>
-                
-                {/* Data Analysis Section */}
-                <section className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Data Analysis Guidelines</h2>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-600">
-                      {/* Content to be added later */}
-                      Guidelines for EMG data analysis and interpretation.
-                    </p>
-                  </div>
-                </section>
-                
-                {/* Institution Section */}
-                <section className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Institution</h2>
-                  <div className="prose prose-gray max-w-none">
-                    <div className="flex items-center gap-4 mb-4">
-                      <img 
-                        src="/vub_etro_logo.png" 
-                        alt="VUB ETRO Logo" 
-                        className="h-20 object-contain"
-                      />
-                    </div>
-                    <p className="text-gray-600 mb-2">
-                      <strong>ETRO - Electronics and Informatics</strong>
-                    </p>
-                    <p className="text-gray-600">
-                      Vrije Universiteit Brussel (VUB)
-                    </p>
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
-        )
+        return <AboutPage />
       
       default:
         return null
