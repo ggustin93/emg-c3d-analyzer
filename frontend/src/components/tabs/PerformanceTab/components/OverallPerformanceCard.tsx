@@ -189,22 +189,21 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   </div>
                   
                   {/* Component breakdown with calculations */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {contributionData.map((c) => (
                       <div key={`row-${c.key}`} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className={cn('inline-block w-3 h-3 rounded', c.color)} />
-                          <span className="font-medium text-slate-700">{c.label}</span>
-                          <span className="text-slate-400">({c.key})</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className={cn('inline-block w-3 h-3 rounded flex-shrink-0', c.color)} />
+                          <span className="font-medium text-slate-700 truncate">{c.label}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-600">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-slate-600 min-w-[2.5rem] text-right">
                             {formatPercentage(c.rawScore ?? 0)}
                           </span>
                           <span className="text-slate-400">×</span>
-                          <span className="text-slate-600">{formatPercentage(c.weight * 100)}</span>
+                          <span className="text-slate-600 min-w-[2rem] text-right">{formatPercentage(c.weight * 100)}</span>
                           <span className="text-slate-400">=</span>
-                          <span className="font-semibold text-slate-800 min-w-[3rem] text-right">
+                          <span className="font-semibold text-slate-800 min-w-[2.5rem] text-right">
                             +{formatPercentage((c.rawScore ?? 0)*c.weight)}
                           </span>
                         </div>
@@ -213,13 +212,26 @@ const OverallPerformanceCard: React.FC<OverallPerformanceCardProps> = ({
                   </div>
                   
                   {/* Summary section */}
-                  <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                  <div className="pt-3 border-t border-slate-200/80 space-y-3">
                     <div className="flex justify-between items-center text-sm">
                       <span className="font-medium text-slate-700">Total Score:</span>
                       <span className="font-bold text-slate-800">{formatPercentage(totalScore)}</span>
                     </div>
-                    <div className="text-center text-xs text-slate-500">
-                      Key Factor: <span className="font-semibold text-slate-800">{strongestDriver}</span>
+                    <div className="bg-slate-100/80 rounded-md px-3 py-2">
+                      <div className="flex items-center justify-center gap-2 text-xs">
+                        <span className="text-slate-600">Primary Driver:</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className={cn(
+                            'w-2 h-2 rounded-full',
+                            strongestDriver === 'compliance' ? 'bg-emerald-600' :
+                            strongestDriver === 'symmetry' ? 'bg-cyan-600' :
+                            strongestDriver === 'effort' ? 'bg-amber-600' :
+                            strongestDriver === 'game' ? 'bg-slate-600' :
+                            'bg-slate-400'
+                          )} />
+                          <span className="font-semibold text-slate-800 capitalize">{strongestDriver}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

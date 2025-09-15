@@ -105,7 +105,7 @@ export function ResearcherDashboard({
               </div>
 
               {/* Organized Content with Accordions */}
-              <Accordion type="multiple" defaultValue={["data-management", "advanced-analytics"]} className="w-full">
+              <Accordion type="multiple" className="w-full">
                 
                 {/* Data Management & CSV Tools */}
                 <AccordionItem value="data-management" className="border rounded-lg mb-4 px-6">
