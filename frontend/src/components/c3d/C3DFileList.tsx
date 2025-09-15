@@ -28,7 +28,6 @@ import {
   C3DFile,
   resolvePatientId,
   resolveTherapistId,
-  resolveTherapistName,
   resolveSessionDate,
   formatSessionDateTime,
   getPatientIdBadgeProps,
@@ -39,6 +38,7 @@ import {
   isShortSession
 } from '@/services/C3DFileDataResolver';
 import { TherapistCache } from '@/types/therapist';
+import { therapistService } from '@/services/therapistService';
 
 // Get bucket name from environment variable or use default (consistent with C3DFileBrowser)
 const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
@@ -65,8 +65,7 @@ interface C3DFileListProps {
   onSort: (field: SortField) => void;
   visibleColumns: ColumnVisibility;
   resolveSessionDate?: (file: C3DFile) => string | null;
-  therapistData?: TherapistCache;
-  therapistCache?: Record<string, any>; // New prop for patient-based therapist resolution
+  therapistCache?: Record<string, any>; // Therapist display cache indexed by file name
   userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null; // New prop for role-based visibility
   // Clinical Notes props
   notesIndicators?: Record<string, number>;
@@ -83,8 +82,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   onSort,
   visibleColumns,
   resolveSessionDate: customResolveSessionDate,
-  therapistData = {},
-  therapistCache = {}, // New prop
+  therapistCache = {}, // Therapist display cache
   userRole: propUserRole, // Accept userRole from props
   // Clinical Notes props
   notesIndicators = {},
@@ -136,17 +134,10 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     return patientCode;
   }, [userRole]);
   
-  // Helper function to get therapist display using therapistCache
+  // Helper function to get therapist display using centralized service
   const getTherapistDisplay = useCallback((file: C3DFile): string => {
-    // First try the new therapistCache which is indexed by file name
-    const therapist = therapistCache[file.name];
-    if (therapist && therapist.display_name) {
-      return therapist.display_name;
-    }
-    
-    // Fallback to the old method using therapistData
-    return resolveTherapistName(file, therapistData);
-  }, [therapistCache, therapistData]);
+    return therapistService.getDisplayFromFileCache(file.name, therapistCache);
+  }, [therapistCache]);
   
   // Column resize states
   const [filenameColumnWidth, setFilenameColumnWidth] = useState(() => {

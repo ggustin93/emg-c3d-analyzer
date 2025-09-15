@@ -238,6 +238,18 @@ class TherapistService {
   }
 
   /**
+   * Get therapist display name from file-indexed cache
+   * Centralized helper to replace duplicate implementations
+   */
+  getDisplayFromFileCache(fileName: string, cache: Record<string, any>): string {
+    const therapist = cache[fileName];
+    if (therapist && therapist.display_name) {
+      return therapist.display_name;
+    }
+    return this.getUnknownTherapistDisplay();
+  }
+
+  /**
    * Fallback display for unknown therapist
    */
   getUnknownTherapistDisplay(therapistId?: string | null): string {

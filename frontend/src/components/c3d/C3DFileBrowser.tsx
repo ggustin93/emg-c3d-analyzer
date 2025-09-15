@@ -78,8 +78,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Session data state
   const [sessionData, setSessionData] = useState<Record<string, TherapySession>>({});
   
-  // Therapist data state
-  const [therapistData, setTherapistData] = useState<TherapistCache>({});
+  // Therapist data state (unified approach)
   const [therapistCache, setTherapistCache] = useState<Record<string, any>>({});
   
   // Filter states
@@ -179,20 +178,10 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         });
         
         setTherapistCache(cache);
-        
-        // Also maintain backward compatibility with therapistData
-        const therapistDataById: TherapistCache = {};
-        Object.values(therapists).forEach((therapist: any) => {
-          if (therapist.id) {
-            therapistDataById[therapist.id] = therapist;
-          }
-        });
-        setTherapistData(therapistDataById);
       }
     } catch (error) {
       logger.warn(LogCategory.API, 'Failed to load therapist data:', error);
       // Not critical - continue without therapist data
-      setTherapistData({});
       setTherapistCache({});
     }
   }, []);
@@ -334,12 +323,17 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     loadFiles();
   }, [loading, user]); // Depend on auth state changes
 
+  // Helper function to get therapist display using centralized service
+  const getTherapistDisplay = useCallback((file: C3DFile): string => {
+    return therapistService.getDisplayFromFileCache(file.name, therapistCache);
+  }, [therapistCache]);
+
   // Filtered files
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
       const matchesSearch = file.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
       const resolvedPatient = resolvePatientId(file);
-      const resolvedTherapistName = resolveTherapistName(file, therapistData);
+      const resolvedTherapistName = getTherapistDisplay(file);
       const matchesPatientId = filters.patientIdFilter === 'all' || 
         resolvedPatient.toLowerCase().includes(filters.patientIdFilter.toLowerCase());
       const matchesTherapistId = filters.therapistIdFilter === 'all' || 
@@ -396,7 +390,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
       return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesTimeRange && matchesSize && matchesClinicalNotes;
     });
-  }, [files, filters, resolveEnhancedSessionDate, therapistData, simpleNotes.notesCount]);
+  }, [files, filters, resolveEnhancedSessionDate, getTherapistDisplay, simpleNotes.notesCount]);
 
   // Sorted files (apply sorting to ALL filtered results)
   const sortedFiles = useMemo(() => {
@@ -409,8 +403,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         aValue = resolvePatientId(a);
         bValue = resolvePatientId(b);
       } else if (sortField === 'therapist_id') {
-        aValue = resolveTherapistName(a, therapistData);
-        bValue = resolveTherapistName(b, therapistData);
+        aValue = getTherapistDisplay(a);
+        bValue = getTherapistDisplay(b);
       } else if (sortField === 'session_date') {
         aValue = resolveEnhancedSessionDate(a);
         bValue = resolveEnhancedSessionDate(b);
@@ -444,7 +438,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return sorted;
-  }, [filteredFiles, sortField, sortDirection, resolveEnhancedSessionDate, therapistData]);
+  }, [filteredFiles, sortField, sortDirection, resolveEnhancedSessionDate, getTherapistDisplay]);
 
   // Pagination calculations (now applied to sorted data)
   const totalFiles = sortedFiles.length;
@@ -509,21 +503,21 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return count;
   }, [filters]);
 
+  // Get unique therapist names for filter dropdown (using useMemo for performance)
+  const uniqueTherapistNames = useMemo(() => {
+    const names = new Set(
+      files
+        .map(f => getTherapistDisplay(f))
+        .filter(name => name && !name.startsWith('Therapist ')) // Filter out fallback names
+    );
+    return Array.from(names).sort();
+  }, [files, getTherapistDisplay]);
+
   // Get unique values for filter dropdowns
   const uniquePatientIds = useMemo(() => {
     const ids = new Set(files.map(f => resolvePatientId(f)));
     return Array.from(ids).sort();
   }, [files]);
-
-  // Get unique therapist names for filter dropdown (using useMemo for performance)
-  const uniqueTherapistNames = useMemo(() => {
-    const names = new Set(
-      files
-        .map(f => resolveTherapistName(f, therapistData))
-        .filter(name => name && !name.startsWith('Therapist ')) // Filter out fallback names
-    );
-    return Array.from(names).sort();
-  }, [files, therapistData]);
 
   // Manual retry function
   const retryLoadFiles = useCallback(() => {
@@ -796,7 +790,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 mt-4 mb-4">
         {/* Filters Section - Always visible */}
         <C3DFilterPanel
           filters={filters}
@@ -816,7 +810,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           onSort={handleSort}
           visibleColumns={visibleColumns}
           resolveSessionDate={resolveEnhancedSessionDate}
-          therapistData={therapistData}
           therapistCache={therapistCache}
           userRole={userRole}
           notesIndicators={simpleNotes.notesCount}
