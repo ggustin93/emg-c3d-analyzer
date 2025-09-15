@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Spinner from '@/components/ui/Spinner';
-import C3DFileList from '@/components/c3d/C3DFileList';
+import C3DFileList, { ColumnVisibility } from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
 
 // Icons
@@ -35,15 +35,6 @@ const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
-
-interface ColumnVisibility {
-  patient_id: boolean;
-  therapist_id: boolean;
-  size: boolean;
-  session_date: boolean;
-  upload_date: boolean;
-  clinical_notes: boolean;
-}
 
 interface PatientSessionBrowserProps {
   patientCode: string;
@@ -76,6 +67,7 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
   // Column visibility - simplified for patient view
   const [visibleColumns] = useState<ColumnVisibility>({
     patient_id: false, // Hide patient ID since we're filtering by it
+    patient_name: false, // Hide patient name since we're filtering by it
     therapist_id: false, // Hide therapist ID in patient view
     size: true,
     session_date: true,

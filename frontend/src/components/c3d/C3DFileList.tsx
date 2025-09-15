@@ -46,7 +46,7 @@ const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
 
-interface ColumnVisibility {
+export interface ColumnVisibility {
   patient_id: boolean;
   patient_name: boolean;
   therapist_id: boolean;
@@ -284,7 +284,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               </button>
             </div>
           )}
-          {visibleColumns.patient_name && (
+          {(userRole === 'ADMIN' || userRole === 'THERAPIST') && visibleColumns.patient_name && (
             <div className="flex-1 min-w-0">
               <div className="flex items-center text-xs">
                 <PersonIcon className="w-4 h-4 mr-1" />
@@ -430,7 +430,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           </Badge>
                         </div>
                       )}
-                      {visibleColumns.patient_name && getPatientName && (
+                      {(userRole === 'ADMIN' || userRole === 'THERAPIST') && visibleColumns.patient_name && getPatientName && (
                         <div className="flex items-center gap-2">
                           <span>Patient Name:</span>
                           <span className="text-slate-700 text-xs">
@@ -627,7 +627,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                         </div>
                       </div>
                     )}
-                    {visibleColumns.patient_name && (
+                    {(userRole === 'ADMIN' || userRole === 'THERAPIST') && visibleColumns.patient_name && (
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <div className="flex items-center">
                           <span className="text-sm text-slate-600">
@@ -637,7 +637,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                       </div>
                     )}
                     {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
-                      <div className="px-3 py-2 flex-1 min-w-0">
+                      <div className={`px-3 py-2 min-w-0 ${userRole === 'ADMIN' ? 'flex-1' : 'flex-[2]'}`}>
                         <div className="flex items-center">
                           <Badge {...getTherapistIdBadgeProps(getTherapistDisplay(file))}>
                             {getTherapistDisplay(file)}
