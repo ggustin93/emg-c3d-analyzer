@@ -330,7 +330,7 @@ export const AboutPage: React.FC = () => {
         {/* Accordion Sections */}
         <Accordion 
           type="multiple" 
-          defaultValue={['clinical-trial']}
+          defaultValue={[]}
           className="space-y-3"
         >
           {content.sections.map((section) => (
