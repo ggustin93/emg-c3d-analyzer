@@ -307,7 +307,7 @@ export const AboutPage: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-5xl mx-auto px-6 py-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Ghostly+ EMG Analysis Platform
           </h1>
           <p className="text-xl text-gray-600">

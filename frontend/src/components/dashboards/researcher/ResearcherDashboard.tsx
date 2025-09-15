@@ -97,7 +97,7 @@ export function ResearcherDashboard({
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BarChartIcon className="w-8 h-8 text-purple-600" />
                 </div>
-                <h2 className="text-3xl font-semibold text-gray-900 mb-3">Data Analytics & Management</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-3">Data Analytics & Management</h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                   For analytics beyond this app's built-in Export Tab (session-specific data and raw C3D files), 
                   use these external tools for comprehensive data workflows.

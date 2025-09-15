@@ -740,8 +740,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
       <div className={className}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PersonIcon className="h-5 w-5" />
+            <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
+              <PersonIcon className="h-5 w-5 text-blue-600" />
               Patient Management
               <Badge variant="secondary" className="ml-auto">
                 {patients.length} total
