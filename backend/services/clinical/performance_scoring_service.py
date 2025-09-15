@@ -345,6 +345,18 @@ class PerformanceScoringService:
             "rpe_value": session_metrics.rpe_post_session,  # Add rpe_value for CSV export
             "rpe_source": rpe_source,  # Source of RPE data for debugging
             
+            # Add muscle compliance fields at top level for backward compatibility
+            "left_muscle_compliance": compliance_components["left_muscle_compliance"],
+            "right_muscle_compliance": compliance_components["right_muscle_compliance"],
+            
+            # Add individual rate components at top level for backward compatibility
+            "completion_rate_left": compliance_components["completion_rate_left"],
+            "completion_rate_right": compliance_components["completion_rate_right"],
+            "intensity_rate_left": compliance_components["intensity_rate_left"],
+            "intensity_rate_right": compliance_components["intensity_rate_right"],
+            "duration_rate_left": compliance_components["duration_rate_left"],
+            "duration_rate_right": compliance_components["duration_rate_right"],
+            
             # Keep compliance_components nested (not spread)
             "compliance_components": compliance_components,
             
