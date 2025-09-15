@@ -151,7 +151,6 @@ export const completionRateTooltipData: TooltipData = {
       type: "list",
       items: [
         { description: "Expected: 12 contractions per muscle." },
-        { description: "Target: ≥92% completion (≥11/12)." }
       ]
     }
   ]

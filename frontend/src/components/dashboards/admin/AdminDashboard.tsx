@@ -2,7 +2,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Badge } from '../../ui/badge'
-import { User, Activity } from 'lucide-react'
+import { PersonIcon, ActivityLogIcon } from '@radix-ui/react-icons'
 
 /**
  * Admin Dashboard - System administration and configuration
@@ -29,7 +29,7 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <Badge variant="secondary" className="bg-red-100 text-red-800">
-          <User className="w-4 h-4 mr-1" />
+          <PersonIcon className="w-4 h-4 mr-1" />
           Administrator
         </Badge>
       </div>
@@ -39,7 +39,7 @@ export function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+              <ActivityLogIcon className="w-5 h-5" />
               ⚙️ System Settings
             </CardTitle>
           </CardHeader>
@@ -69,7 +69,7 @@ export function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
+              <PersonIcon className="w-5 h-5" />
               👥 User Management
             </CardTitle>
           </CardHeader>
@@ -102,7 +102,7 @@ export function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+              <ActivityLogIcon className="w-5 h-5" />
               📊 Site Statistics
             </CardTitle>
           </CardHeader>
@@ -134,7 +134,7 @@ export function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+              <ActivityLogIcon className="w-5 h-5" />
               🔍 Audit Logs
             </CardTitle>
           </CardHeader>
@@ -163,7 +163,7 @@ export function AdminDashboard() {
                 </div>
               ) : (
                 <div className="text-center p-6 text-muted-foreground">
-                  <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <ActivityLogIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>Audit access required</p>
                 </div>
               )}

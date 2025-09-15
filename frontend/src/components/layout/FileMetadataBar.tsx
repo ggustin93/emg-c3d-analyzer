@@ -1,7 +1,13 @@
 import React, { useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { File, User, Calendar, Clock, Activity } from 'lucide-react';
+import { 
+  FileIcon, 
+  PersonIcon, 
+  CalendarIcon, 
+  ClockIcon, 
+  ActivityLogIcon 
+} from '@radix-ui/react-icons';
 import { EMGAnalysisResult } from '../../types/emg';
 import { 
   resolvePatientId, 
@@ -116,7 +122,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
           <div className="flex items-center flex-wrap gap-4 text-sm">
             {/* Filename */}
             <div className="flex items-center space-x-2">
-              <File className="h-4 w-4 text-slate-400" />
+              <FileIcon className="h-4 w-4 text-slate-400" />
               <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded" data-testid="filename">
                 {source_filename}
               </span>
@@ -125,7 +131,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             {/* Patient ID Resolution - Consistent with C3DFileBrowser priorities */}
             {resolvedPatientId !== 'Unknown' && (
               <div className="flex items-center space-x-2">
-                <Activity className="h-4 w-4 text-slate-400" />
+                <ActivityLogIcon className="h-4 w-4 text-slate-400" />
                 <span className="text-slate-600 text-xs">Patient:</span>
                 <Badge {...patientBadgeProps}>
                   {resolvedPatientId}
@@ -136,7 +142,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             {/* Therapist ID - Now using centralized resolver */}
             {resolvedTherapistId && resolvedTherapistId !== 'Unknown' && (
               <div className="flex items-center space-x-2" data-testid="therapist-section">
-                <User className="h-4 w-4 text-slate-400" />
+                <PersonIcon className="h-4 w-4 text-slate-400" />
                 <span className="text-slate-600 text-xs" data-testid="therapist-label">Therapist:</span>
                 <Badge {...therapistBadgeProps}>
                   {resolvedTherapistId}
@@ -146,7 +152,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
 
             {/* Session Date - Consistent with C3DFileBrowser priorities */}
             <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-slate-400" />
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
               <span className="text-slate-600 text-xs">Session:</span>
               <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs">
                 {formatDate(resolvedSessionDate)}
@@ -164,7 +170,7 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
             {/* Duration */}
             {metadata?.session_duration && (
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-slate-400" />
+                <ClockIcon className="h-4 w-4 text-slate-400" />
                 <span className="text-slate-600 text-xs">Duration:</span>
                 <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs">
                   {formatDuration(metadata.session_duration)}

@@ -16,6 +16,10 @@ export interface Patient {
   last_session: string | null
   created_at: string
   
+  // Treatment configuration
+  treatment_start_date: string | null
+  total_sessions_planned: number
+  
   // Status and metrics - simplified for clinical trial
   active: boolean  // Simple active/inactive status
   compliance_status?: 'excellent' | 'good' | 'fair' | 'low'

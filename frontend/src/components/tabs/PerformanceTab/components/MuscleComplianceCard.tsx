@@ -281,16 +281,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                   />
                 </div>
 
-                {/* Contraction Type Summary - Integrated inline since ContractionTypeBreakdown was removed */}
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Contraction Analysis</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div>Short: {shortGoodContractions}/{shortContractions} ({shortContractions > 0 ? Math.round((shortGoodContractions / shortContractions) * 100) : 0}%)</div>
-                    <div>Long: {longGoodContractions}/{longContractions} ({longContractions > 0 ? Math.round((longGoodContractions / longContractions) * 100) : 0}%)</div>
-                    <div className="text-gray-500">Expected Short: {expectedShortContractions}</div>
-                    <div className="text-gray-500">Expected Long: {expectedLongContractions}</div>
-                  </div>
-                </div>
+              
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -439,9 +430,6 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                         <span className="text-xs text-gray-400 ml-1">({Math.round(averageContractionTime)}ms)</span>
                       </p>
                     )}
-                  </div>
-                  <div className="pt-2 border-t border-gray-300">
-                    <p className="italic">Duration metrics assess muscle endurance and contraction control quality.</p>
                   </div>
                 </div>
               </CollapsibleContent>
