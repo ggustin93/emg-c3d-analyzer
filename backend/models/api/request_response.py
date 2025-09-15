@@ -193,6 +193,11 @@ class EMGAnalysisResult(BaseModel):
     user_id: str | None = None
     session_id: str | None = None
     patient_id: str | None = None
+    
+    # NEW: Clinical data integration fields (matching frontend interface)
+    session_parameters: dict[str, Any] | None = None      # Session configuration from C3D metadata
+    processing_parameters: dict[str, Any] | None = None   # Processing parameters documentation
+    performance_analysis: dict[str, Any] | None = None    # Performance scoring analysis
 
 
 class EMGRawData(BaseModel):

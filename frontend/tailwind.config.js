@@ -13,6 +13,11 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        'display': ['Inter', 'system-ui', 'sans-serif'],
+        'mono': ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

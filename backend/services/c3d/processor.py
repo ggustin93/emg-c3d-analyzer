@@ -281,140 +281,6 @@ class GHOSTLYC3DProcessor:
                 "error": f"Parameter extraction failed: {str(e)}"
             }
 
-    def _calculate_performance_analysis(self, session_game_params: GameSessionParameters) -> dict:
-        """Calculate performance analysis using GHOSTLY-TRIAL-DEFAULT configuration.
-        
-        Args:
-            session_game_params: Session parameters for analysis
-            
-        Returns:
-            Dictionary with performance analysis results
-        """
-        try:
-            # Import clinical services locally to avoid circular imports
-            from database.supabase_client import get_supabase_client
-            from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
-            from services.clinical.performance_scoring_service import PerformanceScoringService, SessionMetrics
-            
-            # Get Supabase client for scoring configuration access
-            supabase_client = get_supabase_client()
-            scoring_repo = ScoringConfigurationRepository(supabase_client)
-            
-            # Load GHOSTLY-TRIAL-DEFAULT configuration (same as system fallback)
-            scoring_config = scoring_repo.get_default_scoring_config()
-            if not scoring_config:
-                # Fallback to config.py defaults if database unavailable
-                logger.warning("GHOSTLY-TRIAL-DEFAULT not found in database, using config.py defaults")
-                scoring_defaults = ScoringDefaults()
-                scoring_config = {
-                    "configuration_name": "GHOSTLY-TRIAL-DEFAULT-FALLBACK",
-                    "weight_compliance": scoring_defaults.WEIGHT_COMPLIANCE,
-                    "weight_symmetry": scoring_defaults.WEIGHT_SYMMETRY,
-                    "weight_effort": scoring_defaults.WEIGHT_EFFORT,
-                    "weight_game": scoring_defaults.WEIGHT_GAME,
-                    "weight_completion": scoring_defaults.WEIGHT_COMPLETION,
-                    "weight_intensity": scoring_defaults.WEIGHT_INTENSITY,
-                    "weight_duration": scoring_defaults.WEIGHT_DURATION,
-                }
-            
-            # Extract session metrics from analytics for performance calculation
-            session_metrics = self._extract_session_metrics_from_analytics()
-            
-            # Initialize performance scoring service for stateless calculation
-            performance_service = PerformanceScoringService(supabase_client)
-            
-            # Calculate performance scores (stateless - no database persistence)
-            performance_result = {
-                "scoring_configuration_used": scoring_config.get("configuration_name", "UNKNOWN"),
-                "scoring_weights": {
-                    "compliance": scoring_config.get("weight_compliance", 0.5),
-                    "symmetry": scoring_config.get("weight_symmetry", 0.25),
-                    "effort": scoring_config.get("weight_effort", 0.25),
-                    "game": scoring_config.get("weight_game", 0.0),
-                },
-                "session_metrics": session_metrics,
-                "performance_scores": {
-                    "overall_score": 0.0,  # Will be calculated based on components
-                    "compliance_score": 0.0,
-                    "symmetry_score": 0.0, 
-                    "effort_score": 50.0,  # Default for missing RPE
-                    "game_score": 0.0,
-                },
-                "therapeutic_recommendation": "Analysis completed - review individual metrics for clinical insights",
-                "analysis_timestamp": datetime.now().isoformat(),
-            }
-            
-            # Calculate actual scores based on session metrics and scoring configuration
-            # TODO: Implement detailed scoring calculation similar to PerformanceScoring service
-            # For now, provide basic compliance scoring based on analytics
-            if session_metrics.get("total_contractions", 0) > 0:
-                compliance_rate = min(session_metrics.get("compliant_contractions", 0) / session_metrics["total_contractions"], 1.0)
-                performance_result["performance_scores"]["compliance_score"] = compliance_rate * 100.0
-                performance_result["performance_scores"]["overall_score"] = compliance_rate * 100.0 * scoring_config.get("weight_compliance", 0.5)
-            
-            logger.info(f"📊 Performance analysis completed using {scoring_config.get('configuration_name', 'fallback')} configuration")
-            return performance_result
-            
-        except Exception as e:
-            logger.exception(f"Failed to calculate performance analysis: {e}")
-            # Return minimal performance data on error
-            return {
-                "scoring_configuration_used": "ERROR-FALLBACK",
-                "error": f"Performance calculation failed: {str(e)}",
-                "session_metrics": {},
-                "performance_scores": {
-                    "overall_score": 0.0,
-                    "compliance_score": 0.0,
-                    "symmetry_score": 0.0,
-                    "effort_score": 0.0,
-                    "game_score": 0.0,
-                },
-                "analysis_timestamp": datetime.now().isoformat(),
-            }
-
-    def _extract_session_metrics_from_analytics(self) -> dict:
-        """Extract session metrics from analytics for performance calculation.
-        
-        Returns:
-            Dictionary with session metrics extracted from self.analytics
-        """
-        try:
-            total_contractions = 0
-            compliant_contractions = 0
-            total_duration_ms = 0
-            
-            # Aggregate metrics across all channels
-            for channel_name, channel_analytics in self.analytics.items():
-                if isinstance(channel_analytics, dict) and "contraction_count" in channel_analytics:
-                    channel_contractions = channel_analytics.get("contraction_count", 0)
-                    total_contractions += channel_contractions
-                    
-                    # Count compliant contractions (those meeting MVC/duration thresholds)
-                    good_contractions = channel_analytics.get("good_contraction_count", 0)
-                    if good_contractions is not None:
-                        compliant_contractions += good_contractions
-                    
-                    # Aggregate total time under tension
-                    total_duration_ms += channel_analytics.get("total_time_under_tension_ms", 0)
-            
-            return {
-                "total_contractions": total_contractions,
-                "compliant_contractions": compliant_contractions,
-                "total_time_under_tension_ms": total_duration_ms,
-                "channel_count": len(self.analytics),
-                "analysis_quality": "complete" if total_contractions > 0 else "no_contractions_detected",
-            }
-            
-        except Exception as e:
-            logger.warning(f"Failed to extract session metrics from analytics: {e}")
-            return {
-                "total_contractions": 0,
-                "compliant_contractions": 0,
-                "total_time_under_tension_ms": 0,
-                "channel_count": len(self.analytics) if hasattr(self, 'analytics') else 0,
-                "analysis_quality": "error",
-                "error": str(e),
-            }
 
     def extract_emg_data(self) -> dict[str, dict]:
         """Extract raw and activated EMG data from the C3D file."""
@@ -1296,18 +1162,14 @@ class GHOSTLYC3DProcessor:
         processing_parameters = self._extract_processing_parameters(processing_opts, session_game_params)
         logger.info(f"⚙️ Documented processing parameters: {list(processing_parameters.keys())}")
         
-        # Calculate performance scores using GHOSTLY-TRIAL-DEFAULT configuration
-        performance_analysis = self._calculate_performance_analysis(session_game_params)
-        logger.info(f"📊 Calculated performance analysis: {list(performance_analysis.keys())}")
-
         result = {
             "metadata": self.game_metadata,
             "analytics": self.analytics,
             "available_channels": list(self.emg_data.keys()),
-            # NEW: Complete clinical analysis for CSV export
+            # Clinical data - session parameters and processing documentation only
+            # Performance analysis is handled by clinical service in upload route
             "session_parameters": session_parameters,
             "processing_parameters": processing_parameters,
-            "performance_analysis": performance_analysis,
         }
 
         if include_signals:

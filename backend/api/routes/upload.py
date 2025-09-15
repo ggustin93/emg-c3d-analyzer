@@ -136,8 +136,44 @@ async def upload_file(
                 "stateless_mode": True
             }
             
-            result_data = processing_result
-            logger.info(f"✅ Stateless processing completed: {len(result_data.get('analytics', {}))} channels")
+            # Store EMG processing results with explicit naming
+            raw_emg_analytics = processing_result
+            logger.info(f"✅ EMG processing completed: {len(raw_emg_analytics.get('analytics', {}))} channels")
+            
+            # CLINICAL PROCESSING ORCHESTRATION: Convert EMG data to clinical format and calculate performance scores
+            try:
+                # Import clinical services (local import to avoid circular dependencies)
+                from services.clinical.emg_analytics_adapter import convert_emg_analytics_to_clinical_session_metrics
+                from services.clinical.performance_scoring_service import PerformanceScoringService
+                
+                # Step 1: Convert EMG analytics to clinical SessionMetrics format
+                clinical_session_metrics = convert_emg_analytics_to_clinical_session_metrics(
+                    raw_emg_analytics.get("analytics", {}), 
+                    session_params
+                )
+                logger.info(f"🔌 Analytics converted to clinical format: session_id={clinical_session_metrics.session_id}")
+                
+                # Step 2: Calculate performance scores using existing clinical service  
+                clinical_service = PerformanceScoringService()
+                clinical_performance_scores = clinical_service.calculate_performance_scores(
+                    session_id=clinical_session_metrics.session_id,
+                    session_metrics=clinical_session_metrics
+                )
+                logger.info(f"📊 Clinical performance scores calculated: {list(clinical_performance_scores.keys())}")
+                
+                # Combine EMG processing results with clinical analysis
+                result_data = raw_emg_analytics
+                result_data["performance_analysis"] = clinical_performance_scores  # Add clinical scores
+                
+            except Exception as clinical_error:
+                logger.exception(f"⚠️ Clinical processing failed, continuing with EMG data only: {clinical_error}")
+                # Fallback: Use EMG processing results without clinical scores
+                result_data = raw_emg_analytics
+                result_data["performance_analysis"] = {
+                    "error": f"Clinical processing failed: {str(clinical_error)}",
+                    "emg_data_available": True,
+                    "fallback_mode": True
+                }
             
         except Exception as e:
             logger.exception(f"❌ C3D processing failed: {e}")
@@ -186,6 +222,10 @@ async def upload_file(
             user_id=file_metadata["user_id"],
             patient_id=file_metadata["patient_id"],
             session_id=file_metadata["session_id"],
+            # NEW: Include clinical data from enhanced processor
+            session_parameters=result_data.get("session_parameters"),
+            processing_parameters=result_data.get("processing_parameters"),
+            performance_analysis=result_data.get("performance_analysis"),
         )
         return response_model
 

@@ -245,6 +245,7 @@ export class ClinicalNotesTestSuite {
       
       const note = await ClinicalNotesService.createFileNote(
         this.testFilePath,
+        'Test Note Title',
         testContent
       );
       
@@ -329,6 +330,7 @@ export class ClinicalNotesTestSuite {
       
       const updated = await ClinicalNotesService.updateNote(
         this.createdNoteId,
+        'Updated Test Note Title',
         updatedContent
       );
       
