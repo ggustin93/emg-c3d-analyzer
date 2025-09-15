@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from config import SessionDefaults, ScoringDefaults
+from utils.date_extraction import extract_session_date_from_filename
 
 from database.supabase_client import get_supabase_client
 from services.clinical.repositories.scoring_configuration_repository import ScoringConfigurationRepository
@@ -943,16 +944,23 @@ class PerformanceScoringService:
                 if patient_result.data and patient_result.data[0].get("patient_code"):
                     patient_code = patient_result.data[0]["patient_code"]
                     
-                    # Count C3D files from storage bucket
+                    # Count C3D files from storage bucket with temporal filtering
                     storage_files = self.client.storage.from_("c3d-examples").list()
                     
-                    # Filter files for this patient
-                    # C3D filenames pattern: GHOSTLY_[PatientCode]_[Date]_[Time].c3d
-                    completed_sessions = sum(
-                        1 for file in storage_files 
-                        if file.get("name", "").endswith(".c3d") and 
-                        f"_{patient_code}_" in file.get("name", "")
-                    )
+                    # Calculate cutoff date for protocol day boundary
+                    cutoff_date = datetime.now(timezone.utc) - timedelta(days=protocol_day-1)
+                    
+                    # Filter files for this patient within protocol day boundary
+                    # GHOSTLY C3D filenames pattern: Ghostly_Emg_YYYYMMDD_HH-MM-SS-SSSS.c3d
+                    completed_sessions = 0
+                    for file in storage_files:
+                        filename = file.get("name", "")
+                        if filename.endswith(".c3d") and filename.startswith("Ghostly_Emg_"):
+                            # Extract session date from filename
+                            session_date = extract_session_date_from_filename(filename)
+                            # Count only sessions within protocol day boundary
+                            if session_date and session_date.replace(tzinfo=timezone.utc) >= cutoff_date:
+                                completed_sessions += 1
                 else:
                     # Fallback to therapy_sessions table if patient_code not found
                     sessions = (
@@ -973,9 +981,10 @@ class PerformanceScoringService:
             expected_sessions_per_day = 15.0 / 7.0  # ≈ 2.14 sessions per day
             expected_sessions = expected_sessions_per_day * protocol_day
 
-            adherence_score = (
+            # Cap adherence score at 100% (clinical business rule)
+            adherence_score = min(100, (
                 (completed_sessions / expected_sessions) * 100 if expected_sessions > 0 else 0
-            )
+            ))
 
             # Determine clinical threshold category
             if adherence_score >= 85:

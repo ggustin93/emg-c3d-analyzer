@@ -27,39 +27,66 @@ class TestAdherenceScore:
 
     def test_adherence_calculation_formula(self):
         """Test the adherence formula: (completed / expected) × 100."""
-        # Mock database response with 10 sessions
-        mock_sessions = [{"id": f"session_{i}", "session_date": datetime.now(timezone.utc).isoformat()} 
-                        for i in range(10)]
-        self.service.client.table().select().eq().gte().execute.return_value.data = mock_sessions
+        # Mock patient lookup to return patient_code
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
+        # Mock storage response with real GHOSTLY filename pattern from tests/samples
+        # Using actual GHOSTLY format: Ghostly_Emg_20230321_17-50-17-0881.c3d
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            for i in range(10)  # 10 files from today going back 10 days (only 7 should be counted for protocol_day=7)
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
         # Test on day 7: expected = 2.14 * 7 = 14.98 sessions
+        # Only 7 files should be counted (within protocol day boundary)
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
-        assert result["completed_sessions"] == 10
+        assert result["completed_sessions"] == 7
         assert result["expected_sessions"] == pytest.approx(14.98, rel=0.01)
-        # Adherence = (10 / 14.98) * 100 = 66.76%
-        assert result["adherence_score"] == pytest.approx(66.76, rel=0.5)
-        assert result["category"] == "Moderate"  # 50-69% range
+        # Adherence = (7 / 14.98) * 100 = 46.7%
+        assert result["adherence_score"] == pytest.approx(46.7, rel=0.5)
+        assert result["category"] == "Poor"  # <50% range
 
     def test_clinical_threshold_excellent(self):
         """Test Excellent threshold (≥85%)."""
-        # Mock 18 sessions for day 7 (18/14.98 = 120%)
-        mock_sessions = [{"id": f"session_{i}", "session_date": datetime.now(timezone.utc).isoformat()} 
-                        for i in range(18)]
-        self.service.client.table().select().eq().gte().execute.return_value.data = mock_sessions
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
+        # Mock storage with 18 sessions within protocol day boundary (need 85% = 12.7+ sessions)
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i%7)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            for i in range(18)  # 18 files, but some days repeated (all within 7-day boundary)
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
-        assert result["adherence_score"] > 85
+        # All 18 sessions are within protocol day boundary
+        assert result["completed_sessions"] == 18
+        # Adherence = (18 / 14.98) * 100 = 120.16% → capped at 100%
+        assert result["adherence_score"] == 100  # Capped at 100%
         assert result["category"] == "Excellent"
         assert "Meeting/exceeding" in result["interpretation"]
 
     def test_clinical_threshold_good(self):
         """Test Good threshold (70-84%)."""
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
         # Mock 11 sessions for day 7 (11/14.98 = 73.43%)
-        mock_sessions = [{"id": f"session_{i}", "session_date": datetime.now(timezone.utc).isoformat()} 
-                        for i in range(11)]
-        self.service.client.table().select().eq().gte().execute.return_value.data = mock_sessions
+        # Need to ensure all 11 files are within the 7-day protocol boundary
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i%7)).strftime('%Y%m%d')}_17-50-17-{i:04d}.c3d"}
+            for i in range(11)  # 11 files, cycling through days 0-6
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
@@ -69,10 +96,18 @@ class TestAdherenceScore:
 
     def test_clinical_threshold_moderate(self):
         """Test Moderate threshold (50-69%)."""
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
         # Mock 8 sessions for day 7 (8/14.98 = 53.40%)
-        mock_sessions = [{"id": f"session_{i}", "session_date": datetime.now(timezone.utc).isoformat()} 
-                        for i in range(8)]
-        self.service.client.table().select().eq().gte().execute.return_value.data = mock_sessions
+        # Need to ensure all 8 files are within the 7-day protocol boundary
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i%7)).strftime('%Y%m%d')}_17-50-17-{i:04d}.c3d"}
+            for i in range(8)  # 8 files, cycling through days 0-6
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
@@ -82,10 +117,17 @@ class TestAdherenceScore:
 
     def test_clinical_threshold_poor(self):
         """Test Poor threshold (<50%)."""
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
         # Mock 5 sessions for day 7 (5/14.98 = 33.38%)
-        mock_sessions = [{"id": f"session_{i}", "session_date": datetime.now(timezone.utc).isoformat()} 
-                        for i in range(5)]
-        self.service.client.table().select().eq().gte().execute.return_value.data = mock_sessions
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            for i in range(5)  # 5 files within 7-day boundary
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
@@ -95,8 +137,11 @@ class TestAdherenceScore:
 
     def test_zero_sessions_scenario(self):
         """Test adherence with zero completed sessions."""
-        # Mock empty sessions response
-        self.service.client.table().select().eq().gte().execute.return_value.data = []
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
+        # Mock empty storage response
+        self.service.client.storage.from_().list.return_value = []
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
@@ -106,8 +151,11 @@ class TestAdherenceScore:
 
     def test_expected_sessions_rate(self):
         """Test the expected sessions rate: 15 per 7 days ≈ 2.14 × t."""
-        # Mock doesn't matter, we're testing the calculation
-        self.service.client.table().select().eq().gte().execute.return_value.data = []
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
+        
+        # Mock empty storage response - we're testing the calculation
+        self.service.client.storage.from_().list.return_value = []
         
         # Test various protocol days
         test_cases = [
@@ -123,8 +171,8 @@ class TestAdherenceScore:
 
     def test_database_error_handling(self):
         """Test proper error handling when database query fails."""
-        # Mock database error
-        self.service.client.table().select().eq().gte().execute.side_effect = Exception("Database error")
+        # Mock database error during patient lookup
+        self.service.client.table().select().eq().execute.side_effect = Exception("Database error")
         
         result = self.service.calculate_adherence_score("patient_1", protocol_day=7)
         
@@ -133,22 +181,24 @@ class TestAdherenceScore:
 
     def test_date_cutoff_calculation(self):
         """Test that sessions are filtered by protocol day cutoff."""
-        # This test verifies the date filtering logic
-        patient_id = "test_patient"
-        protocol_day = 7
+        # Mock patient lookup
+        self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
         
-        # Call the method
-        self.service.calculate_adherence_score(patient_id, protocol_day)
+        # Mock storage files with dates spanning more than 7 days
+        from datetime import datetime, timezone, timedelta
+        today = datetime.now(timezone.utc)
+        mock_storage_files = [
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            for i in range(10)  # Files from 10 days ago to today
+        ]
+        self.service.client.storage.from_().list.return_value = mock_storage_files
         
-        # Verify the database query was called with correct parameters
-        mock_table = self.service.client.table.return_value
-        mock_table.select.assert_called_once_with("id, session_date")
-        mock_table.select.return_value.eq.assert_called_once_with("patient_id", patient_id)
+        # Call the method with protocol_day=7
+        result = self.service.calculate_adherence_score("test_patient", protocol_day=7)
         
-        # Check that gte was called with a date 7 days ago
-        gte_call = mock_table.select.return_value.eq.return_value.gte
-        gte_call.assert_called_once()
+        # Verify storage was called
+        self.service.client.storage.from_.assert_called_with("c3d-examples")
         
-        # The cutoff date should be approximately 7 days ago
-        cutoff_arg = gte_call.call_args[0][1]
-        assert isinstance(cutoff_arg, str)  # Should be an ISO format string
+        # Should count only 7 files (within protocol day boundary), not all 10
+        assert result["completed_sessions"] == 7
+        assert result["expected_sessions"] == pytest.approx(14.98, rel=0.01)
