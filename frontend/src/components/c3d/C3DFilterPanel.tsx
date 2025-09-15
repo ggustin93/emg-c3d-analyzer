@@ -22,6 +22,7 @@ import {
 interface FilterState {
   searchTerm: string;
   patientIdFilter: string;
+  patientNameFilter: string;
   therapistIdFilter: string;
   dateFromFilter: string;
   dateToFilter: string;
@@ -37,7 +38,9 @@ interface C3DFilterPanelProps {
   onClearFilters: () => void;
   className?: string;
   uniquePatientIds?: string[];
+  uniquePatientNames?: string[];
   uniqueTherapistNames?: string[];
+  userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null;
 }
 
 const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
@@ -46,11 +49,14 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
   onClearFilters,
   className = '',
   uniquePatientIds = [],
-  uniqueTherapistNames = []
+  uniquePatientNames = [],
+  uniqueTherapistNames = [],
+  userRole
 }) => {
   const {
     searchTerm,
     patientIdFilter,
+    patientNameFilter,
     therapistIdFilter,
     dateFromFilter,
     dateToFilter,
@@ -60,11 +66,12 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
     clinicalNotesFilter
   } = filters;
 
-  // Calculate active filter count for badge display
+  // Calculate active filter count for badge display (exclude therapist filter for therapist users)
   const activeFilterCount = [
     searchTerm && 'Search',
-    patientIdFilter && patientIdFilter !== 'all' && 'Patient',
-    therapistIdFilter && therapistIdFilter !== 'all' && 'Therapist', 
+    patientIdFilter && patientIdFilter !== 'all' && 'Patient ID',
+    patientNameFilter && patientNameFilter !== 'all' && 'Patient Name',
+    therapistIdFilter && therapistIdFilter !== 'all' && userRole !== 'THERAPIST' && 'Therapist', 
     (dateFromFilter || dateToFilter) && 'Date',
     (timeFromFilter || timeToFilter) && 'Time',
     sizeFilter !== 'all' && 'Size',
@@ -92,10 +99,15 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
                 )}
                 {patientIdFilter && patientIdFilter !== 'all' && (
                   <div className="text-xs bg-white/60 text-secondary px-2 py-1 rounded-md border border-secondary/20">
-                    Patient: {patientIdFilter}
+                    Patient ID: {patientIdFilter}
                   </div>
                 )}
-                {therapistIdFilter && therapistIdFilter !== 'all' && (
+                {patientNameFilter && patientNameFilter !== 'all' && (
+                  <div className="text-xs bg-white/60 text-secondary px-2 py-1 rounded-md border border-secondary/20">
+                    Patient Name: {patientNameFilter}
+                  </div>
+                )}
+                {therapistIdFilter && therapistIdFilter !== 'all' && userRole !== 'THERAPIST' && (
                   <div className="text-xs bg-white/60 text-secondary px-2 py-1 rounded-md border border-secondary/20">
                     Therapist: {therapistIdFilter}
                   </div>
@@ -133,26 +145,30 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
 
       {/* Filter Controls */}
       <div className="p-3 space-y-3">
-        {/* Row 1: Search, Patient, Therapist */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Row 1: Search, Patient ID, Patient Name, Therapist (hide Therapist for THERAPIST role, hide Patient Name for RESEARCHER) */}
+        <div className={`grid grid-cols-1 gap-3 ${
+          userRole === 'THERAPIST' || userRole === 'RESEARCHER' 
+            ? 'sm:grid-cols-1 lg:grid-cols-3'  // 3 columns for THERAPIST and RESEARCHER
+            : 'sm:grid-cols-2 lg:grid-cols-4'  // 4 columns for ADMIN
+        }`}>
           {/* Search by name */}
           <div className="space-y-2">
             <Label htmlFor="search" className="text-sm font-medium text-foreground flex items-center gap-2">
               <div className="w-5 h-5 rounded-md bg-secondary/50 flex items-center justify-center">
                 <MagnifyingGlassIcon className="w-3 h-3 text-secondary-foreground" />
               </div>
-              <span>Search by name</span>
+              <span>{(userRole === 'ADMIN' || userRole === 'THERAPIST') ? 'Search files & patients' : 'Search files'}</span>
               {searchTerm && <span className="w-2 h-2 bg-secondary-foreground rounded-full ml-1"></span>}
             </Label>
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 id="search"
-                placeholder="Search files..."
+                placeholder={(userRole === 'ADMIN' || userRole === 'THERAPIST') ? "Search files or patient names..." : "Search files..."}
                 value={searchTerm}
                 onChange={(e) => onFiltersChange({ searchTerm: e.target.value })}
                 className={`pl-10 transition-all focus-visible:ring-0 focus-visible:ring-offset-0 ${searchTerm ? 'pr-9 ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
-                aria-label="Search files by name"
+                aria-label={(userRole === 'ADMIN' || userRole === 'THERAPIST') ? "Search files or patient names" : "Search files"}
               />
               {searchTerm && (
                 <button
@@ -166,13 +182,13 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
             </div>
           </div>
 
-          {/* Filter by Patient */}
+          {/* Filter by Patient ID */}
           <div className="space-y-2">
             <Label htmlFor="patient-id" className="text-sm font-medium text-foreground flex items-center gap-2">
               <div className="w-5 h-5 rounded-md bg-secondary/50 flex items-center justify-center">
                 <PersonIcon className="w-3 h-3 text-secondary-foreground" />
               </div>
-              <span>Patient</span>
+              <span>Patient ID</span>
               {patientIdFilter && patientIdFilter !== 'all' && <span className="w-2 h-2 bg-secondary-foreground rounded-full ml-1"></span>}
               {patientIdFilter && patientIdFilter !== 'all' && (
                 <button
@@ -203,7 +219,47 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
             </Select>
           </div>
 
-          {/* Filter by Therapist */}
+          {/* Filter by Patient Name - Only for ADMIN and THERAPIST */}
+          {(userRole === 'ADMIN' || userRole === 'THERAPIST') && (
+            <div className="space-y-2">
+              <Label htmlFor="patient-name" className="text-sm font-medium text-foreground flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-secondary/50 flex items-center justify-center">
+                  <PersonIcon className="w-3 h-3 text-secondary-foreground" />
+                </div>
+                <span>Patient Name</span>
+                {patientNameFilter && patientNameFilter !== 'all' && <span className="w-2 h-2 bg-secondary-foreground rounded-full ml-1"></span>}
+                {patientNameFilter && patientNameFilter !== 'all' && (
+                  <button
+                    onClick={() => onFiltersChange({ patientNameFilter: 'all' })}
+                    className="ml-auto p-1.5 hover:bg-secondary rounded-md transition-all"
+                    aria-label="Clear patient name filter"
+                  >
+                    <Cross2Icon className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                )}
+              </Label>
+              <Select 
+                value={patientNameFilter} 
+                onValueChange={(value: any) => onFiltersChange({ patientNameFilter: value })}
+              >
+                <SelectTrigger 
+                  className={`transition-all focus-visible:ring-0 focus-visible:ring-offset-0 ${patientNameFilter && patientNameFilter !== 'all' ? 'ring-1 ring-blue-400 border-blue-400 bg-blue-50/30' : 'focus:ring-1 focus:ring-blue-400 focus:border-blue-400'}`}
+                  aria-label="Filter by patient name"
+                >
+                  <SelectValue placeholder="All patient names" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All patient names</SelectItem>
+                  {uniquePatientNames.map((name) => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Filter by Therapist - Hidden for THERAPIST role */}
+          {userRole !== 'THERAPIST' && (
           <div className="space-y-2">
             <Label htmlFor="therapist-id" className="text-sm font-medium text-foreground flex items-center gap-2">
               <div className="w-5 h-5 rounded-md bg-secondary/50 flex items-center justify-center">
@@ -239,6 +295,7 @@ const C3DFilterPanel: React.FC<C3DFilterPanelProps> = ({
               </SelectContent>
             </Select>
           </div>
+          )}
         </div>
 
         {/* Row 2: Date Range, Time Range, Size, Notes */}

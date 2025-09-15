@@ -118,7 +118,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     const saved = localStorage.getItem('c3d-visible-columns');
     return saved ? JSON.parse(saved) : {
       patient_id: true,
-      patient_name: true, // Enable patient name by default
+      patient_name: userRole === 'ADMIN' || userRole === 'THERAPIST', // Role-based patient name visibility
       therapist_id: true,
       size: true,
       session_date: true,
