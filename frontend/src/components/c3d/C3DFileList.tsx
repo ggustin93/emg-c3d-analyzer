@@ -48,6 +48,7 @@ type SortDirection = 'asc' | 'desc';
 
 interface ColumnVisibility {
   patient_id: boolean;
+  patient_name: boolean;
   therapist_id: boolean;
   size: boolean;
   session_date: boolean;
@@ -57,7 +58,7 @@ interface ColumnVisibility {
 
 interface C3DFileListProps {
   files: C3DFile[];
-  onFileSelect: (filename: string, uploadDate?: string) => void;
+  onFileSelect: (filename: string, uploadDate?: string, fileData?: C3DFile) => void;
   isLoading?: boolean;
   className?: string;
   sortField: SortField;
@@ -67,6 +68,8 @@ interface C3DFileListProps {
   resolveSessionDate?: (file: C3DFile) => string | null;
   therapistCache?: Record<string, any>; // Therapist display cache indexed by file name
   userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null; // New prop for role-based visibility
+  // Patient data
+  getPatientName?: (file: C3DFile) => string;
   // Clinical Notes props
   notesIndicators?: Record<string, number>;
   notesLoading?: boolean;
@@ -84,6 +87,8 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   resolveSessionDate: customResolveSessionDate,
   therapistCache = {}, // Therapist display cache
   userRole: propUserRole, // Accept userRole from props
+  // Patient data
+  getPatientName,
   // Clinical Notes props
   notesIndicators = {},
   notesLoading = false
@@ -164,8 +169,8 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     const selectedFile = files.find(file => file.id === fileId);
     
     if (selectedFile) {
-      // Pass upload date directly to avoid race condition
-      onFileSelect(fileName, selectedFile.created_at);
+      // Pass upload date and file data to avoid race condition
+      onFileSelect(fileName, selectedFile.created_at, selectedFile);
     } else {
       onFileSelect(fileName);
     }
@@ -274,9 +279,17 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                 className="flex items-center hover:text-slate-800 transition-colors text-xs"
               >
                 <PersonIcon className="w-4 h-4 mr-1" />
-                Patient
+                Patient ID
                 {getSortIcon('patient_id')}
               </button>
+            </div>
+          )}
+          {visibleColumns.patient_name && (
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center text-xs">
+                <PersonIcon className="w-4 h-4 mr-1" />
+                Patient Name
+              </div>
             </div>
           )}
           {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
@@ -415,6 +428,14 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <Badge {...getPatientIdBadgeProps(resolvePatientId(file))}>
                             {getPatientDisplayName(file)}
                           </Badge>
+                        </div>
+                      )}
+                      {visibleColumns.patient_name && getPatientName && (
+                        <div className="flex items-center gap-2">
+                          <span>Patient Name:</span>
+                          <span className="text-slate-700 text-xs">
+                            {getPatientName(file) || 'Unknown'}
+                          </span>
                         </div>
                       )}
                       {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
@@ -603,6 +624,15 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           <Badge {...getPatientIdBadgeProps(resolvePatientId(file))}>
                             {getPatientDisplayName(file)}
                           </Badge>
+                        </div>
+                      </div>
+                    )}
+                    {visibleColumns.patient_name && (
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <div className="flex items-center">
+                          <span className="text-sm text-slate-600">
+                            {getPatientName ? (getPatientName(file) || 'Unknown') : 'N/A'}
+                          </span>
                         </div>
                       </div>
                     )}

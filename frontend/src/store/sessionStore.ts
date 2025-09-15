@@ -2,12 +2,21 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { GameSessionParameters } from '../types/emg';
 
+interface SelectedFileData {
+  patientName?: string;
+  therapistDisplay?: string;
+  fileSize?: number;
+  clinicalNotesCount?: number;
+}
+
 interface SessionState {
   sessionParams: GameSessionParameters;
   setSessionParams: (params: Partial<GameSessionParameters> | ((params: GameSessionParameters) => Partial<GameSessionParameters>)) => void;
   resetSessionParams: () => void;
   uploadDate: string | null;
   setUploadDate: (date: string | null) => void;
+  selectedFileData: SelectedFileData | null;
+  setSelectedFileData: (data: SelectedFileData | null) => void;
 }
 
 const defaultSessionParams: GameSessionParameters = {
@@ -46,6 +55,8 @@ export const useSessionStore = create<SessionState>()(
         });
         set({ uploadDate: date });
       },
+      selectedFileData: null,
+      setSelectedFileData: (data) => set({ selectedFileData: data }),
     }),
     {
       name: 'emg-session-storage', // name of the item in the storage (must be unique)

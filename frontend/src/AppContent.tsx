@@ -74,7 +74,7 @@ export function AppContent() {
   );
   
   // State for session parameters from Zustand store
-  const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate } = useSessionStore();
+  const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate, selectedFileData } = useSessionStore();
   
   // Save sessionParams to localStorage whenever they change
   useEffect(() => {
@@ -562,6 +562,10 @@ export function AppContent() {
                   analysisResult={analysisResult}
                   uploadDate={uploadDate}
                   onReset={resetState}
+                  patientName={selectedFileData?.patientName}
+                  therapistDisplay={selectedFileData?.therapistDisplay}
+                  fileSize={selectedFileData?.fileSize}
+                  clinicalNotesCount={selectedFileData?.clinicalNotesCount}
                 />
                 
                 {/* Show EMG analysis tabs when file is loaded */}

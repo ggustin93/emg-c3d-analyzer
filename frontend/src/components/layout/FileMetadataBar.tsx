@@ -6,7 +6,9 @@ import {
   PersonIcon, 
   CalendarIcon, 
   ClockIcon, 
-  ActivityLogIcon 
+  ActivityLogIcon,
+  ChevronRightIcon,
+  ArchiveIcon
 } from '@radix-ui/react-icons';
 import { EMGAnalysisResult } from '../../types/emg';
 import { 
@@ -38,13 +40,26 @@ interface FileMetadataBarProps {
   analysisResult: EMGAnalysisResult;
   onReset?: () => void;
   uploadDate?: string | null; // Optional upload date from file browser
+  // Additional props from C3DFileBrowser row data
+  patientName?: string; // Patient first name + last initial from getPatientName
+  fileSize?: number; // File size in bytes
+  therapistDisplay?: string; // Therapist name from therapistCache
+  clinicalNotesCount?: number; // Number of clinical notes
 }
 
 /**
  * Dedicated component for displaying C3D file metadata and navigation
  * Provides clinical context including patient info, therapist, and session details
  */
-const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onReset, uploadDate }) => {
+const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ 
+  analysisResult, 
+  onReset, 
+  uploadDate,
+  patientName,
+  fileSize,
+  therapistDisplay,
+  clinicalNotesCount 
+}) => {
   const { source_filename, metadata, patient_id, file_id } = analysisResult;
   
   // Create a mock C3DFile object to pass to the resolvers
@@ -114,93 +129,148 @@ const FileMetadataBar: React.FC<FileMetadataBarProps> = ({ analysisResult, onRes
     }
   };
 
+  // Helper function to format file size
+  const formatFileSize = (sizeBytes?: number): string => {
+    if (!sizeBytes) return 'N/A';
+    
+    if (sizeBytes < 1024) return `${sizeBytes} B`;
+    if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
+    if (sizeBytes < 1024 * 1024 * 1024) return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(sizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-lg shadow-sm mb-6 mt-[-30px]">
-      <div className="max-w-6xl mx-auto px-4 py-3 ">
+    <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 shadow-sm mb-6">
+      <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Clinical metadata section */}
-          <div className="flex items-center flex-wrap gap-4 text-sm">
-            {/* Filename */}
-            <div className="flex items-center space-x-2">
-              <FileIcon className="h-4 w-4 text-slate-400" />
-              <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded" data-testid="filename">
+          {/* Breadcrumb Navigation with clickable Sessions */}
+          <nav className="flex items-center space-x-1 text-sm" aria-label="Breadcrumb">
+            <div className="flex items-center">
+              <ArchiveIcon className="h-4 w-4 text-slate-500 mr-2" />
+              {onReset ? (
+                <button 
+                  onClick={onReset}
+                  className="text-blue-600 hover:text-blue-800 font-medium transition-colors underline-offset-4 hover:underline"
+                >
+                  Sessions
+                </button>
+              ) : (
+                <span className="text-slate-600 font-medium">Sessions</span>
+              )}
+            </div>
+            
+            <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+            
+            <div className="flex items-center">
+              <FileIcon className="h-4 w-4 text-primary mr-2" />
+              <span className="text-foreground font-semibold truncate max-w-md" data-testid="filename">
                 {source_filename}
               </span>
             </div>
+          </nav>
+        </div>
 
-            {/* Patient ID Resolution - Consistent with C3DFileBrowser priorities */}
-            {resolvedPatientId !== 'Unknown' && (
-              <div className="flex items-center space-x-2">
-                <ActivityLogIcon className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-600 text-xs">Patient:</span>
-                <Badge {...patientBadgeProps}>
-                  {resolvedPatientId}
-                </Badge>
-              </div>
-            )}
+        {/* File Details Row - Enhanced with secondary colors and C3DFileList patterns */}
+        <div className="flex items-center flex-wrap gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t border-muted">
+          {/* Patient ID */}
+          {resolvedPatientId !== 'Unknown' && (
+            <div className="flex items-center gap-1.5">
+              <ActivityLogIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <Badge {...patientBadgeProps} className="h-5 text-xs">
+                {resolvedPatientId}
+              </Badge>
+            </div>
+          )}
 
-            {/* Therapist ID - Now using centralized resolver */}
-            {resolvedTherapistId && resolvedTherapistId !== 'Unknown' && (
-              <div className="flex items-center space-x-2" data-testid="therapist-section">
-                <PersonIcon className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-600 text-xs" data-testid="therapist-label">Therapist:</span>
-                <Badge {...therapistBadgeProps}>
-                  {resolvedTherapistId}
-                </Badge>
-              </div>
-            )}
+          {/* Patient Name - Use prop from C3DFileBrowser */}
+          {patientName && (
+            <div className="flex items-center gap-1.5">
+              <PersonIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span className="text-secondary-foreground font-medium">{patientName}</span>
+            </div>
+          )}
 
-            {/* Session Date - Consistent with C3DFileBrowser priorities */}
-            <div className="flex items-center space-x-2">
-              <CalendarIcon className="h-4 w-4 text-slate-400" />
-              <span className="text-slate-600 text-xs">Session:</span>
-              <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs">
+          {/* Therapist - Use prop from C3DFileBrowser */}
+          {(therapistDisplay || (resolvedTherapistId && resolvedTherapistId !== 'Unknown')) && (
+            <div className="flex items-center gap-1.5" data-testid="therapist-section">
+              <PersonIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <Badge {...therapistBadgeProps} className="h-5 text-xs">
+                {therapistDisplay || resolvedTherapistId}
+              </Badge>
+            </div>
+          )}
+
+          {/* Session Date with tooltip like C3DFileList */}
+          <div className="flex items-center gap-1.5">
+            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+            {resolvedSessionDate ? (
+              <span className="text-secondary-foreground cursor-help hover:text-foreground transition-colors"
+                    title={`Full timestamp: ${new Date(resolvedSessionDate).toLocaleString()}`}>
                 {formatDate(resolvedSessionDate)}
-              </Badge>
-            </div>
-
-            {/* Upload Date */}
-            <div className="flex items-center space-x-2">
-              <span className="text-slate-600 text-xs">Upload:</span>
-              <Badge variant="outline" className="text-slate-600 border-slate-300 text-xs">
-                {uploadDate ? formatUploadDate(uploadDate) : 'N/A'}
-              </Badge>
-            </div>
-
-            {/* Duration */}
-            {metadata?.session_duration && (
-              <div className="flex items-center space-x-2">
-                <ClockIcon className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-600 text-xs">Duration:</span>
-                <Badge variant="outline" className="text-slate-700 border-slate-300 text-xs">
-                  {formatDuration(metadata.session_duration)}
-                </Badge>
-              </div>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">N/A</span>
             )}
           </div>
 
-          {/* Action button */}
-          {onReset && (
-            <div className="flex-shrink-0 ml-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onReset}
-                className="text-xs"
-              >
-                Load Another File
-              </Button>
+          {/* File Size with session quality indicator like C3DFileList */}
+          <div className="flex items-center gap-1.5">
+            <ArchiveIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+            <span className="text-secondary-foreground">{formatFileSize(fileSize)}</span>
+            {/* Short session indicator based on C3DFileList logic */}
+            {fileSize && fileSize < 50000 && (
+              <span className="text-amber-600 text-xs" title="Short session: File size suggests therapy session may be incomplete">
+                ⚠️ Short
+              </span>
+            )}
+          </div>
+
+          {/* Duration */}
+          {metadata?.session_duration && (
+            <div className="flex items-center gap-1.5">
+              <ClockIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span className="text-secondary-foreground">{formatDuration(metadata.session_duration)}</span>
             </div>
           )}
+
+          {/* Clinical Notes Count with enhanced display like C3DFileList */}
+          {clinicalNotesCount !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <FileIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+              {clinicalNotesCount > 0 ? (
+                <span className="text-secondary-foreground font-medium">
+                  {clinicalNotesCount} note{clinicalNotesCount !== 1 ? 's' : ''}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">No notes</span>
+              )}
+            </div>
+          )}
+
+          {/* Session Quality Indicators */}
+          {metadata?.session_notes && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs bg-muted px-2 py-1 rounded text-secondary-foreground">
+                📝 Has Notes
+              </span>
+            </div>
+          )}
+
+          {/* Upload Date */}
+          <div className="flex items-center gap-1.5 text-muted-foreground/80">
+            <span>Uploaded {uploadDate ? formatUploadDate(uploadDate) : 'N/A'}</span>
+          </div>
         </div>
 
-        {/* Additional notes on second line if present */}
+        {/* Session Notes (if present) */}
         {metadata?.session_notes && (
-          <div className="flex items-center space-x-2 mt-2 pt-2 border-t border-slate-200">
-            <span className="text-slate-600 text-xs">Notes:</span>
-            <span className="text-slate-700 italic text-xs">
-              {metadata.session_notes}
-            </span>
+          <div className="mt-3 pt-3 border-t border-muted">
+            <div className="flex items-start gap-2">
+              <span className="text-muted-foreground text-xs mt-0.5">Session Notes:</span>
+              <span className="text-secondary-foreground text-xs italic leading-relaxed">
+                {metadata.session_notes}
+              </span>
+            </div>
           </div>
         )}
       </div>
