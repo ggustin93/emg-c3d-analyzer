@@ -196,8 +196,10 @@ class EMGAnalysisResult(BaseModel):
     
     # NEW: Clinical data integration fields (matching frontend interface)
     session_parameters: dict[str, Any] | None = None      # Session configuration from C3D metadata
+    session_configuration: dict[str, Any] | None = None   # NEW: Formatted session config with units
     processing_parameters: dict[str, Any] | None = None   # Processing parameters documentation
     performance_analysis: dict[str, Any] | None = None    # Performance scoring analysis
+    scoring_configuration: dict[str, Any] | None = None   # NEW: GHOSTLY+ scoring weights
 
 
 class EMGRawData(BaseModel):

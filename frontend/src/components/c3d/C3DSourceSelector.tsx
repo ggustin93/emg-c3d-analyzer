@@ -27,7 +27,7 @@ const C3DSourceSelector: React.FC<C3DSourceSelectorProps> = ({
       {/* File Browser Section - Primary Focus */}
       <C3DFileBrowser onFileSelect={onQuickSelect} isLoading={isLoading} />
 
-      {/* Upload Section - Secondary/Subtle */}
+      {/* Upload Section - DISABLED
       <div className="border-t border-slate-200 pt-8">
         <Card className="border-slate-200 bg-white">
           <CardContent className="px-6 pb-5 pt-5">
@@ -55,6 +55,7 @@ const C3DSourceSelector: React.FC<C3DSourceSelectorProps> = ({
           </CardContent>
         </Card>
       </div>
+      */}
     </div>
   );
 };

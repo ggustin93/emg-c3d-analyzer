@@ -1,7 +1,9 @@
-"""Enhanced export service for EMG data with performance scores.
+"""Enhanced export service for EMG data with single source of truth architecture.
 
-Following MVP approach: extend existing system with missing performance data.
-Architecture follows backend CLAUDE.md: Repository pattern, DRY principle, synchronous Supabase.
+ARCHITECTURE EVOLUTION: Leverages enhanced upload route as single source of truth.
+- v1: Database-dependent export (legacy)  
+- v2: Upload route single source of truth (NEW) - Uses enhanced EMGAnalysisResult
+Following backend CLAUDE.md: KISS principle, DRY, stateless where possible.
 """
 
 import logging
@@ -12,20 +14,33 @@ logger = logging.getLogger(__name__)
 
 
 class EnhancedEMGDataExporter:
-    """Enhanced EMG data export service with performance scores and configuration.
+    """Enhanced EMG data export service with single source of truth architecture.
     
-    Following MVP approach: extend existing system with missing performance data.
-    Architecture follows backend CLAUDE.md: Repository pattern, DRY principle.
+    ARCHITECTURE EVOLUTION:
+    - v1 (Legacy): Database-dependent, requires populated therapy_sessions table
+    - v2 (NEW): Single source of truth from enhanced upload route - stateless
+    
+    🔄 MIGRATION GUIDE:
+    - DEPRECATED: export_data(), get_comprehensive_export_data(), _get_base_export_data()
+    - DEPRECATED: _get_performance_scores(), _get_scoring_configuration() 
+    - ✅ USE: get_export_data_from_analysis_result(analysis_result) for v2 architecture
+    - ✅ BENEFIT: No database queries, richer data, better performance
+    
+    Following backend CLAUDE.md: KISS principle, DRY, Repository pattern where needed.
     """
 
-    def __init__(self, processor: Any, supabase_client=None):
+    def __init__(self, processor: Any = None, supabase_client=None):
         self.processor = processor
         self.supabase = supabase_client  # Synchronous client (CLAUDE.md #14)
 
     def export_data(
         self, channels_to_export: list[str], file_name: str, export_options: dict[str, Any]
     ) -> dict[str, Any]:
-        """Export EMG data in requested format with enhanced performance data."""
+        """Export EMG data in requested format with enhanced performance data.
+        
+        ⚠️ DEPRECATED (v1 Legacy): This method uses processor-based logic and will be removed.
+        🔄 MIGRATE TO: get_export_data_from_analysis_result() for v2 single source of truth architecture.
+        """
         try:
             # Get the processed data from processor  
             if not hasattr(self.processor, "latest_analysis_result"):
@@ -65,8 +80,81 @@ class EnhancedEMGDataExporter:
         except Exception as e:
             return {"success": False, "error": str(e), "message": "Export failed"}
 
+    def get_export_data_from_analysis_result(self, analysis_result: Any) -> dict[str, Any]:
+        """Get comprehensive export data from enhanced EMGAnalysisResult (v2 - Single Source of Truth).
+        
+        NEW ARCHITECTURE: Uses enhanced upload route data as single source of truth.
+        No database dependencies - all data comes from the enhanced upload response.
+        
+        Args:
+            analysis_result: Enhanced EMGAnalysisResult from upload route
+            
+        Returns:
+            Complete export data ready for CSV conversion
+        """
+        try:
+            # Convert EMGAnalysisResult to export format
+            export_data = {
+                "session_metadata": {
+                    "export_timestamp": datetime.now().isoformat(),
+                    "export_method": "single_source_of_truth_v2",
+                    "source": "enhanced_upload_route",
+                    
+                    # Basic file info
+                    "file_id": getattr(analysis_result, 'file_id', ''),
+                    "source_filename": getattr(analysis_result, 'source_filename', ''),
+                    "timestamp": getattr(analysis_result, 'timestamp', ''),
+                    "user_id": getattr(analysis_result, 'user_id', ''),
+                    "patient_id": getattr(analysis_result, 'patient_id', ''), 
+                    "session_id": getattr(analysis_result, 'session_id', ''),
+                    
+                    # EMG data
+                    "available_channels": getattr(analysis_result, 'available_channels', []),
+                    "analytics": getattr(analysis_result, 'analytics', {}),
+                    "emg_signals": getattr(analysis_result, 'emg_signals', {}),
+                    "c3d_parameters": getattr(analysis_result, 'c3d_parameters', {}),
+                }
+            }
+            
+            # Add session configuration (NEW - from enhancement)
+            session_configuration = getattr(analysis_result, 'session_configuration', {})
+            if session_configuration:
+                export_data["session_configuration"] = session_configuration
+                
+            # Add scoring configuration (NEW - from enhancement)  
+            scoring_configuration = getattr(analysis_result, 'scoring_configuration', {})
+            if scoring_configuration:
+                export_data["scoring_configuration"] = scoring_configuration
+                
+            # Add enhanced performance analysis (NEW - from enhancement)
+            performance_analysis = getattr(analysis_result, 'performance_analysis', {})
+            if performance_analysis:
+                export_data["performance_analysis"] = performance_analysis
+                
+            # Add original session parameters for context
+            if hasattr(analysis_result, 'metadata') and analysis_result.metadata:
+                metadata = analysis_result.metadata
+                if hasattr(metadata, 'session_parameters_used'):
+                    export_data["session_parameters"] = metadata.session_parameters_used
+            
+            logger.info(f"✅ Single source of truth export data created with {len(export_data)} top-level sections")
+            return export_data
+            
+        except Exception as e:
+            logger.error(f"Failed to create export data from analysis result: {e}")
+            return {
+                "session_metadata": {
+                    "export_timestamp": datetime.now().isoformat(),
+                    "export_method": "single_source_of_truth_v2",
+                    "error": f"Export failed: {str(e)}"
+                }
+            }
+
     def get_comprehensive_export_data(self, session_id: str) -> dict[str, Any]:
         """Get comprehensive export data including performance scores and configuration.
+        
+        ⚠️ DEPRECATED (v1 Legacy): Database-dependent method, performance-limited.
+        🔄 MIGRATE TO: get_export_data_from_analysis_result() for v2 single source of truth.
         
         MVP implementation: Add missing performance data to existing export.
         Following KISS principle - simple extension of existing functionality.
@@ -100,7 +188,10 @@ class EnhancedEMGDataExporter:
             return self._get_base_export_data()
 
     def _get_base_export_data(self) -> dict[str, Any]:
-        """Get base export data from existing processor."""
+        """Get base export data from existing processor.
+        
+        ⚠️ DEPRECATED (v1 Legacy): Processor-dependent helper method.
+        """
         if not hasattr(self.processor, "latest_analysis_result"):
             return {"session_metadata": {"export_timestamp": datetime.now().isoformat()}}
             
@@ -129,7 +220,10 @@ class EnhancedEMGDataExporter:
         }
 
     def _get_performance_scores(self, session_id: str) -> dict[str, Any]:
-        """Get performance scores from database (Repository pattern)."""
+        """Get performance scores from database (Repository pattern).
+        
+        ⚠️ DEPRECATED (v1 Legacy): Database query method, replaced by enhanced upload route data.
+        """
         try:
             # Query performance_scores table (17+ fields as per database schema)
             result = (
@@ -151,7 +245,10 @@ class EnhancedEMGDataExporter:
             return {"error": "Failed to fetch performance scores"}
 
     def _get_scoring_configuration(self, session_id: str) -> dict[str, Any]:
-        """Get scoring configuration for reproducibility."""
+        """Get scoring configuration for reproducibility.
+        
+        ⚠️ DEPRECATED (v1 Legacy): Database query method, replaced by enhanced upload route data.
+        """
         try:
             # Get session's scoring configuration
             session_result = (

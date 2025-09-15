@@ -53,7 +53,7 @@ export function TherapistDashboard({ activeTab = 'sessions' }: { activeTab?: str
       case 'sessions':
         return (
           <div className="h-full bg-gray-50/30">
-            <div className="p-6">
+            <div className="p-8">
               <C3DFileBrowser onFileSelect={handleFileSelect} />
             </div>
           </div>

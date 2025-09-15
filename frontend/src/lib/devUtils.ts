@@ -1,4 +1,4 @@
-const MOCK_THERAPISTS = ['Dr. Aris', 'Dr. Tsam', 'Dr. Pablo'];
+// Utility functions for development environment
 
 const getFileHash = (fileId: string): number => {
   let hash = 0;
@@ -10,11 +10,5 @@ const getFileHash = (fileId: string): number => {
   return Math.abs(hash);
 };
 
-export const getMockTherapistName = (fileId: string): string => {
-  if (!fileId) {
-    return 'Unknown Therapist';
-  }
-  const hash = getFileHash(fileId);
-  const index = hash % MOCK_THERAPISTS.length;
-  return MOCK_THERAPISTS[index];
-};
+// Export hash function in case needed elsewhere
+export { getFileHash };

@@ -28,6 +28,7 @@ import {
   C3DFile,
   resolvePatientId,
   resolveTherapistId,
+  resolveTherapistName,
   resolveSessionDate,
   formatSessionDateTime,
   getPatientIdBadgeProps,
@@ -37,6 +38,7 @@ import {
   formatFullDate,
   isShortSession
 } from '@/services/C3DFileDataResolver';
+import { TherapistCache } from '@/types/therapist';
 
 // Get bucket name from environment variable or use default (consistent with C3DFileBrowser)
 const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
@@ -63,6 +65,9 @@ interface C3DFileListProps {
   onSort: (field: SortField) => void;
   visibleColumns: ColumnVisibility;
   resolveSessionDate?: (file: C3DFile) => string | null;
+  therapistData?: TherapistCache;
+  therapistCache?: Record<string, any>; // New prop for patient-based therapist resolution
+  userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null; // New prop for role-based visibility
   // Clinical Notes props
   notesIndicators?: Record<string, number>;
   notesLoading?: boolean;
@@ -78,12 +83,16 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   onSort,
   visibleColumns,
   resolveSessionDate: customResolveSessionDate,
+  therapistData = {},
+  therapistCache = {}, // New prop
+  userRole: propUserRole, // Accept userRole from props
   // Clinical Notes props
   notesIndicators = {},
   notesLoading = false
 }) => {
-  // Auth context for role-based rendering
-  const { userRole } = useAuth();
+  // Auth context for role-based rendering (fallback if not provided via props)
+  const { userRole: contextUserRole } = useAuth();
+  const userRole = propUserRole !== undefined ? propUserRole : contextUserRole;
 
   // UI states
   const [loadingFileId, setLoadingFileId] = useState<string | null>(null);
@@ -126,6 +135,18 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     // RESEARCHER or any other role: Only show patient code
     return patientCode;
   }, [userRole]);
+  
+  // Helper function to get therapist display using therapistCache
+  const getTherapistDisplay = useCallback((file: C3DFile): string => {
+    // First try the new therapistCache which is indexed by file name
+    const therapist = therapistCache[file.name];
+    if (therapist && therapist.display_name) {
+      return therapist.display_name;
+    }
+    
+    // Fallback to the old method using therapistData
+    return resolveTherapistName(file, therapistData);
+  }, [therapistCache, therapistData]);
   
   // Column resize states
   const [filenameColumnWidth, setFilenameColumnWidth] = useState(() => {
@@ -237,7 +258,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
       <div className={className}>
 
         {/* Table Header */}
-        <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-3 pt-2">
+        <div className="hidden md:flex gap-4 text-sm font-medium text-slate-600 border-b pb-2 pt-1">
           <div className="relative" style={{ width: `${filenameColumnWidth}px` }}>
             <button 
               onClick={() => onSort('name')}
@@ -267,7 +288,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               </button>
             </div>
           )}
-          {visibleColumns.therapist_id && (
+          {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
             <div className="flex-1 min-w-0">
               <button 
                 onClick={() => onSort('therapist_id')}
@@ -405,11 +426,11 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                           </Badge>
                         </div>
                       )}
-                      {visibleColumns.therapist_id && (
+                      {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
                         <div className="flex items-center gap-2">
                           <span>Therapist:</span>
-                          <Badge {...getTherapistIdBadgeProps(resolveTherapistId(file))}>
-                            {resolveTherapistId(file)}
+                          <Badge {...getTherapistIdBadgeProps(getTherapistDisplay(file))}>
+                            {getTherapistDisplay(file)}
                           </Badge>
                         </div>
                       )}
@@ -594,11 +615,11 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                         </div>
                       </div>
                     )}
-                    {visibleColumns.therapist_id && (
+                    {visibleColumns.therapist_id && userRole !== 'THERAPIST' && (
                       <div className="px-3 py-2 flex-1 min-w-0">
                         <div className="flex items-center">
-                          <Badge {...getTherapistIdBadgeProps(resolveTherapistId(file))}>
-                            {resolveTherapistId(file)}
+                          <Badge {...getTherapistIdBadgeProps(getTherapistDisplay(file))}>
+                            {getTherapistDisplay(file)}
                           </Badge>
                         </div>
                       </div>

@@ -1,7 +1,7 @@
 import { C3DFileInfo } from '@/services/supabaseStorage';
-import { getMockTherapistName } from '@/lib/devUtils';
 import { getPatientColors, getTherapistColors } from '@/lib/unifiedColorSystem';
 import { logger, LogCategory } from '@/services/logger';
+import therapistService, { TherapistCache } from '@/services/therapistService';
 
 /**
  * 🔧 CONFIGURABLE DATA RETRIEVAL PRIORITIES
@@ -19,6 +19,7 @@ import { logger, LogCategory } from '@/services/logger';
  * 👨‍⚕️ THERAPIST ID RESOLUTION:
  * 1. C3D Metadata (metadata.therapist_id) - HIGHEST PRIORITY
  * 2. Storage Metadata (therapist_id) - FALLBACK
+ * Note: Returns UUID, use resolveTherapistName() for display names
  */
 
 // Enhanced C3DFile type with resolved fields
@@ -80,28 +81,41 @@ export const resolvePatientId = (file: C3DFile): string => {
 /**
  * 👨‍⚕️ THERAPIST ID RESOLUTION STRATEGY
  * 
- * Resolves therapist ID with consistent priority:
+ * Resolves therapist UUID with consistent priority:
  * 1. C3D metadata therapist_id (from C3D analysis)
  * 2. Storage metadata therapist_id
- * 3. Default to 'Unknown'
+ * 3. Returns null if not found (to be handled by caller)
  */
-export const resolveTherapistId = (file: C3DFile): string => {
-  // DEV MODE: Assign random therapist for demo purposes
-  if (import.meta.env.DEV) {
-    const realId = file.metadata?.therapist_id || file.therapist_id;
-    if (realId) {
-      return realId;
-    }
-    const mockName = getMockTherapistName(file.id);
-    // Use a stable mock name based on file ID
-    return mockName;
+export const resolveTherapistId = (file: C3DFile): string | null => {
+  const therapistId = file.metadata?.therapist_id || file.therapist_id;
+  return therapistId || null;
+};
+
+/**
+ * 👨‍⚕️ THERAPIST NAME RESOLUTION STRATEGY
+ * 
+ * Resolves therapist display name from cached therapist data:
+ * 1. Lookup therapist by UUID in provided cache
+ * 2. Return formatted "Prénom Nom" or fallback user_code
+ * 3. Fallback to truncated UUID if not found
+ */
+export const resolveTherapistName = (
+  file: C3DFile, 
+  therapistCache?: TherapistCache
+): string => {
+  const therapistId = resolveTherapistId(file);
+  
+  if (!therapistId || !therapistCache) {
+    return therapistService.getUnknownTherapistDisplay(therapistId);
   }
 
-  // PRODUCTION MODE: Standard resolution
-  const prodId = file.metadata?.therapist_id || 
-         file.therapist_id || 
-         'Unknown';
-  return prodId;
+  const therapistInfo = therapistCache[therapistId];
+  if (therapistInfo) {
+    return therapistInfo.display_name;
+  }
+
+  // Fallback si pas trouvé en cache
+  return therapistService.getUnknownTherapistDisplay(therapistId);
 };
 
 /**
@@ -302,37 +316,34 @@ export const formatFullDate = (dateString: string): string => {
 /**
  * 📅 FORMAT SESSION DATETIME WITH TIME AWARENESS
  * 
- * Displays date with time when available, date-only otherwise
- * Provides user-friendly format for session timestamps
+ * Simplified format: "DD/MM/YY, HH:MM" (24-hour)
+ * Shows date-only when no time component available
  */
 export const formatSessionDateTime = (dateTimeString: string | null): string => {
   if (!dateTimeString) return 'Unknown';
   
   try {
     const date = new Date(dateTimeString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    
+    // Format date components
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
     
     // Check if time component exists (not midnight from fallback)
     const hasTime = dateTimeString.includes('T') && 
                    !dateTimeString.endsWith('T00:00:00');
     
     if (hasTime) {
-      // Full datetime format with time
-      return date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      // Full datetime format: "DD/MM/YY, HH:MM" (24-hour)
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${day}/${month}/${year}, ${hours}:${minutes}`;
     }
     
-    // Date-only format
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    // Date-only format: "DD/MM/YY"
+    return `${day}/${month}/${year}`;
   } catch (e) {
     return 'Invalid date';
   }

@@ -12,6 +12,7 @@ import {
   CalendarIcon,
   UploadIcon,
   MixerHorizontalIcon,
+  ActivityLogIcon,
   ViewGridIcon,
   FileIcon
 } from '@radix-ui/react-icons';
@@ -29,11 +30,13 @@ import {
   C3DFile,
   resolvePatientId,
   resolveTherapistId,
+  resolveTherapistName,
   resolveSessionDate,
   resolveSessionDateTime,
   formatSessionDateTime,
   getSizeCategory
 } from '@/services/C3DFileDataResolver';
+import therapistService, { TherapistCache } from '@/services/therapistService';
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
@@ -65,7 +68,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   onFileSelect,
   isLoading = false
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, userRole } = useAuth();
   
   // Core states
   const [files, setFiles] = useState<C3DFile[]>([]);
@@ -75,20 +78,25 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   // Session data state
   const [sessionData, setSessionData] = useState<Record<string, TherapySession>>({});
   
+  // Therapist data state
+  const [therapistData, setTherapistData] = useState<TherapistCache>({});
+  const [therapistCache, setTherapistCache] = useState<Record<string, any>>({});
+  
   // Filter states
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
-    patientIdFilter: '',
-    therapistIdFilter: '',
+    patientIdFilter: 'all',
+    therapistIdFilter: 'all',
     dateFromFilter: '',
     dateToFilter: '',
     timeFromFilter: '',
     timeToFilter: '',
-    sizeFilter: 'all'
+    sizeFilter: 'all',
+    clinicalNotesFilter: 'all'
   });
   
   // UI states
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Always show filters by default
   const [isSettingUp, setIsSettingUp] = useState(false);
   
   // Pagination states
@@ -136,13 +144,56 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       // Create file paths from storage files (bucket/object format)
       const filePaths = fileList.map(file => `${BUCKET_NAME}/${file.name}`);
       
-      
       const sessions = await TherapySessionsService.getSessionsByFilePaths(filePaths);
       
       setSessionData(sessions);
     } catch (error) {
       logger.warn(LogCategory.API, 'Failed to load session data:', error);
       // Not critical - continue without session data
+    }
+  }, []);
+
+  // Load therapist data using new patient-code based resolution
+  const loadTherapistData = useCallback(async (fileList: C3DFile[]) => {
+    if (!fileList.length) return;
+
+    try {
+      // Extract patient codes from file paths
+      const patientCodes = fileList
+        .map(file => therapistService.extractPatientCodeFromPath(file.name))
+        .filter((code): code is string => !!code);
+      
+      const uniquePatientCodes = Array.from(new Set(patientCodes));
+      
+      if (uniquePatientCodes.length > 0) {
+        // Use the new batch resolution API
+        const therapists = await therapistService.resolveTherapistsForPatientCodes(uniquePatientCodes);
+        
+        // Create cache indexed by file name for easy lookup
+        const cache: Record<string, any> = {};
+        fileList.forEach(file => {
+          const patientCode = therapistService.extractPatientCodeFromPath(file.name);
+          if (patientCode && therapists[patientCode.toUpperCase()]) {
+            cache[file.name] = therapists[patientCode.toUpperCase()];
+          }
+        });
+        
+        setTherapistCache(cache);
+        
+        // Also maintain backward compatibility with therapistData
+        const therapistDataById: TherapistCache = {};
+        Object.values(therapists).forEach((therapist: any) => {
+          if (therapist.id) {
+            therapistDataById[therapist.id] = therapist;
+          }
+        });
+        setTherapistData(therapistDataById);
+      }
+    } catch (error) {
+      logger.warn(LogCategory.API, 'Failed to load therapist data:', error);
+      // Not critical - continue without therapist data
+      setTherapistData({});
+      setTherapistCache({});
     }
   }, []);
 
@@ -222,8 +273,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         } else {
           setFiles(supabaseFiles);
           setError(null);
-          // Load session data after files are loaded
+          // Load session and therapist data after files are loaded
           loadSessionData(supabaseFiles);
+          loadTherapistData(supabaseFiles);
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
@@ -287,11 +339,11 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return files.filter(file => {
       const matchesSearch = file.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
       const resolvedPatient = resolvePatientId(file);
-      const resolvedTherapist = resolveTherapistId(file);
-      const matchesPatientId = !filters.patientIdFilter || 
+      const resolvedTherapistName = resolveTherapistName(file, therapistData);
+      const matchesPatientId = filters.patientIdFilter === 'all' || 
         resolvedPatient.toLowerCase().includes(filters.patientIdFilter.toLowerCase());
-      const matchesTherapistId = !filters.therapistIdFilter || 
-        resolvedTherapist.toLowerCase().includes(filters.therapistIdFilter.toLowerCase());
+      const matchesTherapistId = filters.therapistIdFilter === 'all' || 
+        resolvedTherapistName.toLowerCase().includes(filters.therapistIdFilter.toLowerCase());
       
       // Session date range filtering using enhanced resolver
       let matchesDateRange = true;
@@ -327,9 +379,24 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       const matchesSize = filters.sizeFilter === 'all' || 
         getSizeCategory(file.size) === filters.sizeFilter;
 
-      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesTimeRange && matchesSize;
+      // Check clinical notes filter - use user-specific notes count
+      let matchesClinicalNotes = true;
+      if (filters.clinicalNotesFilter !== 'all') {
+        // Check if the current user (author) has any clinical notes for this file
+        const filePath = `c3d-examples/${file.name}`;
+        const userNotesCount = simpleNotes.notesCount[filePath] || 0;
+        const hasUserNotes = userNotesCount > 0;
+        
+        if (filters.clinicalNotesFilter === 'with_notes') {
+          matchesClinicalNotes = hasUserNotes;
+        } else if (filters.clinicalNotesFilter === 'without_notes') {
+          matchesClinicalNotes = !hasUserNotes;
+        }
+      }
+
+      return matchesSearch && matchesPatientId && matchesTherapistId && matchesDateRange && matchesTimeRange && matchesSize && matchesClinicalNotes;
     });
-  }, [files, filters, resolveEnhancedSessionDate]);
+  }, [files, filters, resolveEnhancedSessionDate, therapistData, simpleNotes.notesCount]);
 
   // Sorted files (apply sorting to ALL filtered results)
   const sortedFiles = useMemo(() => {
@@ -342,8 +409,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         aValue = resolvePatientId(a);
         bValue = resolvePatientId(b);
       } else if (sortField === 'therapist_id') {
-        aValue = resolveTherapistId(a);
-        bValue = resolveTherapistId(b);
+        aValue = resolveTherapistName(a, therapistData);
+        bValue = resolveTherapistName(b, therapistData);
       } else if (sortField === 'session_date') {
         aValue = resolveEnhancedSessionDate(a);
         bValue = resolveEnhancedSessionDate(b);
@@ -377,7 +444,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     });
 
     return sorted;
-  }, [filteredFiles, sortField, sortDirection, resolveEnhancedSessionDate]);
+  }, [filteredFiles, sortField, sortDirection, resolveEnhancedSessionDate, therapistData]);
 
   // Pagination calculations (now applied to sorted data)
   const totalFiles = sortedFiles.length;
@@ -419,13 +486,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const clearFilters = () => {
     setFilters({
       searchTerm: '',
-      patientIdFilter: '',
-      therapistIdFilter: '',
+      patientIdFilter: 'all',
+      therapistIdFilter: 'all',
       dateFromFilter: '',
       dateToFilter: '',
       timeFromFilter: '',
       timeToFilter: '',
-      sizeFilter: 'all'
+      sizeFilter: 'all',
+      clinicalNotesFilter: 'all'
     });
   };
 
@@ -433,8 +501,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.searchTerm) count++;
-    if (filters.patientIdFilter) count++;
-    if (filters.therapistIdFilter) count++;
+    if (filters.patientIdFilter && filters.patientIdFilter !== 'all') count++;
+    if (filters.therapistIdFilter && filters.therapistIdFilter !== 'all') count++;
     if (filters.dateFromFilter || filters.dateToFilter) count++;
     if (filters.timeFromFilter || filters.timeToFilter) count++;
     if (filters.sizeFilter && filters.sizeFilter !== 'all') count++;
@@ -447,10 +515,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return Array.from(ids).sort();
   }, [files]);
 
-  const uniqueTherapistIds = useMemo(() => {
-    const ids = new Set(files.map(f => resolveTherapistId(f)));
-    return Array.from(ids).sort();
-  }, [files]);
+  // Get unique therapist names for filter dropdown (using useMemo for performance)
+  const uniqueTherapistNames = useMemo(() => {
+    const names = new Set(
+      files
+        .map(f => resolveTherapistName(f, therapistData))
+        .filter(name => name && !name.startsWith('Therapist ')) // Filter out fallback names
+    );
+    return Array.from(names).sort();
+  }, [files, therapistData]);
 
   // Manual retry function
   const retryLoadFiles = useCallback(() => {
@@ -490,8 +563,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         } else {
           setFiles(supabaseFiles);
           setError(null);
-          // Load session data after files are loaded
+          // Load session and therapist data after files are loaded
           loadSessionData(supabaseFiles);
+          loadTherapistData(supabaseFiles);
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
@@ -515,8 +589,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         const supabaseFiles = await SupabaseStorageService.listC3DFiles();
         setFiles(supabaseFiles);
         setError(null);
-        // Load session data after files are refreshed
+        // Load session and therapist data after files are refreshed
         loadSessionData(supabaseFiles);
+        loadTherapistData(supabaseFiles);
       }
     } catch (err) {
       setError('Failed to refresh file list. Please try again.');
@@ -645,8 +720,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
-              <ViewGridIcon className="w-5 h-5 text-blue-600" />
-              C3D File Library
+              <ActivityLogIcon className="w-5 h-5 text-blue-600" />
+              Game Session History
             </CardTitle>
             <p className="text-sm text-slate-600 mt-1">
               Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, totalFiles)}</span> of <span className="font-medium text-slate-900">{totalFiles} files</span>
@@ -659,36 +734,15 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {SupabaseStorageService.isConfigured() && (
+            {/* Upload Button - Only show for admin users */}
+            {SupabaseStorageService.isConfigured() && userRole === 'ADMIN' && (
               <C3DFileUpload
                 onUploadComplete={handleUploadComplete}
                 onError={handleUploadError}
                 disabled={isSettingUp}
               />
             )}
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 transition-all duration-200 ${
-                showFilters 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
-                  : 'hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
-              }`}
-            >
-              <MixerHorizontalIcon className="w-4 h-4" />
-              Filters
-              {showFilters ? <ChevronUpIcon className="w-4 h-4 ml-1" /> : <ChevronDownIcon className="w-4 h-4 ml-1" />}
-              {activeFilterCount > 0 && (
-                <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full font-medium ${
-                  showFilters 
-                    ? 'bg-white/20 text-white' 
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
+            {/* Filters toggle button removed - filters always visible */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -743,16 +797,14 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Filters Section */}
-        {showFilters && (
-          <C3DFilterPanel
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onClearFilters={clearFilters}
-            uniquePatientIds={uniquePatientIds}
-            uniqueTherapistIds={uniqueTherapistIds}
-          />
-        )}
+        {/* Filters Section - Always visible */}
+        <C3DFilterPanel
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={clearFilters}
+          uniquePatientIds={uniquePatientIds}
+          uniqueTherapistNames={uniqueTherapistNames}
+        />
 
         {/* File List */}
         <C3DFileList
@@ -764,6 +816,9 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           onSort={handleSort}
           visibleColumns={visibleColumns}
           resolveSessionDate={resolveEnhancedSessionDate}
+          therapistData={therapistData}
+          therapistCache={therapistCache}
+          userRole={userRole}
           notesIndicators={simpleNotes.notesCount}
           notesLoading={simpleNotes.loading}
         />

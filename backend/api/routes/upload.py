@@ -49,6 +49,113 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/upload", tags=["upload"])
 
 
+# Export Enhancement Helper Functions
+def get_rpe_description(rpe: int | None) -> str:
+    """Get Borg CR-10 scale description."""
+    if rpe is None:
+        return "Not recorded"
+    descriptions = {
+        1: 'Very Easy',
+        2: 'Easy', 
+        3: 'Moderate',
+        4: 'Somewhat Hard',
+        5: 'Hard',
+        6: 'Very Hard',
+        7: 'Very Hard+',
+        8: 'Extremely Hard',
+        9: 'Extremely Hard+',
+        10: 'Maximum Effort'
+    }
+    return descriptions.get(rpe, 'Unknown')
+
+
+def format_session_configuration(session_params: GameSessionParameters) -> dict:
+    """Format session parameters with units and descriptions."""
+    config = {}
+    
+    # RPE with descriptions (may come from metadata/game parameters)
+    if hasattr(session_params, 'rpe_pre_session') and session_params.rpe_pre_session:
+        config['rpe_pre_session'] = session_params.rpe_pre_session
+        config['rpe_pre_description'] = get_rpe_description(session_params.rpe_pre_session)
+    
+    if hasattr(session_params, 'rpe_post_session') and session_params.rpe_post_session:
+        config['rpe_post_session'] = session_params.rpe_post_session
+        config['rpe_post_description'] = get_rpe_description(session_params.rpe_post_session)
+    
+    # MVC thresholds with percentages (use existing session parameters)
+    if hasattr(session_params, 'session_mvc_value') and session_params.session_mvc_value:
+        config['session_mvc_value'] = session_params.session_mvc_value
+    
+    if hasattr(session_params, 'session_mvc_threshold_percentage') and session_params.session_mvc_threshold_percentage:
+        config['session_mvc_threshold_percentage'] = session_params.session_mvc_threshold_percentage
+        config['session_mvc_threshold_decimal'] = session_params.session_mvc_threshold_percentage / 100
+    
+    # Duration thresholds and expected contractions
+    if hasattr(session_params, 'contraction_duration_threshold') and session_params.contraction_duration_threshold:
+        config['contraction_duration_threshold'] = session_params.contraction_duration_threshold
+        config['contraction_duration_threshold_seconds'] = session_params.contraction_duration_threshold / 1000
+    
+    if hasattr(session_params, 'session_expected_contractions') and session_params.session_expected_contractions:
+        config['session_expected_contractions'] = session_params.session_expected_contractions
+    
+    if hasattr(session_params, 'session_expected_contractions_ch1') and session_params.session_expected_contractions_ch1:
+        config['session_expected_contractions_ch1'] = session_params.session_expected_contractions_ch1
+    
+    if hasattr(session_params, 'session_expected_contractions_ch2') and session_params.session_expected_contractions_ch2:
+        config['session_expected_contractions_ch2'] = session_params.session_expected_contractions_ch2
+    
+    # Session duration thresholds per muscle (if available)
+    if hasattr(session_params, 'session_duration_thresholds_per_muscle') and session_params.session_duration_thresholds_per_muscle:
+        config['session_duration_thresholds_per_muscle'] = session_params.session_duration_thresholds_per_muscle
+    
+    return config
+
+
+def get_scoring_configuration() -> dict:
+    """Get default GHOSTLY+ scoring configuration."""
+    # Import here to avoid circular imports
+    from services.clinical.performance_scoring_service import ScoringWeights
+    
+    # Use the default weights from the ScoringWeights dataclass
+    default_weights = ScoringWeights()
+    
+    return {
+        # Main weights
+        'weight_compliance': default_weights.w_compliance,  # 0.50
+        'weight_symmetry': default_weights.w_symmetry,      # 0.25
+        'weight_effort': default_weights.w_effort,          # 0.25
+        'weight_game': default_weights.w_game,              # 0.00
+        # Sub-weights for compliance
+        'weight_completion': default_weights.w_completion,  # 0.333
+        'weight_intensity': default_weights.w_intensity,    # 0.333
+        'weight_duration': default_weights.w_duration,      # 0.334
+    }
+
+
+def enhance_performance_analysis(clinical_scores: dict, session_params: GameSessionParameters) -> dict:
+    """Enhance clinical scores with additional fields for CSV export."""
+    enhanced = {**clinical_scores}  # Keep all existing scores
+    
+    # Add RPE data if available (may come from metadata or session params)
+    if hasattr(session_params, 'rpe_post_session') and session_params.rpe_post_session:
+        enhanced['rpe_value'] = session_params.rpe_post_session
+        enhanced['rpe_description'] = get_rpe_description(session_params.rpe_post_session)
+    
+    # Add scoring weights for transparency
+    enhanced['weights'] = get_scoring_configuration()
+    
+    # Add data completeness indicators
+    enhanced['data_completeness'] = {
+        'has_emg_data': bool(clinical_scores.get('compliance_score')),
+        'has_rpe': bool(getattr(session_params, 'rpe_post_session', None)),
+        'has_game_data': bool(clinical_scores.get('game_score')),
+        'has_bfr_data': False,  # Not yet implemented
+        'rpe_source': 'session_parameters' if hasattr(session_params, 'rpe_post_session') else None
+    }
+    
+    return enhanced
+
+
 
 
 @router.post("", response_model=EMGAnalysisResult)  # No slash = exact match on /upload
@@ -163,7 +270,18 @@ async def upload_file(
                 
                 # Combine EMG processing results with clinical analysis
                 result_data = raw_emg_analytics
-                result_data["performance_analysis"] = clinical_performance_scores  # Add clinical scores
+
+                # Enhance performance analysis with all fields needed for CSV
+                result_data["performance_analysis"] = enhance_performance_analysis(
+                    clinical_performance_scores,
+                    session_params
+                )
+
+                # Format session configuration for frontend
+                result_data["session_configuration"] = format_session_configuration(session_params)
+
+                # Add scoring configuration for transparency
+                result_data["scoring_configuration"] = get_scoring_configuration()
                 
             except Exception as clinical_error:
                 logger.exception(f"⚠️ Clinical processing failed, continuing with EMG data only: {clinical_error}")
@@ -224,8 +342,10 @@ async def upload_file(
             session_id=file_metadata["session_id"],
             # NEW: Include clinical data from enhanced processor
             session_parameters=result_data.get("session_parameters"),
+            session_configuration=result_data.get("session_configuration"),  # NEW: Formatted session config
             processing_parameters=result_data.get("processing_parameters"),
             performance_analysis=result_data.get("performance_analysis"),
+            scoring_configuration=result_data.get("scoring_configuration"),  # NEW: Scoring weights
         )
         return response_model
 

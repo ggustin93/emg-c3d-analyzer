@@ -13,6 +13,8 @@ from supabase import Client
 from services.analysis import mvc_service
 from services.c3d.processor import GHOSTLYC3DProcessor
 from services.clinical.notes_service import ClinicalNotesService
+from services.user.repositories.therapist_repository import TherapistRepository
+from services.user.therapist_resolution_service import TherapistResolutionService
 from database.supabase_client import get_supabase_client
 from api.dependencies.auth import get_current_user
 
@@ -85,3 +87,41 @@ def get_clinical_notes_service(
 #     """
 #     return EMGDataExporter(processor)
 # TODO: Implement export service
+
+
+def get_therapist_repository(
+    supabase_client: Client = Depends(get_authenticated_supabase)
+) -> TherapistRepository:
+    """
+    Factory for Therapist Repository instances.
+    
+    SOLID: Dependency Inversion - depends on abstraction not concrete implementation.
+    
+    Uses authenticated client to properly respect RLS policies while allowing
+    authorized users (researchers, therapists, admins) to access patient data.
+    
+    Args:
+        supabase_client: Authenticated Supabase client with user's JWT token
+        
+    Returns:
+        TherapistRepository: Repository instance for therapist data access
+    """
+    return TherapistRepository(supabase_client)
+
+
+def get_therapist_resolution_service(
+    repository: TherapistRepository = Depends(get_therapist_repository)
+) -> TherapistResolutionService:
+    """
+    Factory for Therapist Resolution Service instances.
+    
+    KISS: Simple service instantiation with repository injection.
+    DRY: Centralized service creation logic.
+    
+    Args:
+        repository: Therapist repository instance
+        
+    Returns:
+        TherapistResolutionService: Service instance for therapist resolution
+    """
+    return TherapistResolutionService(repository)

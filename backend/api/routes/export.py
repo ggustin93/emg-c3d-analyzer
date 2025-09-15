@@ -124,9 +124,6 @@ async def export_session_data(
 ):
     """Export existing session data with format selection.
     
-    MVP implementation: Add missing performance data + CSV format support.
-    Following backend CLAUDE.md: thin controller, business logic in services.
-    
     Args:
         session_id: Session UUID to export
         format: Export format ('json' or 'csv')
