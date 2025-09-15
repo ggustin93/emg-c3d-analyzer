@@ -85,8 +85,8 @@ def convert_export_to_csv(export_data: Dict[str, Any]) -> str:
         try:
             if export_data and isinstance(export_data, dict):
                 timestamp = export_data.get('session_metadata', {}).get('export_timestamp', '')
-        except:
-            pass
+        except Exception as timestamp_error:
+            logger.debug(f"Could not extract timestamp from export data: {timestamp_error}")
             
         error_df = pd.DataFrame([{
             'export_timestamp': timestamp,
