@@ -8,7 +8,8 @@ import {
   InfoCircledIcon,
   PersonIcon,
   DashboardIcon,
-  QuestionMarkCircledIcon
+  QuestionMarkCircledIcon,
+  GearIcon
 } from '@radix-ui/react-icons'
 
 interface SidebarLayoutProps {
@@ -35,6 +36,12 @@ const therapistNavItems = [
     label: 'Patients', 
     icon: PersonIcon,
     description: 'Patient management'
+  },
+  { 
+    id: 'settings', 
+    label: 'Settings', 
+    icon: GearIcon,
+    description: 'Session configuration'
   },
   { 
     id: 'faq', 
@@ -64,6 +71,12 @@ const researcherNavItems = [
     description: 'Custom analytics'
   },
   { 
+    id: 'settings', 
+    label: 'Settings', 
+    icon: GearIcon,
+    description: 'Session configuration'
+  },
+  { 
     id: 'faq', 
     label: 'FAQ', 
     icon: QuestionMarkCircledIcon,
@@ -89,7 +102,7 @@ export function SidebarLayout({ children, activeTab = 'sessions' }: SidebarLayou
     } else if (tab === 'faq') {
       // Navigate to FAQ page
       navigate('/faq')
-    } else if (tab === 'overview' || tab === 'patients' || tab === 'about' || tab === 'analytics') {
+    } else if (tab === 'overview' || tab === 'patients' || tab === 'about' || tab === 'analytics' || tab === 'settings') {
       // Navigate to dashboard with specific tab
       navigate('/dashboard', { state: { activeTab: tab } })
     }

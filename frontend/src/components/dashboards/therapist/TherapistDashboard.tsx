@@ -7,6 +7,7 @@ import Spinner from '../../ui/Spinner'
 import { PatientManagement } from './PatientManagement'
 import { TherapistOverview } from './TherapistOverview'
 import { AboutPage } from '../../about/AboutPage'
+import { SessionSettings } from '../shared/SessionSettings'
 
 /**
  * Therapist Dashboard - Patient management and session tracking
@@ -70,6 +71,13 @@ export function TherapistDashboard({ activeTab = 'sessions' }: { activeTab?: str
       
       case 'about':
         return <AboutPage />
+      
+      case 'settings':
+        return (
+          <div className="h-full bg-gray-50/30">
+            <SessionSettings />
+          </div>
+        )
       
       default:
         return null

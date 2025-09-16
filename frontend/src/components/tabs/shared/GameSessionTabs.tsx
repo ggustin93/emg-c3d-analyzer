@@ -30,7 +30,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EMGAnalysisResult, StatsData, EMGChannelSignalData } from '@/types/emg';
-import { BarChartIcon, ActivityLogIcon, GearIcon, Share1Icon, HeartIcon } from '@radix-ui/react-icons';
+import { BarChartIcon, ActivityLogIcon, Share1Icon, HeartIcon } from '@radix-ui/react-icons';
 import { EMGChart, ChartControlHeader } from '../SignalPlotsTab';
 import { CombinedChartDataPoint } from '../SignalPlotsTab/EMGChart';
 import { SignalDisplayType } from '../SignalPlotsTab/ThreeChannelSignalSelector';
@@ -38,7 +38,6 @@ import { useState, useEffect } from 'react';
 import { FilterMode } from '@/components/shared/ChannelFilter';
 import { StatsPanel } from '../GameStatsTab';
 import PerformanceCard from './performance-card';
-import SettingsTab from '@/components/tabs/SettingsTab';
 import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 import { BFRMonitoringTab } from '../BFRMonitoringTab';
@@ -299,50 +298,59 @@ export default function GameSessionTabs({
 
   return (
     <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-blue-500 rounded-lg shadow-sm bg-white overflow-hidden">
-      <div className="border-b mb-4 relative">
-        <TabsList className="w-full flex justify-between border border-primary">
-          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <ActivityLogIcon className="w-4 h-4" />
-              <span>EMG Analysis</span>
-            </div>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-1 rounded-t-lg">
+        <TabsList className="w-full flex gap-1 bg-transparent p-1">
+          <TabsTrigger 
+            value="plots" 
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
+                       data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm
+                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
+          >
+            <ActivityLogIcon className="w-4 h-4" />
+            <span className="text-sm">EMG Analysis</span>
           </TabsTrigger>
-          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <BarChartIcon className="w-4 h-4" />
-              <span>Performance Analysis</span>
-            </div>
+          
+          <TabsTrigger 
+            value="game" 
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
+                       data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm
+                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
+          >
+            <BarChartIcon className="w-4 h-4" />
+            <span className="text-sm">Performance</span>
           </TabsTrigger>
-          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground group">
-            <div className="flex items-center gap-2">
-              <HeartIcon className="w-4 h-4" />
-              <span>BFR Monitoring</span>
-              {bfrCompliant === true && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600 group-data-[state=active]:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {bfrCompliant === false && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              )}
-            </div>
+          
+          <TabsTrigger 
+            value="bfr" 
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200 group
+                       data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm
+                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
+          >
+            <HeartIcon className="w-4 h-4" />
+            <span className="text-sm">BFR Monitor</span>
+            {bfrCompliant === true && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            {bfrCompliant === false && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            )}
           </TabsTrigger>
+          
           {(userRole === 'RESEARCHER' || userRole === 'ADMIN') && (
-            <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <div className="flex items-center gap-2">
-                <Share1Icon className="w-4 h-4" />
-                <span>Export</span>
-              </div>
+            <TabsTrigger 
+              value="export" 
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
+                         data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm
+                         data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
+            >
+              <Share1Icon className="w-4 h-4" />
+              <span className="text-sm">Export</span>
             </TabsTrigger>
           )}
-          <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <GearIcon className="w-4 h-4" />
-              <span>Settings</span>
-            </div>
-          </TabsTrigger>
         </TabsList>
       </div>
 
@@ -435,44 +443,6 @@ export default function GameSessionTabs({
           />
         </TabsContent>
       )}
-
-      <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">
-        <SettingsTab
-          muscleChannels={muscleChannels}
-          disabled={appIsLoading}
-          dataPoints={dataPoints}
-          setDataPoints={setDataPoints}
-          plotChannel1Data={mainPlotChannel1Data}
-          analysisResult={analysisResult}
-          plotChannel2Data={mainPlotChannel2Data}
-          uploadedFileName={uploadedFileName}
-          
-          // Legacy contraction props
-          showGoodContractions={contractionControls.showGoodContractions && contractionControls.showHighlights}
-          setShowGoodContractions={(value) => updateContractionControl('showGoodContractions', value)}
-          showPoorContractions={contractionControls.showPoorContractions && contractionControls.showHighlights}
-          setShowPoorContractions={(value) => updateContractionControl('showPoorContractions', value)}
-          
-          // Enhanced quality props
-          showExcellentContractions={contractionControls.showExcellentContractions && contractionControls.showHighlights}
-          setShowExcellentContractions={(value) => updateContractionControl('showExcellentContractions', value)}
-          showAdequateForceContractions={contractionControls.showAdequateForceContractions && contractionControls.showHighlights}
-          setShowAdequateForceContractions={(value) => updateContractionControl('showAdequateForceContractions', value)}
-          showAdequateDurationContractions={contractionControls.showAdequateDurationContractions && contractionControls.showHighlights}
-          setShowAdequateDurationContractions={(value) => updateContractionControl('showAdequateDurationContractions', value)}
-          showInsufficientContractions={contractionControls.showInsufficientContractions && contractionControls.showHighlights}
-          setShowInsufficientContractions={(value) => updateContractionControl('showInsufficientContractions', value)}
-          
-          // Display style props  
-          showContractionAreas={contractionControls.showAreas && contractionControls.showHighlights}
-          setShowContractionAreas={(value) => updateContractionControl('showAreas', value)}
-          showContractionDots={contractionControls.showDots && contractionControls.showHighlights}
-          setShowContractionDots={(value) => updateContractionControl('showDots', value)}
-          
-          // Enhanced mode
-          useEnhancedQuality={contractionControls.useEnhancedQuality}
-        />
-      </TabsContent>
     </Tabs>
   );
 } 
