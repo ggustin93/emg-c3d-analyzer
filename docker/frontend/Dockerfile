@@ -27,9 +27,11 @@ COPY frontend/package.json frontend/package-lock.json ./
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
 # Skip husky git hooks installation in production Docker build
+# Use two-step approach: install deps without scripts, then ensure TypeScript is available
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
     HUSKY=0 npm ci --prefer-offline --no-audit --legacy-peer-deps --ignore-scripts && \
+    npm install typescript@~4.9.5 --no-save --prefer-offline && \
     npx tsc --version
 
 # Copy frontend source code
