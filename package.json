@@ -1,4 +1,10 @@
 {
+  "name": "emg-c3d-analyzer-root",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build && cd .. && mv frontend/dist .",
+    "install": "cd frontend && npm ci"
+  },
   "devDependencies": {
     "shadcn": "^3.3.0",
     "supabase": "^2.39.2"
