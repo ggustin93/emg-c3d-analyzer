@@ -189,6 +189,12 @@ API_VERSION = "2.1.0"
 API_DESCRIPTION = "EMG analysis and therapeutic assessment for C3D files"
 
 # CORS configuration
+# Dynamic CORS origins from environment or defaults
+ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "").strip()
+FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip()
+COOLIFY_PUBLIC_URL = os.getenv("COOLIFY_PUBLIC_URL", "").strip()
+
+# Build CORS origins list
 CORS_ORIGINS = [
     # Allow common Vite development ports
     "http://localhost:3000", "http://127.0.0.1:3000",
@@ -201,9 +207,26 @@ CORS_ORIGINS = [
     "http://localhost:3007", "http://127.0.0.1:3007",
     "http://localhost:3008", "http://127.0.0.1:3008",
     "http://localhost:3009", "http://127.0.0.1:3009",
+    # Production deployments - Vercel
+    "https://emg-c3d-analyzer.vercel.app",  # Vercel frontend production
+    "https://emg-c3d-analyzer-*.vercel.app",  # Vercel preview deployments
 ]
+
+# Add dynamic origins from environment
+if ALLOWED_ORIGINS_ENV:
+    # Support comma-separated list of origins from env
+    additional_origins = [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",") if origin.strip()]
+    CORS_ORIGINS.extend(additional_origins)
+
+if FRONTEND_URL:
+    # Add explicit frontend URL (used in Docker deployments)
+    CORS_ORIGINS.append(FRONTEND_URL)
+
+if COOLIFY_PUBLIC_URL:
+    # Add Coolify deployment URL
+    CORS_ORIGINS.append(COOLIFY_PUBLIC_URL)
 CORS_CREDENTIALS = True
-CORS_METHODS = ["GET", "POST", "PUT", "DELETE"]
+CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]  # Added OPTIONS for preflight
 CORS_HEADERS = ["*"]
 
 # Server configuration

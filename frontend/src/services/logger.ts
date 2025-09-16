@@ -101,16 +101,20 @@ class BrowserFileTransport {
   };
 
   constructor() {
-    this.flushInterval = window.setInterval(() => this.flush(), config.flushIntervalMs);
-    window.addEventListener('beforeunload', () => this.flush());
-    
-    // Expose metrics for monitoring
+    // Only set up flush interval and logging in development
     if (config.isDevelopment) {
+      this.flushInterval = window.setInterval(() => this.flush(), config.flushIntervalMs);
+      window.addEventListener('beforeunload', () => this.flush());
+      
+      // Expose metrics for monitoring
       (window as any).__loggerMetrics = this.metrics;
     }
   }
 
   log(level: string, category: string, message: string): void {
+    // Don't log to file transport in production
+    if (!config.isDevelopment) return;
+    
     const logEntry: LogEntry = {
       timestamp: formatTimestamp(),
       level,
@@ -142,6 +146,9 @@ class BrowserFileTransport {
   }
 
   async flush(): Promise<void> {
+    // Don't flush in production - no logging needed
+    if (!config.isDevelopment) return;
+    
     if (this.logBuffer.length === 0) return;
     
     const logs = this.logBuffer.splice(0);

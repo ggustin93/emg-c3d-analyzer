@@ -122,10 +122,32 @@ def create_app() -> FastAPI:
         """Run startup tasks including configuration validation."""
         await ensure_default_scoring_configuration()
     
-    # Configure CORS
+    # Configure CORS with dynamic origin validation
+    def is_allowed_origin(origin: str) -> bool:
+        """Check if origin is allowed, supporting wildcards."""
+        if not origin:
+            return False
+        
+        # Check exact matches
+        if origin in CORS_ORIGINS:
+            return True
+        
+        # Check wildcard patterns for Vercel preview deployments
+        if origin.startswith("https://emg-c3d-analyzer-") and origin.endswith(".vercel.app"):
+            return True
+        
+        # Check Coolify deployments (if using subdomains)
+        if "coolify" in origin.lower() or "emg-c3d" in origin.lower():
+            logger.info(f"Allowing Coolify origin: {origin}")
+            return True
+        
+        return False
+    
+    # Configure CORS with custom origin validation
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=CORS_ORIGINS,  # Base list of allowed origins
+        allow_origin_regex="https://emg-c3d-analyzer-.*\\.vercel\\.app",  # Regex for Vercel previews
         allow_credentials=CORS_CREDENTIALS,
         allow_methods=CORS_METHODS,
         allow_headers=CORS_HEADERS,
