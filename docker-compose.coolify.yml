@@ -1,0 +1,116 @@
+# EMG C3D Analyzer - Coolify Production Configuration
+# Fixed paths for Coolify deployment
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: production
+    container_name: emg-backend
+    environment:
+      # Supabase configuration
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      
+      # Redis configuration (internal)
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_CACHE_TTL_SECONDS=7200
+      - REDIS_MAX_CACHE_SIZE_MB=200
+      - REDIS_KEY_PREFIX=emg_analysis
+      
+      # Production settings
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      
+      # File storage
+      - DATA_BASE_DIR=/app/data
+      - UPLOAD_DIR=/app/data/uploads
+      - RESULTS_DIR=/app/data/results
+      - CACHE_DIR=/app/data/cache
+      
+      # Security
+      - SECRET_KEY=${SECRET_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    volumes:
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=backend"
+      - "coolify.port=8080"
+      
+  # Frontend Web Application  
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: production
+      args:
+        # Coolify automatically provides COOLIFY_PUBLIC_URL
+        - VITE_API_URL=${COOLIFY_PUBLIC_URL}/api
+        - VITE_SUPABASE_URL=${SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    container_name: emg-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=frontend"
+      - "coolify.port=8080"
+      - "coolify.public=true"  # This is the public entry point
+      
+  # Redis Cache Service
+  redis:
+    image: redis:7.2-alpine
+    container_name: emg-redis
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 300mb
+      --maxmemory-policy allkeys-lru
+      --timeout 300
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=redis"
+
+volumes:
+  redis_data:
+    driver: local
+  backend_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
