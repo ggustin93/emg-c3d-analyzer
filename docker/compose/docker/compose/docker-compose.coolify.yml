@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -61,16 +61,16 @@ services:
       target: production
       args:
         # Coolify automatically provides COOLIFY_PUBLIC_URL
-        - VITE_API_URL=${COOLIFY_PUBLIC_URL}/api
-        - VITE_SUPABASE_URL=${SUPABASE_URL}
-        - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+        - REACT_APP_API_URL=${COOLIFY_PUBLIC_URL}/api
+        - REACT_APP_SUPABASE_URL=${SUPABASE_URL}
+        - REACT_APP_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     container_name: emg-frontend
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
