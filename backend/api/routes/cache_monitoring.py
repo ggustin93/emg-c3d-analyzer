@@ -37,6 +37,16 @@ async def get_cache_health():
     """Check Redis cache health."""
     try:
         cache = await get_redis_cache()
+        
+        # Check if Redis is available
+        if cache.redis is None:
+            return CacheHealthResponse(
+                healthy=False,
+                message="Redis cache not available",
+                error="Redis module not installed or connection failed",
+                timestamp=datetime.utcnow().isoformat(),
+            )
+        
         health = await cache.health_check()
 
         return CacheHealthResponse(
@@ -61,6 +71,19 @@ async def get_cache_stats():
     """Get cache statistics."""
     try:
         cache = await get_redis_cache()
+        
+        # Check if Redis is available
+        if cache.redis is None:
+            return CacheStatsResponse(
+                status="unavailable",
+                memory_mb=0.0,
+                hit_rate=0.0,
+                hits=0,
+                misses=0,
+                total_requests=0,
+                config={"message": "Redis not available"},
+            )
+        
         stats = await cache.get_stats()
 
         if stats.get("status") == "error":

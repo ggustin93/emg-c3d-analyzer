@@ -36,6 +36,11 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
   // Get safety compliance status from database with TRUE as default fallback
   const safetyCompliant = sessionParams.bfr_monitoring?.safety_compliant ?? true;
 
+  // TODO: Link to bfr_monitoring table to get real-time sensor data
+  // TODO: Get target_aop value per patient from the database
+  // Currently using hardcoded 50% as target - should be personalized per patient
+  // Need to fetch from: sessionParams.bfr_monitoring?.target_aop or patient_specific_settings
+
   const getComplianceStatus = (side: 'left' | 'right') => {
     const sideParams = bfrParams[side];
     if (sideParams.is_compliant) {
@@ -87,7 +92,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
   const createGaugeParams = (side: 'left' | 'right') => {
     const sideParams = bfrParams[side];
     const percentage = Math.min(Math.max(sideParams.percentage_aop, 0), 100);
-    const radius = 55; // Slightly smaller for dual display
+    const radius = 65; // Adjusted for optimized display
     const circumference = 2 * Math.PI * radius;
     const complianceStatus = getComplianceStatus(side);
     return {
@@ -103,14 +108,14 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
   // Enhanced muscle card component with integrated session duration
   const MuscleCard = ({ side, title, colorIndicator }: { side: 'left' | 'right', title: string, colorIndicator: string }) => {
     const params = createGaugeParams(side);
-    const radius = 75; // Larger gauge size
+    const radius = 65; // Optimized gauge size
     const circumference = 2 * Math.PI * radius;
-    const strokeDasharray = `${(params.percentage / 100) * circumference} ${circumference}`;
+    const strokeDasharray = `${(50 / 100) * circumference} ${circumference}`; // Fixed at 50% target
     
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className={`w-5 h-5 ${colorIndicator} rounded-full`}></div>
             <h3 className="text-xl font-bold text-gray-900">{title}</h3>
@@ -160,7 +165,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
         </div>
         
         <div className="flex items-center justify-between">
-           {/* Larger Gauge - modern KISS style */}
+           {/* Larger Gauge with color indicator */}
           <div className="relative">
             <svg width="180" height="180" className="transform -rotate-90">
               {/* Background circle */}
@@ -169,49 +174,64 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 cy="90"
                 r={radius}
                 stroke="#e5e7eb"
-                strokeWidth="10"
+                strokeWidth="12"
                 fill="none"
+              />
+              {/* Target 50% colored arc - gray tones */}
+              <circle
+                cx="90"
+                cy="90"
+                r={radius}
+                stroke="#6b7280"
+                strokeWidth="12"
+                fill="none"
+                strokeDasharray={strokeDasharray}
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-out opacity-80"
+              />
+              {/* Marker at 50% position - subtle gray */}
+              <circle
+                cx="90"
+                cy="25"
+                r="5"
+                fill="#374151"
+                className="drop-shadow-sm"
               />
             </svg>
             
             {/* Center text with clinical tooltip */}
             <ClinicalTooltip
-              title="BFR Pressure Calculation"
+              title="BFR Target Pressure"
               sections={[
                 {
-                  title: "Clinical Formula:",
-                  type: "formula",
+                  title: "Sensor Status:",
+                  type: "list",
                   items: [
-                    { value: `${params.sideParams.applied_pressure} mmHg ÷ ${params.sideParams.aop_measured} mmHg × 100 = ${params.percentage.toFixed(1)}%` }
-                  ]
-                },
-                {
-                  type: "table",
-                  items: [
-                    { label: "Current", value: `${params.percentage.toFixed(1)}% of AOP` },
-                    { label: "Target", value: "50% (optimal therapeutic)" },
-                    { label: "Safe Range", value: `${params.sideParams.therapeutic_range_min}-${params.sideParams.therapeutic_range_max}%` }
+                    { description: "BFR sensors not automatically synchronized" },
+                    { description: "Target pressure set at 50% of Arterial Occlusion Pressure (AOP)" },
+                    { description: "Patient compliance based on self-reported feedback" }
                   ]
                 }
               ]}
               side="top"
             >
               <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                <div className="text-3xl font-bold text-gray-400 mb-1">
-                  —
+                <div className="text-4xl font-bold mb-1 text-gray-700">
+                  {/* TODO: Replace with dynamic target_aop from patient settings */}
+                  50%
                 </div>
-                <div className="text-sm text-gray-500 font-medium">En attente</div>
-                <div className="text-sm text-gray-400 mt-1">
-                  Synchronisation
+                <div className="text-sm text-gray-600 font-semibold">of AOP</div>
+                <div className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide font-medium">
+                  Target
                 </div>
               </div>
             </ClinicalTooltip>
           </div>
           
           {/* Integrated Information Panel */}
-          <div className="flex-1 ml-8 space-y-6">
+          <div className="flex-1 ml-6 space-y-4">
             {/* Pressure Details */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3">
               <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -235,7 +255,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             </div>
             
             {/* Session Duration - Integrated */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3">
               <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -263,7 +283,7 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                   —
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Synchronisation en attente
+                  Not synchronized
                 </div>
               </div>
             </div>
@@ -274,11 +294,11 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
   };
 
   return (
-    <div className={`p-6 ${className}`}>
-      {/* Header – single-line status with info + check icon */}
-      <div className="text-center mb-8">
-        {/* Patient Compliance Status Banner */}
-        <div className={`mb-6 p-4 rounded-lg border-2 ${
+    <div className={`p-4 ${className}`}>
+      {/* Header – compact notification with reduced spacing */}
+      <div className="text-center mb-4">
+        {/* Patient Compliance Status Banner - more compact */}
+        <div className={`mb-3 px-4 py-2.5 rounded-lg border-2 ${
           safetyCompliant 
             ? 'bg-green-50 border-green-200' 
             : 'bg-amber-50 border-amber-300'
@@ -288,20 +308,20 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
               <>
                 <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-green-800">
-                  Procédure validée par le patient — Aucun problème signalé
+                  Patient-reported compliance: Procedure completed without issues
                 </span>
               </>
             ) : (
               <>
                 <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-amber-800">
-                  Attention — Le patient a signalé une anomalie durant la procédure
+                  Warning: Patient reported an issue during the procedure
                 </span>
               </>
             )}
-          </div>
-          <div className="text-xs text-gray-600 mt-2 text-center">
-            Capteurs BFR en attente de synchronisation avec le système
+            <Badge variant="outline" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 border-gray-300">
+              Manual Entry
+            </Badge>
           </div>
         </div>
         
@@ -334,18 +354,14 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
           />
           <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
             <CheckCircledIcon className="h-4 w-4" />
-            Monitoring des pressions BFR
+            BFR Pressure Monitoring
           </span>
-          <div className="ml-3 inline-flex items-center gap-2 opacity-80">
-            <Badge variant="destructive" className="text-[10px] px-2 py-0.5">c3d:x</Badge>
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border-slate-300">Données simulées</Badge>
-          </div>
         </div>
       </div>
 
       {/* Main Content - Two Enhanced Muscle Cards */}
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <MuscleCard side="left" title="Left Muscle" colorIndicator="bg-blue-500" />
           <MuscleCard side="right" title="Right Muscle" colorIndicator="bg-red-500" />
         </div>

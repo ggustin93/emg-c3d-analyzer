@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-import redis.asyncio as redis
+try:
+    import redis.asyncio as redis
+    HAS_REDIS = True
+except ImportError:
+    redis = None  # type: ignore
+    HAS_REDIS = False
+
 from config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -40,6 +46,11 @@ class RedisCache:
 
     async def initialize(self):
         """Initialize Redis connection with graceful fallback."""
+        if not HAS_REDIS:
+            logger.warning("⚠️ Redis module not installed - cache disabled")
+            self.redis = None
+            return
+            
         try:
             # Create connection pool
             self._connection_pool = redis.ConnectionPool.from_url(
