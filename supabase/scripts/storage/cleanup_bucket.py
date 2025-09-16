@@ -383,7 +383,11 @@ class BucketCleaner:
         
         # Default patterns if none provided
         if patterns is None:
-            patterns = ["Ghostly_Emg_20231004_13-18-43-0464.c3d", "Ghostly_Emg_20200415_12-31-20-0009.c3d"]
+            patterns = [
+                "Ghostly_Emg_20231004_13-18-43-0464.c3d", 
+                "Ghostly_Emg_20200415_12-31-20-0009.c3d",
+                "Ghostly_Emg_20240304_10-05-56-0883.c3d"  # Problematic file with wrong sample numbers
+            ]
         
         if skip_test and skip_duplicates and skip_non_ghostly and skip_pattern:
             logger.error("❌ All cleanup types skipped. Nothing to do!")
