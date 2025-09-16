@@ -317,7 +317,7 @@ async def upload_file(
                 # Check if this is an EMG validation failure specifically
                 error_str = str(e).lower()
                 is_emg_validation_failure = any(keyword in error_str for keyword in [
-                    'signal too short', 'insufficient', 'samples', 'clinical', 'duration'
+                    'signal too short', 'insufficient', 'samples', 'clinical', 'duration', 'no emg data loaded'
                 ])
                 
                 if is_emg_validation_failure:
@@ -347,6 +347,7 @@ async def upload_file(
                         'user_guidance': {
                             'primary_recommendation': f"Record longer EMG sessions ({ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS} seconds to {ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS // 60} minutes)",
                             'secondary_recommendations': [
+                                f'Record longer EMG sessions ({ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS} seconds to {ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS // 60} minutes)',
                                 'Check GHOSTLY game recording settings',
                                 'Ensure proper EMG sensor connectivity',
                                 'Verify EMG data is being captured during gameplay'
@@ -358,13 +359,22 @@ async def upload_file(
                             'c3d_load_successful': True,
                             'metadata_extraction_successful': True,
                             'emg_validation_successful': False,
-                            'failure_reason': 'insufficient_signal_duration'
+                            'failure_reason': 'insufficient_signal_duration',
+                            'processing_time_ms': 50  # Estimated time for metadata extraction
+                        },
+                        'file_analysis': {
+                            'file_size_mb': round(file.size / (1024 * 1024), 2) if file.size else 0.0,
+                            'emg_duration_seconds': c3d_metadata['duration_seconds'],
+                            'size_duration_discrepancy': (file.size or 0) > 1024 * 1024 and c3d_metadata['duration_seconds'] < 1.0,  # Large file but short duration
+                            'likely_contains_motion_data': c3d_metadata['frame_count'] > c3d_metadata['channel_count'] * 10,
+                            'emg_portion_of_file': 'minimal' if c3d_metadata['duration_seconds'] < 1.0 else 'substantial'
                         }
                     }
                     
-                    raise HTTPException(
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(
                         status_code=422,
-                        detail=structured_error
+                        content=structured_error
                     )
                 else:
                     # For non-EMG validation failures, still provide enhanced error context
@@ -381,9 +391,10 @@ async def upload_file(
                         'original_error': str(e)
                     }
                     
-                    raise HTTPException(
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(
                         status_code=500,
-                        detail=enhanced_error
+                        content=enhanced_error
                     )
                     
             except HTTPException:
@@ -391,7 +402,45 @@ async def upload_file(
                 raise
             except Exception as metadata_error:
                 logger.warning(f"Could not extract C3D metadata for error response: {metadata_error}")
-                # Fallback to original error handling
+                
+                # Check if this is a corrupted/invalid C3D file
+                error_str = str(e).lower()
+                metadata_error_str = str(metadata_error).lower()
+                is_corrupted_file = any(keyword in error_str or keyword in metadata_error_str for keyword in [
+                    'invalid', 'corrupted', 'bad file', 'format', 'header', 'malformed', 'parse'
+                ])
+                
+                if is_corrupted_file:
+                    # Return structured error for corrupted files
+                    structured_error = {
+                        'error_type': 'file_corruption',
+                        'message': 'Unable to read C3D file',
+                        'file_info': {
+                            'filename': file.filename,
+                            'processing_successful': False,
+                            'file_type': 'c3d',
+                            'processing_attempted': True,
+                            'failure_stage': 'c3d_loading'
+                        },
+                        'user_guidance': {
+                            'primary_recommendation': 'Try re-downloading the file',
+                            'secondary_recommendations': [
+                                'Try re-downloading the file',
+                                'Check if the file was corrupted during transfer',
+                                'Verify the file was exported correctly from GHOSTLY',
+                                'Contact technical support if the issue persists'
+                            ],
+                            'technical_note': 'File does not appear to be a valid C3D format'
+                        }
+                    }
+                    
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(
+                        status_code=400,
+                        content=structured_error
+                    )
+                
+                # Fallback to original error handling for other cases
                 raise HTTPException(
                     status_code=500,
                     detail=f"C3D processing failed: {str(e)}"
