@@ -605,7 +605,6 @@ export function PatientProfile() {
                   <h4 className="text-lg font-medium text-gray-900 mb-2">Progress Analytics</h4>
                   <p className="text-sm text-gray-500 max-w-sm mx-auto">
                     Visualize patient progress over time with charts, metrics, and trend analysis. 
-                    Monitor improvement in strength, endurance, and compliance.
                   </p>
                   <div className="mt-6 flex justify-center gap-3">
                     <Badge variant="outline">Charts</Badge>

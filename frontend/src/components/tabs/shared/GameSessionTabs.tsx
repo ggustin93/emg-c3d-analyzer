@@ -43,6 +43,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { useLiveAnalytics } from '@/hooks/useLiveAnalytics';
 import { BFRMonitoringTab } from '../BFRMonitoringTab';
 import ExportTab from '../ExportTab/ExportTab';
+import { useAuth } from '@/contexts/AuthContext';
 
 declare module '@/types/session' {
   interface EMGMetrics {
@@ -142,6 +143,7 @@ export default function GameSessionTabs({
 }: GameSessionTabsProps) {
   const { sessionParams, setSessionParams } = useSessionStore();
   const liveAnalytics = useLiveAnalytics(analysisResult);
+  const { userRole } = useAuth();
 
   // Initialize BFR parameters with default values on first load
   useEffect(() => {
@@ -327,12 +329,14 @@ export default function GameSessionTabs({
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <Share1Icon className="w-4 h-4" />
-              <span>Export</span>
-            </div>
-          </TabsTrigger>
+          {(userRole === 'RESEARCHER' || userRole === 'ADMIN') && (
+            <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <Share1Icon className="w-4 h-4" />
+                <span>Export</span>
+              </div>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="settings" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <div className="flex items-center gap-2">
               <GearIcon className="w-4 h-4" />
@@ -423,12 +427,14 @@ export default function GameSessionTabs({
         <BFRMonitoringTab />
       </TabsContent>
 
-      <TabsContent value="export" className="p-4 bg-white rounded-lg shadow-sm">
-        <ExportTab 
-          analysisResult={analysisResult}
-          uploadedFileName={uploadedFileName}
-        />
-      </TabsContent>
+      {(userRole === 'RESEARCHER' || userRole === 'ADMIN') && (
+        <TabsContent value="export" className="p-4 bg-white rounded-lg shadow-sm">
+          <ExportTab 
+            analysisResult={analysisResult}
+            uploadedFileName={uploadedFileName}
+          />
+        </TabsContent>
+      )}
 
       <TabsContent value="settings" className="p-4 bg-white rounded-lg shadow-sm">
         <SettingsTab

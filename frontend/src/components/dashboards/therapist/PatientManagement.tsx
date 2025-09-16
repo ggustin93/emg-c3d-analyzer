@@ -213,7 +213,7 @@ function PatientTableLoading() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PersonIcon className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5 text-blue-500" />
           Patient Management
         </CardTitle>
       </CardHeader>
@@ -235,7 +235,7 @@ function EmptyPatientState() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PersonIcon className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5 text-blue-500" />
           Patient Management
         </CardTitle>
       </CardHeader>
@@ -258,7 +258,7 @@ function ErrorPatientState({ error }: { error: Error }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PersonIcon className="h-5 w-5" />
+          <PersonIcon className="h-5 w-5 text-blue-500" />
           Patient Management
         </CardTitle>
       </CardHeader>
@@ -824,7 +824,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PersonIcon className="h-5 w-5" />
+            <PersonIcon className="h-5 w-5 text-blue-500" />
             Patient Management
             <Badge variant="secondary" className="ml-auto">
               {filteredAndSortedPatients.length} of {patients.length} patients
