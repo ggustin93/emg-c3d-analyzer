@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # =============================================================================
-# Stage 1: Build the React Application (Vite) - M1 Mac Compatible
+# Stage 1: Build the React Application (Vite) - Debian-based for stability
 # =============================================================================
-FROM --platform=linux/amd64 node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 # Set build arguments
 ARG NODE_ENV=production
@@ -24,29 +24,34 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY frontend/package.json frontend/package-lock.json ./
 
+# Install system dependencies for native module compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        make \
+        g++ \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
-# Add debugging to ensure TypeScript is properly installed
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
-    npm ci --prefer-offline --no-audit --legacy-peer-deps && \
-    npm list typescript || echo "TypeScript not in local dependencies" && \
-    ls -la node_modules/.bin/ | grep tsc || echo "tsc binary not found in .bin"
+    npm ci --prefer-offline --no-audit --legacy-peer-deps
 
 # Copy frontend source code
 COPY frontend/ .
 
 # Build the application (Vite builds to 'dist' directory by default)
-# Use npx to ensure TypeScript and Vite are found explicitly
-RUN npx tsc --version && npx tsc && npx vite build
+RUN npm run build
 
 # =============================================================================
 # Stage 2: Production Web Server
 # =============================================================================
-FROM nginx:1.25-alpine AS production
+FROM nginx:1.25 AS production
 
 # Install curl for health checks
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Remove default nginx config and static files
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
