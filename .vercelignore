@@ -1,0 +1,33 @@
+# Ignore backend directory and files
+backend/
+*.py
+*.pyc
+__pycache__/
+.pytest_cache/
+venv/
+.env
+
+# Ignore development artifacts
+.DS_Store
+*.log
+node_modules/
+
+# Keep frontend source but ignore dev artifacts
+frontend/node_modules/
+frontend/.env.local
+frontend/coverage/
+frontend/build/
+frontend/docs/
+frontend/logs/
+
+# Documentation and project files
+*.md
+URGENT_*
+QUALITY_*
+CLEANUP_*
+performance-optimization-report.md
+
+# Git and CI files
+.git/
+.github/
+.husky/
