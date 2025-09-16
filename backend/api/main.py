@@ -51,10 +51,15 @@ async def ensure_default_scoring_configuration():
     
     This startup validation guarantees the default scoring configuration
     is always available, creating it with defaults from config.py if missing.
+    
+    Gracefully handles Supabase connection issues to prevent startup failures.
     """
     try:
+        # Test Supabase connectivity first
         supabase = get_supabase_client(use_service_key=True)
         default_config_id = "a0000000-0000-0000-0000-000000000001"
+        
+        logger.info("Testing Supabase connectivity for scoring configuration...")
         
         # Check if GHOSTLY-TRIAL-DEFAULT exists
         result = (
@@ -91,16 +96,36 @@ async def ensure_default_scoring_configuration():
             )
             
             if create_result.data:
-                logger.info("Created GHOSTLY-TRIAL-DEFAULT configuration with defaults from config.py")
+                logger.info("✅ Created GHOSTLY-TRIAL-DEFAULT configuration with defaults from config.py")
             else:
-                logger.error("Failed to create GHOSTLY-TRIAL-DEFAULT configuration")
+                logger.error("❌ Failed to create GHOSTLY-TRIAL-DEFAULT configuration")
         else:
-            logger.info("GHOSTLY-TRIAL-DEFAULT configuration validated successfully")
+            logger.info("✅ GHOSTLY-TRIAL-DEFAULT configuration validated successfully")
             
+    except ValueError as e:
+        # Missing environment variables
+        logger.error(f"⚠️ Supabase configuration error: {e}")
+        logger.error("   Application will start but default scoring configuration is unavailable")
+        logger.error("   Please verify SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables")
+        
     except Exception as e:
-        logger.error(f"Failed to ensure default scoring configuration: {e}")
-        # Don't fail startup, but log the error prominently
-        # The application can still function with runtime fallbacks
+        # Any other error (network, auth, etc.)
+        error_msg = str(e)
+        
+        if "401" in error_msg or "Invalid API key" in error_msg:
+            logger.error("🔑 Supabase authentication failed - invalid service key")
+            logger.error("   Check if SUPABASE_SERVICE_KEY is correct and project is active")
+        elif "403" in error_msg:
+            logger.error("🚫 Supabase access denied - insufficient permissions")
+        elif "timeout" in error_msg.lower():
+            logger.error("⏱️ Supabase connection timeout - network or server issues")
+        else:
+            logger.error(f"🚨 Unexpected Supabase error: {e}")
+            
+        logger.error("   Application will start in degraded mode")
+        logger.error("   Default scoring configuration will use runtime fallbacks from config.py")
+        
+        # Don't fail startup - application can function with runtime fallbacks
 
 
 def create_app() -> FastAPI:

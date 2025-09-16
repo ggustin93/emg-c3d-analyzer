@@ -37,27 +37,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Force include dev dependencies for build stage even in production mode
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
-    npm ci --include=dev --prefer-offline --no-audit --legacy-peer-deps
+    npm ci --only=production=false --prefer-offline --no-audit --legacy-peer-deps
 
 # Copy frontend source code
 COPY frontend/ .
 
-# Build the application (Vite builds to 'dist' directory by default)
-# Use npx to ensure TypeScript and Vite are found from node_modules/.bin
+# Verify TypeScript installation and build
 RUN npx tsc --version && \
     npx tsc --noEmit && \
-    npx vite build && \
-    ls -la dist/ && \
-    test -f dist/index.html
+    npm run build
 
 # =============================================================================
 # Stage 2: Production Web Server
 # =============================================================================
-FROM nginx:1.25 AS production
+FROM nginx:1.25-alpine AS production
 
 # Install curl for health checks
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
 # Remove default nginx config and static files
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
@@ -65,14 +61,12 @@ RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 # Copy custom nginx configuration
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
-# Copy built application from builder stage (Vite builds to 'dist' directory)
+# Copy built application from builder stage (using correct build output directory)
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Create necessary directories with proper permissions
-# Note: /tmp is already writable by all users, nginx will use it for PID file
-RUN mkdir -p /var/cache/nginx /var/log/nginx \
-    && chown -R nginx:nginx /var/cache/nginx /var/log/nginx \
-    && chmod 755 /var/cache/nginx /var/log/nginx
+RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run \
+    && chown -R nginx:nginx /var/cache/nginx /var/log/nginx /var/run
 
 # Switch to non-root user
 USER nginx
