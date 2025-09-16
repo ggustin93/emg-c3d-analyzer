@@ -7,31 +7,34 @@ import { ScoringWeights } from '@/types/emg';
 global.fetch = vi.fn();
 
 describe('useScoringConfiguration', () => {
-  const mockWeights: ScoringWeights = {
-    compliance: 0.50,  // 50% - from metricsDefinitions.md
-    symmetry: 0.25,    // 25% - from metricsDefinitions.md
-    effort: 0.25,      // 25% - from metricsDefinitions.md
-    gameScore: 0.00,   // 0% - from metricsDefinitions.md
+  // Helper: Create flexible weights that always sum to 1.0 - KISS principle
+  const createValidWeights = (overrides: Partial<ScoringWeights> = {}): ScoringWeights => ({
+    compliance: 0.40,
+    symmetry: 0.25,
+    effort: 0.25,
+    gameScore: 0.10, // Sum: 1.0
     compliance_completion: 0.333,
     compliance_intensity: 0.333,
-    compliance_duration: 0.334,
-  };
+    compliance_duration: 0.334, // Sum: 1.0
+    ...overrides
+  });
 
-  const mockConfigResponse = {
-    id: 'a0000000-0000-0000-0000-000000000001',
+  // Helper: Create mock config from weights - DRY principle
+  const createMockConfig = (weights: ScoringWeights) => ({
+    id: 'test-config-id',
     configuration_name: 'GHOSTLY-TRIAL-DEFAULT',
     description: 'Test configuration',
-    weight_compliance: 0.50,  // 50% - from metricsDefinitions.md
-    weight_symmetry: 0.25,    // 25% - from metricsDefinitions.md
-    weight_effort: 0.25,      // 25% - from metricsDefinitions.md
-    weight_game: 0.00,        // 0% - from metricsDefinitions.md
-    weight_completion: 0.333,
-    weight_intensity: 0.333,
-    weight_duration: 0.334,
+    weight_compliance: weights.compliance,
+    weight_symmetry: weights.symmetry,
+    weight_effort: weights.effort,
+    weight_game: weights.gameScore,
+    weight_completion: weights.compliance_completion,
+    weight_intensity: weights.compliance_intensity,
+    weight_duration: weights.compliance_duration,
     active: true,
     created_at: '2024-01-01',
     updated_at: '2024-01-01'
-  };
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,7 +48,7 @@ describe('useScoringConfiguration', () => {
     it('should load configuration on mount', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockConfigResponse
+        json: async () => createMockConfig(createValidWeights())
       });
 
       const { result } = renderHook(() => useScoringConfiguration());
@@ -55,9 +58,11 @@ describe('useScoringConfiguration', () => {
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
         expect(result.current.weights).toBeDefined();
-        expect(result.current.weights?.compliance).toBeGreaterThanOrEqual(0);
-        expect(result.current.weights?.compliance).toBeLessThanOrEqual(1);
-        // Verify weights sum to approximately 1.0
+        expect(result.current.weights?.compliance).toBe(0.40);
+        expect(result.current.weights?.symmetry).toBe(0.25);
+        expect(result.current.weights?.effort).toBe(0.25);
+        expect(result.current.weights?.gameScore).toBe(0.10);
+        // Verify weights sum to exactly 1.0
         const total = (result.current.weights?.compliance || 0) + 
                      (result.current.weights?.symmetry || 0) + 
                      (result.current.weights?.effort || 0) + 
@@ -68,6 +73,9 @@ describe('useScoringConfiguration', () => {
     });
 
     it('should handle missing configuration as error state', async () => {
+      // Create a spy to suppress console.error during this test
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -82,6 +90,8 @@ describe('useScoringConfiguration', () => {
         // Should show error when no config found (no fallbacks)
         expect(result.current.error).toBe('No scoring configuration found. Please contact support.');
       });
+
+      consoleSpy.mockRestore();
     });
 
     it('should handle fetch errors gracefully', async () => {
@@ -104,7 +114,7 @@ describe('useScoringConfiguration', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         });
 
       const { result } = renderHook(() => 
@@ -127,7 +137,7 @@ describe('useScoringConfiguration', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         });
 
       const { result } = renderHook(() => 
@@ -151,7 +161,7 @@ describe('useScoringConfiguration', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         });
 
       const { result } = renderHook(() => 
@@ -170,7 +180,7 @@ describe('useScoringConfiguration', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -178,7 +188,7 @@ describe('useScoringConfiguration', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         });
 
       const { result } = renderHook(() => 
@@ -190,7 +200,7 @@ describe('useScoringConfiguration', () => {
       });
 
       await act(async () => {
-        await result.current.saveCustomWeights(mockWeights, 'therapist-123', 'patient-456');
+        await result.current.saveCustomWeights(createValidWeights(), 'therapist-123', 'patient-456');
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -207,7 +217,7 @@ describe('useScoringConfiguration', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -215,7 +225,7 @@ describe('useScoringConfiguration', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         });
 
       const { result } = renderHook(() => useScoringConfiguration());
@@ -225,7 +235,7 @@ describe('useScoringConfiguration', () => {
       });
 
       await act(async () => {
-        await result.current.saveGlobalWeights(mockWeights);
+        await result.current.saveGlobalWeights(createValidWeights());
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -242,7 +252,7 @@ describe('useScoringConfiguration', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -257,7 +267,7 @@ describe('useScoringConfiguration', () => {
 
       await expect(
         act(async () => {
-          await result.current.saveGlobalWeights(mockWeights);
+          await result.current.saveGlobalWeights(createValidWeights());
         })
       ).rejects.toThrow('Failed to update default scoring configuration');
     });
@@ -267,7 +277,7 @@ describe('useScoringConfiguration', () => {
     it('should track unsaved changes', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockConfigResponse
+        json: async () => createMockConfig(createValidWeights())
       });
 
       const { result } = renderHook(() => useScoringConfiguration());
@@ -287,7 +297,7 @@ describe('useScoringConfiguration', () => {
       // Test patient-specific configuration
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockConfigResponse
+        json: async () => createMockConfig(createValidWeights())
       });
 
       const { result } = renderHook(() => 
@@ -303,7 +313,7 @@ describe('useScoringConfiguration', () => {
     it('should clear local changes', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockConfigResponse
+        json: async () => createMockConfig(createValidWeights())
       });
 
       const { result } = renderHook(() => useScoringConfiguration());
@@ -317,26 +327,25 @@ describe('useScoringConfiguration', () => {
       });
 
       // Weights should be reset to original
-      expect(result.current.weights).toEqual(mockWeights);
+      expect(result.current.weights).toEqual(createValidWeights());
     });
   });
 
   describe('Weight validation', () => {
     it('should reject invalid weights that do not sum to 1.0', async () => {
-      const invalidConfig = {
-        ...mockConfigResponse,
-        weight_compliance: 0.60,
-        weight_symmetry: 0.30,
-        weight_effort: 0.30,
-        weight_game: 0.00, // Sum = 1.20 - INVALID
-      };
+      // KISS: Create invalid weights using helper - simpler and flexible
+      const invalidWeights = createValidWeights({
+        compliance: 0.60,  // Too high - will cause validation failure
+        symmetry: 0.30     // 0.60 + 0.30 + 0.25 + 0.10 = 1.25 > 1.0
+      });
+      const invalidConfig = createMockConfig(invalidWeights);
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => invalidConfig
       });
 
-      const consoleSpy = vi.spyOn(console, 'error');
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const { result } = renderHook(() => useScoringConfiguration());
 
@@ -356,11 +365,11 @@ describe('useScoringConfiguration', () => {
 
     it('should accept weights that sum to 1.0 within tolerance', async () => {
       const validConfig = {
-        ...mockConfigResponse,
-        weight_compliance: 0.501,
-        weight_symmetry: 0.249,
-        weight_effort: 0.250,
-        weight_game: 0.000, // Sum = 1.000
+        ...createMockConfig(createValidWeights()),
+        weight_compliance: 0.401,  // 40.1%
+        weight_symmetry: 0.249,    // 24.9%
+        weight_effort: 0.250,      // 25.0%
+        weight_game: 0.100,        // 10.0% = Total: 1.000 (VALID)
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -372,9 +381,10 @@ describe('useScoringConfiguration', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.weights?.compliance).toBeCloseTo(0.501);
+        expect(result.current.weights?.compliance).toBeCloseTo(0.401);
         expect(result.current.weights?.symmetry).toBeCloseTo(0.249);
         expect(result.current.weights?.effort).toBeCloseTo(0.250);
+        expect(result.current.weights?.gameScore).toBeCloseTo(0.100);
       });
     });
   });
@@ -384,15 +394,16 @@ describe('useScoringConfiguration', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockConfigResponse
+          json: async () => createMockConfig(createValidWeights())
         })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            ...mockConfigResponse,
-            weight_compliance: 0.60,
+            ...createMockConfig(createValidWeights()),
+            weight_compliance: 0.50,
             weight_symmetry: 0.20,
             weight_effort: 0.20,
+            weight_game: 0.10, // Still sums to 1.0
           })
         });
 
@@ -413,7 +424,7 @@ describe('useScoringConfiguration', () => {
         await result.current.refetchConfiguration();
       });
 
-      expect(result.current.weights?.compliance).toBe(0.60);
+      expect(result.current.weights?.compliance).toBe(0.50);
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });

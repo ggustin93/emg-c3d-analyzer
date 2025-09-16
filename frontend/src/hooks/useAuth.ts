@@ -18,6 +18,7 @@ interface UserProfileData {
   role: string
   first_name?: string
   last_name?: string
+  full_name?: string
   institution?: string
   department?: string
   access_level: string
