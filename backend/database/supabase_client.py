@@ -79,8 +79,14 @@ def get_supabase_client(use_service_key: bool = False, jwt_token: str | None = N
             supabase_key = os.getenv("SUPABASE_ANON_KEY")
             key_type = "anon"
 
+        # Enhanced logging for Coolify debugging
+        logger.info(f"Attempting Supabase connection (key_type={key_type})...")
+        logger.info(f"URL format check: {supabase_url[:30]}..." if supabase_url else "URL is None")
+        logger.info(f"Key exists: {bool(supabase_key)}, Key length: {len(supabase_key) if supabase_key else 0}")
+
         if not supabase_url or not supabase_key:
             missing_key = "SUPABASE_SERVICE_KEY" if use_service_key else "SUPABASE_ANON_KEY"
+            logger.error(f"Missing environment variables: URL={bool(supabase_url)}, {missing_key}={bool(supabase_key)}")
             raise ValueError(f"SUPABASE_URL and {missing_key} environment variables must be set")
 
         try:

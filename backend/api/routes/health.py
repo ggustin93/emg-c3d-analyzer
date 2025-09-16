@@ -5,6 +5,8 @@ System health monitoring endpoints.
 Single responsibility: Application health status.
 """
 
+import os
+import sys
 from datetime import datetime
 
 from fastapi import APIRouter
@@ -16,6 +18,30 @@ router = APIRouter(tags=["health"])
 async def health_check():
     """Health check endpoint for container health monitoring."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+
+@router.get("/health/debug")
+async def health_debug():
+    """Debug endpoint showing environment status for troubleshooting."""
+    return {
+        "status": "running",
+        "timestamp": datetime.now().isoformat(),
+        "environment": {
+            "SUPABASE_URL": "SET" if os.getenv("SUPABASE_URL") else "MISSING",
+            "SUPABASE_ANON_KEY": "SET" if os.getenv("SUPABASE_ANON_KEY") else "MISSING",
+            "SUPABASE_SERVICE_KEY": "SET" if os.getenv("SUPABASE_SERVICE_KEY") else "MISSING",
+            "REDIS_URL": os.getenv("REDIS_URL", "not set"),
+            "ENVIRONMENT": os.getenv("ENVIRONMENT", "not set"),
+            "HOST": os.getenv("HOST", "not set"),
+            "PORT": os.getenv("PORT", "not set"),
+            "LOG_LEVEL": os.getenv("LOG_LEVEL", "not set"),
+        },
+        "system": {
+            "working_dir": os.getcwd(),
+            "python_version": sys.version,
+            "python_executable": sys.executable,
+        }
+    }
 
 
 @router.get("/")

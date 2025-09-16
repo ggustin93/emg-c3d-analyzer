@@ -26,6 +26,18 @@ log_level = get_log_level()
 setup_logging(log_level)
 logger = structlog.get_logger(__name__)
 
+# Startup diagnostics for Coolify debugging
+import os
+logger.info("=== BACKEND STARTUP DIAGNOSTICS ===")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Environment: {os.getenv('ENVIRONMENT', 'not set')}")
+logger.info(f"SUPABASE_URL: {'SET' if os.getenv('SUPABASE_URL') else 'MISSING'}")
+logger.info(f"SUPABASE_ANON_KEY: {'SET' if os.getenv('SUPABASE_ANON_KEY') else 'MISSING'}")
+logger.info(f"SUPABASE_SERVICE_KEY: {'SET' if os.getenv('SUPABASE_SERVICE_KEY') else 'MISSING'}")
+logger.info(f"REDIS_URL: {os.getenv('REDIS_URL', 'not set')}")
+logger.info(f"Working directory: {os.getcwd()}")
+logger.info(f"Files in directory: {os.listdir('.')[:10]}")  # First 10 files
+
 # Import FastAPI application
 try:
     from api.main import app
