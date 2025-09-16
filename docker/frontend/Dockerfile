@@ -42,10 +42,8 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy frontend source code
 COPY frontend/ .
 
-# Verify TypeScript installation and build
-RUN npx tsc --version && \
-    npx tsc --noEmit && \
-    npm run build
+# Build the application directly (TypeScript check is handled by Vite)
+RUN npm run build
 
 # =============================================================================
 # Stage 2: Production Web Server
