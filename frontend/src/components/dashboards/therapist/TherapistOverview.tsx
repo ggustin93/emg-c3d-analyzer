@@ -66,11 +66,11 @@ function MetricCard({
   } | React.ReactNode
 }) {
   return (
-    <Card className="transition-all duration-300 hover:shadow-lg hover:shadow-blue-50 border border-gray-200/60 shadow-sm bg-gradient-to-br from-white to-gray-50/30">
+    <Card className="transition-all duration-300 hover:shadow-xl hover:shadow-blue-100/50 hover:-translate-y-1 border border-gray-200/70 shadow-lg bg-gradient-to-br from-white via-gray-50/20 to-blue-50/10 backdrop-blur-sm">
       <CardHeader className="pb-2 pt-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg bg-gray-50/50 ${iconColor.replace('text-', 'text-')}`}>
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/80 shadow-sm ${iconColor.replace('text-', 'text-')}`}>
               <Icon className="h-5 w-5" />
             </div>
             <CardTitle className="text-sm font-semibold text-gray-700 tracking-wide">{title}</CardTitle>
@@ -129,15 +129,15 @@ function RecentC3DFileItem({ file }: { file: RecentC3DFile }) {
   return (
     <div 
       onClick={handleClick}
-      className="group flex items-center justify-between p-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-100/50"
+      className="group flex items-center justify-between p-3 rounded-lg hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-200/60 hover:backdrop-blur-sm"
     >
-      <div className="flex items-center gap-4">
-        <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
-          <AvatarFallback className={`${file.patient.avatar_color} text-white font-semibold text-sm`}>
+      <div className="flex items-center gap-3">
+        <Avatar className="h-9 w-9 ring-2 ring-white shadow-md group-hover:shadow-lg group-hover:ring-blue-100 transition-all duration-200">
+          <AvatarFallback className={`${file.patient.avatar_color} text-white font-semibold text-xs`}>
             {file.patient.avatar_initials}
           </AvatarFallback>
         </Avatar>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <p className="text-sm font-semibold text-gray-900">
             {file.patient.display_name}
           </p>
@@ -147,12 +147,12 @@ function RecentC3DFileItem({ file }: { file: RecentC3DFile }) {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+        <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 transform group-hover:scale-105">
+          <div className="text-xs font-medium text-blue-600 bg-gradient-to-r from-blue-50 to-blue-100/70 px-3 py-1.5 rounded-lg shadow-sm border border-blue-200/40">
             Analyze
           </div>
         </div>
-        <ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-blue-500" />
+        <ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-blue-500 group-hover:scale-110" />
       </div>
     </div>
   )
@@ -251,7 +251,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
   }
 
   return (
-    <div className={`flex-1 space-y-6 ${className || ''}`}>
+    <div className={`flex-1 space-y-8 bg-gradient-to-br from-gray-50/50 via-blue-50/20 to-indigo-50/30 min-h-full p-6 ${className || ''}`}>
       {/* Welcome Header with improved typography */}
       <div className="text-center space-y-2 py-4">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 font-display">
@@ -334,12 +334,12 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
       </div>
 
       {/* Two-column layout for cards with enhanced styling and borders */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Patients with Alerts */}
-        <Card className="border border-gray-200/60 shadow-md bg-gradient-to-br from-white via-orange-50/20 to-amber-50/30">
+        <Card className="border border-orange-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-sm">
                 <BellIcon className="h-5 w-5 text-orange-600" />
               </div>
               <div>
@@ -350,10 +350,10 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 pb-5">
-            <div className="text-center py-8 space-y-3">
-              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                <BellIcon className="w-7 h-7 text-orange-500" />
+          <CardContent className="pt-0 pb-4">
+            <div className="text-center py-6 space-y-2">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                <BellIcon className="w-6 h-6 text-orange-500" />
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-gray-900">Alert System</p>
@@ -364,11 +364,11 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
         </Card>
 
         {/* Recent Session Activity */}
-        <Card className="border border-gray-200/60 shadow-md bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30">
+        <Card className="border border-blue-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200/80 shadow-sm">
                   <FileIcon className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
@@ -383,17 +383,17 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 pb-4">
+          <CardContent className="pt-0 pb-3">
             {recentC3DFiles.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {recentC3DFiles.map((file, index) => (
                   <RecentC3DFileItem key={`${file.name}-${index}`} file={file} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 space-y-3">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <FileIcon className="w-7 h-7 text-blue-500" />
+              <div className="text-center py-6 space-y-2">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <FileIcon className="w-6 h-6 text-blue-500" />
                 </div>
                 <div className="space-y-1">
                   <p className="font-medium text-gray-900">No Recent Files</p>

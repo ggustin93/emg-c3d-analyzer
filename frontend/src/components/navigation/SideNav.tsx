@@ -126,7 +126,7 @@ export function SideNav({
       </div>
       
       {/* Navigation Items - Better readability and spacing */}
-      <nav className="flex-1 px-3 pb-4 space-y-1">
+      <nav className="flex-1 px-4 pb-4 space-y-2">
         {items.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id
@@ -137,41 +137,45 @@ export function SideNav({
               variant="ghost"
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "w-full justify-start px-3 py-3 h-auto relative",
+                "w-full justify-start px-3 py-2 h-auto relative border mx-1",
                 "transition-all duration-200 rounded-lg",
                 isActive ? [
-                  "bg-gradient-to-r from-blue-50 via-blue-50/50 to-transparent",
-                  "hover:from-blue-50",
-                  "text-blue-700",
-                  "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2",
-                  "before:w-1 before:h-6 before:bg-blue-600 before:rounded-r-full"
+                  "bg-primary",
+                  "hover:bg-primary/90",
+                  "text-white",
+                  "shadow-md",
+                  "font-semibold",
+                  "border-gray-400",
+                  "hover:border-2"
                 ] : [
-                  "hover:bg-gray-50",
+                  "hover:bg-primary/10",
                   "text-gray-600",
-                  "hover:text-gray-900"
+                  "hover:text-gray-900",
+                  "border-gray-200",
+                  "hover:border-gray-300"
                 ]
               )}
             >
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex gap-3 w-full">
                 <Icon 
                   className={cn(
-                    "w-5 h-5 flex-shrink-0",
-                    isActive ? "text-blue-600" : "text-gray-500"
+                    "w-5 h-5 flex-shrink-0 mt-0.5",
+                    isActive ? "text-white" : "text-gray-500"
                   )} 
                 />
                 <div className="flex-1 flex flex-col items-start text-left">
                   <div className="flex items-center gap-2 w-full">
                     <span className={cn(
-                      "font-medium text-base",
-                      isActive ? "text-gray-900" : "text-gray-700"
+                      "font-semibold text-base",
+                      isActive ? "text-white" : "text-gray-700"
                     )}>
                       {item.label}
                     </span>
                     {item.badge && (
                       <span className={cn(
-                        "ml-auto text-xs px-2 py-0.5 rounded-full font-medium",
+                        "ml-auto text-xs px-2 py-0.5 rounded-full font-semibold",
                         isActive 
-                          ? "bg-blue-100 text-blue-600" 
+                          ? "bg-white/25 text-white shadow-sm" 
                           : "bg-gray-100 text-gray-500"
                       )}>
                         {item.badge}
@@ -181,7 +185,7 @@ export function SideNav({
                   {item.description && (
                     <span className={cn(
                       "text-xs mt-0.5 leading-relaxed",
-                      isActive ? "text-gray-600" : "text-gray-500"
+                      isActive ? "text-white/80" : "text-gray-500"
                     )}>
                       {item.description}
                     </span>
@@ -296,16 +300,20 @@ export function CompactSideNav({
               variant="ghost"
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "w-full p-3",
-                "transition-all duration-200",
+                "w-full p-2 border",
+                "transition-all duration-200 rounded-lg",
                 isActive ? [
-                  "bg-white shadow-sm",
-                  "hover:bg-white",
-                  "text-blue-600"
+                  "bg-primary shadow-md",
+                  "hover:bg-primary/90",
+                  "text-white",
+                  "font-semibold",
+                  "border-primary/20"
                 ] : [
                   "hover:bg-gray-100",
                   "text-gray-700",
-                  "hover:text-gray-900"
+                  "hover:text-gray-900",
+                  "border-gray-300",
+                  "hover:border-gray-400"
                 ]
               )}
               title={item.label}
@@ -313,7 +321,7 @@ export function CompactSideNav({
               <Icon 
                 className={cn(
                   "w-5 h-5",
-                  isActive ? "text-blue-600" : "text-gray-500"
+                  isActive ? "text-white" : "text-gray-500"
                 )} 
               />
             </Button>
