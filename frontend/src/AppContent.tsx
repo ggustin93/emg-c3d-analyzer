@@ -31,10 +31,21 @@ const ResearcherDashboard = React.lazy(() => import('./components/dashboards/res
 
 
 
+// Enhanced Error Components
+import C3DMetadataDisplay from './components/errors/C3DMetadataDisplay';
+import ClinicalGuidance from './components/errors/ClinicalGuidance';
+
+// Shadcn UI Components for Enhanced Error Display
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ExclamationTriangleIcon, CrossCircledIcon } from '@radix-ui/react-icons';
+
 export function AppContent() {
   const [searchParams] = useSearchParams();
   const [analysisResult, setAnalysisResult] = useState<EMGAnalysisResult | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
+  const [structuredError, setStructuredError] = useState<{errorType: string, data: any, filename: string} | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [signalType, setSignalType] = useState<SignalDisplayType>('processed');
@@ -155,6 +166,7 @@ export function AppContent() {
     logger.debug(LogCategory.LIFECYCLE, '🔄 resetState called - clearing upload date');
     setAnalysisResult(null);
     setAppError(null);
+    setStructuredError(null);
     setUploadedFileName(null);
     resetPlotDataAndStats();
     resetChannelSelections();
@@ -364,7 +376,26 @@ export function AppContent() {
             });
             errorData = { detail: `Server error: ${uploadResponse.status} ${uploadResponse.statusText}` };
           }
-          throw new Error(errorData.detail || 'File processing failed.');
+
+          // Enhanced error handling: Check for structured EMG validation errors
+          if (errorData && typeof errorData === 'object' && errorData.error_type === 'emg_validation_failure') {
+            // Create structured error for EMG validation failures
+            const enhancedError = new Error('EMG validation failed');
+            (enhancedError as any).isStructuredError = true;
+            (enhancedError as any).errorType = 'emg_validation_failure';
+            (enhancedError as any).structuredData = errorData;
+            throw enhancedError;
+          } else if (errorData && typeof errorData === 'object' && errorData.error_type) {
+            // Handle other structured error types
+            const enhancedError = new Error(errorData.message || 'Processing failed');
+            (enhancedError as any).isStructuredError = true;
+            (enhancedError as any).errorType = errorData.error_type;
+            (enhancedError as any).structuredData = errorData;
+            throw enhancedError;
+          } else {
+            // Legacy error handling for unstructured errors
+            throw new Error(errorData.detail || 'File processing failed.');
+          }
       }
 
       const resultData = await uploadResponse.json();
@@ -385,20 +416,54 @@ export function AppContent() {
         errorName: error.name,
         errorStack: error.stack,
         errorType: typeof error,
+        isStructuredError: error.isStructuredError,
+        structuredErrorType: error.errorType,
         networkError: error instanceof TypeError && error.message.includes('fetch'),
         apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080'
       });
       
-      // Enhanced error message based on error type
-      let userFriendlyMessage = error.message || 'An unknown error occurred while processing the file.';
-      
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${import.meta.env.VITE_API_URL || 'http://localhost:8080'}`;
-      } else if (error.message.includes('Failed to fetch')) {
-        userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running on http://localhost:8080';
+      // Check if this is a structured error with enhanced data
+      if (error.isStructuredError && error.structuredData) {
+        // Store structured error data for enhanced display
+        const structuredErrorData = {
+          errorType: error.errorType,
+          data: error.structuredData,
+          filename: filename
+        };
+        
+        // Store in state for enhanced error display (we'll need to add this state)
+        setStructuredError(structuredErrorData);
+        
+        // Create user-friendly message based on error type
+        let userFriendlyMessage = '';
+        
+        if (error.errorType === 'emg_validation_failure') {
+          const data = error.structuredData;
+          const duration = data.c3d_metadata?.duration_seconds || 0;
+          const minDuration = data.clinical_requirements?.min_duration_seconds || 10;
+          
+          userFriendlyMessage = `EMG Analysis Not Possible\n\n` +
+            `File: ${filename}\n` +
+            `Duration: ${duration.toFixed(3)} seconds (${data.c3d_metadata?.frame_count || 0} samples at ${data.c3d_metadata?.sampling_rate || 0}Hz)\n` +
+            `Required: ${minDuration} seconds minimum for clinical analysis\n\n` +
+            `${data.user_guidance?.technical_note || 'File contains valid C3D data but insufficient EMG duration for analysis.'}`;
+        } else {
+          userFriendlyMessage = error.structuredData.message || 'File processing failed with structured error.';
+        }
+        
+        handleError(userFriendlyMessage);
+      } else {
+        // Legacy error handling for unstructured errors
+        let userFriendlyMessage = error.message || 'An unknown error occurred while processing the file.';
+        
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${import.meta.env.VITE_API_URL || 'http://localhost:8080'}`;
+        } else if (error.message.includes('Failed to fetch')) {
+          userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running on http://localhost:8080';
+        }
+        
+        handleError(userFriendlyMessage);
       }
-      
-      handleError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -596,11 +661,78 @@ export function AppContent() {
             )}
           </AuthGuard>
 
-          {appError && (
+          {/* Enhanced Error Display */}
+          {structuredError ? (
+            <Dialog open={!!structuredError} onOpenChange={() => setStructuredError(null)}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CrossCircledIcon className="h-5 w-5 text-destructive" />
+                    {structuredError.errorType === 'emg_validation_failure' 
+                      ? 'EMG Analysis Not Possible' 
+                      : 'File Processing Error'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Analysis failed for file: <strong>{structuredError.filename}</strong>
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  {structuredError.errorType === 'emg_validation_failure' && (
+                    <>
+                      {/* C3D Metadata Display */}
+                      {structuredError.data.c3d_metadata && structuredError.data.file_info && (
+                        <C3DMetadataDisplay 
+                          metadata={structuredError.data.c3d_metadata}
+                          fileInfo={structuredError.data.file_info}
+                        />
+                      )}
+
+                      {/* Clinical Guidance */}
+                      {structuredError.data.clinical_requirements && structuredError.data.user_guidance && (
+                        <ClinicalGuidance 
+                          requirements={structuredError.data.clinical_requirements}
+                          guidance={structuredError.data.user_guidance}
+                          currentDuration={structuredError.data.c3d_metadata?.duration_seconds || 0}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* Other error types */}
+                  {structuredError.errorType !== 'emg_validation_failure' && (
+                    <Alert variant="destructive">
+                      <ExclamationTriangleIcon className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="space-y-2">
+                          <p><strong>Error Type:</strong> {structuredError.errorType}</p>
+                          <p><strong>Message:</strong> {structuredError.data.message}</p>
+                          {structuredError.data.c3d_metadata && (
+                            <div className="mt-4">
+                              <C3DMetadataDisplay 
+                                metadata={structuredError.data.c3d_metadata}
+                                fileInfo={structuredError.data.file_info || { filename: structuredError.filename, file_type: 'c3d', processing_successful: false }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button onClick={() => setStructuredError(null)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : appError ? (
             <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-md">
               <p><span className="font-medium">Error:</span> {appError}</p>
             </div>
-          )}
+          ) : null}
 
           {isLoading && !analysisResult && (
              <div className="mt-6 flex flex-col items-center justify-center">

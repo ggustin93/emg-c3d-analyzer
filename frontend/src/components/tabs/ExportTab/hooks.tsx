@@ -23,7 +23,8 @@ import {
   calculateMusclePerformance,
   getExpectedContractions,
   isRawChannel,
-  isActivatedChannel
+  isActivatedChannel,
+  getPatientCode
 } from './utils';
 // Use only backend-provided processing metadata; do not fabricate defaults
 

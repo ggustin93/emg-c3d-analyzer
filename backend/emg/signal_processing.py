@@ -62,23 +62,57 @@ class ProcessingParameters:
 
     # Quality validation thresholds
     MIN_SIGNAL_VARIATION = 1e-10  # Minimum std deviation to consider signal valid
-    MIN_SAMPLES_REQUIRED = 1000  # Minimum samples for reliable processing
+    MIN_SAMPLES_REQUIRED = 1000  # Minimum samples for reliable processing (1 second at 1000Hz)
+    
+    # Clinical duration requirements for therapeutic EMG analysis
+    # Based on clinical literature: EMG analysis requires 10 seconds to 10 minutes of signal data
+    # - 10 seconds minimum: Sufficient for muscle activation pattern analysis
+    # - 10 minutes maximum: Prevents fatigue artifacts and maintains signal quality
+    # - Therapeutic assessment requires sustained muscle activity observation
+    MIN_CLINICAL_DURATION_SECONDS = 10  # 10 seconds minimum for clinical analysis
+    MAX_CLINICAL_DURATION_SECONDS = 600  # 10 minutes maximum to avoid fatigue effects
 
 
 def validate_signal_quality(signal: np.ndarray, sampling_rate: int) -> tuple[bool, str]:
-    """Validate signal quality before processing.
+    """Validate signal quality before processing with clinical context.
 
     Args:
         signal: Raw EMG signal array
         sampling_rate: Sampling rate in Hz
 
     Returns:
-        (is_valid, message): Tuple indicating validity and description
+        (is_valid, message): Tuple indicating validity and clinical guidance
     """
+    # Calculate signal duration for clinical context
+    duration_seconds = len(signal) / sampling_rate
+    
+    # Check minimum sample requirements with clinical context
     if len(signal) < ProcessingParameters.MIN_SAMPLES_REQUIRED:
         return (
             False,
-            f"Signal too short: {len(signal)} samples < {ProcessingParameters.MIN_SAMPLES_REQUIRED} required",
+            f"Signal too short: {len(signal)} samples ({duration_seconds:.3f} seconds at {sampling_rate}Hz). "
+            f"EMG analysis requires {ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS} seconds to "
+            f"{ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS // 60} minutes of signal data for "
+            f"therapeutic assessment. Minimum samples required: {ProcessingParameters.MIN_SAMPLES_REQUIRED}.",
+        )
+    
+    # Check clinical duration requirements
+    if duration_seconds < ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS:
+        return (
+            False,
+            f"Signal duration insufficient: {duration_seconds:.2f} seconds. EMG analysis requires "
+            f"{ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS} seconds to "
+            f"{ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS // 60} minutes for clinical requirements. "
+            f"Current signal has {len(signal)} samples at {sampling_rate}Hz sampling rate.",
+        )
+    
+    # Check maximum clinical duration to prevent fatigue artifacts
+    if duration_seconds > ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS:
+        return (
+            False,
+            f"Signal too long: {duration_seconds / 60:.1f} minutes exceeds clinical maximum. "
+            f"10 minutes maximum for clinical analysis. Long recordings may "
+            f"contain fatigue artifacts that compromise therapeutic analysis.",
         )
 
     if np.std(signal) < ProcessingParameters.MIN_SIGNAL_VARIATION:

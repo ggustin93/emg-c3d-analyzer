@@ -99,8 +99,7 @@ export function ResearcherDashboard({
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-3">Data Analytics & Management</h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                  For analytics beyond this app's built-in Export Tab (session-specific data and raw C3D files), 
-                  use these external tools for comprehensive data workflows.
+                For analysis requirements that exceed the app’s built-in features, turn to these external tools to achieve more comprehensive data workflows.
                 </p>
               </div>
 

@@ -295,10 +295,107 @@ async def upload_file(
             
         except Exception as e:
             logger.exception(f"❌ C3D processing failed: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"C3D processing failed: {str(e)}"
-            )
+            
+            # Enhanced error handling: Extract C3D metadata even on processing failure
+            try:
+                # Try to extract C3D metadata for enhanced error response
+                from services.c3d.processor import C3DUtils
+                
+                c3d_file = C3DUtils.load_c3d_file(tmp_path)
+                c3d_metadata = {
+                    'duration_seconds': c3d_file.header.frame_count / c3d_file.header.analog_sample_rate if c3d_file.header.analog_sample_rate > 0 else 0,
+                    'sampling_rate': c3d_file.header.analog_sample_rate,
+                    'frame_count': c3d_file.header.frame_count,
+                    'channel_count': len(c3d_file.data.analogs) if hasattr(c3d_file.data, 'analogs') and c3d_file.data.analogs else 0,
+                    'game_name': c3d_file.parameters.get('GAME_NAME', {}).get('data', ['Unknown'])[0] if 'GAME_NAME' in c3d_file.parameters else 'Unknown',
+                    'player_name': c3d_file.parameters.get('PLAYER_NAME', {}).get('data', ['Unknown'])[0] if 'PLAYER_NAME' in c3d_file.parameters else 'Unknown',
+                    'therapist_id': c3d_file.parameters.get('THERAPIST_ID', {}).get('data', ['Unknown'])[0] if 'THERAPIST_ID' in c3d_file.parameters else 'Unknown',
+                    'level': c3d_file.parameters.get('LEVEL', {}).get('data', ['Unknown'])[0] if 'LEVEL' in c3d_file.parameters else 'Unknown',
+                    'time': c3d_file.parameters.get('TIME', {}).get('data', ['Unknown'])[0] if 'TIME' in c3d_file.parameters else 'Unknown',
+                }
+                
+                # Check if this is an EMG validation failure specifically
+                error_str = str(e).lower()
+                is_emg_validation_failure = any(keyword in error_str for keyword in [
+                    'signal too short', 'insufficient', 'samples', 'clinical', 'duration'
+                ])
+                
+                if is_emg_validation_failure:
+                    # Create structured error response for EMG validation failures
+                    from emg.signal_processing import ProcessingParameters
+                    
+                    structured_error = {
+                        'error_type': 'emg_validation_failure',
+                        'message': 'EMG analysis not possible',
+                        'c3d_metadata': c3d_metadata,
+                        'clinical_requirements': {
+                            'min_duration_seconds': ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS,
+                            'max_duration_seconds': ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS,
+                            'min_samples_required': ProcessingParameters.MIN_SAMPLES_REQUIRED,
+                            'actual_samples': c3d_metadata['frame_count'],
+                            'reason': 'EMG analysis requires sufficient signal duration for therapeutic assessment'
+                        },
+                        'file_info': {
+                            'filename': file.filename,
+                            'contains_motion_data': c3d_metadata['frame_count'] > c3d_metadata['channel_count'] * 10,  # Heuristic
+                            'emg_channels': c3d_metadata['channel_count'],
+                            'file_type': 'c3d',
+                            'processing_attempted': True,
+                            'processing_successful': False,
+                            'failure_stage': 'emg_validation'
+                        },
+                        'user_guidance': {
+                            'primary_recommendation': f"Record longer EMG sessions ({ProcessingParameters.MIN_CLINICAL_DURATION_SECONDS} seconds to {ProcessingParameters.MAX_CLINICAL_DURATION_SECONDS // 60} minutes)",
+                            'secondary_recommendations': [
+                                'Check GHOSTLY game recording settings',
+                                'Ensure proper EMG sensor connectivity',
+                                'Verify EMG data is being captured during gameplay'
+                            ],
+                            'technical_note': 'File contains valid C3D data but insufficient EMG duration for analysis'
+                        },
+                        'processing_context': {
+                            'stage_reached': 'emg_validation',
+                            'c3d_load_successful': True,
+                            'metadata_extraction_successful': True,
+                            'emg_validation_successful': False,
+                            'failure_reason': 'insufficient_signal_duration'
+                        }
+                    }
+                    
+                    raise HTTPException(
+                        status_code=422,
+                        detail=structured_error
+                    )
+                else:
+                    # For non-EMG validation failures, still provide enhanced error context
+                    enhanced_error = {
+                        'error_type': 'processing_failure',
+                        'message': f'C3D processing failed: {str(e)}',
+                        'c3d_metadata': c3d_metadata,
+                        'file_info': {
+                            'filename': file.filename,
+                            'file_type': 'c3d',
+                            'processing_attempted': True,
+                            'processing_successful': False
+                        },
+                        'original_error': str(e)
+                    }
+                    
+                    raise HTTPException(
+                        status_code=500,
+                        detail=enhanced_error
+                    )
+                    
+            except HTTPException:
+                # Re-raise HTTP exceptions (structured errors above)
+                raise
+            except Exception as metadata_error:
+                logger.warning(f"Could not extract C3D metadata for error response: {metadata_error}")
+                # Fallback to original error handling
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"C3D processing failed: {str(e)}"
+                )
 
         # Create result object
         game_metadata = GameMetadata(**result_data["metadata"])

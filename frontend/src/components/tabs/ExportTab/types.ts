@@ -80,6 +80,11 @@ export interface ExportData {
     fileName: string;
     exportVersion: string;
     exportOptions: ExportOptions;
+    // NEW: Patient code information
+    patientCode?: string | null;
+    patientCodeSource?: 'patient_id' | 'filename' | 'session_metadata' | 'unknown';
+    patientCodeConfidence?: 'high' | 'medium' | 'low';
+    enhancedFileName?: string;
   };
   originalMetadata?: any;
   sessionParameters?: any;
@@ -95,4 +100,43 @@ export interface DownsamplingRate {
   label: string;
   size: string;
   recommended?: boolean;
+}
+
+// ============================================================================
+// PATIENT CODE TYPES
+// ============================================================================
+
+/**
+ * Patient code extraction result with source tracking
+ */
+export interface PatientCodeResult {
+  patientCode: string | null;
+  source: 'patient_id' | 'filename' | 'session_metadata' | 'unknown';
+  confidence: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Enhanced export metadata with patient identification
+ */
+export interface EnhancedExportMetadata {
+  exportDate: string;
+  fileName: string;
+  exportVersion: string;
+  exportOptions: ExportOptions;
+  // Patient identification
+  patientCode?: string | null;
+  patientCodeSource?: 'patient_id' | 'filename' | 'session_metadata' | 'unknown';
+  patientCodeConfidence?: 'high' | 'medium' | 'low';
+  // File naming enhancement
+  enhancedFileName?: string; // With patient code prefix
+}
+
+/**
+ * CSV export enhancement options
+ */
+export interface CsvExportOptions {
+  includePatientCode: boolean;
+  patientCodeInFilename: boolean;
+  patientCodeInHeader: boolean;
+  patientCodeInMetadata: boolean;
 }

@@ -3,6 +3,7 @@
 ARCHITECTURE EVOLUTION: Leverages enhanced upload route as single source of truth.
 - v1: Database-dependent export (legacy)  
 - v2: Upload route single source of truth (NEW) - Uses enhanced EMGAnalysisResult
+- v2.1: Patient code integration (T013) - Enhanced with patient identification
 Following backend CLAUDE.md: KISS principle, DRY, stateless where possible.
 """
 
@@ -32,6 +33,13 @@ class EnhancedEMGDataExporter:
     def __init__(self, processor: Any = None, supabase_client=None):
         self.processor = processor
         self.supabase = supabase_client  # Synchronous client (CLAUDE.md #14)
+        
+        # T013: Initialize patient code service for export enhancement
+        if supabase_client:
+            from services.patient.patient_code_service import PatientCodeService
+            self.patient_code_service = PatientCodeService(supabase_client)
+        else:
+            self.patient_code_service = None
 
     def export_data(
         self, channels_to_export: list[str], file_name: str, export_options: dict[str, Any]
@@ -136,6 +144,25 @@ class EnhancedEMGDataExporter:
                 metadata = analysis_result.metadata
                 if hasattr(metadata, 'session_parameters_used'):
                     export_data["session_parameters"] = metadata.session_parameters_used
+            
+            # T013: Enhance export data with patient code information
+            if self.patient_code_service:
+                try:
+                    # Convert analysis_result to dictionary for patient code service
+                    analysis_dict = {
+                        'patient_id': getattr(analysis_result, 'patient_id', None),
+                        'source_filename': getattr(analysis_result, 'source_filename', None),
+                        'file_id': getattr(analysis_result, 'file_id', None),
+                        'session_id': getattr(analysis_result, 'session_id', None),
+                        'metadata': getattr(analysis_result, 'metadata', {})
+                    }
+                    
+                    export_data = self.patient_code_service.enhance_export_data_with_patient_code(
+                        export_data, analysis_dict
+                    )
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to enhance export with patient code: {e}")
             
             logger.info(f"✅ Single source of truth export data created with {len(export_data)} top-level sections")
             return export_data

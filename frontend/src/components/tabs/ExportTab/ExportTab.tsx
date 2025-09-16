@@ -9,11 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { 
   FileTextIcon, 
   CopyIcon, 
   CheckIcon,
-  CodeIcon
+  CodeIcon,
+  PersonIcon
 } from '@radix-ui/react-icons';
 import { EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
@@ -26,6 +28,7 @@ import { DownsamplingControl } from './DownsamplingControl';
 import { ExportOptionsPanel } from './ExportOptionsPanel';
 import { ExportActions } from './ExportActions';
 import { useExportData } from './hooks';
+import { useEnhancedExportData } from './hooks/useEnhancedExportData';
 import { detectOriginalFilename } from './utils';
 
 interface ExportTabProps {
@@ -36,7 +39,7 @@ interface ExportTabProps {
 const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName }) => {
   const { sessionParams } = useSessionStore();
   
-  // Use custom hook for export data management
+  // T019: Use enhanced export data hook with patient code integration
   const {
     exportOptions,
     setExportOptions,
@@ -47,8 +50,11 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
     availableChannels,
     hasSelectedChannels,
     hasSelectedData,
-    generateExportData
-  } = useExportData(analysisResult, uploadedFileName, sessionParams);
+    generateExportData,
+    // Enhanced functionality with patient code
+    patientCode: patientCodeInfo,
+    enhancedMetadata
+  } = useEnhancedExportData(analysisResult, uploadedFileName, sessionParams);
 
   // Local UI state
   const [jsonData, setJsonData] = useState<string>('');
@@ -116,26 +122,28 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
   // Memoize export data to prevent recreation on every render
   const fullExportData = useMemo(() => generateExportData(false), [generateExportData]);
 
-  // Download export data as JSON (complete data)
+  // T019: Use enhanced download functionality with patient code integration
   const downloadExportData = useCallback(async (): Promise<void> => {
     const exportData = fullExportData;
     if (!exportData) {
       throw new Error('No export data available');
     }
 
+    // Use enhanced filename if available (with patient code)
+    const filename = enhancedMetadata?.enhancedFileName || originalFilename;
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${originalFilename.replace('.c3d', '')}_export.json`;
+    link.download = `${filename.replace('.c3d', '')}_analysis_export.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
     URL.revokeObjectURL(url);
-  }, [fullExportData, originalFilename]);
+  }, [fullExportData, originalFilename, enhancedMetadata]);
 
   // Auto-generate preview when selection changes
   React.useEffect(() => {
@@ -193,9 +201,22 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
               <CardTitle className="text-base flex items-center gap-2">
                 <CodeIcon className="h-4 w-4" />
                 JSON Preview
+                {/* T020: Patient code in preview header */}
+                {enhancedMetadata?.patientCode && enhancedMetadata?.patientCodeConfidence !== 'low' && (
+                  <Badge variant="outline" className="ml-2">
+                    <PersonIcon className="h-3 w-3 mr-1" />
+                    {enhancedMetadata.patientCode}
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
                 🔍 <strong>PREVIEW EXTRACT</strong> - Limited sample data only (5 points per array). 📥 Complete data available in download.
+                {/* T020: Enhanced filename information */}
+                {enhancedMetadata?.enhancedFileName && enhancedMetadata.enhancedFileName !== originalFilename && (
+                  <span className="block text-sm text-green-600 mt-1">
+                    Enhanced export filename: {enhancedMetadata.enhancedFileName}
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

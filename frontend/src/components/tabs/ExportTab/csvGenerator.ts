@@ -74,25 +74,49 @@ export function generateCsvFromExportData(exportData: ExportData, originalFilena
 
   const csvRows: string[] = [];
   
-  // Add professional header with better formatting
+  // T017: Enhanced header with patient code information
+  const patientCode = exportData.metadata?.patientCode;
+  const enhancedFilename = exportData.metadata?.enhancedFileName || originalFilename;
+  
   csvRows.push('# EMG Analysis Export Report');
-  csvRows.push(`# Source File: ${originalFilename}`);
+  if (patientCode) {
+    csvRows.push(`# Patient: ${patientCode} - EMG Analysis Export Report`);
+  }
+  csvRows.push(`# Source File: ${enhancedFilename}`);
   csvRows.push(`# Generated: ${new Date().toLocaleString()}`);
   csvRows.push(`# Export Type: Client-Side Processing`);
   csvRows.push('#');
   csvRows.push('');
   
-  // Add metadata section with better structure
+  // T017: Enhanced metadata section with patient code information
   if (exportData.metadata) {
     csvRows.push('"=== FILE METADATA ==="');
     csvRows.push('Property,Value');
+    
+    // Process metadata with special handling for patient code fields
     Object.entries(exportData.metadata).forEach(([key, value]) => {
       if (typeof value !== 'object') {
         // Format key names for better readability
-        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+        let formattedKey = key.replace(/([A-Z])/g, ' $1')
           .replace(/^./, str => str.toUpperCase())
           .replace(/([a-z])([A-Z])/g, '$1 $2');
-        csvRows.push(`"${formattedKey}","${value ?? ''}"`); 
+        
+        // Special formatting for patient code fields
+        if (key === 'patientCode') {
+          formattedKey = 'Patient Code';
+          csvRows.push(`"${formattedKey}","${value || 'N/A'}"`);
+        } else if (key === 'patientCodeSource') {
+          formattedKey = 'Patient Code Source';
+          csvRows.push(`"${formattedKey}","${value || 'unknown'}"`);
+        } else if (key === 'patientCodeConfidence') {
+          formattedKey = 'Patient Code Confidence';
+          csvRows.push(`"${formattedKey}","${value || 'low'}"`);
+        } else if (key === 'enhancedFileName') {
+          formattedKey = 'Enhanced File Name';
+          csvRows.push(`"${formattedKey}","${value || 'N/A'}"`);
+        } else {
+          csvRows.push(`"${formattedKey}","${value ?? ''}"`);
+        }
       }
     });
     csvRows.push('');
@@ -479,13 +503,28 @@ export function generateCsvFromExportData(exportData: ExportData, originalFilena
   // Convert to CSV string with proper encoding
   const csvContent = csvRows.join('\n');
   
+  // T017: Generate CSV filename with patient code enhancement
+  let csvFilename = originalFilename.replace('.c3d', '');
+  
+  // Use enhanced filename if available, otherwise try to prefix with patient code
+  if (exportData.metadata?.enhancedFileName) {
+    csvFilename = exportData.metadata.enhancedFileName.replace('.c3d', '');
+  } else if (patientCode && exportData.metadata?.patientCodeConfidence !== 'low') {
+    // Add patient code prefix if not already present
+    if (!csvFilename.startsWith(patientCode)) {
+      csvFilename = `${patientCode}_${csvFilename}`;
+    }
+  }
+  
+  const finalCsvFilename = `${csvFilename}_analysis_report.csv`;
+  
   // Create blob with BOM for better Excel compatibility
   const BOM = '\uFEFF';
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${originalFilename.replace('.c3d', '')}_analysis_report.csv`;
+  link.download = finalCsvFilename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -509,6 +548,14 @@ export function estimateCsvSize(exportData: ExportData | null): string {
   
   let estimatedRows = 50; // Base structure
   
+  // T017: Account for patient code metadata in size estimation
+  if (exportData?.metadata) {
+    // Patient code adds minimal rows but enhances header
+    if (exportData.metadata.patientCode) {
+      estimatedRows += 5; // Patient code metadata rows
+    }
+  }
+  
   if (exportData?.analytics) {
     const analyticsData = exportData.analytics as Record<string, ChannelAnalytics>;
     const channelCount = Object.keys(analyticsData).length;
@@ -522,8 +569,9 @@ export function estimateCsvSize(exportData: ExportData | null): string {
     });
   }
   
-  // Estimate ~80 characters per row
-  const estimatedBytes = estimatedRows * 80;
+  // Estimate ~80 characters per row (patient code may slightly increase average line length)
+  const avgCharsPerRow = exportData?.metadata?.patientCode ? 85 : 80;
+  const estimatedBytes = estimatedRows * avgCharsPerRow;
   
   if (estimatedBytes < 1024) return `${estimatedBytes} B`;
   if (estimatedBytes < 1024 * 1024) return `${(estimatedBytes / 1024).toFixed(1)} KB`;

@@ -95,8 +95,8 @@ async def export_analysis_data(
             },
         }
 
-        # Add request metadata
-        comprehensive_export["request_metadata"] = {
+        # Add request metadata with patient code extraction (T014)
+        request_metadata = {
             "user_id": file_metadata["user_id"],
             "patient_id": file_metadata["patient_id"],
             "session_id": file_metadata["session_id"],
@@ -104,6 +104,27 @@ async def export_analysis_data(
             "export_timestamp": datetime.now().isoformat(),
             "note": "Basic export - EMGDataExporter not yet implemented",
         }
+        
+        # T014: Extract patient code from filename for immediate use
+        if file.filename:
+            from services.patient.patient_code_service import PatientCodeService
+            # Create temporary service for pattern matching (no DB dependency)
+            temp_service = PatientCodeService(None)
+            patient_code_result = temp_service.extract_patient_code_from_filename(file.filename)
+            
+            request_metadata.update({
+                "patient_code": patient_code_result.patient_code,
+                "patient_code_source": patient_code_result.source,
+                "patient_code_confidence": patient_code_result.confidence
+            })
+            
+            # Enhance filename with patient code if available
+            if (patient_code_result.patient_code and 
+                patient_code_result.confidence in ['high', 'medium'] and
+                not file.filename.startswith(patient_code_result.patient_code)):
+                request_metadata["enhanced_filename"] = f"{patient_code_result.patient_code}_{file.filename}"
+        
+        comprehensive_export["request_metadata"] = request_metadata
 
         return JSONResponse(content=comprehensive_export)
 
@@ -155,16 +176,52 @@ async def export_session_data(
         # Get comprehensive export data (includes performance scores + config)
         export_data = export_service.get_comprehensive_export_data(session_id)
         
+        # T014: Enhance session export with patient code information
+        try:
+            # Query session for patient information
+            session_result = supabase.table('sessions').select('user_id, patient_id, original_filename').eq('id', session_id).single().execute()
+            
+            if session_result.data:
+                session_info = session_result.data
+                
+                # Create analysis dict for patient code extraction
+                analysis_dict = {
+                    'patient_id': session_info.get('patient_id') or session_info.get('user_id'),
+                    'source_filename': session_info.get('original_filename'),
+                    'session_id': session_id,
+                    'metadata': {}
+                }
+                
+                # Enhance with patient code if service is available
+                if export_service.patient_code_service:
+                    export_data = export_service.patient_code_service.enhance_export_data_with_patient_code(
+                        export_data, analysis_dict
+                    )
+                
+        except Exception as e:
+            logger.warning(f"Failed to enhance session export with patient code: {e}")
+            # Continue with export even if patient code enhancement fails
+        
         if format == "csv":
             # Convert to CSV format
             csv_content = convert_export_to_csv(export_data)
+            
+            # T015: Generate filename with patient code prefix if available
+            csv_filename = f"session_{session_id}_export.csv"
+            
+            # Check if patient code is available in export data
+            session_metadata = export_data.get('session_metadata', {})
+            patient_code = session_metadata.get('patient_code')
+            
+            if patient_code and session_metadata.get('patient_code_confidence') in ['high', 'medium']:
+                csv_filename = f"{patient_code}_{csv_filename}"
             
             # Return CSV with appropriate headers
             return Response(
                 content=csv_content,
                 media_type="text/csv",
                 headers={
-                    "Content-Disposition": f"attachment; filename=session_{session_id}_export.csv"
+                    "Content-Disposition": f"attachment; filename={csv_filename}"
                 }
             )
         else:

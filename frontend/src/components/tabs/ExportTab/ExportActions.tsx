@@ -8,10 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { 
   DownloadIcon, 
   FileTextIcon,
-  CheckIcon 
+  CheckIcon,
+  PersonIcon,
+  InfoCircledIcon
 } from '@radix-ui/react-icons';
 import { ExportData } from './types';
 import { formatBytes } from './utils';
@@ -36,6 +39,49 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
   onDownloadOriginal,
   onDownloadExport,
 }) => {
+  // T018: Extract patient code information from export data
+  const patientCode = exportData?.metadata?.patientCode;
+  const patientCodeSource = exportData?.metadata?.patientCodeSource || 'unknown';
+  const patientCodeConfidence = exportData?.metadata?.patientCodeConfidence || 'low';
+  const enhancedFileName = exportData?.metadata?.enhancedFileName;
+
+  // T018: Helper function to get confidence badge variant
+  const getConfidenceBadgeVariant = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return 'default'; // Green
+      case 'medium': return 'secondary'; // Gray
+      case 'low': return 'outline'; // Light border
+      default: return 'outline';
+    }
+  };
+
+  // T018: Helper function to get confidence description
+  const getConfidenceDescription = (source: string, confidence: string) => {
+    const descriptions = {
+      'patient_id': {
+        'high': 'Patient code extracted from patient_id with high reliability',
+        'medium': 'Patient code extracted from patient_id but format validation failed', 
+        'low': 'Patient code extraction from patient_id failed'
+      },
+      'filename': {
+        'high': 'Patient code extracted from filename pattern with high confidence',
+        'medium': 'Patient code found in filename but with lower pattern confidence',
+        'low': 'Patient code extraction from filename failed'
+      },
+      'session_metadata': {
+        'high': 'Patient code found in session metadata with high confidence',
+        'medium': 'Patient code found in session metadata with moderate confidence', 
+        'low': 'Patient code extraction from session metadata failed'
+      },
+      'unknown': {
+        'high': 'Patient code source unknown but high confidence',
+        'medium': 'Patient code source unknown with moderate confidence',
+        'low': 'Patient code unavailable - no valid extraction method found'
+      }
+    };
+    return descriptions[source as keyof typeof descriptions]?.[confidence as keyof typeof descriptions['patient_id']] || 
+           'Patient code confidence assessment unavailable';
+  };
   const [downloadStates, setDownloadStates] = useState<{
     original: 'idle' | 'downloading' | 'success';
     export: 'idle' | 'downloading' | 'success';
@@ -92,9 +138,27 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
         <CardTitle className="text-base flex items-center gap-2">
           <FileTextIcon className="h-4 w-4" />
           Downloads
+          {/* T018: Patient code display in header */}
+          {patientCode && (
+            <Badge variant={getConfidenceBadgeVariant(patientCodeConfidence)} className="ml-2">
+              <PersonIcon className="h-3 w-3 mr-1" />
+              {patientCode}
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="flex items-center gap-2">
           Download original file or export selected data
+          {/* T018: Patient code confidence indicator */}
+          {patientCode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoCircledIcon className="h-3 w-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">{getConfidenceDescription(patientCodeSource, patientCodeConfidence)}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -125,7 +189,11 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
               </TooltipContent>
             </Tooltip>
             <p className="text-xs text-muted-foreground px-2">
-              Original file: {originalFilename}
+              {/* T018: Show enhanced filename if available */}
+              Original file: {enhancedFileName || originalFilename}
+              {enhancedFileName && enhancedFileName !== originalFilename && (
+                <span className="text-green-600 ml-1">(enhanced)</span>
+              )}
             </p>
           </div>
 
@@ -145,7 +213,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
               )}
               {downloadStates.export === 'downloading' ? 'Exporting...' : 
                downloadStates.export === 'success' ? 'Exported!' : 
-               `Export ${exportFormat.toUpperCase()} Data`}
+               `Export ${exportFormat.toUpperCase()} Data${patientCode && patientCodeConfidence !== 'low' ? ` (${patientCode})` : ''}`}
             </Button>
             
             {!hasSelectedData ? (
