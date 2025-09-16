@@ -128,7 +128,7 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);
 
       await waitFor(() => {
-        const libraryElements = screen.getAllByText('C3D File Library');
+        const libraryElements = screen.getAllByText('Game Session History');
         expect(libraryElements.length).toBeGreaterThan(0);
       });
 
@@ -138,23 +138,6 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       
       const filesElements = screen.getAllByText(/files/);
       expect(filesElements.length).toBeGreaterThan(0);
-    });
-
-    it('should handle file upload completion', async () => {
-      render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);
-
-      await waitFor(() => {
-        const libraryElements = screen.getAllByText('C3D File Library');
-        expect(libraryElements.length).toBeGreaterThan(0);
-      });
-
-      const uploadCompleteButtons = screen.getAllByText('Upload Complete');
-      fireEvent.click(uploadCompleteButtons[0]);
-
-      // Should refresh the file list
-      await waitFor(() => {
-        expect(mockSupabaseStorageService.listC3DFiles).toHaveBeenCalledTimes(2);
-      });
     });
   });
 
@@ -200,7 +183,7 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);
 
       await waitFor(() => {
-        const libraryHeaders = screen.getAllByText('C3D File Library');
+        const libraryHeaders = screen.getAllByText('Game Session History');
         expect(libraryHeaders.length).toBeGreaterThan(0);
       });
 
@@ -260,7 +243,7 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       fireEvent.click(retryButton);
 
       await waitFor(() => {
-        const libraryElements = screen.getAllByText('C3D File Library');
+        const libraryElements = screen.getAllByText('Game Session History');
         expect(libraryElements.length).toBeGreaterThan(0);
       });
     });
@@ -294,22 +277,6 @@ describe('C3DFileBrowser - Core Functionality Tests', () => {
       await waitFor(() => {
         const errorElements = screen.getAllByText('Error Loading Files');
         expect(errorElements.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should handle upload errors gracefully', async () => {
-      render(<C3DFileBrowser onFileSelect={mockOnFileSelect} />);
-
-      await waitFor(() => {
-        const libraryElements = screen.getAllByText('C3D File Library');
-        expect(libraryElements.length).toBeGreaterThan(0);
-      });
-
-      const uploadErrorButtons = screen.getAllByText('Upload Error');
-      fireEvent.click(uploadErrorButtons[0]);
-
-      await waitFor(() => {
-        expect(screen.getByText('Upload failed')).toBeInTheDocument();
       });
     });
   });

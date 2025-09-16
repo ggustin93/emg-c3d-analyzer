@@ -85,6 +85,10 @@ export interface ExportData {
     patientCodeSource?: 'patient_id' | 'filename' | 'session_metadata' | 'unknown';
     patientCodeConfidence?: 'high' | 'medium' | 'low';
     enhancedFileName?: string;
+    // Preview mode indicators
+    preview_mode?: boolean;
+    preview_note?: string;
+    download_note?: string;
   };
   originalMetadata?: any;
   sessionParameters?: any;
@@ -93,6 +97,8 @@ export interface ExportData {
   performanceAnalysis?: any;
   processingParameters?: any;  // NEW: Processing parameters from backend
   c3dParameters?: any;
+  signalProcessingPipeline?: any;  // Processing pipeline metadata
+  signalProcessingParametersPerChannel?: Record<string, any>; // Per-channel processing parameters
 }
 
 export interface DownsamplingRate {

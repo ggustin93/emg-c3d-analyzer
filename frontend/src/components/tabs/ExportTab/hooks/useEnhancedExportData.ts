@@ -48,7 +48,7 @@ export function useEnhancedExportData(
     };
 
     return enhancedExportData;
-  }, [exportDataHook.generateExportData, patientCodeHook]);
+  }, [exportDataHook, patientCodeHook]);
 
   // Enhanced downloadData function that uses patient code for filename
   const downloadData = useCallback((format: 'json' | 'csv' = 'json') => {
@@ -77,40 +77,19 @@ export function useEnhancedExportData(
       import('../csvGenerator').then(({ generateCsvFromExportData }) => {
         generateCsvFromExportData(exportData, filename);
       }).catch(error => {
+        // Dynamic import error - keeping console.error for critical error
         console.error('Failed to generate CSV:', error);
       });
     }
   }, [generateExportData, patientCodeHook.enhancedFileName]);
 
-  // Estimate export size with patient code considerations
-  const estimatedSize = useMemo(() => {
-    const baseSize = exportDataHook.estimatedSize || '0 KB';
-    
-    // Patient code metadata adds minimal size (< 1KB)
-    // The enhancement is primarily in metadata fields
-    return baseSize; // Patient code doesn't significantly affect size
-  }, [exportDataHook.estimatedSize]);
-
-  // Loading state includes both export preparation and patient code extraction
-  const isGenerating = useMemo(() => {
-    return exportDataHook.isGenerating || patientCodeHook.isLoading;
-  }, [exportDataHook.isGenerating, patientCodeHook.isLoading]);
-
-  // Error handling combines both export and patient code errors
-  const error = useMemo(() => {
-    return exportDataHook.error || patientCodeHook.error || null;
-  }, [exportDataHook.error, patientCodeHook.error]);
-
   return {
-    // Enhanced core functionality
-    generateExportData,
-    downloadData,
-    estimatedSize,
-    isGenerating,
-    error,
-    
     // Pass through all original export functionality
     ...exportDataHook,
+    
+    // Enhanced core functionality (override the original)
+    generateExportData,
+    downloadData,
     
     // Add patient code functionality
     patientCode: patientCodeHook,

@@ -6,6 +6,7 @@
 import { EMGAnalysisResult } from '@/types/emg';
 import { AvailableChannel, MusclePerformanceData } from './types';
 import { PERFORMANCE_DEFAULTS } from './constants';
+import { logger, LogCategory } from '@/services/logger';
 
 // Patient code extraction utilities
 export interface PatientCodeResult {
@@ -244,7 +245,7 @@ export async function extractPatientCodeFromPatientId(patientId: string): Promis
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
-      console.warn('Supabase configuration missing for patient code lookup');
+      logger.warn(LogCategory.DATA_PROCESSING, 'Supabase configuration missing for patient code lookup');
       return {
         patientCode: null,
         source: 'patient_id',
@@ -314,7 +315,7 @@ export async function extractPatientCodeFromPatientId(patientId: string): Promis
     };
 
   } catch (error) {
-    console.warn('Error extracting patient code from patient_id:', error);
+    logger.warn(LogCategory.DATA_PROCESSING, 'Error extracting patient code from patient_id:', error);
     return {
       patientCode: null,
       source: 'patient_id',
@@ -435,23 +436,24 @@ export async function getPatientCode(analysisResult: EMGAnalysisResult): Promise
         return patientIdResult;
       }
     } catch (error) {
-      console.warn('Patient ID extraction failed, falling back to filename:', error);
+      logger.warn(LogCategory.DATA_PROCESSING, 'Patient ID extraction failed, falling back to filename:', error);
     }
   }
 
   // Strategy 2: Extract from source filename (high confidence if pattern matches)
+  let lowConfidenceFilenameResult: PatientCodeResult | null = null;
   if (analysisResult.source_filename) {
     const filenameResult = extractPatientCodeFromFilename(analysisResult.source_filename);
     if (filenameResult.patientCode && filenameResult.confidence !== 'low') {
       return filenameResult;
     }
     // Store low-confidence filename result as fallback
-    var lowConfidenceFilenameResult = filenameResult.confidence === 'low' ? filenameResult : null;
+    lowConfidenceFilenameResult = filenameResult.confidence === 'low' ? filenameResult : null;
   }
 
   // Strategy 3: Extract from session metadata (medium confidence)
   if (analysisResult.metadata || (analysisResult as any).session_parameters) {
-    const sessionMetadata = analysisResult.metadata || (analysisResult as any).session_parameters;
+    const sessionMetadata: any = analysisResult.metadata || (analysisResult as any).session_parameters;
     
     // Check for direct patient_code field
     if (sessionMetadata.patient_code && typeof sessionMetadata.patient_code === 'string') {
@@ -484,7 +486,7 @@ export async function getPatientCode(analysisResult: EMGAnalysisResult): Promise
           };
         }
       } catch (error) {
-        console.warn('Session metadata patient_id extraction failed:', error);
+        logger.warn(LogCategory.DATA_PROCESSING, 'Session metadata patient_id extraction failed:', error);
       }
     }
     
