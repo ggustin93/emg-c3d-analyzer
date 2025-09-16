@@ -89,7 +89,7 @@ const formatTimestamp = (() => {
 // Enhanced file transport with retry logic and monitoring
 class BrowserFileTransport {
   private logBuffer: LogEntry[] = [];
-  private flushInterval: number;
+  private flushInterval: number | undefined;
   private retryCount: Map<string, number> = new Map();
   private metrics: LoggerMetrics = {
     totalLogsGenerated: 0,
@@ -216,7 +216,9 @@ class BrowserFileTransport {
 
   destroy(): void {
     this.flush();
-    clearInterval(this.flushInterval);
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+    }
   }
 }
 
