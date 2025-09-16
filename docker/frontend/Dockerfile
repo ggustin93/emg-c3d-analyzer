@@ -69,8 +69,10 @@ COPY frontend/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run \
-    && chown -R nginx:nginx /var/cache/nginx /var/log/nginx /var/run
+# Note: /tmp is already writable by all users, nginx will use it for PID file
+RUN mkdir -p /var/cache/nginx /var/log/nginx \
+    && chown -R nginx:nginx /var/cache/nginx /var/log/nginx \
+    && chmod 755 /var/cache/nginx /var/log/nginx
 
 # Switch to non-root user
 USER nginx
