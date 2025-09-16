@@ -24,20 +24,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN pip install poetry
-
 # Set working directory
 WORKDIR /app
 
-# Copy poetry configuration
-COPY pyproject.toml poetry.lock* ./
+# Copy requirements file
+COPY backend/requirements.txt ./
 
-# Configure poetry and install dependencies
-RUN poetry config virtualenvs.create true \
-    && poetry config virtualenvs.in-project true \
-    && poetry install --only=main --no-root \
-    && rm -rf $POETRY_CACHE_DIR
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # =============================================================================
 # Stage 2: Production Runtime
@@ -47,10 +41,7 @@ FROM python:3.11-slim AS production
 # Set runtime environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app \
-    PATH="/app/.venv/bin:$PATH" \
-    VIRTUAL_ENV="/app/.venv" \
-    LD_LIBRARY_PATH="/app/.venv/lib/python3.11/site-packages/ezc3d:$LD_LIBRARY_PATH"
+    PYTHONPATH=/app
 
 # Install runtime dependencies (including ezc3d shared libraries)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -68,8 +59,9 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder
-COPY --from=builder /app/.venv /app/.venv
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy backend application code
 COPY backend/ .
