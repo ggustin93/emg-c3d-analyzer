@@ -1,4 +1,4 @@
-import matter from 'gray-matter'
+import { parse } from 'yaml'
 import { FAQItem, FAQCategory, UserRole } from './types'
 
 // Import all markdown files using Vite's import.meta.glob
@@ -13,8 +13,25 @@ export interface ParsedFAQ extends Omit<FAQItem, 'answer'> {
   id: string
 }
 
+function parseFrontmatter(content: string) {
+  const frontmatterRegex = /^---\r?\n(.*?)\r?\n---\r?\n(.*)$/s
+  const match = content.match(frontmatterRegex)
+  
+  if (!match) {
+    return { data: {}, content }
+  }
+  
+  const [, yamlStr, markdownContent] = match
+  try {
+    const data = parse(yamlStr)
+    return { data, content: markdownContent.trim() }
+  } catch {
+    return { data: {}, content }
+  }
+}
+
 function parseFAQFile(content: string, filePath: string): ParsedFAQ {
-  const { data, content: markdownContent } = matter(content)
+  const { data, content: markdownContent } = parseFrontmatter(content)
   
   // Generate ID from file path
   const id = filePath

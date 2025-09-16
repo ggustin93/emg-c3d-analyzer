@@ -109,3 +109,11 @@ After adding or editing FAQ files:
 2. The FAQ page will automatically load the new content
 3. Check that your FAQ appears in the correct category
 4. Test the search functionality with your keywords
+
+## Technical Implementation
+
+The FAQ system uses:
+- **YAML frontmatter parsing**: Uses the lightweight `yaml` library (browser-compatible)
+- **Vite import.meta.glob**: Automatically loads all markdown files
+- **Lightweight parser**: Custom frontmatter parser for optimal performance
+- **No Node.js dependencies**: Pure browser-based implementation following KISS principles
