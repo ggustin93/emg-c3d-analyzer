@@ -42,7 +42,12 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY frontend/ .
 
 # Build the application (Vite builds to 'dist' directory by default)
-RUN npm run build
+# Use npx to ensure TypeScript and Vite are found from node_modules/.bin
+RUN npx tsc --version && \
+    npx tsc --noEmit && \
+    npx vite build && \
+    ls -la dist/ && \
+    test -f dist/index.html
 
 # =============================================================================
 # Stage 2: Production Web Server
