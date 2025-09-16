@@ -21,9 +21,6 @@ ENV NODE_ENV=${NODE_ENV} \
 # Set working directory
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY frontend/package.json frontend/package-lock.json ./
-
 # Install system dependencies for native module compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 \
@@ -32,12 +29,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy package files first for better caching
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Copy TypeScript configuration files (required for tsc)
+COPY frontend/tsconfig.json frontend/tsconfig.node.json ./
+
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
 # Force include dev dependencies for build stage even in production mode
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
     npm ci --only=production=false --prefer-offline --no-audit --legacy-peer-deps
+
+# Install TypeScript globally to ensure it's available
+RUN npm install -g typescript
 
 # Copy frontend source code
 COPY frontend/ .
