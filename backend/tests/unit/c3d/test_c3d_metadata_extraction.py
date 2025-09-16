@@ -42,11 +42,11 @@ class TestC3DMetadataExtraction(unittest.TestCase):
             cls.sample_file = TestSampleManager.ensure_sample_file_exists()
         except ImportError:
             # Fallback for when conftest is not available (standalone test execution)
-            cls.sample_file = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+            cls.sample_file = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-23-09-0409.c3d"
             
             if not cls.sample_file.exists():
                 # Try alternative path
-                cls.sample_file = Path(PROJECT_ROOT) / "tests" / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+                cls.sample_file = Path(PROJECT_ROOT) / "tests" / "samples" / "Ghostly_Emg_20230321_17-23-09-0409.c3d"
         
         if HAS_EZC3D and cls.sample_file.exists():
             try:

@@ -31,11 +31,11 @@ class TestAdherenceScore:
         self.service.client.table().select().eq().execute.return_value.data = [{"patient_code": "P001"}]
         
         # Mock storage response with real GHOSTLY filename pattern from tests/samples
-        # Using actual GHOSTLY format: Ghostly_Emg_20230321_17-50-17-0881.c3d
+        # Using actual GHOSTLY format: Ghostly_Emg_20230321_17-23-09-0409.c3d
         from datetime import datetime, timezone, timedelta
         today = datetime.now(timezone.utc)
         mock_storage_files = [
-            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-23-09-0409.c3d"}
             for i in range(10)  # 10 files from today going back 10 days (only 7 should be counted for protocol_day=7)
         ]
         self.service.client.storage.from_().list.return_value = mock_storage_files
@@ -59,7 +59,7 @@ class TestAdherenceScore:
         from datetime import datetime, timezone, timedelta
         today = datetime.now(timezone.utc)
         mock_storage_files = [
-            {"name": f"Ghostly_Emg_{(today - timedelta(days=i%7)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i%7)).strftime('%Y%m%d')}_17-23-09-0409.c3d"}
             for i in range(18)  # 18 files, but some days repeated (all within 7-day boundary)
         ]
         self.service.client.storage.from_().list.return_value = mock_storage_files
@@ -124,7 +124,7 @@ class TestAdherenceScore:
         from datetime import datetime, timezone, timedelta
         today = datetime.now(timezone.utc)
         mock_storage_files = [
-            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-23-09-0409.c3d"}
             for i in range(5)  # 5 files within 7-day boundary
         ]
         self.service.client.storage.from_().list.return_value = mock_storage_files
@@ -188,7 +188,7 @@ class TestAdherenceScore:
         from datetime import datetime, timezone, timedelta
         today = datetime.now(timezone.utc)
         mock_storage_files = [
-            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-50-17-0881.c3d"}
+            {"name": f"Ghostly_Emg_{(today - timedelta(days=i)).strftime('%Y%m%d')}_17-23-09-0409.c3d"}
             for i in range(10)  # Files from 10 days ago to today
         ]
         self.service.client.storage.from_().list.return_value = mock_storage_files

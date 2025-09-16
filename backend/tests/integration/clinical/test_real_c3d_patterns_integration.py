@@ -48,7 +48,7 @@ class TestRealC3DPatternsIntegration:
             except FileNotFoundError:
                 pass
         # Fallback when TestSampleManager is not available or file not found
-        c3d_path = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+        c3d_path = Path(__file__).parent.parent.parent / "samples" / "Ghostly_Emg_20230321_17-23-09-0409.c3d"
         if not c3d_path.exists():
             pytest.skip(f"C3D file not found: {c3d_path}")
         return str(c3d_path)

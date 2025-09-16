@@ -82,8 +82,8 @@ class TestSampleManager:
     They are critical test assets that must be preserved.
     """
     
-    SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-50-17-0881.c3d"
-    EXPECTED_FILE_SIZE = 2867920  # 2.87 MB - known size of our sample file
+    SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-23-09-0409.c3d"
+    EXPECTED_FILE_SIZE = 1229632  # 1.23 MB - known size of our sample file
     EXPECTED_MD5 = "a1b2c3d4e5f6"  # Placeholder - will be calculated on first run
     
     @classmethod

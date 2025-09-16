@@ -19,8 +19,8 @@ import shutil
 import hashlib
 
 # Direct configuration without importing from conftest to avoid app initialization issues
-SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-50-17-0881.c3d"
-EXPECTED_FILE_SIZE = 2867920  # 2.87 MB - known size of our sample file
+SAMPLE_FILENAME = "Ghostly_Emg_20230321_17-23-09-0409.c3d"
+EXPECTED_FILE_SIZE = 1229632  # 1.23 MB - known size of our sample file
 
 def get_primary_sample_path() -> Path:
     """Get the primary backend test samples path."""

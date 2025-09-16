@@ -68,7 +68,7 @@ class TestCompleteWorkflow:
         except (ImportError, FileNotFoundError):
             # Fallback to manual path resolution
             sample_path = Path(
-                "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-50-17-0881.c3d"
+                "/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/backend/tests/samples/Ghostly_Emg_20230321_17-23-09-0409.c3d"
             )
 
             if sample_path.exists():
@@ -78,7 +78,7 @@ class TestCompleteWorkflow:
             else:
                 # Fallback to relative path
                 relative_path = (
-                    Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-50-17-0881.c3d"
+                    Path(__file__).parent / "samples" / "Ghostly_Emg_20230321_17-23-09-0409.c3d"
                 )
                 if relative_path.exists():
                     print(f"✅ Using actual C3D file (relative): {relative_path}")

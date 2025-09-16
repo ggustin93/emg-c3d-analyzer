@@ -180,6 +180,28 @@ class BucketCleaner:
         
         return non_ghostly_files
     
+    def identify_specific_pattern_files(self, patient_files: Dict[str, List[Dict]], pattern: str = "Ghostly_Emg_20231004_13-18-43-0464.c3d") -> List[str]:
+        """Identify files matching a specific pattern to be deleted.
+        
+        Args:
+            patient_files: Dictionary of patient files
+            pattern: File name pattern to match
+            
+        Returns:
+            List of file paths to delete
+        """
+        pattern_files = []
+        
+        for patient_code, files in patient_files.items():
+            for file_info in files:
+                if pattern in file_info['name']:
+                    pattern_files.append(file_info['path'])
+                    self.stats["pattern_files_found"] = self.stats.get("pattern_files_found", 0) + 1
+                    self.stats["total_size_freed"] += file_info['size']
+                    logger.info(f"🎯 Pattern match found: {file_info['path']} ({self._format_size(file_info['size'])})")
+        
+        return pattern_files
+    
     def identify_duplicates(self, patient_files: Dict[str, List[Dict]]) -> List[str]:
         """Identify duplicate files based on file size within each patient.
         
@@ -346,18 +368,24 @@ class BucketCleaner:
             logger.info("\n🔍 DRY RUN MODE - No files were actually deleted")
             logger.info("💡 Run with --execute to perform actual deletion")
     
-    def run(self, skip_duplicates: bool = False, skip_test: bool = False, skip_non_ghostly: bool = False) -> None:
+    def run(self, skip_duplicates: bool = False, skip_test: bool = False, skip_non_ghostly: bool = False, skip_pattern: bool = False, patterns: list = None) -> None:
         """Run the cleanup process.
         
         Args:
             skip_duplicates: If True, skip duplicate detection and removal
             skip_test: If True, skip test file removal
             skip_non_ghostly: If True, skip non-Ghostly file removal
+            skip_pattern: If True, skip pattern-specific file removal
+            patterns: List of patterns to match for deletion
         """
         logger.info("🚀 Starting bucket cleanup")
         logger.info(f"🔧 Mode: {'DRY RUN' if self.dry_run else 'EXECUTE'}")
         
-        if skip_test and skip_duplicates and skip_non_ghostly:
+        # Default patterns if none provided
+        if patterns is None:
+            patterns = ["Ghostly_Emg_20231004_13-18-43-0464.c3d", "Ghostly_Emg_20200415_12-31-20-0009.c3d"]
+        
+        if skip_test and skip_duplicates and skip_non_ghostly and skip_pattern:
             logger.error("❌ All cleanup types skipped. Nothing to do!")
             return
         
@@ -383,7 +411,14 @@ class BucketCleaner:
                 files_to_delete.extend(non_ghostly_files)
                 logger.info(f"📝 Found {len(non_ghostly_files)} non-Ghostly files to delete")
             
-            # Step 4: Identify duplicates
+            # Step 4: Identify specific pattern files - handle multiple patterns
+            if not skip_pattern:
+                for pattern in patterns:
+                    pattern_files = self.identify_specific_pattern_files(patient_files, pattern)
+                    files_to_delete.extend(pattern_files)
+                    logger.info(f"📝 Found {len(pattern_files)} files matching pattern '{pattern}' to delete")
+            
+            # Step 5: Identify duplicates
             if not skip_duplicates:
                 duplicates = self.identify_duplicates(patient_files)
                 files_to_delete.extend(duplicates)
@@ -392,7 +427,7 @@ class BucketCleaner:
             # Remove any duplicates from our deletion list
             files_to_delete = list(set(files_to_delete))
             
-            # Step 5: Check database references
+            # Step 6: Check database references
             db_referenced = self.check_database_references(files_to_delete)
             
             if db_referenced and not self.dry_run:
@@ -402,10 +437,10 @@ class BucketCleaner:
                     logger.info("❌ Cleanup cancelled by user")
                     return
             
-            # Step 6: Delete files
+            # Step 7: Delete files
             self.delete_files(files_to_delete)
             
-            # Step 7: Print summary
+            # Step 8: Print summary
             self.print_summary()
             
         except Exception as e:
