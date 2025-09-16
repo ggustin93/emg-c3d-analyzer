@@ -34,9 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
+# Force include dev dependencies for build stage even in production mode
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
-    npm ci --prefer-offline --no-audit --legacy-peer-deps
+    npm ci --include=dev --prefer-offline --no-audit --legacy-peer-deps
 
 # Copy frontend source code
 COPY frontend/ .
