@@ -28,8 +28,8 @@ export default defineConfig({
     }
   },
   build: {
-    // This sets the output directory to 'build' to match CRA's default
-    outDir: 'build',
+    // Use 'dist' directory to match Docker expectations
+    outDir: 'dist',
     sourcemap: true, // Enable source maps for production debugging
     rollupOptions: {
       output: {
