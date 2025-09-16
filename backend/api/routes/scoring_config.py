@@ -388,6 +388,65 @@ async def test_scoring_weights():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/configurations/default", response_model=ScoringConfigurationResponse)
+async def update_default_configuration(config: ScoringConfigurationRequest):
+    """Update the GHOSTLY-TRIAL-DEFAULT configuration (admin only).
+    
+    This endpoint updates the system default scoring configuration.
+    Only administrators can modify this during the clinical trial.
+    """
+    try:
+        supabase = get_supabase_client(use_service_key=True)
+        
+        # Fixed ID for GHOSTLY-TRIAL-DEFAULT configuration
+        default_config_id = "a0000000-0000-0000-0000-000000000001"
+        
+        # Prepare update data
+        update_data = {
+            "configuration_name": "GHOSTLY-TRIAL-DEFAULT",  # Always use this name
+            "description": config.description or "Default scoring configuration for GHOSTLY+ clinical trial. All patients use this configuration.",
+            "weight_compliance": config.weight_compliance,
+            "weight_symmetry": config.weight_symmetry,
+            "weight_effort": config.weight_effort,
+            "weight_game": config.weight_game,
+            "weight_completion": config.weight_completion,
+            "weight_intensity": config.weight_intensity,
+            "weight_duration": config.weight_duration,
+            "updated_at": "now()",
+            "is_global": True,  # This is the global default
+            "active": True,  # Always active
+        }
+        
+        # Update the default configuration
+        result = (
+            supabase.table("scoring_configuration")
+            .update(update_data)
+            .eq("id", default_config_id)
+            .execute()
+        )
+        
+        if not result.data:
+            # Configuration doesn't exist, create it
+            logger.warning(f"GHOSTLY-TRIAL-DEFAULT not found, creating it")
+            create_data = {**update_data, "id": default_config_id}
+            result = supabase.table("scoring_configuration").insert(create_data).execute()
+            
+            if not result.data:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create default scoring configuration"
+                )
+        
+        logger.info(f"Updated GHOSTLY-TRIAL-DEFAULT configuration")
+        return result.data[0]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to update default scoring configuration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/adherence/{patient_code}")
 async def get_patient_adherence(patient_code: str, sessions_completed: int = None):
     """Get adherence score for a patient by patient_code.

@@ -20,6 +20,11 @@ vi.mock('@/store/sessionStore', () => ({
   useSessionStore: vi.fn()
 }));
 
+// Mock the backend defaults hook
+vi.mock('../useBackendDefaults', () => ({
+  useBackendDefaults: vi.fn()
+}));
+
 // Mock effort score calculation
 vi.mock('@/lib/effortScore', () => ({
   getEffortScoreFromRPE: vi.fn((rpe: number | null | undefined) => {
@@ -34,13 +39,27 @@ vi.mock('@/lib/effortScore', () => ({
 // Import the mocked functions after mocking
 import { useScoringConfiguration } from '../useScoringConfiguration';
 import { useSessionStore } from '@/store/sessionStore';
+import { useBackendDefaults } from '../useBackendDefaults';
 
 const mockUseScoringConfiguration = useScoringConfiguration as any;
 const mockUseSessionStore = useSessionStore as any;
+const mockUseBackendDefaults = useBackendDefaults as any;
 
 describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Default mock for backend defaults (no scoring_weights anymore)
+    mockUseBackendDefaults.mockReturnValue({
+      defaults: {
+        target_contractions_ch1: 3,
+        target_contractions_ch2: 3,
+        mvc_threshold_percentage: 75,
+        therapeutic_duration_threshold_ms: 2000
+      },
+      loading: false,
+      error: null
+    });
   });
 
   const mockAnalysisResult: EMGAnalysisResult = {
@@ -275,8 +294,8 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       }, { timeout: 5000 });
     });
 
-    it('should fallback gracefully when database weights are unavailable', async () => {
-      // Mock scoring configuration hook to return null weights (fallback scenario)
+    it('should return null when database weights are unavailable (SSoT)', async () => {
+      // Mock scoring configuration hook to return null weights (database unavailable)
       mockUseScoringConfiguration.mockReturnValue({
         weights: null,
         isLoading: false,
@@ -285,7 +304,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
         saveCustomWeights: vi.fn()
       });
 
-      // Mock session store with override weights
+      // Mock session store with override weights (these won't be used due to SSoT)
       const sessionParamsWithOverride = {
         ...mockSessionParams,
         enhanced_scoring: {
@@ -309,14 +328,9 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       const { result } = renderHook(() => useEnhancedPerformanceMetrics(mockAnalysisResult));
 
       await waitFor(() => {
-        expect(result.current).not.toBeNull();
+        // Should return null when database weights unavailable (Single Source of Truth)
+        expect(result.current).toBeNull();
       });
-
-      const performanceData = result.current!;
-
-      // Should use session override weights when database unavailable
-      expect(performanceData.weights.compliance).toBe(0.45);
-      expect(performanceData.weights.symmetry).toBe(0.30);
     });
   });
 
@@ -372,7 +386,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       expect(result.current!.weights).toEqual(sessionParamsWithOverride.enhanced_scoring.weights);
     });
 
-    it('should use session override when database is unavailable', async () => {
+    it('should return null when database is unavailable (no fallback per SSoT)', async () => {
       // Mock no database weights
       mockUseScoringConfiguration.mockReturnValue({
         weights: null,
@@ -407,11 +421,9 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       const { result } = renderHook(() => useEnhancedPerformanceMetrics(mockAnalysisResult));
 
       await waitFor(() => {
-        expect(result.current).not.toBeNull();
+        // Should return null when database unavailable (Single Source of Truth - no fallback)
+        expect(result.current).toBeNull();
       });
-
-      // Should use session override weights (priority 2)
-      expect(result.current!.weights).toEqual(sessionOverrideWeights);
     });
   });
 
@@ -522,7 +534,7 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
   });
 
   describe('Error Handling and Resilience', () => {
-    it('should handle scoring configuration errors gracefully', async () => {
+    it('should handle scoring configuration errors gracefully (returns null per SSoT)', async () => {
       // Mock configuration hook with error
       mockUseScoringConfiguration.mockReturnValue({
         weights: null,
@@ -540,33 +552,9 @@ describe('useEnhancedPerformanceMetrics - Single Source of Truth Integration', (
       const { result } = renderHook(() => useEnhancedPerformanceMetrics(mockAnalysisResult));
 
       await waitFor(() => {
-        expect(result.current).not.toBeNull();
+        // Should return null when configuration errors occur (Single Source of Truth - no fallback)
+        expect(result.current).toBeNull();
       });
-
-      const performanceData = result.current!;
-
-      // Should fall back to default weights (flexible - can be configured by users/therapists/admins)
-      expect(performanceData.weights.compliance).toBeTypeOf('number');
-      expect(performanceData.weights.symmetry).toBeTypeOf('number');
-      expect(performanceData.weights.effort).toBeTypeOf('number');
-      expect(performanceData.weights.gameScore).toBeTypeOf('number');
-      
-      // Verify all weights are valid percentages (0-1)
-      expect(performanceData.weights.compliance).toBeGreaterThanOrEqual(0);
-      expect(performanceData.weights.compliance).toBeLessThanOrEqual(1);
-      expect(performanceData.weights.symmetry).toBeGreaterThanOrEqual(0);
-      expect(performanceData.weights.symmetry).toBeLessThanOrEqual(1);
-      expect(performanceData.weights.effort).toBeGreaterThanOrEqual(0);
-      expect(performanceData.weights.effort).toBeLessThanOrEqual(1);
-      expect(performanceData.weights.gameScore).toBeGreaterThanOrEqual(0);
-      expect(performanceData.weights.gameScore).toBeLessThanOrEqual(1);
-      
-      // Verify weights sum to 1.0 (within floating point tolerance)
-      const totalWeight = performanceData.weights.compliance + 
-                         performanceData.weights.symmetry + 
-                         performanceData.weights.effort + 
-                         performanceData.weights.gameScore;
-      expect(Math.abs(totalWeight - 1.0)).toBeLessThan(0.001);
     });
 
     it('should handle missing session parameters', async () => {

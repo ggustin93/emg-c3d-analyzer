@@ -18,7 +18,6 @@ interface UserProfileData {
   role: string
   first_name?: string
   last_name?: string
-  full_name?: string
   institution?: string
   department?: string
   access_level: string
@@ -61,7 +60,7 @@ export const useAuth = (): AuthState & AuthActions => {
       // Only select essential fields needed for sign-in (reduces payload size)
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, role, first_name, last_name, full_name, institution, department, access_level, user_code, created_at, updated_at, last_login')
+        .select('id, role, first_name, last_name, institution, department, access_level, user_code, created_at, updated_at, last_login')
         .eq('id', userId)
         .single()
 

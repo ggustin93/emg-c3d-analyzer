@@ -32,18 +32,8 @@ interface ScoringConfigurationHook {
   clearLocalChanges: () => void;
 }
 
-// Fallback weights matching backend config.py ScoringDefaults: 50% compliance, 25% effort, 25% symmetry, 0% game
-const FALLBACK_WEIGHTS: ScoringWeights = {
-  compliance: 0.50,        // 50% - Therapeutic Compliance (from backend config.py ScoringDefaults)
-  symmetry: 0.25,         // 25% - Muscle Symmetry (from backend config.py ScoringDefaults)
-  effort: 0.25,           // 25% - Subjective Effort (RPE) (from backend config.py ScoringDefaults)
-  gameScore: 0.00,        // 0% - Game Performance (from backend config.py ScoringDefaults)
-  
-  // Sub-component weights for compliance (must sum to 1.0)
-  compliance_completion: 0.333,  // 33.3% - Completion rate
-  compliance_intensity: 0.333,   // 33.3% - Intensity rate (≥75% MVC)
-  compliance_duration: 0.334,    // 33.4% - Duration rate (muscle-specific threshold)
-};
+// NOTE: All scoring weights are fetched from database only
+// Single source of truth: GHOSTLY-TRIAL-DEFAULT configuration in database
 
 /**
  * Hook to fetch and manage scoring configuration from the database
@@ -51,7 +41,7 @@ const FALLBACK_WEIGHTS: ScoringWeights = {
  * Single Source of Truth Implementation:
  * 1. Primary: Therapist/Patient-specific configuration (if exists)
  * 2. Secondary: Global active configuration (scoring_configuration table)
- * 3. Fallback: FALLBACK_WEIGHTS (matching metricsDefinitions.md exactly)
+ * 3. Fallback: Backend defaults from config.py (fetched via API)
  * 
  * This ensures consistency between frontend and backend scoring calculations
  * while supporting therapist and patient-specific customization.
@@ -65,8 +55,12 @@ export const useScoringConfiguration = (
   const [error, setError] = useState<string | null>(null);
   const [originalWeights, setOriginalWeights] = useState<ScoringWeights | null>(null);
   const [currentSaveState, setCurrentSaveState] = useState<'default' | 'session' | 'patient' | 'global'>('default');
+  
+  // No longer using backend defaults - database is the single source of truth
 
   const fetchConfiguration = useCallback(async () => {
+    // No need to wait for backend defaults anymore
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -103,9 +97,10 @@ export const useScoringConfiguration = (
       
       if (!response.ok) {
         if (response.status === 404) {
-          // No configuration found - use fallback
-          console.info('No scoring configuration found in database, using fallback weights from metricsDefinitions.md');
-          setWeights(FALLBACK_WEIGHTS);
+          // No configuration found - this is now an error state
+          console.error('No scoring configuration found in database. GHOSTLY-TRIAL-DEFAULT should always exist.');
+          setError('No scoring configuration found. Please contact support.');
+          setWeights(null);
           return;
         }
         throw new Error(`Failed to fetch scoring configuration: ${response.statusText}`);
@@ -133,12 +128,13 @@ export const useScoringConfiguration = (
                      fetchedWeights.compliance_duration;
 
       if (Math.abs(mainSum - 1.0) > 0.01 || Math.abs(subSum - 1.0) > 0.01) {
-        console.warn('Database weights validation failed, using fallback', {
+        console.error('Database weights validation failed', {
           mainSum,
           subSum,
           fetchedWeights
         });
-        setWeights(FALLBACK_WEIGHTS);
+        setError('Invalid scoring configuration. Please contact support.');
+        setWeights(null);
         return;
       }
 
@@ -157,10 +153,10 @@ export const useScoringConfiguration = (
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('Failed to fetch scoring configuration:', errorMessage);
       
-      // Use fallback weights on error
+      // Error state - no fallback weights
       setError(errorMessage);
-      setWeights(FALLBACK_WEIGHTS);
-      setOriginalWeights(FALLBACK_WEIGHTS);
+      setWeights(null);
+      setOriginalWeights(null);
       setCurrentSaveState('default');
       
     } finally {
@@ -232,10 +228,10 @@ export const useScoringConfiguration = (
     weights: ScoringWeights
   ) => {
     try {
-      // Create global configuration data
+      // Update GHOSTLY-TRIAL-DEFAULT configuration
       const configData = {
-        configuration_name: 'Global Default',
-        description: 'Global default scoring weights for all users',
+        configuration_name: 'GHOSTLY-TRIAL-DEFAULT', // Always use this name
+        description: 'Default scoring configuration for GHOSTLY+ clinical trial. All patients use this configuration.',
         
         weight_compliance: weights.compliance,
         weight_symmetry: weights.symmetry,
@@ -245,12 +241,10 @@ export const useScoringConfiguration = (
         weight_completion: weights.compliance_completion,
         weight_intensity: weights.compliance_intensity,
         weight_duration: weights.compliance_duration,
-        
-        active: true // Mark as active global configuration
       };
 
-      const response = await fetch('/api/scoring/configurations/global', {
-        method: 'POST',
+      const response = await fetch('/api/scoring/configurations/default', {
+        method: 'PUT', // PUT to update existing default
         headers: {
           'Content-Type': 'application/json',
         },
@@ -258,10 +252,10 @@ export const useScoringConfiguration = (
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to save global scoring configuration: ${response.statusText}`);
+        throw new Error(`Failed to update default scoring configuration: ${response.statusText}`);
       }
 
-      console.info('Successfully saved global scoring configuration:', weights);
+      console.info('Successfully updated GHOSTLY-TRIAL-DEFAULT configuration:', weights);
       
       // Update local state
       setOriginalWeights(weights);
@@ -272,7 +266,7 @@ export const useScoringConfiguration = (
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Failed to save global scoring configuration:', errorMessage);
+      console.error('Failed to update default scoring configuration:', errorMessage);
       throw err;
     }
   }, [fetchConfiguration]);

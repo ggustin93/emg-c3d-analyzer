@@ -116,11 +116,11 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should use valid fallback weights
-      validateWeights(result.current.weights);
-      expect(result.current.error).toBe(null);
-      expect(mockConsoleInfo).toHaveBeenCalledWith(
-        'No scoring configuration found in database, using fallback weights from metricsDefinitions.md'
+      // Should show error state (no fallback weights)
+      expect(result.current.weights).toBeNull();
+      expect(result.current.error).toBe('No scoring configuration found. Please contact support.');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'No scoring configuration found in database. GHOSTLY-TRIAL-DEFAULT should always exist.'
       );
     });
 
@@ -133,8 +133,8 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should use valid fallback weights
-      validateWeights(result.current.weights);
+      // Should show error state (no fallback weights)
+      expect(result.current.weights).toBeNull();
       expect(result.current.error).toBe('Network error');
       expect(mockConsoleError).toHaveBeenCalledWith(
         'Failed to fetch scoring configuration:',
@@ -279,11 +279,11 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should use fallback weights due to validation failure
-      // Should use valid fallback weights
-      validateWeights(result.current.weights);
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
-        'Database weights validation failed, using fallback',
+      // Should show error state (no fallback weights)
+      expect(result.current.weights).toBeNull();
+      expect(result.current.error).toBe('Invalid scoring configuration. Please contact support.');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'Database weights validation failed',
         expect.objectContaining({
           mainSum: 1.1, // Invalid sum
         })
@@ -309,10 +309,11 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should use valid fallback weights
-      validateWeights(result.current.weights);
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
-        'Database weights validation failed, using fallback',
+      // Should show error state (no fallback weights)
+      expect(result.current.weights).toBeNull();
+      expect(result.current.error).toBe('Invalid scoring configuration. Please contact support.');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'Database weights validation failed',
         expect.objectContaining({
           subSum: 1.1 // Invalid sub-weights sum
         })
@@ -478,7 +479,7 @@ describe('useScoringConfiguration', () => {
   });
 
   describe('Single Source of Truth Validation', () => {
-    it('should use fallback weights that match metricsDefinitions.md exactly', async () => {
+    it('should show error state when database is unavailable', async () => {
       mockFetch.mockRejectedValueOnce(new Error('API unavailable'));
 
       const { result } = renderHook(() => useScoringConfiguration());
@@ -487,27 +488,16 @@ describe('useScoringConfiguration', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const weights = result.current.weights!;
+      // With single source of truth, no fallback weights should be used
+      // Database is the only authority for scoring weights
+      expect(result.current.weights).toBeNull();
+      expect(result.current.error).toBe('API unavailable');
       
-      // Verify weights exist and are valid numbers between 0 and 1
-      expect(weights.compliance).toBeGreaterThanOrEqual(0);
-      expect(weights.compliance).toBeLessThanOrEqual(1);
-      expect(weights.symmetry).toBeGreaterThanOrEqual(0);
-      expect(weights.symmetry).toBeLessThanOrEqual(1);
-      expect(weights.effort).toBeGreaterThanOrEqual(0);
-      expect(weights.effort).toBeLessThanOrEqual(1);
-      expect(weights.gameScore).toBeGreaterThanOrEqual(0);
-      expect(weights.gameScore).toBeLessThanOrEqual(1);
-      
-      // Main weights should sum to 1.0 (with small tolerance for rounding)
-      const mainSum = weights.compliance + weights.symmetry + weights.effort + weights.gameScore;
-      expect(mainSum).toBeCloseTo(1.0, 3);
-      expect(Math.abs(mainSum - 1.0)).toBeLessThan(0.001);
-      
-      // Sub-component weights should sum to 1.0 (with small tolerance for rounding)
-      const subSum = weights.compliance_completion + weights.compliance_intensity + weights.compliance_duration;
-      expect(subSum).toBeCloseTo(1.0, 3);
-      expect(Math.abs(subSum - 1.0)).toBeLessThan(0.001);
+      // The system should log that it failed to fetch configuration
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'Failed to fetch scoring configuration:',
+        'API unavailable'
+      );
     });
   });
 });

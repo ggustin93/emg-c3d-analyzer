@@ -27,6 +27,7 @@ from api.routes import (
     upload,
     webhooks,
 )
+from api.routes.config_defaults import router as config_defaults_router
 from api.routes.scoring_config import router as scoring_router
 from api.routes.therapist_resolution import router as therapist_router
 from config import (
@@ -37,10 +38,69 @@ from config import (
     CORS_HEADERS,
     CORS_METHODS,
     CORS_ORIGINS,
+    ScoringDefaults,
 )
+from database.supabase_client import get_supabase_client
 
 # Configure structured logging
 logger = structlog.get_logger(__name__)
+
+
+async def ensure_default_scoring_configuration():
+    """Ensure GHOSTLY-TRIAL-DEFAULT configuration exists in database.
+    
+    This startup validation guarantees the default scoring configuration
+    is always available, creating it with defaults from config.py if missing.
+    """
+    try:
+        supabase = get_supabase_client(use_service_key=True)
+        default_config_id = "a0000000-0000-0000-0000-000000000001"
+        
+        # Check if GHOSTLY-TRIAL-DEFAULT exists
+        result = (
+            supabase.table("scoring_configuration")
+            .select("id, configuration_name")
+            .eq("id", default_config_id)
+            .execute()
+        )
+        
+        if not result.data:
+            # Create default configuration using config.py defaults
+            logger.warning("GHOSTLY-TRIAL-DEFAULT not found, creating it with defaults")
+            scoring_defaults = ScoringDefaults()
+            
+            default_config = {
+                "id": default_config_id,
+                "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
+                "description": "Default scoring configuration for GHOSTLY+ clinical trial. All patients use this configuration.",
+                "weight_compliance": scoring_defaults.WEIGHT_COMPLIANCE,
+                "weight_symmetry": scoring_defaults.WEIGHT_SYMMETRY,
+                "weight_effort": scoring_defaults.WEIGHT_EFFORT,
+                "weight_game": scoring_defaults.WEIGHT_GAME,
+                "weight_completion": scoring_defaults.WEIGHT_COMPLETION,
+                "weight_intensity": scoring_defaults.WEIGHT_INTENSITY,
+                "weight_duration": scoring_defaults.WEIGHT_DURATION,
+                "is_global": True,
+                "active": True,
+            }
+            
+            create_result = (
+                supabase.table("scoring_configuration")
+                .insert(default_config)
+                .execute()
+            )
+            
+            if create_result.data:
+                logger.info("Created GHOSTLY-TRIAL-DEFAULT configuration with defaults from config.py")
+            else:
+                logger.error("Failed to create GHOSTLY-TRIAL-DEFAULT configuration")
+        else:
+            logger.info("GHOSTLY-TRIAL-DEFAULT configuration validated successfully")
+            
+    except Exception as e:
+        logger.error(f"Failed to ensure default scoring configuration: {e}")
+        # Don't fail startup, but log the error prominently
+        # The application can still function with runtime fallbacks
 
 
 def create_app() -> FastAPI:
@@ -55,6 +115,12 @@ def create_app() -> FastAPI:
         description=API_DESCRIPTION,
         version=API_VERSION,
     )
+    
+    # Register startup event handler for configuration validation
+    @app.on_event("startup")
+    async def startup_event():
+        """Run startup tasks including configuration validation."""
+        await ensure_default_scoring_configuration()
     
     # Configure CORS
     app.add_middleware(
@@ -113,13 +179,14 @@ def create_app() -> FastAPI:
     app.include_router(mvc.router)  # MVC calibration
     app.include_router(signals.router)  # Signal processing
     app.include_router(webhooks.router)  # Supabase webhooks
+    app.include_router(config_defaults_router)  # Backend configuration defaults
     app.include_router(scoring_router)  # Scoring configuration
     app.include_router(cache_monitoring.router)  # Cache monitoring
     app.include_router(logs.router)  # Frontend log collection
     app.include_router(clinical_notes.router)  # Clinical notes management
     app.include_router(therapist_router)  # Therapist resolution
     
-    logger.info("FastAPI application configured", routes=12)
+    logger.info("FastAPI application configured", routes=13)
     return app
 
 

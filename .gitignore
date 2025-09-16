@@ -187,3 +187,5 @@ frontend/coverage/.tmp
 coverage/
 
 docs/
+
+.specify/*

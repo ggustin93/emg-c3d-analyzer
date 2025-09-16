@@ -18,8 +18,8 @@ describe('useScoringConfiguration', () => {
   };
 
   const mockConfigResponse = {
-    id: '1',
-    configuration_name: 'Test Config',
+    id: 'a0000000-0000-0000-0000-000000000001',
+    configuration_name: 'GHOSTLY-TRIAL-DEFAULT',
     description: 'Test configuration',
     weight_compliance: 0.50,  // 50% - from metricsDefinitions.md
     weight_symmetry: 0.25,    // 25% - from metricsDefinitions.md
@@ -67,7 +67,7 @@ describe('useScoringConfiguration', () => {
       });
     });
 
-    it('should use fallback weights when no configuration found', async () => {
+    it('should handle missing configuration as error state', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -78,15 +78,9 @@ describe('useScoringConfiguration', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.weights).toBeDefined();
-        // Should use fallback weights when no config found
-        // Verify weights are valid (sum to 1.0)
-        const total = (result.current.weights?.compliance || 0) + 
-                     (result.current.weights?.symmetry || 0) + 
-                     (result.current.weights?.effort || 0) + 
-                     (result.current.weights?.gameScore || 0);
-        expect(Math.abs(total - 1.0)).toBeLessThan(0.01);
-        expect(result.current.error).toBe(null);
+        expect(result.current.weights).toBeNull();
+        // Should show error when no config found (no fallbacks)
+        expect(result.current.error).toBe('No scoring configuration found. Please contact support.');
       });
     });
 
@@ -98,14 +92,8 @@ describe('useScoringConfiguration', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.weights).toBeDefined();
-        // Should use fallback weights on error
-        // Verify weights are valid (sum to 1.0)
-        const total = (result.current.weights?.compliance || 0) + 
-                     (result.current.weights?.symmetry || 0) + 
-                     (result.current.weights?.effort || 0) + 
-                     (result.current.weights?.gameScore || 0);
-        expect(Math.abs(total - 1.0)).toBeLessThan(0.01);
+        // Should show error state when fetch fails (no fallbacks)
+        expect(result.current.weights).toBeNull();
         expect(result.current.error).toBe(errorMessage);
       });
     });
@@ -241,11 +229,11 @@ describe('useScoringConfiguration', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/scoring/configurations/global',
+        '/api/scoring/configurations/default',
         expect.objectContaining({
-          method: 'POST',
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: expect.stringContaining('Global Default')
+          body: expect.stringContaining('GHOSTLY-TRIAL-DEFAULT')
         })
       );
     });
@@ -271,7 +259,7 @@ describe('useScoringConfiguration', () => {
         act(async () => {
           await result.current.saveGlobalWeights(mockWeights);
         })
-      ).rejects.toThrow('Failed to save global scoring configuration');
+      ).rejects.toThrow('Failed to update default scoring configuration');
     });
   });
 
@@ -348,22 +336,17 @@ describe('useScoringConfiguration', () => {
         json: async () => invalidConfig
       });
 
-      const consoleSpy = vi.spyOn(console, 'warn');
+      const consoleSpy = vi.spyOn(console, 'error');
 
       const { result } = renderHook(() => useScoringConfiguration());
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.weights).toBeDefined();
-        // Should use fallback weights when validation fails
-        // Verify the fallback weights are valid (sum to 1.0)
-        const total = (result.current.weights?.compliance || 0) + 
-                     (result.current.weights?.symmetry || 0) + 
-                     (result.current.weights?.effort || 0) + 
-                     (result.current.weights?.gameScore || 0);
-        expect(Math.abs(total - 1.0)).toBeLessThan(0.01);
+        // Should show error state when validation fails (no fallbacks)
+        expect(result.current.weights).toBeNull();
+        expect(result.current.error).toBe('Invalid scoring configuration. Please contact support.');
         expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Database weights validation failed'),
+          'Database weights validation failed',
           expect.any(Object)
         );
       });

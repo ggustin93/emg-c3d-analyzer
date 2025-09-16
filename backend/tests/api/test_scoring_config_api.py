@@ -139,3 +139,76 @@ class TestScoringConfigurationAPIFixed:
             error_data = response.json()
             # For validation errors (422), FastAPI returns "detail" field
             assert "detail" in error_data
+    
+    def test_update_default_scoring_configuration(self, client):
+        """Test PUT /scoring/configurations/default endpoint."""
+        # Prepare valid configuration update
+        update_config = {
+            "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
+            "description": "Updated default configuration",
+            "weight_compliance": 0.45,
+            "weight_symmetry": 0.25,
+            "weight_effort": 0.25,
+            "weight_game": 0.05,
+            "weight_completion": 0.333,
+            "weight_intensity": 0.333,
+            "weight_duration": 0.334
+        }
+        
+        response = client.put("/scoring/configurations/default", json=update_config)
+        
+        # Should successfully update or return 404 if GHOSTLY-TRIAL-DEFAULT doesn't exist
+        assert response.status_code in [200, 404], f"Unexpected status code: {response.status_code}"
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Verify the response contains updated values
+            assert data["configuration_name"] == "GHOSTLY-TRIAL-DEFAULT"
+            assert data["weight_compliance"] == 0.45
+            assert data["weight_symmetry"] == 0.25
+            assert data["weight_effort"] == 0.25
+            assert data["weight_game"] == 0.05
+            
+    def test_update_default_configuration_invalid_weights(self, client):
+        """Test PUT /scoring/configurations/default with invalid weights."""
+        # Prepare configuration with invalid weights (sum > 1.0)
+        invalid_config = {
+            "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
+            "weight_compliance": 0.60,
+            "weight_symmetry": 0.30,
+            "weight_effort": 0.30,  # Total = 1.2 > 1.0
+            "weight_game": 0.00,
+            "weight_completion": 0.333,
+            "weight_intensity": 0.333,
+            "weight_duration": 0.334
+        }
+        
+        response = client.put("/scoring/configurations/default", json=invalid_config)
+        
+        # Should return validation error
+        assert response.status_code == 422
+        error_data = response.json()
+        assert "detail" in error_data
+        
+    def test_update_default_configuration_with_defaults(self, client):
+        """Test PUT /scoring/configurations/default with partial fields uses defaults."""
+        # Prepare configuration with only some fields (others use defaults)
+        partial_config = {
+            "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
+            "weight_compliance": 0.60,
+            # Other fields will use defaults from the model
+        }
+        
+        response = client.put("/scoring/configurations/default", json=partial_config)
+        
+        # Should succeed with defaults for missing fields
+        assert response.status_code in [200, 404], f"Unexpected status code: {response.status_code}"
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Verify the explicitly set field
+            assert data["weight_compliance"] == 0.60
+            # Other fields should have defaults (0.25, 0.25, 0.0 for main weights)
+            assert data["weight_symmetry"] == 0.25  # Default from model
+            assert data["weight_effort"] == 0.25    # Default from model
+            assert data["weight_game"] == 0.0       # Default from model

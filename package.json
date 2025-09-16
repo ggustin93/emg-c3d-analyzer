@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "shadcn": "^3.3.0",
     "supabase": "^2.39.2"
   }
 }

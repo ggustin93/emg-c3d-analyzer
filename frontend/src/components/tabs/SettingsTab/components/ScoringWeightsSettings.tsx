@@ -400,7 +400,11 @@ const ScoringWeightsSettings: React.FC<ScoringWeightsSettingsProps> = ({
           break;
           
         case 'global':
-          // Save globally (researcher only)
+          // Save globally (admin only during clinical trial)
+          if (userProfile?.role !== 'admin') {
+            console.error('Only administrators can modify global scoring configuration');
+            throw new Error('Insufficient permissions: Admin role required');
+          }
           await saveGlobalWeights(currentWeights);
           console.info('Weights saved globally for all users');
           break;

@@ -13,6 +13,7 @@ import {
 import { useSessionStore } from '@/store/sessionStore';
 import { getEffortScoreFromRPE } from '@/lib/effortScore';
 import { useScoringConfiguration } from './useScoringConfiguration';
+import { useBackendDefaults } from './useBackendDefaults';
 
 // UI Presets for scoring configuration settings (user-facing features)
 // These are used in SettingsTab for preset selection, not as fallback defaults
@@ -167,24 +168,17 @@ export const useEnhancedPerformanceMetrics = (
 ): EnhancedPerformanceData | null => {
   const { sessionParams } = useSessionStore();
   const { weights: databaseWeights, isLoading: isWeightsLoading } = useScoringConfiguration();
+  const { defaults: backendDefaults, loading: defaultsLoading } = useBackendDefaults();
   
   const enhancedData = useMemo(() => {
-    if (!analysisResult?.analytics || !sessionParams || isWeightsLoading) {
+    if (!analysisResult?.analytics || !sessionParams || isWeightsLoading || defaultsLoading || !backendDefaults) {
       return null;
     }
     
     // SINGLE SOURCE OF TRUTH: Priority for simplified system
-    // Priority order: 1. Database weights, 2. Backend config.py fallback
+    // Single Source of Truth: Database weights only (no fallback)
     // Session params are now only for local simulation (doesn't affect database results)
-    const weights = databaseWeights || {
-      compliance: 0.50,  // w_c = 0.5 (Therapeutic Compliance) - from backend/config.py ScoringDefaults
-      symmetry: 0.25,    // w_s = 0.25 (Muscle Symmetry) - from backend/config.py ScoringDefaults
-      effort: 0.25,      // w_e = 0.25 (Subjective Effort RPE) - from backend/config.py ScoringDefaults
-      gameScore: 0.00,   // w_g = 0.0 (Game Performance, optional) - from backend/config.py ScoringDefaults
-      compliance_completion: 0.333,  // w_comp = 1/3 - from backend/config.py ScoringDefaults
-      compliance_intensity: 0.333,   // w_int = 1/3 - from backend/config.py ScoringDefaults
-      compliance_duration: 0.334,    // w_dur = 1/3 - from backend/config.py ScoringDefaults
-    };
+    const weights = databaseWeights;
     
     // For local simulation, we can use session params if available
     const simulationWeights = sessionParams.enhanced_scoring?.enabled && sessionParams.enhanced_scoring?.weights
@@ -192,7 +186,7 @@ export const useEnhancedPerformanceMetrics = (
       : weights;
     
     if (!weights) {
-      console.warn('No scoring weights available, hook will return null');
+      console.warn('No scoring weights available from database, hook will return null (SSoT)');
       return null;
     }
     const detectionParams = sessionParams.contraction_detection || DEFAULT_DETECTION_PARAMS;
@@ -213,11 +207,10 @@ export const useEnhancedPerformanceMetrics = (
     const leftChannelData = analysisResult.analytics[channelNames[0]];
     const rightChannelData = analysisResult.analytics[channelNames[1]];
     
-    // Get per-channel expected contractions, fallback to split total
-    const leftExpectedContractions = sessionParams.session_expected_contractions_ch1 || 
-      Math.ceil((sessionParams.session_expected_contractions || 36) / 2);
-    const rightExpectedContractions = sessionParams.session_expected_contractions_ch2 || 
-      Math.floor((sessionParams.session_expected_contractions || 36) / 2);
+    // Get per-channel expected contractions
+    // Use database values if available, otherwise use backend defaults from API
+    const leftExpectedContractions = sessionParams.session_expected_contractions_ch1 || backendDefaults.target_contractions_ch1;
+    const rightExpectedContractions = sessionParams.session_expected_contractions_ch2 || backendDefaults.target_contractions_ch2;
     
     let leftMuscle = calculateMuscleMetrics(leftChannelData, leftExpectedContractions, durationThreshold, mvcThreshold);
     let rightMuscle = calculateMuscleMetrics(rightChannelData, rightExpectedContractions, durationThreshold, mvcThreshold);
@@ -293,7 +286,7 @@ export const useEnhancedPerformanceMetrics = (
       isDebugMode
     };
     
-  }, [analysisResult, sessionParams, databaseWeights, isWeightsLoading]);
+  }, [analysisResult, sessionParams, databaseWeights, isWeightsLoading, backendDefaults, defaultsLoading]);
   
   return enhancedData;
 };

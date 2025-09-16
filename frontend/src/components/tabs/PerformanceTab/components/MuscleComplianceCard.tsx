@@ -263,7 +263,7 @@ const MuscleComplianceCard: React.FC<MuscleComplianceCardProps> = ({
                     indicatorClassName={contractionProgressColors.bg} 
                   />
                   <p className="text-xs text-gray-500 text-center mt-1">
-                    {totalContractions} contractions detected (short: {shortContractions}, long: {longContractions})
+                    {totalContractions} contractions detected
                   </p>
                 </>
               )}
