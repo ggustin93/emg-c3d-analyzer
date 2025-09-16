@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase'
 import { ClinicalNotesModal } from '../../shared/ClinicalNotesModal'
 import { useClinicalNotes } from '../../../hooks/useClinicalNotes'
 import PatientSessionBrowser from './PatientSessionBrowser'
+import { getPatientAvatarColor, getPatientAvatarInitials } from '../../../lib/avatarColors'
 import { 
   Card, 
   CardContent, 
@@ -55,23 +56,7 @@ interface PatientProfileData {
   average_performance?: number
 }
 
-// Get avatar color based on patient identifier
-function getAvatarColor(identifier: string): string {
-  const avatarColors = [
-    'bg-lime-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-500',
-    'bg-fuchsia-500', 'bg-rose-500', 'bg-sky-500', 'bg-indigo-500',
-    'bg-violet-500', 'bg-cyan-500'
-  ]
-  
-  let hash = 0
-  for (let i = 0; i < identifier.length; i++) {
-    const char = identifier.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash |= 0
-  }
-  const index = Math.abs(hash) % avatarColors.length
-  return avatarColors[index]
-}
+// Avatar functions are now imported from centralized lib/avatarColors.ts
 
 // Calculate age from date of birth
 function calculateAge(dateOfBirth: string | null): number | null {
@@ -341,10 +326,8 @@ export function PatientProfile() {
   const displayName = patient.first_name && patient.last_name 
     ? `${patient.first_name} ${patient.last_name}`
     : patient.patient_code
-  const initials = patient.first_name && patient.last_name
-    ? `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`.toUpperCase()
-    : patient.patient_code.substring(0, 2).toUpperCase()
-  const avatarColor = getAvatarColor(displayName)
+  const initials = getPatientAvatarInitials(patient.first_name, patient.last_name, patient.patient_code)
+  const avatarColor = getPatientAvatarColor(patient.first_name, patient.last_name, patient.patient_code)
 
   // Calculate treatment metrics
   const totalPrescribedSessions = patient.total_sessions || 0

@@ -11,6 +11,7 @@ import {
 } from '../services/C3DFileDataResolver'
 import { AdherenceData } from '../services/adherenceService'
 import { useAdherence } from './useAdherence'
+import { getAvatarColor, getPatientAvatarInitials } from '../lib/avatarColors'
 
 export interface RecentC3DFile {
   name: string
@@ -33,31 +34,7 @@ export interface TherapistDashboardData {
   error: Error | null
 }
 
-// Reuse avatar color logic from PatientManagement
-function getAvatarColor(identifier: string): string {
-  const avatarColors = [
-    'bg-lime-500',
-    'bg-emerald-500',
-    'bg-amber-500',
-    'bg-orange-500',
-    'bg-fuchsia-500',
-    'bg-rose-500',
-    'bg-sky-500',
-    'bg-indigo-500',
-    'bg-violet-500',
-    'bg-cyan-500',
-  ]
-  
-  let hash = 0
-  for (let i = 0; i < identifier.length; i++) {
-    const char = identifier.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash |= 0
-  }
-  const index = Math.abs(hash) % avatarColors.length
-  
-  return avatarColors[index]
-}
+// Avatar functions are now imported from centralized lib/avatarColors.ts
 
 // Enhanced session date resolution - follows C3DFileBrowser pattern
 // Priority: session_date → game_metadata.time → filename patterns
@@ -82,17 +59,7 @@ function resolveEnhancedSessionDate(
   return resolveSessionDateTime(file)
 }
 
-// Generate patient avatar initials from patient code or name
-function getAvatarInitials(patientCode: string, firstName?: string, lastName?: string): string {
-  if (firstName && lastName) {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
-  }
-  
-  // Extract numeric part from patient code (P001 → P1)
-  const numericPart = patientCode.replace(/\D/g, '')
-  const number = parseInt(numericPart) || 0
-  return `P${number}`
-}
+// Avatar functions are now imported from centralized lib/avatarColors.ts
 
 // Utility function to create missing patient_medical_info records
 async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<void> {
@@ -208,7 +175,7 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
       display_name: medical?.first_name && medical?.last_name 
         ? `${medical.first_name} ${medical.last_name}`
         : patient.patient_code,
-      avatar_initials: getAvatarInitials(patient.patient_code, medical?.first_name, medical?.last_name)
+      avatar_initials: getPatientAvatarInitials(medical?.first_name, medical?.last_name, patient.patient_code)
     }
   }) || []
 
@@ -312,8 +279,8 @@ async function fetchRecentC3DFiles(): Promise<RecentC3DFile[]> {
         : patientCode
       
       // Create avatar initials: prefer initials from names over patient code
-      const avatarInitials = getAvatarInitials(patientCode, medical?.first_name, medical?.last_name)
-      const identifier = patientCode
+      const avatarInitials = getPatientAvatarInitials(medical?.first_name, medical?.last_name, patientCode)
+      const avatarColor = getAvatarColor(displayName)  // Use display name for better color distribution
 
       return {
         name: file.name,
@@ -324,7 +291,7 @@ async function fetchRecentC3DFiles(): Promise<RecentC3DFile[]> {
           patient_code: patientCode,
           display_name: displayName,
           avatar_initials: avatarInitials,
-          avatar_color: getAvatarColor(identifier)
+          avatar_color: avatarColor
         }
       }
     })

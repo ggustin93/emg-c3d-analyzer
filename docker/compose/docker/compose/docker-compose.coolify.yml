@@ -1,12 +1,12 @@
 # EMG C3D Analyzer - Coolify Production Configuration
-# Simple and pragmatic setup for Coolify deployment
+# Fixed paths for Coolify deployment
 
 services:
   # Backend API Service
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ../../../../
+      dockerfile: docker/backend/Dockerfile
       target: production
     container_name: emg-backend
     environment:
@@ -56,14 +56,14 @@ services:
   # Frontend Web Application  
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ../../../../
+      dockerfile: docker/frontend/Dockerfile
       target: production
       args:
         # Coolify automatically provides COOLIFY_PUBLIC_URL
-        - REACT_APP_API_URL=${COOLIFY_PUBLIC_URL}/api
-        - REACT_APP_SUPABASE_URL=${SUPABASE_URL}
-        - REACT_APP_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+        - VITE_API_URL=${COOLIFY_PUBLIC_URL}/api
+        - VITE_SUPABASE_URL=${SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     container_name: emg-frontend
     depends_on:
       backend:

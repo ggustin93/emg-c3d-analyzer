@@ -46,6 +46,7 @@ import {
 import { Patient, PatientManagementProps } from './types'
 import { useAdherence } from '../../../hooks/useAdherence'
 import { getAdherenceThreshold, AdherenceData } from '../../../services/adherenceService'
+import { getPatientAvatarColor, getPatientInitials } from '../../../lib/avatarColors'
 
 type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend'
 type SortDirection = 'asc' | 'desc'
@@ -177,46 +178,6 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
   })
 }
 
-// Use unified color system for patient avatars (DRY principle)
-function getAvatarColor(patient: Patient): string {
-  // Use full name if available for more distinct colors, fallback to patient code
-  const identifier = patient.first_name && patient.last_name 
-    ? `${patient.first_name}${patient.last_name}` 
-    : patient.patient_code
-  
-  // Get darker avatar colors for better visibility
-  const avatarColors = [
-    'bg-lime-500',     // Bright lime
-    'bg-emerald-500',  // Bright emerald  
-    'bg-amber-500',    // Bright amber
-    'bg-orange-500',   // Bright orange
-    'bg-fuchsia-500',  // Bright fuchsia
-    'bg-rose-500',     // Bright rose
-    'bg-sky-500',      // Bright sky
-    'bg-indigo-500',   // Bright indigo
-    'bg-violet-500',   // Bright violet
-    'bg-cyan-500',     // Bright cyan
-  ]
-  
-  // Generate hash from identifier for consistent colors
-  let hash = 0
-  for (let i = 0; i < identifier.length; i++) {
-    const char = identifier.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash |= 0
-  }
-  const index = Math.abs(hash) % avatarColors.length
-  
-  return avatarColors[index]
-}
-
-// Generate patient avatar initials from patient code (e.g., "P001" → "P1")
-function getPatientInitials(patientCode: string): string {
-  // Extract numeric part from patient code (P001 → 001 → 1)
-  const numericPart = patientCode.replace(/\D/g, '')
-  const number = parseInt(numericPart) || 0
-  return `P${number}`
-}
 
 // Format date for display with European/French format (DD/MM/YYYY)
 function formatLastSession(dateString: string | null): string {
@@ -328,7 +289,7 @@ interface PatientRowProps {
 
 function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
   const navigate = useNavigate()
-  const avatarColor = getAvatarColor(patient)
+  const avatarColor = getPatientAvatarColor(patient.first_name, patient.last_name, patient.patient_code)
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
   const lastSessionText = formatLastSession(patient.last_session)
   
