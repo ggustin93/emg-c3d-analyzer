@@ -247,75 +247,61 @@ interface LogMessage {
   [key: string]: unknown;
 }
 
-// Attach file transport with better type safety
-baseLogger.attachTransport((logObj: LogMessage) => {
-  const level = logObj._meta?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
-  const category = logObj._meta?.name || 'frontend';
-  
-  let message = '';
-  if (logObj.msg && Array.isArray(logObj.msg)) {
-    message = logObj.msg.map((arg: unknown) => 
-      typeof arg === 'object' && arg !== null 
-        ? JSON.stringify(arg) 
-        : String(arg)
-    ).join(' ');
-  }
-  
-  fileTransport.log(level, category, message);
-});
+// Attach file transport only in development
+if (config.isDevelopment) {
+  baseLogger.attachTransport((logObj: LogMessage) => {
+    const level = logObj._meta?.logLevelName?.toUpperCase().padEnd(5) || 'INFO';
+    const category = logObj._meta?.name || 'frontend';
+    
+    let message = '';
+    if (logObj.msg && Array.isArray(logObj.msg)) {
+      message = logObj.msg.map((arg: unknown) => 
+        typeof arg === 'object' && arg !== null 
+          ? JSON.stringify(arg) 
+          : String(arg)
+      ).join(' ');
+    }
+    
+    fileTransport.log(level, category, message);
+  });
+}
 
-// Console interception for production (fixed bug)
+// Console silencing for production (no file transport)
 if (!config.isDevelopment) {
   const noop = () => undefined;
-  const originalWarn = console.warn.bind(console);
-  const originalError = console.error.bind(console);
   
-  // Silence non-critical console methods
+  // Silence non-critical console methods in production
   console.log = noop;
   console.info = noop;
   console.debug = noop;
   
-  // Capture warn and error to file transport
-  console.warn = (...args: unknown[]) => {
-    fileTransport.log(
-      'WARN',
-      'console',
-      args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)).join(' ')
-    );
-    // Don't call originalWarn in production to prevent console output
-  };
-  
-  console.error = (...args: unknown[]) => {
-    fileTransport.log(
-      'ERROR',
-      'console',
-      args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)).join(' ')
-    );
-    // Don't call originalError in production to prevent console output
-  };
+  // Keep console.warn and console.error functional but don't send to file transport
+  // This allows critical errors to still appear in browser console for debugging
 }
 
-// Global error handlers with better error details
-window.addEventListener('error', (event) => {
-  loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Error:', {
-    message: event.message,
-    filename: event.filename,
-    line: event.lineno,
-    column: event.colno,
-    stack: event.error?.stack,
-    userAgent: navigator.userAgent,
-    url: window.location.href,
+// Global error handlers - only log in development
+if (config.isDevelopment) {
+  window.addEventListener('error', (event) => {
+    loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Error:', {
+      message: event.message,
+      filename: event.filename,
+      line: event.lineno,
+      column: event.colno,
+      stack: event.error?.stack,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    });
   });
-});
 
-window.addEventListener('unhandledrejection', (event) => {
-  loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Promise Rejection:', {
-    reason: event.reason,
-    stack: event.reason?.stack,
-    promise: event.promise,
-    url: window.location.href,
+  window.addEventListener('unhandledrejection', (event) => {
+    loggers[LogCategory.ERROR_BOUNDARY].error('Unhandled Promise Rejection:', {
+      reason: event.reason,
+      stack: event.reason?.stack,
+      promise: event.promise,
+      url: window.location.href,
+    });
   });
-});
+}
 
 /**
  * Main logger instance for categorized logging
