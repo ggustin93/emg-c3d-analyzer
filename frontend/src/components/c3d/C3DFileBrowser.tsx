@@ -788,7 +788,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
-              <ActivityLogIcon className="w-5 h-5 text-blue-600" />
+              <ArchiveIcon className="w-5 h-5 text-blue-500" />
               Game Session History
             </CardTitle>
             <p className="text-sm text-slate-600 mt-1">

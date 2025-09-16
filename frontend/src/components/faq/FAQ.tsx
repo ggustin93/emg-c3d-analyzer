@@ -63,12 +63,12 @@ export function FAQ() {
   }, [allFAQs, currentUserRole])
   
   return (
-    <div className="container mx-auto max-w-5xl p-6 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <QuestionMarkCircledIcon className="h-6 w-6 text-primary" />
+            <QuestionMarkCircledIcon className="h-6 w-6 text-blue-500" />
             <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
           </div>
           <CardDescription className="mt-2">

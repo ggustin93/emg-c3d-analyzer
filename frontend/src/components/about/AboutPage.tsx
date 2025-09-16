@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../ui/accordion'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import { 
   ActivityLogIcon, 
   LightningBoltIcon, 
@@ -12,7 +13,8 @@ import {
   ComponentInstanceIcon, 
   HomeIcon,
   ChatBubbleIcon,
-  ReloadIcon
+  ReloadIcon,
+  InfoCircledIcon
 } from '@radix-ui/react-icons'
 
 // Map section IDs to icons - semantically appropriate for medical/research content
@@ -303,67 +305,77 @@ export const AboutPage: React.FC = () => {
   const heroHighlight = heroLines.slice(1).join(' ')
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Ghostly+ EMG Analysis Platform
-          </h1>
-          <p className="text-xl text-gray-600">
-            {heroTitle}
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Key Highlight */}
-        {heroHighlight && (
-          <div className="bg-blue-50 border-l-4 border-blue-600 p-6 mb-8 rounded-r">
-            <p className="text-blue-900" dangerouslySetInnerHTML={{
-              __html: heroHighlight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            }} />
+    <div className="p-6 space-y-6">
+      {/* Header Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <InfoCircledIcon className="h-6 w-6 text-blue-500" />
+            <CardTitle className="text-2xl">Ghostly+ EMG Analysis Platform</CardTitle>
           </div>
-        )}
+          <CardDescription className="mt-2">
+            {heroTitle}
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-        {/* Accordion Sections */}
-        <Accordion 
-          type="multiple" 
-          defaultValue={[]}
-          className="space-y-3"
-        >
-          {content.sections.map((section) => (
-            <AccordionItem
-              key={section.id}
-              value={section.id}
-              className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-            >
-              <AccordionTrigger className="px-6 py-4 hover:bg-gray-50">
-                <span className="flex items-center gap-3 text-left font-semibold text-gray-900">
-                  {iconMap[section.id] || <ComponentInstanceIcon className="w-4 h-4 text-blue-600" />}
-                  {section.title}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6 pt-2">
-                {renderContent(section)}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+      {/* Key Highlight Card */}
+      {heroHighlight && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-r">
+              <p className="text-blue-900" dangerouslySetInnerHTML={{
+                __html: heroHighlight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              }} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Footer */}
-        <div className="mt-12 pt-8 border-t text-center">
-          <img 
-            src="/vub_etro_logo.png" 
-            alt="VUB ETRO" 
-            className="h-12 mx-auto mb-4 opacity-75"
-          />
-          <p className="text-sm text-gray-500">
-            A collaborative research project advancing rehabilitation technology
-          </p>
-        </div>
-      </div>
+      {/* Accordion Sections */}
+      <Card>
+        <CardContent className="pt-6">
+          <Accordion 
+            type="multiple" 
+            defaultValue={[]}
+            className="space-y-3"
+          >
+            {content.sections.map((section) => (
+              <AccordionItem
+                key={section.id}
+                value={section.id}
+                className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              >
+                <AccordionTrigger className="px-6 py-4 hover:bg-gray-50">
+                  <span className="flex items-center gap-3 text-left font-semibold text-gray-900">
+                    {iconMap[section.id] || <ComponentInstanceIcon className="w-4 h-4 text-blue-600" />}
+                    {section.title}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 pt-2">
+                  {renderContent(section)}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+
+      {/* Footer Card */}
+      <Card className="bg-muted/50">
+        <CardContent className="pt-6">
+          <div className="text-center space-y-2">
+            <img 
+              src="/vub_etro_logo.png" 
+              alt="VUB ETRO" 
+              className="h-12 mx-auto mb-4 opacity-75"
+            />
+            <p className="text-sm text-muted-foreground">
+              A collaborative research project advancing rehabilitation technology
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

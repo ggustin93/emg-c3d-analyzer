@@ -11,7 +11,7 @@ import {
 } from '../services/C3DFileDataResolver'
 import { AdherenceData } from '../services/adherenceService'
 import { useAdherence } from './useAdherence'
-import { getAvatarColor, getPatientAvatarInitials } from '../lib/avatarColors'
+import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../lib/avatarColors'
 
 export interface RecentC3DFile {
   name: string
@@ -278,9 +278,17 @@ async function fetchRecentC3DFiles(): Promise<RecentC3DFile[]> {
         ? medical.first_name
         : patientCode
       
-      // Create avatar initials: prefer initials from names over patient code
+      // Create patient object for consistent avatar color generation
+      const patientForAvatar = {
+        first_name: medical?.first_name,
+        last_name: medical?.last_name,
+        patient_code: patientCode,
+        display_name: displayName
+      }
+      
+      // Create avatar initials and color using consistent pattern
       const avatarInitials = getPatientAvatarInitials(medical?.first_name, medical?.last_name, patientCode)
-      const avatarColor = getAvatarColor(displayName)  // Use display name for better color distribution
+      const avatarColor = getAvatarColor(getPatientIdentifier(patientForAvatar))
 
       return {
         name: file.name,

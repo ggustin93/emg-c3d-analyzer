@@ -73,8 +73,20 @@ function DashboardLayout() {
   const userRole = authData?.profile?.role || 'researcher';
   const location = useLocation();
   
-  // Read activeTab from navigation state for sidebar highlighting
-  const activeTab = location.state?.activeTab || 'sessions';
+  // Determine activeTab from current route or navigation state
+  const getActiveTabFromRoute = () => {
+    const path = location.pathname;
+    if (path.includes('/faq')) return 'faq';
+    if (path.includes('/about')) return 'about';
+    if (path.includes('/dashboard')) {
+      // For dashboard, check state or default to 'sessions'
+      return location.state?.activeTab || 'sessions';
+    }
+    // Default fallback
+    return 'sessions';
+  };
+  
+  const activeTab = getActiveTabFromRoute();
   
   // SOLID: Single Responsibility - One layout handles all protected routes
   // This eliminates duplicate SideNav rendering by using consistent layout pattern
