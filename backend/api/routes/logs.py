@@ -14,8 +14,13 @@ from pydantic import BaseModel
 # Create router
 router = APIRouter(prefix="/api/logs", tags=["logs"])
 
-# Log file path - matches the existing frontend.log location
-FRONTEND_LOG_PATH = Path("../logs/frontend.log")
+# Log file path - use /app/logs in Docker, local path otherwise
+if os.path.exists('/app'):
+    # Running in Docker container
+    FRONTEND_LOG_PATH = Path('/app/logs/frontend.log')
+else:
+    # Running locally
+    FRONTEND_LOG_PATH = Path("../logs/frontend.log")
 
 class FrontendLogsRequest(BaseModel):
     """Request model for frontend log batch."""

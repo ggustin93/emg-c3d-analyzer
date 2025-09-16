@@ -25,9 +25,17 @@ def setup_logging(log_level: str = "INFO"):
         structlog.processors.UnicodeDecoder(),
     ]
 
-    # Ensure logs directory exists
-    logs_dir = Path(__file__).parent.parent.parent / "logs"
-    logs_dir.mkdir(exist_ok=True)
+    # Ensure logs directory exists - use /app/logs in Docker, local path otherwise
+    # In Docker, the app runs from /app, and we have /app/logs created with proper permissions
+    import os
+    if os.path.exists('/app'):
+        # Running in Docker container
+        logs_dir = Path('/app/logs')
+    else:
+        # Running locally
+        logs_dir = Path(__file__).parent.parent.parent / "logs"
+    
+    logs_dir.mkdir(exist_ok=True, parents=True)
     
     backend_log_file = logs_dir / "backend.log"
     error_log_file = logs_dir / "backend.error.log"
