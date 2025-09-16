@@ -35,6 +35,9 @@ COPY frontend/package.json frontend/package-lock.json ./
 # Copy TypeScript configuration files (required for tsc)
 COPY frontend/tsconfig.json frontend/tsconfig.node.json ./
 
+# Install TypeScript globally first to ensure it's available for npm scripts
+RUN npm install -g typescript
+
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
 # Force include dev dependencies for build stage even in production mode
@@ -42,14 +45,11 @@ RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
     npm ci --only=production=false --prefer-offline --no-audit --legacy-peer-deps
 
-# Install TypeScript globally to ensure it's available
-RUN npm install -g typescript
-
 # Copy frontend source code
 COPY frontend/ .
 
-# Build the application directly (TypeScript check is handled by Vite)
-RUN npm run build
+# Verify TypeScript is available and build the application
+RUN which tsc && tsc --version && npm run build
 
 # =============================================================================
 # Stage 2: Production Web Server
