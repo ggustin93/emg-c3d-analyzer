@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import PatientSessionBrowser from '../PatientSessionBrowser';
@@ -60,6 +60,17 @@ vi.mock('@/hooks/useSimpleNotesCount', () => ({
   }))
 }));
 
+// Mock the logger to prevent issues
+vi.mock('@/services/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  },
+  LogCategory: {}
+}));
+
 // Import mocked modules
 import SupabaseStorageService from '@/services/supabaseStorage';
 import { TherapySessionsService } from '@/services/therapySessionsService';
@@ -67,6 +78,11 @@ import { TherapySessionsService } from '@/services/therapySessionsService';
 describe('PatientSessionBrowser', () => {
   const mockPatientCode = 'PAT001';
   const mockOnFileSelect = vi.fn();
+  
+  // Setup console mocks to reduce noise
+  const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 
   const mockFiles = [
     {
@@ -119,6 +135,9 @@ describe('PatientSessionBrowser', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockConsoleError.mockClear();
+    mockConsoleWarn.mockClear();
+    mockConsoleLog.mockClear();
     
     // Setup default mock implementations
     (SupabaseStorageService.listC3DFiles as any).mockResolvedValue(mockFiles);
@@ -136,7 +155,7 @@ describe('PatientSessionBrowser', () => {
   });
 
   it('should render and filter files by patient code', async () => {
-    render(
+    const { container } = render(
       <BrowserRouter>
         <PatientSessionBrowser 
           patientCode={mockPatientCode}
@@ -145,9 +164,11 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+    // Wait for loading to complete with proper act wrapper
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     // Check that session history header is displayed
@@ -167,8 +188,10 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     // Check for processed sessions count - use container query to be more specific
@@ -204,10 +227,12 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    // Wait directly for the error state to appear
-    await waitFor(() => {
-      expect(screen.getByText('Error Loading Sessions')).toBeInTheDocument();
-    }, { timeout: 10000 });
+    // Wait for error state with proper act wrapper
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.getByText('Error Loading Sessions')).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
 
     expect(screen.getByText(/Failed to load session files/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
@@ -237,9 +262,11 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
-    }, { timeout: 5000 });
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
 
     // Check for the main heading specifically
     expect(screen.getByRole('heading', { name: 'No Sessions Found' })).toBeInTheDocument();
@@ -269,8 +296,10 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Error Loading Sessions')).toBeInTheDocument();
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.getByText('Error Loading Sessions')).toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     expect(screen.getByText('Please sign in to view session history')).toBeInTheDocument();
@@ -334,8 +363,10 @@ describe('PatientSessionBrowser', () => {
       </BrowserRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+    await act(async () => {
+      await waitFor(() => {
+        expect(screen.queryByText('Loading session history...')).not.toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     // Should show 3 sessions for PAT001 (session1, session2, session3)
