@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase'
 import { ClinicalNotesModal } from '../../shared/ClinicalNotesModal'
 import { useClinicalNotes } from '../../../hooks/useClinicalNotes'
 import PatientSessionBrowser from './PatientSessionBrowser'
-import { getPatientAvatarColor, getPatientAvatarInitials } from '../../../lib/avatarColors'
+import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
 import { 
   Card, 
   CardContent, 
@@ -327,7 +327,7 @@ export function PatientProfile() {
     ? `${patient.first_name} ${patient.last_name}`
     : patient.patient_code
   const initials = getPatientAvatarInitials(patient.first_name, patient.last_name, patient.patient_code)
-  const avatarColor = getPatientAvatarColor(patient.first_name, patient.last_name, patient.patient_code)
+  const avatarColor = getAvatarColor(getPatientIdentifier(patient))
 
   // Calculate treatment metrics
   const totalPrescribedSessions = patient.total_sessions || 0

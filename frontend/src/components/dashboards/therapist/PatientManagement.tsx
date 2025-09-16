@@ -40,13 +40,13 @@ import {
   ChevronUpIcon as SortAsc,
   EyeOpenIcon as Eye,
   EyeClosedIcon as EyeOff,
-  ViewGridIcon as Columns3,
+  GridIcon as Columns3,
   InfoCircledIcon
 } from '@radix-ui/react-icons'
 import { Patient, PatientManagementProps } from './types'
 import { useAdherence } from '../../../hooks/useAdherence'
 import { getAdherenceThreshold, AdherenceData } from '../../../services/adherenceService'
-import { getPatientAvatarColor, getPatientInitials } from '../../../lib/avatarColors'
+import { getAvatarColor, getPatientIdentifier, getPatientInitials } from '../../../lib/avatarColors'
 
 type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend'
 type SortDirection = 'asc' | 'desc'
@@ -289,7 +289,7 @@ interface PatientRowProps {
 
 function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
   const navigate = useNavigate()
-  const avatarColor = getPatientAvatarColor(patient.first_name, patient.last_name, patient.patient_code)
+  const avatarColor = getAvatarColor(getPatientIdentifier(patient))
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
   const lastSessionText = formatLastSession(patient.last_session)
   
@@ -702,7 +702,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold flex items-center gap-2 text-slate-900">
-              <PersonIcon className="h-5 w-5 text-blue-600" />
+              <PersonIcon className="h-5 w-5 text-blue-500" />
               Patient Management
               <Badge variant="secondary" className="ml-auto">
                 {patients.length} total
