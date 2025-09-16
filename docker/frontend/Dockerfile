@@ -26,15 +26,19 @@ COPY frontend/package.json frontend/package-lock.json ./
 
 # Install dependencies with clean install (including dev deps for Vite build)
 # Set npm to use legacy peer deps to avoid rollup native module issues
+# Add debugging to ensure TypeScript is properly installed
 RUN --mount=type=cache,target=/root/.npm \
     npm config set legacy-peer-deps true && \
-    npm ci --prefer-offline --no-audit --legacy-peer-deps
+    npm ci --prefer-offline --no-audit --legacy-peer-deps && \
+    npm list typescript || echo "TypeScript not in local dependencies" && \
+    ls -la node_modules/.bin/ | grep tsc || echo "tsc binary not found in .bin"
 
 # Copy frontend source code
 COPY frontend/ .
 
 # Build the application (Vite builds to 'dist' directory by default)
-RUN npm run build
+# Use npx to ensure TypeScript and Vite are found explicitly
+RUN npx tsc --version && npx tsc && npx vite build
 
 # =============================================================================
 # Stage 2: Production Web Server
