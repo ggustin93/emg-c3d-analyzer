@@ -180,15 +180,15 @@ export const useEnhancedPerformanceMetrics = (
     // Session params are now only for local simulation (doesn't affect database results)
     const weights = databaseWeights;
     
-    // For local simulation, we can use session params if available
-    const simulationWeights = sessionParams.enhanced_scoring?.enabled && sessionParams.enhanced_scoring?.weights
-      ? sessionParams.enhanced_scoring.weights
-      : weights;
-    
     if (!weights) {
       console.warn('No scoring weights available from database, hook will return null (SSoT)');
       return null;
     }
+    
+    // For local simulation, we can use session params if available
+    const simulationWeights = sessionParams.enhanced_scoring?.enabled && sessionParams.enhanced_scoring?.weights
+      ? sessionParams.enhanced_scoring.weights
+      : weights;
     const detectionParams = sessionParams.contraction_detection || DEFAULT_DETECTION_PARAMS;
     const isDebugMode = sessionParams.experimental_features?.enabled || false;
     

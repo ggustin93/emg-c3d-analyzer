@@ -11,9 +11,9 @@ import { useState, useEffect, useCallback, useRef, useTransition, startTransitio
 import { supabase } from '../lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 
-type UserRole = 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
+export type UserRole = 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
 
-interface UserProfileData {
+export interface UserProfileData {
   id: string
   role: string
   first_name?: string

@@ -104,7 +104,7 @@ function DashboardLayout() {
 
 // Dashboard component that renders based on role
 function Dashboard() {
-  const { userRole } = useOutletContext<{ userRole: string }>();
+  const { userRole } = useOutletContext<{ userRole: 'admin' | 'therapist' | 'researcher' | null }>();
   const location = useLocation();
   
   // Read activeTab from navigation state (for Analytics/About tabs)

@@ -52,7 +52,6 @@ describe('ScoringWeightsSettings - Admin Role Enforcement', () => {
 
     render(
       <ScoringWeightsSettings 
-        sessionParams={{} as any}
         disabled={false}
       />
     );
@@ -82,7 +81,6 @@ describe('ScoringWeightsSettings - Admin Role Enforcement', () => {
 
     render(
       <ScoringWeightsSettings 
-        sessionParams={{} as any}
         disabled={false}
       />
     );
@@ -112,8 +110,8 @@ describe('ScoringWeightsSettings - Admin Role Enforcement', () => {
 
     render(
       <ScoringWeightsSettings 
-        sessionParams={{ patient_id: 'patient-456' } as any}
         disabled={false}
+        isTherapistMode={true}
       />
     );
 
@@ -145,7 +143,6 @@ describe('ScoringWeightsSettings - Admin Role Enforcement', () => {
 
     render(
       <ScoringWeightsSettings 
-        sessionParams={{} as any}
         disabled={false}
       />
     );
