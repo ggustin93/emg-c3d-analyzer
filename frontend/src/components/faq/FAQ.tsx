@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Badge } from '../ui/badge'
 import { FAQSearch } from './FAQSearch'
 import { FAQItem } from './FAQItem'
-import { faqItems, faqCategories, searchFAQ, getFAQByCategory } from './faqData'
+import { loadAllFAQs, searchFAQs, filterFAQsByRole } from './loadFAQContent'
+import { faqCategories } from './faqData'
 import { QuestionMarkCircledIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -16,6 +17,9 @@ export function FAQ() {
   
   // Use deferred value for search to improve performance
   const deferredSearchTerm = useDeferredValue(searchTerm)
+  
+  // Load all FAQs from markdown files
+  const allFAQs = useMemo(() => loadAllFAQs(), [])
   
   // Map auth role to FAQ role format
   const currentUserRole = useMemo(() => {
@@ -29,17 +33,12 @@ export function FAQ() {
   
   // Filter FAQ items based on search, category, and user role
   const filteredFAQs = useMemo(() => {
-    let items = faqItems
-    
-    // Filter by user role first
-    items = items.filter(item => 
-      item.roles.includes('all') || item.roles.includes(currentUserRole)
-    )
+    // Start with role-filtered FAQs
+    let items = filterFAQsByRole(allFAQs, currentUserRole)
     
     // Apply search filter
     if (deferredSearchTerm) {
-      const searchResults = searchFAQ(deferredSearchTerm)
-      items = items.filter(item => searchResults.includes(item))
+      items = searchFAQs(items, deferredSearchTerm)
     }
     
     // Apply category filter
@@ -48,13 +47,11 @@ export function FAQ() {
     }
     
     return items
-  }, [deferredSearchTerm, selectedCategory, currentUserRole])
+  }, [allFAQs, deferredSearchTerm, selectedCategory, currentUserRole])
   
   // Count items per category for badges (filtered by role)
   const categoryCounts = useMemo(() => {
-    const roleFilteredItems = faqItems.filter(item => 
-      item.roles.includes('all') || item.roles.includes(currentUserRole)
-    )
+    const roleFilteredItems = filterFAQsByRole(allFAQs, currentUserRole)
     
     const counts: Record<string, number> = { all: roleFilteredItems.length }
     faqCategories.forEach(category => {
@@ -63,7 +60,7 @@ export function FAQ() {
       ).length
     })
     return counts
-  }, [currentUserRole])
+  }, [allFAQs, currentUserRole])
   
   return (
     <div className="container mx-auto max-w-5xl p-6 space-y-6">
