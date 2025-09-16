@@ -15,6 +15,14 @@ import ContractionDetectionSettings from '@/components/tabs/SettingsTab/componen
 export function SessionSettings() {
   const { sessionParams, setSessionParams } = useSessionStore();
   const [dataPoints, setDataPoints] = useState(1000);
+  const [showGoodContractions, setShowGoodContractions] = useState(true);
+  const [showPoorContractions, setShowPoorContractions] = useState(true);
+  const [showExcellentContractions, setShowExcellentContractions] = useState(true);
+  const [showAdequateForceContractions, setShowAdequateForceContractions] = useState(true);
+  const [showAdequateDurationContractions, setShowAdequateDurationContractions] = useState(true);
+  const [showInsufficientContractions, setShowInsufficientContractions] = useState(true);
+  const [showContractionAreas, setShowContractionAreas] = useState(true);
+  const [showContractionDots, setShowContractionDots] = useState(true);
   
   // Initialize default muscle channels
   const muscleChannels = ['Channel 1', 'Channel 2'];
@@ -72,14 +80,22 @@ export function SessionSettings() {
           setDataPoints={setDataPoints}
           plotChannel1Data={null}
           plotChannel2Data={null}
-          showGoodContractions={true}
-          showPoorContractions={true}
-          showExcellentContractions={true}
-          showAdequateForceContractions={true}
-          showAdequateDurationContractions={true}
-          showInsufficientContractions={true}
-          showContractionAreas={true}
-          showContractionDots={true}
+          showGoodContractions={showGoodContractions}
+          setShowGoodContractions={setShowGoodContractions}
+          showPoorContractions={showPoorContractions}
+          setShowPoorContractions={setShowPoorContractions}
+          showExcellentContractions={showExcellentContractions}
+          setShowExcellentContractions={setShowExcellentContractions}
+          showAdequateForceContractions={showAdequateForceContractions}
+          setShowAdequateForceContractions={setShowAdequateForceContractions}
+          showAdequateDurationContractions={showAdequateDurationContractions}
+          setShowAdequateDurationContractions={setShowAdequateDurationContractions}
+          showInsufficientContractions={showInsufficientContractions}
+          setShowInsufficientContractions={setShowInsufficientContractions}
+          showContractionAreas={showContractionAreas}
+          setShowContractionAreas={setShowContractionAreas}
+          showContractionDots={showContractionDots}
+          setShowContractionDots={setShowContractionDots}
           useEnhancedQuality={false}
         />
         

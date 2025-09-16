@@ -298,57 +298,42 @@ export default function GameSessionTabs({
 
   return (
     <Tabs defaultValue="plots" value={activeTab} onValueChange={onTabChange} className="border-l border-r border-b border-blue-500 rounded-lg shadow-sm bg-white overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-1 rounded-t-lg">
-        <TabsList className="w-full flex gap-1 bg-transparent p-1">
-          <TabsTrigger 
-            value="plots" 
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
-                       data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm
-                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
-          >
-            <ActivityLogIcon className="w-4 h-4" />
-            <span className="text-sm">EMG Analysis</span>
+      <div className="border-b mb-4 relative">
+        <TabsList className="w-full flex justify-between border border-primary">
+          <TabsTrigger value="plots" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <div className="flex items-center gap-2">
+              <ActivityLogIcon className="w-4 h-4" />
+              <span>EMG Analysis</span>
+            </div>
           </TabsTrigger>
-          
-          <TabsTrigger 
-            value="game" 
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
-                       data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm
-                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
-          >
-            <BarChartIcon className="w-4 h-4" />
-            <span className="text-sm">Performance</span>
+          <TabsTrigger value="game" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <div className="flex items-center gap-2">
+              <BarChartIcon className="w-4 h-4" />
+              <span>Performance</span>
+            </div>
           </TabsTrigger>
-          
-          <TabsTrigger 
-            value="bfr" 
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200 group
-                       data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm
-                       data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
-          >
-            <HeartIcon className="w-4 h-4" />
-            <span className="text-sm">BFR Monitor</span>
-            {bfrCompliant === true && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-            {bfrCompliant === false && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            )}
+          <TabsTrigger value="bfr" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground group">
+            <div className="flex items-center gap-2">
+              <HeartIcon className="w-4 h-4" />
+              <span>BFR Monitor</span>
+              {bfrCompliant === true && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600 group-data-[state=active]:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {bfrCompliant === false && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              )}
+            </div>
           </TabsTrigger>
-          
           {(userRole === 'RESEARCHER' || userRole === 'ADMIN') && (
-            <TabsTrigger 
-              value="export" 
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md font-medium transition-all duration-200
-                         data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm
-                         data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:bg-white/50 data-[state=inactive]:hover:text-gray-800"
-            >
-              <Share1Icon className="w-4 h-4" />
-              <span className="text-sm">Export</span>
+            <TabsTrigger value="export" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <Share1Icon className="w-4 h-4" />
+                <span>Export</span>
+              </div>
             </TabsTrigger>
           )}
         </TabsList>

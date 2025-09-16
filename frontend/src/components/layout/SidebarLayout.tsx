@@ -38,12 +38,6 @@ const therapistNavItems = [
     description: 'Patient management'
   },
   { 
-    id: 'settings', 
-    label: 'Settings', 
-    icon: GearIcon,
-    description: 'Session configuration'
-  },
-  { 
     id: 'faq', 
     label: 'FAQ', 
     icon: QuestionMarkCircledIcon,
@@ -71,12 +65,6 @@ const researcherNavItems = [
     description: 'Custom analytics'
   },
   { 
-    id: 'settings', 
-    label: 'Settings', 
-    icon: GearIcon,
-    description: 'Session configuration'
-  },
-  { 
     id: 'faq', 
     label: 'FAQ', 
     icon: QuestionMarkCircledIcon,
@@ -102,7 +90,7 @@ export function SidebarLayout({ children, activeTab = 'sessions' }: SidebarLayou
     } else if (tab === 'faq') {
       // Navigate to FAQ page
       navigate('/faq')
-    } else if (tab === 'overview' || tab === 'patients' || tab === 'about' || tab === 'analytics' || tab === 'settings') {
+    } else if (tab === 'overview' || tab === 'patients' || tab === 'about' || tab === 'analytics') {
       // Navigate to dashboard with specific tab
       navigate('/dashboard', { state: { activeTab: tab } })
     }

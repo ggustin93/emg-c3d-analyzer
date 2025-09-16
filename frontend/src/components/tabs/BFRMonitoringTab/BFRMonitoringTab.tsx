@@ -33,6 +33,9 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
     }
   };
 
+  // Get safety compliance status from database with TRUE as default fallback
+  const safetyCompliant = sessionParams.bfr_monitoring?.safety_compliant ?? true;
+
   const getComplianceStatus = (side: 'left' | 'right') => {
     const sideParams = bfrParams[side];
     if (sideParams.is_compliant) {
@@ -169,31 +172,6 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 strokeWidth="10"
                 fill="none"
               />
-              {/* Progress arc */}
-              <circle
-                cx="90"
-                cy="90"
-                r={radius}
-                stroke={params.complianceStatus.gaugeColor}
-                strokeWidth="10"
-                fill="none"
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-                className="transition-all duration-500 ease-in-out"
-              />
-              {/* Therapeutic range ring (subtle) */}
-              <circle
-                cx="90"
-                cy="90"
-                r={radius - 6}
-                stroke="#10b981"
-                strokeWidth="6"
-                fill="none"
-                strokeDasharray={`${(20 / 100) * circumference} ${circumference}`}
-                strokeDashoffset={`${-(40 / 100) * circumference}`}
-                strokeLinecap="round"
-                opacity="0.15"
-              />
             </svg>
             
             {/* Center text with clinical tooltip */}
@@ -219,12 +197,12 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
               side="top"
             >
               <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {params.percentage.toFixed(1)}%
+                <div className="text-3xl font-bold text-gray-400 mb-1">
+                  —
                 </div>
-                <div className="text-sm text-gray-500 font-medium">of AOP</div>
+                <div className="text-sm text-gray-500 font-medium">En attente</div>
                 <div className="text-sm text-gray-400 mt-1">
-                  Target: 50%
+                  Synchronisation
                 </div>
               </div>
             </ClinicalTooltip>
@@ -243,19 +221,15 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-white rounded border">
                   <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                    <AppliedPressureTooltip pressureValue={params.sideParams.applied_pressure} side="top">
-                      <span className="text-green-600 cursor-help hover:text-green-800 underline decoration-dotted">Applied</span>
-                    </AppliedPressureTooltip>
+                    <span className="text-gray-500">Applied</span>
                   </div>
-                  <div className="text-lg font-bold text-green-600">{params.sideParams.applied_pressure} mmHg</div>
+                  <div className="text-lg font-bold text-gray-400">—</div>
                 </div>
                 <div className="text-center p-3 bg-white rounded border">
                   <div className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
-                    <AOPTooltip aopValue={params.sideParams.aop_measured} side="top">
-                      <span className="text-blue-600 cursor-help hover:text-blue-800 underline decoration-dotted">AOP</span>
-                    </AOPTooltip>
+                    <span className="text-gray-500">AOP</span>
                   </div>
-                  <div className="text-lg font-bold text-blue-600">{params.sideParams.aop_measured} mmHg</div>
+                  <div className="text-lg font-bold text-gray-400">—</div>
                 </div>
               </div>
             </div>
@@ -285,11 +259,11 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
                 />
               </h4>
               <div className="text-center p-3 bg-white rounded border">
-                <div className="text-2xl font-bold text-gray-900">
-                  {params.sideParams.application_time_minutes || 'N/A'} min
+                <div className="text-2xl font-bold text-gray-400">
+                  —
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {params.sideParams.application_time_minutes ? 'Active session' : 'Not started'}
+                  Synchronisation en attente
                 </div>
               </div>
             </div>
@@ -303,6 +277,34 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
     <div className={`p-6 ${className}`}>
       {/* Header – single-line status with info + check icon */}
       <div className="text-center mb-8">
+        {/* Patient Compliance Status Banner */}
+        <div className={`mb-6 p-4 rounded-lg border-2 ${
+          safetyCompliant 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-amber-50 border-amber-300'
+        }`}>
+          <div className="flex items-center justify-center gap-3">
+            {safetyCompliant ? (
+              <>
+                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-800">
+                  Procédure validée par le patient — Aucun problème signalé
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-amber-800">
+                  Attention — Le patient a signalé une anomalie durant la procédure
+                </span>
+              </>
+            )}
+          </div>
+          <div className="text-xs text-gray-600 mt-2 text-center">
+            Capteurs BFR en attente de synchronisation avec le système
+          </div>
+        </div>
+        
         <div className="flex items-center justify-center gap-2">
           <ClinicalTooltip
             title="GHOSTLY+ BFR Protocol"
@@ -330,13 +332,13 @@ const BFRMonitoringTab: React.FC<BFRMonitoringTabProps> = ({ className }) => {
             ]}
             side="bottom"
           />
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
             <CheckCircledIcon className="h-4 w-4" />
-            {overallStatus.message}
+            Monitoring des pressions BFR
           </span>
           <div className="ml-3 inline-flex items-center gap-2 opacity-80">
             <Badge variant="destructive" className="text-[10px] px-2 py-0.5">c3d:x</Badge>
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border-slate-300">Fake data</Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border-slate-300">Données simulées</Badge>
           </div>
         </div>
       </div>

@@ -5,7 +5,6 @@ import { useSessionStore } from '../../../store/sessionStore'
 import { SideNav } from '../../navigation/SideNav'
 import { Card, CardContent } from '../../ui/card'
 import { AboutPage } from '../../about/AboutPage'
-import { SessionSettings } from '../shared/SessionSettings'
 import { 
   ArchiveIcon,
   BarChartIcon,
@@ -272,13 +271,6 @@ export function ResearcherDashboard({
       
       case 'about':
         return <AboutPage />
-      
-      case 'settings':
-        return (
-          <div className="h-full bg-gray-50/30">
-            <SessionSettings />
-          </div>
-        )
       
       default:
         return null
