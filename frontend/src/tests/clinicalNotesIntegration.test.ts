@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { supabase } from '../lib/supabase';
 import { ClinicalNotesService } from '../services/clinicalNotesService';
+import { API_CONFIG } from '../config/apiConfig';
 
 interface TestResult {
   step: string;
@@ -121,7 +122,7 @@ export class ClinicalNotesTestSuite {
     console.log('\n🔌 Test 2: Testing backend connection...');
     
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+      const backendUrl = API_CONFIG.baseUrl;
       const response = await fetch(`${backendUrl}/health`);
       
       this.results.push({

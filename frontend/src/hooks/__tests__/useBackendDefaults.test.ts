@@ -11,7 +11,7 @@ describe('useBackendDefaults', () => {
     global.fetch = vi.fn();
     
     // Mock import.meta.env
-    vi.stubEnv('VITE_BACKEND_URL', 'http://test-backend');
+    vi.stubEnv('VITE_API_URL', 'http://test-backend');
   });
   
   afterEach(() => {
