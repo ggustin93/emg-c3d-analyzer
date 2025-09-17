@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
+import { API_CONFIG } from '@/config/apiConfig';
 
 // Import hooks
 import { useDataDownsampling } from "./hooks/useDataDownsampling";
@@ -260,7 +261,7 @@ export function AppContent() {
       logger.info(LogCategory.API, '🚀 handleQuickSelect starting', { 
         filename, 
         uploadDateFromBrowser,
-        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080' 
+        apiUrl: API_CONFIG.baseUrl 
       });
       
       setIsLoading(true);
@@ -336,7 +337,7 @@ export function AppContent() {
         });
       }
 
-      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/upload';
+      const apiUrl = API_CONFIG.baseUrl + '/upload';
       logger.info(LogCategory.API, '📡 Sending file to backend for processing', { 
         filename, 
         apiUrl,
@@ -419,7 +420,7 @@ export function AppContent() {
         isStructuredError: error.isStructuredError,
         structuredErrorType: error.errorType,
         networkError: error instanceof TypeError && error.message.includes('fetch'),
-        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080'
+        apiUrl: API_CONFIG.baseUrl
       });
       
       // Check if this is a structured error with enhanced data
@@ -457,7 +458,7 @@ export function AppContent() {
         let userFriendlyMessage = error.message || 'An unknown error occurred while processing the file.';
         
         if (error instanceof TypeError && error.message.includes('fetch')) {
-          userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${import.meta.env.VITE_API_URL || 'http://localhost:8080'}`;
+          userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${API_CONFIG.baseUrl}`;
         } else if (error.message.includes('Failed to fetch')) {
           userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running on http://localhost:8080';
         }

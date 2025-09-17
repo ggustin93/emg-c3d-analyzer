@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_CONFIG } from '@/config/apiConfig';
 
 interface BackendDefaults {
   target_contractions_ch1: number;
@@ -21,7 +22,7 @@ export function useBackendDefaults() {
   useEffect(() => {
     const fetchDefaults = async () => {
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+        const backendUrl = API_CONFIG.baseUrl;
         const response = await fetch(`${backendUrl}/config/defaults`);
         if (!response.ok) {
           throw new Error(`Failed to fetch defaults: ${response.statusText}`);

@@ -3,6 +3,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { EMGAnalysisResult, GameSessionParameters, ChannelAnalyticsData } from '@/types/emg';
 import { MVCService } from '@/services/mvcService';
 import { useCalibrationStore } from '@/store/calibrationStore';
+import { API_CONFIG } from '@/config/apiConfig';
 
 const getMvcThresholdForChannel = (params: GameSessionParameters, channelName: string): number | null => {
   if (!params) return null;
@@ -50,7 +51,7 @@ export const useLiveAnalytics = (analysisResult: EMGAnalysisResult | null) => {
       
       try {
         // Call the analysis recalc endpoint for full EMG analysis update
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'}/analysis/recalc`, {
+        const response = await fetch(`${API_CONFIG.baseUrl}/analysis/recalc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ existing: analysisResult, session_params: sessionParams }),

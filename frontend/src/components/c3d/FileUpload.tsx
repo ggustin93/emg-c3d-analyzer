@@ -2,8 +2,9 @@ import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { EMGAnalysisResult, GameSessionParameters } from '@/types/emg';
+import { API_CONFIG } from '@/config/apiConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = API_CONFIG.baseUrl;
 
 interface FileUploadProps {
   onUploadSuccess: (data: EMGAnalysisResult, filename?: string) => void;
