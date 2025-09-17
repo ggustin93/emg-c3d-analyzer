@@ -18,12 +18,12 @@ export default defineConfig({
     open: true, // Automatically open browser on start
     // Proxy API calls to backend
     proxy: {
-      // Proxy all API calls to backend - keep /api prefix
+      // Proxy all API calls to backend - strip /api prefix when forwarding
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false
-        // Don't rewrite the path - backend expects /api prefix
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')  // Strip /api prefix when forwarding to backend
       }
     }
   },
