@@ -8,6 +8,7 @@
 
 import { EMGAnalysisResult } from '@/types/emg';
 import { logger, LogCategory } from '@/services/logger';
+import { API_CONFIG } from '@/config/apiConfig';
 
 export interface MVCEstimationResult {
   mvc_value: number;
@@ -31,7 +32,7 @@ export interface MVCEstimationResponse {
 }
 
 export class MVCService {
-  private static readonly BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+  private static readonly BASE_URL = API_CONFIG.baseUrl;
 
   /**
    * Calibrate MVC values from uploaded file (initial calibration)

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { API_CONFIG } from '@/config/apiConfig'
 import type { 
   ClinicalNote,
   ClinicalNoteWithPatientCode,
@@ -17,7 +18,7 @@ import type {
  * Supports both file notes (file_path) and patient notes (patient_code → patient_id).
  */
 export class ClinicalNotesService {
-  private static readonly BASE_PATH = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api/clinical-notes'
+  private static readonly BASE_PATH = API_CONFIG.baseUrl + '/api/clinical-notes'
   
   // Get bucket name from environment variable or use default
   private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples'

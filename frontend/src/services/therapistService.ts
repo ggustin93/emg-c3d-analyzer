@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { API_CONFIG } from '@/config/apiConfig';
 import { logger, LogCategory } from './logger';
 import { TherapistInfo, TherapistCache } from '../types/therapist';
 
@@ -9,7 +10,7 @@ import { TherapistInfo, TherapistCache } from '../types/therapist';
  * Maintains backward compatibility with direct Supabase for ID-based lookups
  */
 class TherapistService {
-  private apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  private apiBaseUrl = API_CONFIG.baseUrl;
 
   /**
    * Format therapist display name as "Dr. LastName"
