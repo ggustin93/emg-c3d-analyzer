@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../
 import Spinner from '../../ui/Spinner'
 import * as Icons from '@radix-ui/react-icons'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
+import PatientAlerts from './PatientAlerts'
 
 // Lazy load heavy components for better performance
 const ClinicalTooltip = lazy(() => 
@@ -574,7 +575,7 @@ const ProgressiveContent = React.memo(function ProgressiveContent({
 // Main TherapistOverview component
 export function TherapistOverview({ className }: TherapistOverviewProps) {
   const { user, userProfile } = useAuth()
-  const { activePatients, recentC3DFiles, adherence, loading, error } = useTherapistDashboardQuery(user?.id)
+  const { activePatients, recentC3DFiles, adherence, patients, loading, error } = useTherapistDashboardQuery(user?.id)
   const [contentLoaded, setContentLoaded] = useState(false)
 
   // Extract and memoize the first name for welcome message

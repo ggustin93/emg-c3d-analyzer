@@ -31,6 +31,7 @@ export interface TherapistDashboardData {
   activePatients: number
   recentC3DFiles: RecentC3DFile[]
   adherence: AdherenceData[]
+  patients: Patient[]
   loading: boolean
   error: Error | null
 }
@@ -368,6 +369,7 @@ export function useTherapistDashboardQuery(therapistId: string | undefined): The
     activePatients,
     recentC3DFiles: recentFilesQuery.data || [],
     adherence: adherenceData,
+    patients: patientsQuery.data || [],
     loading,
     error: error as Error | null
   }
