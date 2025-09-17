@@ -18,7 +18,7 @@ import AuthGuard from "./components/auth/AuthGuard";
 import { useSessionStore } from './store/sessionStore';
 import { useAuth } from "./contexts/AuthContext";
 import SupabaseStorageService from "./services/supabaseStorage";
-import { GitHubLogoIcon } from '@radix-ui/react-icons';
+import { GitHubLogoIcon, FileIcon, LightningBoltIcon, BarChartIcon } from '@radix-ui/react-icons';
 import { logger, LogCategory } from './services/logger';
 import FileMetadataBar from './components/layout/FileMetadataBar';
 import { useAnalysisQuery } from './hooks/useAnalysisQuery';
@@ -51,6 +51,7 @@ export function AppContent() {
   const [appError, setAppError] = useState<string | null>(null);
   const [structuredError, setStructuredError] = useState<{errorType: string, data: any, filename: string} | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [processingStep, setProcessingStep] = useState<1 | 2 | 3>(1);
   const [activeTab, setActiveTab] = useState<string>("plots");
   const [signalType, setSignalType] = useState<SignalDisplayType>('processed');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -75,34 +76,81 @@ export function AppContent() {
     sessionParams,
   });
   
-  // Loading overlay component (KISS: Simple, focused component)
-  const AnalysisLoadingOverlay = () => (
-    <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-4 border border-gray-100">
-        <div className="mb-6">
-          <div className="relative flex justify-center">
-            <div className="w-16 h-16">
-              <Spinner />
-            </div>
-            <div className="absolute inset-0 animate-ping">
-              <div className="w-16 h-16 mx-auto rounded-full border-4 border-blue-200"></div>
+  // Loading overlay component with 3-step progression
+  const AnalysisLoadingOverlay = () => {
+    const steps = [
+      {
+        icon: FileIcon,
+        title: "Validating File",
+        description: "Checking C3D file format and structure...",
+        progress: 15
+      },
+      {
+        icon: LightningBoltIcon,
+        title: "Processing Signals",
+        description: "Extracting and analyzing muscle activity data...",
+        progress: 75
+      },
+      {
+        icon: BarChartIcon,
+        title: "Generating Report",
+        description: "Calculating therapeutic metrics and insights...",
+        progress: 100
+      }
+    ];
+
+    const currentStep = steps[processingStep - 1];
+    const StepIcon = currentStep.icon;
+
+    return (
+      <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-4 border border-gray-100">
+          <div className="mb-6">
+            <div className="relative flex justify-center">
+              <div className="w-16 h-16 flex items-center justify-center bg-blue-50 rounded-full">
+                <StepIcon className="w-8 h-8 text-blue-600" />
+              </div>
+              <div className="absolute inset-0 animate-ping">
+                <div className="w-16 h-16 mx-auto rounded-full border-4 border-blue-200"></div>
+              </div>
             </div>
           </div>
-        </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-3">
-          Processing EMG Analysis
-        </h3>
-        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-          Analyzing C3D file and extracting EMG signals...<br />
-          <span className="text-xs text-gray-500">This may take a few moments</span>
-        </p>
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse transition-all duration-1000" 
-               style={{width: '75%'}}></div>
+          
+          {/* Step indicator */}
+          <div className="flex justify-center space-x-2 mb-4">
+            {steps.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                  index < processingStep
+                    ? 'bg-blue-600'
+                    : index === processingStep - 1
+                    ? 'bg-blue-400'
+                    : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+          
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            {currentStep.title}
+          </h3>
+          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+            {currentStep.description}
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-1000" 
+              style={{width: `${currentStep.progress}%`}}
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            Step {processingStep} of {steps.length}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
   
   // Save sessionParams to localStorage whenever they change
   useEffect(() => {
@@ -193,6 +241,7 @@ export function AppContent() {
     setUploadDate(null); // Clear the upload date before resetting session params
     resetSessionParams();
     setIsLoading(false); // Ensure loading state is reset
+    setProcessingStep(1); // Reset processing step
   }, [resetChannelSelections, resetPlotDataAndStats, resetGameSessionData, resetSessionParams, setSelectedChannelForStats, setUploadDate]);
 
   const handleSuccess = useCallback((data: EMGAnalysisResult, filename?: string) => {
@@ -220,6 +269,7 @@ export function AppContent() {
     resetGameSessionData();
     setSelectedChannelForStats(null);
     setIsLoading(false);
+    setProcessingStep(1); // Reset processing step
     
     // Set the analysis result BEFORE any other operations to trigger navigation
     setAnalysisResult(data);
@@ -281,6 +331,7 @@ export function AppContent() {
       });
       
       setIsLoading(true);
+      setProcessingStep(1);
       setAppError(null);
       
       // Use upload date passed directly from browser (best practice: avoid state race conditions)
@@ -378,10 +429,16 @@ export function AppContent() {
         contentLength: file.size
       });
 
+      // Step 2: Processing Signals
+      setTimeout(() => setProcessingStep(2), 1500);
+
       const uploadResponse = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
       });
+
+      // Step 3: Generating Report (when response starts coming back)
+      setTimeout(() => setProcessingStep(3), 3000);
 
       logger.info(LogCategory.API, '📨 Upload response received', {
         filename,
@@ -500,6 +557,7 @@ export function AppContent() {
       }
     } finally {
       setIsLoading(false);
+      setProcessingStep(1); // Reset processing step
     }
   }, [handleSuccess, handleError, sessionParams, setUploadDate, analysisQuery.data, analysisQuery.isStale, analysisQuery.isLoading]);
 
