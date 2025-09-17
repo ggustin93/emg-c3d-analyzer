@@ -260,8 +260,8 @@ export const AboutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load markdown content
-    fetch('/src/content/about.md')
+    // Load markdown content from public directory
+    fetch('/content/about.md')
       .then(response => {
         if (!response.ok) throw new Error('Failed to load about content')
         return response.text()
