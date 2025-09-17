@@ -2,7 +2,6 @@ import React, { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { Avatar, AvatarFallback } from '../../ui/avatar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import * as Icons from '@radix-ui/react-icons'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
 import { RecentC3DFile } from '../../../hooks/useTherapistDashboardQuery'
@@ -252,8 +251,7 @@ export const PatientAlerts = React.memo(function PatientAlerts({
 
   return (
     <ProgressiveContent delay={ANIMATION_DELAYS.IMMEDIATE}>
-      <TooltipProvider>
-        <Card className={`border border-orange-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 backdrop-blur-sm ${className || ''}`}>
+      <Card className={`border border-orange-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 backdrop-blur-sm ${className || ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -285,32 +283,24 @@ export const PatientAlerts = React.memo(function PatientAlerts({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 mb-1">
                           <p className="text-sm font-semibold text-gray-900">
                             {alert.displayName}
                           </p>
-                          <Tooltip delayDuration={0}>
-                          <TooltipTrigger asChild>
-                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-help border ${
-                              alert.severity === 'critical' 
-                                ? 'border-red-200 bg-red-50/50 text-red-700' 
-                                : 'border-orange-200 bg-orange-50/50 text-orange-700'
-                            }`}>
-                              {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
-                              {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
-                              {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
-                              <span>{alert.alertCategory}</span>
-                              <Icons.InfoCircledIcon className="h-3 w-3 opacity-60" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-xs">
-                            <div className="space-y-1">
-                              <p className="font-medium">{alert.description}</p>
-                              <p className="text-xs opacity-90">{alert.actionRequired}</p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                            alert.severity === 'critical' 
+                              ? 'border-red-200 bg-red-50/50 text-red-700' 
+                              : 'border-orange-200 bg-orange-50/50 text-orange-700'
+                          }`}>
+                            {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
+                            {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
+                            {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
+                            <span>{alert.alertCategory}</span>
+                          </div>
                         </div>
+                        <p className="text-xs text-gray-500 line-clamp-1">
+                          {alert.description}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -338,7 +328,6 @@ export const PatientAlerts = React.memo(function PatientAlerts({
           )}
         </CardContent>
         </Card>
-      </TooltipProvider>
     </ProgressiveContent>
   )
 })

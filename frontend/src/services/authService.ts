@@ -29,6 +29,48 @@ export class AuthService {
   }
   
   /**
+   * Clear potentially corrupted auth state from localStorage
+   * This helps recover from corrupted session data that causes white screens
+   */
+  private static async clearCorruptedAuthState() {
+    try {
+      console.log('🧹 Clearing potentially corrupted auth state...')
+      
+      // Clear all Supabase-related localStorage keys
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.includes('supabase') || key.includes('auth-token'))) {
+          keysToRemove.push(key)
+        }
+      }
+      
+      keysToRemove.forEach(key => {
+        console.log(`  Removing: ${key}`)
+        localStorage.removeItem(key)
+      })
+      
+      // Also clear sessionStorage
+      const sessionKeysToRemove: string[] = []
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && (key.includes('supabase') || key.includes('auth-token'))) {
+          sessionKeysToRemove.push(key)
+        }
+      }
+      
+      sessionKeysToRemove.forEach(key => {
+        console.log(`  Removing from session: ${key}`)
+        sessionStorage.removeItem(key)
+      })
+      
+      console.log('✅ Auth state cleared')
+    } catch (err) {
+      console.error('Failed to clear auth state:', err)
+    }
+  }
+  
+  /**
    * Authenticate researcher with email and password
    */
   static async login(credentials: LoginCredentials): Promise<AuthResponse<Session>> {
@@ -178,12 +220,19 @@ export class AuthService {
       const timeout = new Promise<AuthResponse<Session>>((resolve) => 
         setTimeout(() => {
           console.warn('⚠️ Auth session check timeout - treating as unauthenticated')
+          // Clear potentially corrupted auth storage
+          this.clearCorruptedAuthState()
           resolve({ data: null, error: 'Session check timeout', success: false })
         }, 5000) // 5 second timeout
       )
       
-      const sessionCheck = supabase.auth.getSession().then(({ data: { session }, error }) => {
+      const sessionCheck = supabase.auth.getSession().then(async ({ data: { session }, error }) => {
         if (error) {
+          // Clear auth state on errors that indicate corruption
+          if (error.message.includes('invalid') || error.message.includes('malformed')) {
+            console.warn('🔄 Clearing corrupted auth state')
+            await this.clearCorruptedAuthState()
+          }
           return { data: null, error: error.message, success: false }
         }
         return { 
@@ -197,6 +246,8 @@ export class AuthService {
       return await Promise.race([sessionCheck, timeout])
     } catch (err) {
       console.error('Session check error:', err)
+      // Clear auth state on unexpected errors
+      await this.clearCorruptedAuthState()
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Authentication error', 
