@@ -252,7 +252,8 @@ export const PatientAlerts = React.memo(function PatientAlerts({
 
   return (
     <ProgressiveContent delay={ANIMATION_DELAYS.IMMEDIATE}>
-      <Card className={`border border-orange-200/80 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/50 backdrop-blur-sm ring-1 ring-orange-100/60 ${className || ''}`}>
+      <TooltipProvider>
+        <Card className={`border border-orange-200/80 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/50 backdrop-blur-sm ring-1 ring-orange-100/60 ${className || ''}`}>
         <CardHeader className="pb-4">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-md ring-1 ring-orange-200/50">
@@ -326,7 +327,8 @@ export const PatientAlerts = React.memo(function PatientAlerts({
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </TooltipProvider>
     </ProgressiveContent>
   )
 })

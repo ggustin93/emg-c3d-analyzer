@@ -807,83 +807,12 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
       <ProgressiveContent delay={ANIMATION_DELAYS.SECTION}>
         <div className="grid gap-6 md:grid-cols-2">
           {/* Patients with Alerts */}
-          <ProgressiveContent delay={ANIMATION_DELAYS.IMMEDIATE}>
-            <Card className="border border-orange-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-sm">
-                    <Icons.BellIcon className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-semibold text-gray-900">Patients with Alerts</CardTitle>
-                    <p className="text-sm text-gray-600 font-medium mt-1">
-                      Critical notifications and reminders
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0 pb-4">
-                {patientAlerts.length > 0 ? (
-                  <div className="space-y-1">
-                    {patientAlerts.map((alert, index) => (
-                      <ProgressiveContent key={alert.id} delay={ANIMATION_DELAYS.FAST + (index * 50)}>
-                        <Link
-                          to={`/patients/${alert.patientCode}`}
-                          className="group flex items-center justify-between p-3 rounded-lg hover:bg-gradient-to-r hover:from-orange-50/60 hover:to-red-50/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-transparent hover:border-orange-200/60 hover:backdrop-blur-sm"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 ring-2 ring-white shadow-md group-hover:shadow-lg group-hover:ring-orange-100 transition-all duration-200">
-                              <AvatarFallback className={`${alert.avatarColor} text-white font-semibold text-xs`}>
-                                {alert.avatarInitials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {alert.displayName}
-                                </p>
-                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                  alert.severity === 'critical' 
-                                    ? 'bg-red-100 text-red-700 border border-red-200' 
-                                    : 'bg-orange-100 text-orange-700 border border-orange-200'
-                                }`}>
-                                  {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
-                                  {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
-                                  {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
-                                  <span>{alert.alertCategory}</span>
-                                </div>
-                              </div>
-                              <p className="text-xs text-gray-500 font-medium">
-                                {alert.description}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className={`text-right shrink-0 font-bold text-lg ${
-                              alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
-                            }`}>
-                              {alert.value}
-                            </div>
-                            <Icons.ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-orange-500 group-hover:scale-110" />
-                          </div>
-                        </Link>
-                      </ProgressiveContent>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 space-y-2">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                      <Icons.CheckCircledIcon className="w-6 h-6 text-green-500" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-medium text-gray-900">All Clear</p>
-                      <p className="text-sm text-gray-600">No active patient alerts</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </ProgressiveContent>
+          <PatientAlerts
+            adherence={adherence}
+            recentC3DFiles={recentC3DFiles}
+            patients={patients}
+            isAdherenceLoading={isAdherenceLoading}
+          />
 
           {/* Recent Session Activity */}
           <ProgressiveContent delay={ANIMATION_DELAYS.SLOW}>
