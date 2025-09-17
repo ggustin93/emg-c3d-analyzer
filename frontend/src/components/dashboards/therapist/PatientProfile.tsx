@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import { ClinicalNotesModal } from '../../shared/ClinicalNotesModal'
 import { useClinicalNotes } from '../../../hooks/useClinicalNotes'
+import { fetchMultiplePatientAdherence } from '../../../services/adherenceService'
+import C3DSessionsService from '../../../services/c3dSessionsService'
 import PatientSessionBrowser from './PatientSessionBrowser'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
 import { 
@@ -53,6 +55,7 @@ interface PatientProfileData {
   last_session_date: string | null
   next_session_date?: string | null
   adherence_percentage?: number
+  clinical_threshold?: string
   average_performance?: number
 }
 
@@ -142,6 +145,8 @@ export function PatientProfile() {
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
   const [modalMode, setModalMode] = useState<'list' | 'create' | 'edit'>('list')
   const [noteToEdit, setNoteToEdit] = useState<any>(null)
+  const [adherenceData, setAdherenceData] = useState<any[]>([])
+  const [adherenceLoading, setAdherenceLoading] = useState(false)
   
   const { getPatientRelatedNotes, updateNote, deleteNote } = useClinicalNotes()
 
@@ -162,6 +167,8 @@ export function PatientProfile() {
             therapist_id,
             created_at,
             active,
+            total_sessions_planned,
+            treatment_start_date,
             patient_medical_info (
               first_name,
               last_name,
@@ -173,8 +180,7 @@ export function PatientProfile() {
               mobility_status,
               bmi_value,
               bmi_status,
-              cognitive_status,
-              total_sessions_planned
+              cognitive_status
             )
           `)
           .eq('patient_code', patientId)
@@ -187,19 +193,33 @@ export function PatientProfile() {
           ? patientData.patient_medical_info[0] 
           : patientData.patient_medical_info
 
-        // Fetch therapy sessions using patient ID
-        const { data: sessionsData } = await supabase
-          .from('therapy_sessions')
-          .select('session_code, processed_at, processing_status')
-          .eq('patient_id', patientData.id)
+        // Get accurate session data from C3D files (same pattern as PatientManagement)
+        let sessionData = { session_count: 0, last_session: null }
+        try {
+          const patientSessionData = await C3DSessionsService.getPatientSessionData([patientId])
+          if (patientSessionData.length > 0) {
+            sessionData = {
+              session_count: patientSessionData[0].session_count,
+              last_session: patientSessionData[0].last_session
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching C3D session data:', error)
+          // Continue with zero sessions if C3D service fails
+        }
 
-        const sessions = sessionsData || []
-        const completedSessions = sessions.filter((s: any) => s.processing_status === 'completed').length
-        const lastSession = sessions
-          .map((s: any) => s.processed_at)
-          .filter(Boolean)
-          .sort()
-          .pop()
+        // Fetch adherence data with session counts (same pattern as PatientManagement)
+        setAdherenceLoading(true)
+        try {
+          const sessionCountsMap = new Map([[patientId, sessionData.session_count]])
+          const adherenceResults = await fetchMultiplePatientAdherence([patientId], sessionCountsMap)
+          setAdherenceData(adherenceResults)
+        } catch (error) {
+          console.error('Error fetching adherence data:', error)
+          setAdherenceData([])
+        } finally {
+          setAdherenceLoading(false)
+        }
 
         const profileData: PatientProfileData = {
           patient_code: patientData.patient_code,
@@ -215,12 +235,11 @@ export function PatientProfile() {
           bmi_status: medical?.bmi_status || null,
           cognitive_status: medical?.cognitive_status || null,
           active: patientData.active ?? true,  // Default to active if null
-          total_sessions: medical?.total_sessions_planned || 0,
-          completed_sessions: completedSessions,
-          last_session_date: lastSession || null,
-          adherence_percentage: medical?.total_sessions_planned 
-            ? Math.round((completedSessions / medical.total_sessions_planned) * 100)
-            : 0
+          total_sessions: patientData.total_sessions_planned || 0,
+          completed_sessions: sessionData.session_count,  // Use C3D session count (same as PatientManagement)
+          last_session_date: sessionData.last_session,
+          adherence_percentage: 0,  // Will be calculated in render using adherence lookup
+          clinical_threshold: 'Unknown'  // Will be calculated in render using adherence lookup
         }
 
         setPatient(profileData)
@@ -233,7 +252,7 @@ export function PatientProfile() {
     }
 
     fetchPatientProfile()
-  }, [patientId])
+  }, [patientId]) // Simple dependency on patientId only
 
   // Load patient notes when the notes tab is active
   useEffect(() => {
@@ -329,10 +348,13 @@ export function PatientProfile() {
   const initials = getPatientAvatarInitials(patient.first_name, patient.last_name, patient.patient_code)
   const avatarColor = getAvatarColor(getPatientIdentifier(patient))
 
+  // Get adherence data from centralized service (exact PatientManagement pattern)
+  const patientAdherence = adherenceData.find(a => a.patient_id === patient.patient_code)
+
   // Calculate treatment metrics
   const totalPrescribedSessions = patient.total_sessions || 0
   const completedSessionsCount = patient.completed_sessions || 0
-  const adherencePercentage = patient.adherence_percentage || 0
+  const adherencePercentage = patientAdherence?.adherence_score || 0
   const averagePerformance = patient.average_performance || 0
 
   const getAdherenceStatus = (percentage: number): string => {
@@ -532,16 +554,18 @@ export function PatientProfile() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Last Session</span>
                 <span className="text-sm font-semibold text-gray-900">
-                  {formatDate(patient.last_session_date)}
+                  {patient.last_session_date ? formatDate(patient.last_session_date) : 'No sessions'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Compliance</span>
-                <StatusBadge status={getComplianceStatus(averagePerformance)} />
+                <span className="text-sm font-medium text-muted-foreground">Performance Trend</span>
+                <span className="text-sm font-semibold text-gray-900">-</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Adherence</span>
-                <StatusBadge status={getAdherenceStatus(adherencePercentage)} />
+                <span className="text-sm font-semibold text-gray-900">
+                  {adherencePercentage > 0 ? `${Math.round(adherencePercentage)}%` : 'N/A'}
+                </span>
               </div>
               {missedSessions > 0 && (
                 <div className="rounded-lg bg-orange-50 dark:bg-orange-950/20 p-3 border border-orange-200 dark:border-orange-800">
