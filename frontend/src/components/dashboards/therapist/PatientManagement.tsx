@@ -439,7 +439,7 @@ function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
       {/* Trial Progress */}
       {visibleColumns.protocol_day && (
         <TableCell className="hidden lg:table-cell text-center">
-          {adherence?.protocol_day ? (
+          {adherence?.protocol_day !== null && adherence?.protocol_day !== undefined ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
