@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ScoringWeights } from '@/types/emg';
+import { API_CONFIG } from '@/config/apiConfig';
 
 interface ScoringConfigurationResponse {
   id: string;
@@ -71,19 +72,19 @@ export const useScoringConfiguration = (
 
       if (therapistId && patientId) {
         // Try therapist+patient specific
-        response = await fetch(`/api/scoring/configurations/custom?therapist_id=${therapistId}&patient_id=${patientId}`);
+        response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/custom?therapist_id=${therapistId}&patient_id=${patientId}`);
         if (response.ok) {
           configSource = 'therapist-patient-specific';
         } else if (therapistId) {
           // Fallback to therapist-specific only
-          response = await fetch(`/api/scoring/configurations/custom?therapist_id=${therapistId}`);
+          response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/custom?therapist_id=${therapistId}`);
           if (response.ok) {
             configSource = 'therapist-specific';
           }
         }
       } else if (therapistId) {
         // Try therapist-specific only
-        response = await fetch(`/api/scoring/configurations/custom?therapist_id=${therapistId}`);
+        response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/custom?therapist_id=${therapistId}`);
         if (response.ok) {
           configSource = 'therapist-specific';
         }
@@ -91,7 +92,7 @@ export const useScoringConfiguration = (
 
       // If no custom configuration found, use global active configuration
       if (!response || !response.ok) {
-        response = await fetch('/api/scoring/configurations/active');
+        response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/active`);
         configSource = 'global';
       }
       
@@ -196,7 +197,7 @@ export const useScoringConfiguration = (
         patient_id: targetPatientId
       };
 
-      const response = await fetch('/api/scoring/configurations/custom', {
+      const response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/custom`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,7 +244,7 @@ export const useScoringConfiguration = (
         weight_duration: weights.compliance_duration,
       };
 
-      const response = await fetch('/api/scoring/configurations/default', {
+      const response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/default`, {
         method: 'PUT', // PUT to update existing default
         headers: {
           'Content-Type': 'application/json',

@@ -12,6 +12,7 @@
  * - Health monitoring
  */
 import { Logger, ILogObj } from "tslog";
+import { API_CONFIG } from '@/config/apiConfig';
 
 export enum LogCategory {
   API = "api",
@@ -62,7 +63,7 @@ const DEFAULT_CONFIG: LoggerConfig = {
   maxRetries: 3,
   retryDelayMs: 1000,
   enableLocalStorage: true,
-  apiEndpoint: '/api/logs/frontend',
+  apiEndpoint: `${API_CONFIG.baseUrl}/logs/frontend`,
   isDevelopment: import.meta.env.DEV,
 };
 

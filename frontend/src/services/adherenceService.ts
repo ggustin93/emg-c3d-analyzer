@@ -3,6 +3,8 @@
  * Used by both therapists and researchers following DRY/SOLID principles
  */
 
+import { API_CONFIG } from '@/config/apiConfig';
+
 export interface AdherenceData {
   patient_id: string
   adherence_score: number | null
@@ -23,7 +25,7 @@ export interface AdherenceData {
 export async function fetchPatientAdherence(patientId: string, sessionsCompleted?: number): Promise<AdherenceData> {
   try {
     // Build URL with optional sessions_completed parameter
-    let url = `http://localhost:8080/scoring/adherence/${patientId}`
+    let url = `${API_CONFIG.baseUrl}/scoring/adherence/${patientId}`
     if (sessionsCompleted !== undefined) {
       url += `?sessions_completed=${sessionsCompleted}`
     }
