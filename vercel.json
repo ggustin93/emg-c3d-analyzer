@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "emg-c3d-analyzer",
-  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "framework": null,
   "rewrites": [
