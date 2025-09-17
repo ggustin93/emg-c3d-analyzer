@@ -11,8 +11,10 @@
  * API Configuration object with all backend-related settings
  */
 export const API_CONFIG = {
-  // Backend API base URL - uses environment variable with localhost fallback for development
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  // Backend API base URL - supports both development and production environments
+  // Development: Uses '/api' for Vite proxy or falls back to localhost
+  // Production: Uses VITE_API_URL environment variable
+  baseUrl: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080'),
   
   // Request timeout in milliseconds (30 seconds)
   timeout: 30000,
