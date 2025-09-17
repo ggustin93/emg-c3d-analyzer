@@ -1,0 +1,27 @@
+{
+  "rewrites": [
+    {
+      "source": "/content/:path*",
+      "destination": "/content/:path*"
+    },
+    {
+      "source": "/((?!content|assets|samples|.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/content/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}
