@@ -75,17 +75,41 @@ export async function loadAllFAQs(): Promise<ParsedFAQ[]> {
   // Load each FAQ file
   for (const filePath of FAQ_FILES) {
     try {
-      const response = await fetch(`/content/faq/${filePath}`)
+      // Build absolute URL for production
+      const baseUrl = window.location.origin
+      const url = `${baseUrl}/content/faq/${filePath}`
+      console.log(`Loading FAQ from: ${url}`)
+      
+      const response = await fetch(url)
       
       if (response.ok) {
         const content = await response.text()
+        console.log(`Loaded content for ${filePath}:`, content.substring(0, 100))
         const faq = parseFAQFile(content, filePath)
         faqs.push(faq)
       } else {
-        console.warn(`Failed to load FAQ file: ${filePath} (${response.status})`)
+        console.error(`Failed to load FAQ file: ${filePath} (${response.status})`)
+        // Add a fallback FAQ item so the UI doesn't break
+        faqs.push({
+          id: filePath.replace('.md', '').split('/').pop() || 'unknown',
+          question: `Failed to load: ${filePath}`,
+          answer: 'Content could not be loaded. Please try refreshing the page.',
+          category: 'technical' as FAQCategory,
+          roles: ['all'],
+          keywords: []
+        })
       }
     } catch (error) {
-      console.warn(`Error loading FAQ file: ${filePath}`, error)
+      console.error(`Error loading FAQ file: ${filePath}`, error)
+      // Add a fallback FAQ item
+      faqs.push({
+        id: filePath.replace('.md', '').split('/').pop() || 'unknown',
+        question: `Error loading: ${filePath}`,
+        answer: 'An error occurred while loading this content.',
+        category: 'technical' as FAQCategory,
+        roles: ['all'],
+        keywords: []
+      })
     }
   }
   

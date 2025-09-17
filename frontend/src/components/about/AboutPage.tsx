@@ -261,19 +261,30 @@ export const AboutPage: React.FC = () => {
 
   useEffect(() => {
     // Load markdown content from public directory
-    fetch('/content/about.md')
+    const baseUrl = window.location.origin
+    const url = `${baseUrl}/content/about.md`
+    console.log(`Loading About content from: ${url}`)
+    
+    fetch(url)
       .then(response => {
-        if (!response.ok) throw new Error('Failed to load about content')
+        console.log(`About content response status: ${response.status}`)
+        if (!response.ok) {
+          throw new Error(`Failed to load about content: ${response.status} ${response.statusText}`)
+        }
         return response.text()
       })
       .then(markdown => {
+        console.log(`About content loaded, length: ${markdown.length}`)
+        if (!markdown || markdown.trim() === '') {
+          throw new Error('About content is empty')
+        }
         const parsed = parseMarkdownContent(markdown)
         setContent(parsed)
         setLoading(false)
       })
       .catch(err => {
         console.error('Error loading about content:', err)
-        setError('Failed to load about content')
+        setError(`Failed to load about content: ${err.message}`)
         setLoading(false)
       })
   }, [])

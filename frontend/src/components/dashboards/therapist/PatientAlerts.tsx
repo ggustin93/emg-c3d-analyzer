@@ -253,76 +253,82 @@ export const PatientAlerts = React.memo(function PatientAlerts({
   return (
     <ProgressiveContent delay={ANIMATION_DELAYS.IMMEDIATE}>
       <TooltipProvider>
-        <Card className={`border border-orange-200/80 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/50 backdrop-blur-sm ring-1 ring-orange-100/60 ${className || ''}`}>
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-md ring-1 ring-orange-200/50">
-              <Icons.BellIcon className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-gray-900 tracking-tight">Patients with Alerts</CardTitle>
-              <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                Critical notifications requiring attention
-              </p>
+        <Card className={`border border-orange-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 backdrop-blur-sm ${className || ''}`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-sm">
+                <Icons.BellIcon className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">Patients with Alerts</CardTitle>
+                <p className="text-sm text-gray-600 font-medium mt-1">
+                  Critical notifications requiring attention
+                </p>
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 pb-6">
+        <CardContent className="pt-0 pb-3">
           {patientAlerts.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {patientAlerts.map((alert, index) => (
                 <ProgressiveContent key={alert.id} delay={ANIMATION_DELAYS.FAST + (index * 50)}>
                   <Link
                     to={`/patients/${alert.patientCode}`}
-                    className="group flex items-center justify-between p-4 rounded-xl hover:bg-gradient-to-r hover:from-orange-50/70 hover:to-red-50/70 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-orange-200/80 hover:backdrop-blur-sm"
+                    className="group flex items-center justify-between p-3 rounded-lg hover:bg-gradient-to-r hover:from-orange-50/60 hover:to-red-50/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-transparent hover:border-orange-200/60 hover:backdrop-blur-sm"
                   >
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-11 w-11 ring-2 ring-white shadow-lg group-hover:shadow-xl group-hover:ring-orange-100 transition-all duration-300 group-hover:scale-105">
-                        <AvatarFallback className={`${alert.avatarColor} text-white font-bold text-sm`}>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 ring-2 ring-white shadow-md group-hover:shadow-lg group-hover:ring-orange-100 transition-all duration-200">
+                        <AvatarFallback className={`${alert.avatarColor} text-white font-semibold text-xs`}>
                           {alert.avatarInitials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="space-y-2 flex-1 min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <p className="text-base font-bold text-gray-900 tracking-tight">
-                            {alert.displayName}
-                          </p>
-                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${
-                            alert.severity === 'critical' 
-                              ? 'bg-red-50 text-red-800 border border-red-200 ring-1 ring-red-200/50' 
-                              : 'bg-orange-50 text-orange-800 border border-orange-200 ring-1 ring-orange-200/50'
-                          }`}>
-                            {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3.5 w-3.5" />}
-                            {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3.5 w-3.5" />}
-                            {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3.5 w-3.5" />}
-                            <span>{alert.alertCategory}</span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                          {alert.description}
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {alert.displayName}
                         </p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xs text-gray-500 font-medium cursor-help flex items-center gap-1">
+                              {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
+                              {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
+                              {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
+                              <span className={alert.severity === 'critical' ? 'text-red-600' : 'text-orange-600'}>
+                                {alert.alertCategory}
+                              </span>
+                              <Icons.InfoCircledIcon className="h-3 w-3 opacity-60" />
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium">{alert.description}</p>
+                              <p className="text-xs opacity-90">{alert.actionRequired}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className={`text-right shrink-0 font-black text-xl tracking-tight ${
+                    <div className="flex items-center gap-3">
+                      <div className={`text-right shrink-0 font-semibold text-sm ${
                         alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
                       }`}>
                         {alert.value}
                       </div>
-                      <Icons.ChevronRightIcon className="h-6 w-6 text-gray-300 transition-all duration-300 group-hover:translate-x-2 group-hover:text-orange-500 group-hover:scale-125" />
+                      <Icons.ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-orange-500 group-hover:scale-110" />
                     </div>
                   </Link>
                 </ProgressiveContent>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 space-y-3">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto shadow-lg ring-1 ring-green-200/50">
-                <Icons.CheckCircledIcon className="w-8 h-8 text-green-600" />
+            <div className="text-center py-6 space-y-2">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <Icons.CheckCircledIcon className="w-6 h-6 text-green-500" />
               </div>
-              <div className="space-y-2">
-                <p className="font-bold text-gray-900 text-lg tracking-tight">All Clear</p>
-                <p className="text-sm text-gray-500 font-medium leading-relaxed">No active patient alerts</p>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-900">All Clear</p>
+                <p className="text-sm text-gray-600">No active patient alerts</p>
               </div>
             </div>
           )}
