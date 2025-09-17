@@ -53,51 +53,12 @@ import C3DFileList from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
 // Clinical Notes integration
 import useSimpleNotesCount from '@/hooks/useSimpleNotesCount';
+// TanStack Query integration
+import { useC3DFileBrowserQuery } from '@/hooks/useC3DFileBrowserQuery';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 
-// Simple in-memory cache with TTL (Time To Live)
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-
-class SimpleCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
-  private defaultTTL = 5 * 60 * 1000; // 5 minutes default
-
-  set<T>(key: string, data: T, ttl?: number): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL
-    });
-  }
-
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-
-    const isExpired = Date.now() - entry.timestamp > entry.ttl;
-    if (isExpired) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return entry.data;
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  has(key: string): boolean {
-    const data = this.get(key);
-    return data !== null;
-  }
-}
-
-// Create a singleton cache instance
-const dataCache = new SimpleCache();
+// SimpleCache replaced by TanStack Query intelligent caching
 
 // Get bucket name from environment variable or use default
 const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
@@ -113,28 +74,18 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 }) => {
   const { user, loading, userRole } = useAuth();
   const { setSelectedFileData } = useSessionStore();
+  const queryClient = useQueryClient();
   
-  // Core states
-  const [files, setFiles] = useState<C3DFile[]>([]);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Granular loading states for better UX
-  const [loadingStates, setLoadingStates] = useState({
-    files: true,
-    sessions: false,
-    therapists: false,
-    patients: false
-  });
-  
-  // Session data state
-  const [sessionData, setSessionData] = useState<Record<string, TherapySession>>({});
-  
-  // Therapist data state (unified approach)
-  const [therapistCache, setTherapistCache] = useState<Record<string, any>>({});
-  
-  // Patient data state
-  const [patientCache, setPatientCache] = useState<Record<string, PatientInfo>>({});
+  // Replace manual state management with TanStack Query
+  const { 
+    files, 
+    sessionData, 
+    therapistCache, 
+    patientCache, 
+    loading: loadingStates, 
+    error,
+    isLoading: isLoadingFiles
+  } = useC3DFileBrowserQuery();
   
   // Filter states
   const [filters, setFilters] = useState<FilterState>({
@@ -189,134 +140,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     };
   }, [simpleNotes.refreshNotes]);
 
-  // Load session data for all files with caching
-  const loadSessionData = useCallback(async (fileList: C3DFile[]) => {
-    if (!fileList.length) return;
-
-    try {
-      const cacheKey = `sessions_${fileList.length}_${fileList[0]?.name}`;
-      
-      // Check cache first
-      const cachedSessions = dataCache.get<Record<string, TherapySession>>(cacheKey);
-      if (cachedSessions) {
-        setSessionData(cachedSessions);
-        return cachedSessions;
-      }
-
-      setLoadingStates(prev => ({ ...prev, sessions: true }));
-      
-      // Create file paths from storage files (bucket/object format)
-      const filePaths = fileList.map(file => `${BUCKET_NAME}/${file.name}`);
-      
-      const sessions = await TherapySessionsService.getSessionsByFilePaths(filePaths);
-      
-      // Cache the result
-      dataCache.set(cacheKey, sessions);
-      setSessionData(sessions);
-      
-      return sessions;
-    } catch (error) {
-      logger.warn(LogCategory.API, 'Failed to load session data:', error);
-      // Not critical - continue without session data
-      return {};
-    } finally {
-      setLoadingStates(prev => ({ ...prev, sessions: false }));
-    }
-  }, []);
-
-  // Load therapist data using new patient-code based resolution with caching
-  const loadTherapistData = useCallback(async (fileList: C3DFile[]) => {
-    if (!fileList.length) return;
-
-    try {
-      // Extract patient codes from file paths
-      const patientCodes = fileList
-        .map(file => therapistService.extractPatientCodeFromPath(file.name))
-        .filter((code): code is string => !!code);
-      
-      const uniquePatientCodes = Array.from(new Set(patientCodes));
-      
-      if (uniquePatientCodes.length > 0) {
-        const cacheKey = `therapists_${uniquePatientCodes.join('_')}`;
-        
-        // Check cache first
-        const cachedTherapists = dataCache.get<Record<string, any>>(cacheKey);
-        if (cachedTherapists) {
-          setTherapistCache(cachedTherapists);
-          return cachedTherapists;
-        }
-        
-        setLoadingStates(prev => ({ ...prev, therapists: true }));
-        
-        // Use the new batch resolution API
-        const therapists = await therapistService.resolveTherapistsForPatientCodes(uniquePatientCodes);
-        
-        // Create cache indexed by file name for easy lookup
-        const cache: Record<string, any> = {};
-        fileList.forEach(file => {
-          const patientCode = therapistService.extractPatientCodeFromPath(file.name);
-          if (patientCode && therapists[patientCode.toUpperCase()]) {
-            cache[file.name] = therapists[patientCode.toUpperCase()];
-          }
-        });
-        
-        // Cache the result
-        dataCache.set(cacheKey, cache);
-        setTherapistCache(cache);
-        
-        return cache;
-      }
-      return {};
-    } catch (error) {
-      logger.warn(LogCategory.API, 'Failed to load therapist data:', error);
-      // Not critical - continue without therapist data
-      setTherapistCache({});
-      return {};
-    } finally {
-      setLoadingStates(prev => ({ ...prev, therapists: false }));
-    }
-  }, []);
-
-  // Load patient data for patient first names with caching
-  const loadPatientData = useCallback(async (fileList: C3DFile[]) => {
-    if (!fileList.length) return;
-
-    try {
-      // Extract patient codes from files
-      const patientCodes = fileList.map(file => resolvePatientId(file));
-      const uniquePatientCodes = Array.from(new Set(patientCodes));
-      
-      if (uniquePatientCodes.length > 0) {
-        const cacheKey = `patients_${uniquePatientCodes.join('_')}`;
-        
-        // Check cache first
-        const cachedPatients = dataCache.get<Record<string, PatientInfo>>(cacheKey);
-        if (cachedPatients) {
-          setPatientCache(cachedPatients);
-          return cachedPatients;
-        }
-        
-        setLoadingStates(prev => ({ ...prev, patients: true }));
-        
-        // Get patient information from service
-        const patients = await PatientService.getPatientsByCode(uniquePatientCodes);
-        
-        // Cache the result
-        dataCache.set(cacheKey, patients);
-        setPatientCache(patients);
-        
-        return patients;
-      }
-      return {};
-    } catch (error) {
-      logger.warn(LogCategory.API, 'Failed to load patient data:', error);
-      // Not critical - continue without patient data
-      setPatientCache({});
-      return {};
-    } finally {
-      setLoadingStates(prev => ({ ...prev, patients: false }));
-    }
-  }, []);
+  // Data loading is now handled by TanStack Query in useC3DFileBrowserQuery hook
 
   // Enhanced session date resolver that uses processed session data with time support
   const resolveEnhancedSessionDate = useCallback((file: C3DFile): string | null => {
@@ -337,124 +161,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return resolveSessionDateTime(file);
   }, [sessionData]);
 
-  // Load files from Supabase
-  useEffect(() => {
-    // Wait for authentication to be fully initialized before attempting to load files
-    if (loading) {
-      return;
-    }
-
-    const loadFiles = async (retryCount = 0) => {
-      setIsLoadingFiles(true);
-      setError(null);
-      
-      // Shorter timeout with better error handling
-      const timeoutId = setTimeout(() => {
-        logger.error(LogCategory.DATA_PROCESSING, 'C3D Browser: File loading timeout');
-        setIsLoadingFiles(false);
-        setError('Connection timeout. Please check your internet connection and try refreshing the page.');
-      }, 10000); // Reduced to 10 seconds
-      
-      try {
-        if (!SupabaseStorageService.isConfigured()) {
-          clearTimeout(timeoutId);
-          setFiles([]);
-          setError('Supabase not configured. Please check your environment variables.');
-          return;
-        }
-
-        // Check if user is authenticated before proceeding
-        if (!user) {
-          clearTimeout(timeoutId);
-          setFiles([]);
-          setError('Please sign in to access the C3D file library.');
-          setIsLoadingFiles(false);
-          return;
-        }
-
-
-        // Add timeout promise to race against the actual request - more generous timeout
-        const loadPromise = SupabaseStorageService.listC3DFiles();
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 15000); // Increased to 15 seconds
-        });
-
-        const supabaseFiles = await Promise.race([loadPromise, timeoutPromise]);
-        
-        clearTimeout(timeoutId);
-        
-        if (supabaseFiles.length === 0) {
-          // Bucket exists but is empty
-          setFiles([]);
-          setError(`Storage bucket ${BUCKET_NAME} is empty. Please upload C3D files to the bucket.`);
-        } else {
-          setFiles(supabaseFiles);
-          setError(null);
-          // Load session, therapist, and patient data in PARALLEL for better performance
-          // This reduces load time by ~60-70% compared to sequential loading
-          Promise.all([
-            loadSessionData(supabaseFiles),
-            loadTherapistData(supabaseFiles),
-            loadPatientData(supabaseFiles)
-          ]).catch(error => {
-            // Individual errors are already logged in each function
-            // This catch is just to prevent unhandled promise rejection
-            logger.debug(LogCategory.DATA_PROCESSING, 'Some auxiliary data failed to load, continuing...', error);
-          });
-        }
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        
-        logger.error(LogCategory.DATA_PROCESSING, 'Full error details:', err);
-        
-        // Simple retry for network errors only (auth errors need user action)
-        const isNetworkError = err.message?.includes('timeout') || 
-                              err.message?.includes('network') ||
-                              err.message?.includes('connection');
-        
-        if (isNetworkError && retryCount < 2) {
-          setTimeout(() => {
-            loadFiles(retryCount + 1);
-          }, 2000);
-          return;
-        }
-        
-        let errorMessage = 'Failed to load C3D files from storage.';
-        
-        if (err.message?.includes('timeout') || err.message?.includes('Request timeout')) {
-          errorMessage = 'Connection timeout. Please check your internet connection and try refreshing the page.';
-        } else if (err.message?.includes('JWT expired') || err.message?.includes('Invalid JWT')) {
-          errorMessage = 'Authentication expired. Please sign in again to access files.';
-        } else if (err.message?.includes('not found') || err.message?.includes('does not exist')) {
-          errorMessage = `Storage bucket '${BUCKET_NAME}' not found. Please create this bucket in your Supabase dashboard.`;
-        } else if (err.message?.includes('permission') || err.message?.includes('policy')) {
-          errorMessage = 'Permission denied. Please check your authentication status and bucket policies.';
-        } else if (err.message?.includes('Authentication required')) {
-          errorMessage = 'Please sign in to access the C3D file library.';
-        } else if (err.message?.includes('Authentication check failed')) {
-          errorMessage = 'Authentication system is still initializing. Please wait a moment and try again.';
-        } else {
-          errorMessage = `Failed to load C3D files: ${err.message}`;
-        }
-        
-        if (retryCount >= 2) {
-          errorMessage += ` (Failed after ${retryCount + 1} attempts)`;
-        }
-        
-        setError(errorMessage);
-        setFiles([]);
-        setIsLoadingFiles(false);
-      } finally {
-        if (retryCount === 0) {
-          // Only clear timeout and loading on initial attempt, not retries
-          clearTimeout(timeoutId);
-          setIsLoadingFiles(false);
-        }
-      }
-    };
-
-    loadFiles();
-  }, [loading, user]); // Depend on auth state changes
+  // Data loading is now handled automatically by TanStack Query hook
 
   // Helper function to get therapist display using centralized service
   const getTherapistDisplay = useCallback((file: C3DFile): string => {
@@ -694,116 +401,23 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     return Array.from(names).sort();
   }, [files, getPatientName]);
 
-  // Manual retry function
+  // TanStack Query refresh functions
+  const refreshFiles = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.c3dBrowser.all });
+  }, [queryClient]);
+
   const retryLoadFiles = useCallback(() => {
-    const loadFiles = async () => {
-      setIsLoadingFiles(true);
-      setError(null);
-      
-      // Create timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        logger.error(LogCategory.DATA_PROCESSING, 'File loading timeout - forcing completion');
-        setIsLoadingFiles(false);
-        setError('Loading timeout. Please refresh the page or check your connection.');
-      }, 15000); // 15 second timeout
-      
-      try {
-        if (!SupabaseStorageService.isConfigured()) {
-          clearTimeout(timeoutId);
-          setFiles([]);
-          setError('Supabase not configured. Please check your environment variables.');
-          return;
-        }
-
-
-        // Add timeout promise to race against the actual request
-        const loadPromise = SupabaseStorageService.listC3DFiles();
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 12000);
-        });
-
-        const supabaseFiles = await Promise.race([loadPromise, timeoutPromise]);
-        
-        clearTimeout(timeoutId);
-        
-        if (supabaseFiles.length === 0) {
-          setFiles([]);
-          setError(`Storage bucket ${BUCKET_NAME} is empty. Please upload C3D files to the bucket.`);
-        } else {
-          setFiles(supabaseFiles);
-          setError(null);
-          // Load session, therapist, and patient data in PARALLEL for better performance
-          // This reduces load time by ~60-70% compared to sequential loading
-          Promise.all([
-            loadSessionData(supabaseFiles),
-            loadTherapistData(supabaseFiles),
-            loadPatientData(supabaseFiles)
-          ]).catch(error => {
-            // Individual errors are already logged in each function
-            // This catch is just to prevent unhandled promise rejection
-            logger.debug(LogCategory.DATA_PROCESSING, 'Some auxiliary data failed to load, continuing...', error);
-          });
-        }
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        logger.error(LogCategory.DATA_PROCESSING, 'Retry failed:', err);
-        setError(`Retry failed: ${err.message}`);
-        setFiles([]);
-        setIsLoadingFiles(false);
-      } finally {
-        clearTimeout(timeoutId);
-        setIsLoadingFiles(false);
-      }
-    };
-
-    loadFiles();
-  }, []);
-
-  const refreshFiles = async () => {
-    setIsLoadingFiles(true);
-    // Clear cache on manual refresh to get fresh data
-    dataCache.clear();
-    
-    try {
-      if (SupabaseStorageService.isConfigured()) {
-        const supabaseFiles = await SupabaseStorageService.listC3DFiles();
-        setFiles(supabaseFiles);
-        setError(null);
-        // Load session, therapist, and patient data in PARALLEL
-        await Promise.all([
-          loadSessionData(supabaseFiles),
-          loadTherapistData(supabaseFiles),
-          loadPatientData(supabaseFiles)
-        ]).catch(error => {
-          logger.debug(LogCategory.DATA_PROCESSING, 'Some auxiliary data failed to load during refresh', error);
-        });
-      }
-    } catch (err) {
-      setError('Failed to refresh file list. Please try again.');
-      logger.error(LogCategory.DATA_PROCESSING, 'Error refreshing files:', err);
-    } finally {
-      setIsLoadingFiles(false);
-    }
-  };
+    queryClient.refetchQueries({ queryKey: queryKeys.c3dBrowser.files() });
+  }, [queryClient]);
 
   const setupStorage = async () => {
     if (!SupabaseStorageService.isConfigured()) {
-      setError('Supabase not configured. Please check your environment variables.');
+      // This error will be handled by the query hook
       return;
     }
 
-    setError(null);
-
-    try {
-      // Test storage access (bucket should already exist)
-      await refreshFiles();
-      
-      // If refresh works, clear any error
-      setError(null);
-      
-    } catch (err: any) {
-      setError(`Storage access test failed: ${err.message}. The bucket exists but you may not have permission to access it.`);
-    }
+    // Trigger a fresh fetch
+    refreshFiles();
   };
 
   const handleUploadComplete = () => {
@@ -811,7 +425,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   };
 
   const handleUploadError = (message: string) => {
-    setError(message);
+    // Error handling now managed by TanStack Query
+    logger.error(LogCategory.DATA_PROCESSING, 'Upload error:', message);
   };
 
   if (isLoadingFiles) {

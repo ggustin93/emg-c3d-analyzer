@@ -21,6 +21,9 @@ import SupabaseStorageService from "./services/supabaseStorage";
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { logger, LogCategory } from './services/logger';
 import FileMetadataBar from './components/layout/FileMetadataBar';
+import { useAnalysisQuery } from './hooks/useAnalysisQuery';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from './lib/queryClient';
 
 // Import dashboard components
 // Lazy load dashboard components for better performance
@@ -55,6 +58,22 @@ export function AppContent() {
   // Authentication state
   const { user, userRole } = useAuth();
   const isAuthenticated = !!user;
+
+  // Query client for cache management
+  const queryClient = useQueryClient();
+
+  // State for session parameters from Zustand store
+  const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate, selectedFileData } = useSessionStore();
+
+  // Get current file from URL params for analysis caching
+  const currentFilename = searchParams.get("file");
+  const currentUploadDate = searchParams.get("date");
+
+  // Analysis caching with TanStack Query - this will cache expensive EMG processing
+  const analysisQuery = useAnalysisQuery({
+    filename: currentFilename || '',
+    sessionParams,
+  });
   
   // Loading overlay component (KISS: Simple, focused component)
   const AnalysisLoadingOverlay = () => (
@@ -84,9 +103,6 @@ export function AppContent() {
       </div>
     </div>
   );
-  
-  // State for session parameters from Zustand store
-  const { sessionParams, setSessionParams, resetSessionParams, uploadDate, setUploadDate, selectedFileData } = useSessionStore();
   
   // Save sessionParams to localStorage whenever they change
   useEffect(() => {
@@ -274,6 +290,23 @@ export function AppContent() {
       if (uploadDateFromBrowser) {
         setUploadDate(uploadDateFromBrowser);
         logger.debug(LogCategory.API, '✅ Upload date set before processing:', uploadDateFromBrowser);
+      }
+      
+      // CACHE-FIRST LOGIC: Check if we have cached analysis results
+      if (analysisQuery.data && !analysisQuery.isStale && !analysisQuery.isLoading) {
+        logger.info(LogCategory.API, '⚡ Using cached analysis results for:', filename);
+        
+        // Use cached data directly - no need for expensive download→upload→process cycle
+        const cachedResults = analysisQuery.data.results.emgData;
+        handleSuccess(cachedResults);
+        return;
+      }
+      
+      // CACHE MISS: Continue with existing download→upload→process logic
+      if (analysisQuery.isStale || !analysisQuery.data) {
+        logger.info(LogCategory.API, '🔄 Cache miss or stale data - performing full analysis for:', filename);
+      } else if (analysisQuery.isLoading) {
+        logger.info(LogCategory.API, '⏳ Analysis already in progress for:', filename);
       }
       
       // ONLY use Supabase storage - no local samples fallback
@@ -468,7 +501,7 @@ export function AppContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [handleSuccess, handleError, sessionParams, setUploadDate]);
+  }, [handleSuccess, handleError, sessionParams, setUploadDate, analysisQuery.data, analysisQuery.isStale, analysisQuery.isLoading]);
 
   // Track if we've already loaded the file from URL to prevent infinite loops
   const [hasLoadedFromUrl, setHasLoadedFromUrl] = useState(false);
@@ -500,6 +533,25 @@ export function AppContent() {
       setHasLoadedFromUrl(false);
     }
   }, [searchParams, analysisResult, isLoading, isAuthenticated, hasLoadedFromUrl, handleQuickSelect]);
+
+  // Cache invalidation strategy: Invalidate analysis cache when significant sessionParams change
+  useEffect(() => {
+    // Only invalidate if we have a current filename and significant parameters have changed
+    if (currentFilename) {
+      logger.info(LogCategory.API, '🔄 Session params changed - invalidating analysis cache for:', currentFilename);
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.upload.analysis(currentFilename)
+      });
+    }
+  }, [
+    // Significant parameters that affect analysis results
+    sessionParams.channel_muscle_mapping,
+    sessionParams.muscle_color_mapping,
+    sessionParams.session_mvc_values,
+    sessionParams.session_mvc_threshold_percentages,
+    currentFilename,
+    queryClient
+  ]);
 
   // Combined chart data for the main EMG Chart (primarily for the EMG Analysis tab)
   const mainCombinedChartData = useMemo<CombinedChartDataPoint[]>(() => {
