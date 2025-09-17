@@ -284,21 +284,24 @@ export const PatientAlerts = React.memo(function PatientAlerts({
                           {alert.avatarInitials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {alert.displayName}
-                        </p>
-                        <Tooltip>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {alert.displayName}
+                          </p>
+                          <Tooltip delayDuration={0}>
                           <TooltipTrigger asChild>
-                            <p className="text-xs text-gray-500 font-medium cursor-help flex items-center gap-1">
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-help border ${
+                              alert.severity === 'critical' 
+                                ? 'border-red-200 bg-red-50/50 text-red-700' 
+                                : 'border-orange-200 bg-orange-50/50 text-orange-700'
+                            }`}>
                               {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
                               {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
                               {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
-                              <span className={alert.severity === 'critical' ? 'text-red-600' : 'text-orange-600'}>
-                                {alert.alertCategory}
-                              </span>
+                              <span>{alert.alertCategory}</span>
                               <Icons.InfoCircledIcon className="h-3 w-3 opacity-60" />
-                            </p>
+                            </div>
                           </TooltipTrigger>
                           <TooltipContent side="bottom" className="max-w-xs">
                             <div className="space-y-1">
@@ -307,6 +310,7 @@ export const PatientAlerts = React.memo(function PatientAlerts({
                             </div>
                           </TooltipContent>
                         </Tooltip>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

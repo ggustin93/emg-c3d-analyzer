@@ -174,18 +174,29 @@ export class AuthService {
    */
   static async getCurrentSession(): Promise<AuthResponse<Session>> {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      // Add timeout to prevent hanging on initial load
+      const timeout = new Promise<AuthResponse<Session>>((resolve) => 
+        setTimeout(() => {
+          console.warn('⚠️ Auth session check timeout - treating as unauthenticated')
+          resolve({ data: null, error: 'Session check timeout', success: false })
+        }, 5000) // 5 second timeout
+      )
       
-      if (error) {
-        return { data: null, error: error.message, success: false }
-      }
-
-      return { 
-        data: session, 
-        error: null, 
-        success: !!session 
-      }
+      const sessionCheck = supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+          return { data: null, error: error.message, success: false }
+        }
+        return { 
+          data: session, 
+          error: null, 
+          success: !!session 
+        }
+      })
+      
+      // Race between session check and timeout
+      return await Promise.race([sessionCheck, timeout])
     } catch (err) {
+      console.error('Session check error:', err)
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Authentication error', 
@@ -375,20 +386,38 @@ export class AuthService {
    * Includes both session and profile for role information
    */
   static async getAuthData() {
-    const sessionResponse = await this.getCurrentSession()
-    
-    if (!sessionResponse.success || !sessionResponse.data) {
+    try {
+      // Add overall timeout for the entire auth check
+      const timeout = new Promise<{ session: null, profile: null, user: null }>((resolve) => 
+        setTimeout(() => {
+          console.warn('⚠️ Auth data check timeout - treating as unauthenticated')
+          resolve({ session: null, profile: null, user: null })
+        }, 8000) // 8 second overall timeout
+      )
+      
+      const authCheck = (async () => {
+        const sessionResponse = await this.getCurrentSession()
+        
+        if (!sessionResponse.success || !sessionResponse.data) {
+          return { session: null, profile: null, user: null }
+        }
+        
+        const profileResponse = await this.getResearcherProfile(
+          sessionResponse.data.user.id
+        )
+        
+        return {
+          session: sessionResponse.data,
+          user: sessionResponse.data.user,
+          profile: profileResponse.data
+        }
+      })()
+      
+      // Race between auth check and timeout
+      return await Promise.race([authCheck, timeout])
+    } catch (err) {
+      console.error('Auth data check error:', err)
       return { session: null, profile: null, user: null }
-    }
-    
-    const profileResponse = await this.getResearcherProfile(
-      sessionResponse.data.user.id
-    )
-    
-    return {
-      session: sessionResponse.data,
-      user: sessionResponse.data.user,
-      profile: profileResponse.data
     }
   }
 }
