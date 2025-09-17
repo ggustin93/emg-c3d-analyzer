@@ -10,6 +10,13 @@ import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import { useScoringConfiguration } from '../useScoringConfiguration';
 import { ScoringWeights } from '@/types/emg';
 
+// Mock API_CONFIG
+vi.mock('@/config/apiConfig', () => ({
+  API_CONFIG: {
+    baseUrl: '/api'
+  }
+}));
+
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
