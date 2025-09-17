@@ -9,6 +9,7 @@ import { Button } from '../../ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import Spinner from '../../ui/Spinner'
 import * as Icons from '@radix-ui/react-icons'
+import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
 
 // Lazy load heavy components for better performance
 const ClinicalTooltip = lazy(() => 
@@ -95,16 +96,21 @@ interface SkeletonCardProps {
 /** Patient alert types */
 type AlertSeverity = 'warning' | 'critical'
 
-/** Patient alert data structure */
+/** Patient alert data structure with avatar support */
 interface PatientAlert {
   id: string
   patientCode: string
   patientName: string
   alertType: 'adherence' | 'fatigue' | 'performance'
+  alertCategory: string // "Lowest Adherence", "Highest Reported Fatigue", "Performance Concerns"
   severity: AlertSeverity
   value: string | number
   description: string
   actionRequired: string
+  // Avatar properties (matching Recent Session Activity pattern)
+  avatarInitials: string
+  avatarColor: string
+  displayName: string
 }
 
 
@@ -147,40 +153,57 @@ function formatSessionDate(dateString: string): string {
   })
 }
 
-// Mock data functions for demo alerts (TODO: Remove in production)
-function getMockFatigueAlerts(): PatientAlert[] {
-  // Demo data with realistic patient references
+// Create fatigue alerts from real patient data (demo values for now)
+function createFatigueAlerts(recentC3DFiles: RecentC3DFile[]): PatientAlert[] {
+  if (!recentC3DFiles || recentC3DFiles.length === 0) return []
+  
+  // Use real patient from recent files but fake fatigue value
+  const patientWithFatigue = recentC3DFiles[0] // First patient from recent activity
+  
   return [
     {
-      id: 'fatigue-001',
-      patientCode: 'P001',
-      patientName: 'Maria Smith',
+      id: `fatigue-${patientWithFatigue.patient.patient_code}`,
+      patientCode: patientWithFatigue.patient.patient_code,
+      patientName: patientWithFatigue.patient.display_name,
+      displayName: patientWithFatigue.patient.display_name,
       alertType: 'fatigue',
+      alertCategory: 'Highest Reported Fatigue',
       severity: 'critical',
-      value: 9.2,
-      description: 'Reported extremely high fatigue level',
-      actionRequired: 'Immediate consultation recommended'
+      value: 9.2, // Fake value for demo
+      description: 'Reported extremely high fatigue level during session',
+      actionRequired: 'Immediate consultation recommended',
+      avatarInitials: patientWithFatigue.patient.avatar_initials,
+      avatarColor: patientWithFatigue.patient.avatar_color
     }
   ]
 }
 
-function getMockPerformanceDropAlerts(): PatientAlert[] {
-  // Demo data with realistic patient references
+// Create performance alerts from real patient data (demo values for now)
+function createPerformanceAlerts(recentC3DFiles: RecentC3DFile[]): PatientAlert[] {
+  if (!recentC3DFiles || recentC3DFiles.length < 2) return []
+  
+  // Use second patient from recent files but fake performance value
+  const patientWithPerformance = recentC3DFiles[1] // Second patient from recent activity
+  
   return [
     {
-      id: 'performance-001', 
-      patientCode: 'P002',
-      patientName: 'John Garcia',
+      id: `performance-${patientWithPerformance.patient.patient_code}`,
+      patientCode: patientWithPerformance.patient.patient_code,
+      patientName: patientWithPerformance.patient.display_name,
+      displayName: patientWithPerformance.patient.display_name,
       alertType: 'performance',
+      alertCategory: 'Performance Concerns',
       severity: 'warning',
-      value: '-23%',
+      value: '-23%', // Fake value for demo
       description: 'Performance dropped 23% in last 6 sessions',
-      actionRequired: 'Review exercise technique and motivation'
+      actionRequired: 'Review exercise technique and motivation',
+      avatarInitials: patientWithPerformance.patient.avatar_initials,
+      avatarColor: patientWithPerformance.patient.avatar_color
     }
   ]
 }
 
-// Create adherence alerts from real adherence data
+// Create adherence alerts from real adherence data with avatar support
 function createAdherenceAlerts(adherenceData: any[]): PatientAlert[] {
   if (!adherenceData || adherenceData.length === 0) return []
   
@@ -198,17 +221,32 @@ function createAdherenceAlerts(adherenceData: any[]): PatientAlert[] {
   // Return the patient with lowest adherence
   const worst = poorAdherence[0]
   
+  // Create patient object for avatar generation
+  const patientData = {
+    patient_code: worst.patient_id,
+    first_name: null, // TODO: Add real name support when available
+    last_name: null,
+    display_name: null
+  }
+  
+  const avatarColor = getAvatarColor(getPatientIdentifier(patientData))
+  const avatarInitials = getPatientAvatarInitials(null, null, worst.patient_id)
+  
   return [{
     id: `adherence-${worst.patient_id}`,
     patientCode: worst.patient_id,
-    patientName: `Patient ${worst.patient_id}`, // TODO: Get real name in production
+    patientName: `Patient ${worst.patient_id}`,
+    displayName: `Patient ${worst.patient_id}`,
     alertType: 'adherence',
+    alertCategory: 'Lowest Adherence',
     severity: worst.adherence_score < 50 ? 'critical' : 'warning',
     value: `${Math.round(worst.adherence_score)}%`,
     description: `Only ${worst.sessions_completed} of ${worst.sessions_expected} sessions completed`,
     actionRequired: worst.adherence_score < 50 
       ? 'Immediate intervention required'
-      : 'Schedule follow-up call'
+      : 'Schedule follow-up call',
+    avatarInitials,
+    avatarColor
   }]
 }
 
@@ -585,14 +623,18 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
       alerts.push(...createAdherenceAlerts(adherence))
     }
     
-    // 2. High fatigue alerts (demo data - TODO: Replace with real data)
-    alerts.push(...getMockFatigueAlerts())
+    // 2. High fatigue alerts (using real patient data with demo values)
+    if (recentC3DFiles.length > 0) {
+      alerts.push(...createFatigueAlerts(recentC3DFiles))
+    }
     
-    // 3. Performance drop alerts (demo data - TODO: Replace with real data)
-    alerts.push(...getMockPerformanceDropAlerts())
+    // 3. Performance drop alerts (using real patient data with demo values)
+    if (recentC3DFiles.length > 1) {
+      alerts.push(...createPerformanceAlerts(recentC3DFiles))
+    }
     
     return alerts.slice(0, 3) // Limit to 3 most critical alerts
-  }, [adherence, isAdherenceLoading])
+  }, [adherence, isAdherenceLoading, recentC3DFiles])
 
   // Progressive content loading effect
   useEffect(() => {
@@ -781,41 +823,47 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
               </CardHeader>
               <CardContent className="pt-0 pb-4">
                 {patientAlerts.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {patientAlerts.map((alert, index) => (
                       <ProgressiveContent key={alert.id} delay={ANIMATION_DELAYS.FAST + (index * 50)}>
                         <Link
                           to={`/patients/${alert.patientCode}`}
-                          className="block p-3 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all duration-200 group"
+                          className="group flex items-center justify-between p-3 rounded-lg hover:bg-gradient-to-r hover:from-orange-50/60 hover:to-red-50/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-transparent hover:border-orange-200/60 hover:backdrop-blur-sm"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className={`p-1.5 rounded-full shrink-0 ${
-                              alert.severity === 'critical' 
-                                ? 'bg-red-100 text-red-600' 
-                                : 'bg-orange-100 text-orange-600'
-                            }`}>
-                              {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
-                              {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
-                              {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <h4 className={`font-semibold text-sm ${
-                                    alert.severity === 'critical' ? 'text-red-800' : 'text-orange-800'
-                                  } group-hover:underline`}>
-                                    {alert.patientName}
-                                  </h4>
-                                  <p className="text-xs text-gray-600 mt-0.5">{alert.description}</p>
-                                </div>
-                                <div className={`text-right shrink-0 font-bold text-sm ${
-                                  alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 ring-2 ring-white shadow-md group-hover:shadow-lg group-hover:ring-orange-100 transition-all duration-200">
+                              <AvatarFallback className={`${alert.avatarColor} text-white font-semibold text-xs`}>
+                                {alert.avatarInitials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {alert.displayName}
+                                </p>
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  alert.severity === 'critical' 
+                                    ? 'bg-red-100 text-red-700 border border-red-200' 
+                                    : 'bg-orange-100 text-orange-700 border border-orange-200'
                                 }`}>
-                                  {alert.value}
+                                  {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
+                                  {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
+                                  {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
+                                  <span>{alert.alertCategory}</span>
                                 </div>
                               </div>
+                              <p className="text-xs text-gray-500 font-medium">
+                                {alert.description}
+                              </p>
                             </div>
-                            <Icons.ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-orange-600 transition-colors shrink-0" />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className={`text-right shrink-0 font-bold text-lg ${
+                              alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
+                            }`}>
+                              {alert.value}
+                            </div>
+                            <Icons.ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-orange-500 group-hover:scale-110" />
                           </div>
                         </Link>
                       </ProgressiveContent>
