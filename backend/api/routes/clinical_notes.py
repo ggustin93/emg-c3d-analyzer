@@ -36,7 +36,7 @@ from api.dependencies.validation import get_current_user_id
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/clinical-notes", tags=["clinical-notes"])
+router = APIRouter(prefix="/clinical-notes", tags=["clinical-notes"])
 
 
 @router.post("/file", response_model=ClinicalNote)

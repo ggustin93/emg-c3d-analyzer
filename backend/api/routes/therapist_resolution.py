@@ -16,7 +16,7 @@ from api.dependencies.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/therapists", tags=["therapists"])
+router = APIRouter(prefix="/therapists", tags=["therapists"])
 
 
 class TherapistResponse(BaseModel):

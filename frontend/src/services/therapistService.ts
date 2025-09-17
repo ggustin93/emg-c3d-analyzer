@@ -52,7 +52,7 @@ class TherapistService {
         return null;
       }
 
-      const response = await fetch(`${this.apiBaseUrl}/api/therapists/resolve/${patientCode}`, {
+      const response = await fetch(`${this.apiBaseUrl}/therapists/resolve/${patientCode}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
@@ -96,7 +96,7 @@ class TherapistService {
         return result;
       }
 
-      const response = await fetch(`${this.apiBaseUrl}/api/therapists/resolve/batch`, {
+      const response = await fetch(`${this.apiBaseUrl}/therapists/resolve/batch`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -169,7 +169,7 @@ class TherapistService {
       }
 
       // Use API endpoint if available
-      const response = await fetch(`${this.apiBaseUrl}/api/therapists/by-id/${therapistId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/therapists/by-id/${therapistId}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'

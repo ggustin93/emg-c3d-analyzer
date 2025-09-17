@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 # Create router
-router = APIRouter(prefix="/api/logs", tags=["logs"])
+router = APIRouter(prefix="/logs", tags=["logs"])
 
 # Log file path - use /app/logs in Docker, local path otherwise
 if os.path.exists('/app'):
