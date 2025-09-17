@@ -1,12 +1,23 @@
 import { parse } from 'yaml'
 import { FAQItem, FAQCategory, UserRole } from './types'
 
-// Import all markdown files using Vite's import.meta.glob
-const faqModules = import.meta.glob('/content/faq/**/*.md', { 
-  eager: true,
-  query: '?raw',
-  import: 'default' 
-})
+// FAQ content files configuration
+const FAQ_CATEGORIES = [
+  'getting-started',
+  'patients', 
+  'sessions',
+  'export',
+  'technical'
+] as const
+
+// Known FAQ files structure
+const FAQ_FILES = [
+  'getting-started/what-is-platform.md',
+  'getting-started/how-to-login.md',
+  'patients/add-patient.md',
+  'sessions/upload-c3d.md',
+  'export/export-data.md'
+] as const
 
 export interface ParsedFAQ extends Omit<FAQItem, 'answer'> {
   answer: string
@@ -50,27 +61,46 @@ function parseFAQFile(content: string, filePath: string): ParsedFAQ {
   }
 }
 
-export function loadAllFAQs(): ParsedFAQ[] {
+// Cache for loaded FAQs
+let cachedFAQs: ParsedFAQ[] | null = null
+
+export async function loadAllFAQs(): Promise<ParsedFAQ[]> {
+  // Return cached data if available
+  if (cachedFAQs) {
+    return cachedFAQs
+  }
+
   const faqs: ParsedFAQ[] = []
   
-  for (const [path, module] of Object.entries(faqModules)) {
-    if (typeof module === 'string') {
-      try {
-        const faq = parseFAQFile(module, path)
+  // Load each FAQ file
+  for (const filePath of FAQ_FILES) {
+    try {
+      const response = await fetch(`/content/faq/${filePath}`)
+      
+      if (response.ok) {
+        const content = await response.text()
+        const faq = parseFAQFile(content, filePath)
         faqs.push(faq)
-      } catch (error) {
-        console.warn(`Failed to parse FAQ file: ${path}`, error)
+      } else {
+        console.warn(`Failed to load FAQ file: ${filePath} (${response.status})`)
       }
+    } catch (error) {
+      console.warn(`Error loading FAQ file: ${filePath}`, error)
     }
   }
   
-  return faqs.sort((a, b) => {
-    // Sort by category, then by question
+  // Sort by category, then by question
+  const sortedFAQs = faqs.sort((a, b) => {
     if (a.category !== b.category) {
       return a.category.localeCompare(b.category)
     }
     return a.question.localeCompare(b.question)
   })
+
+  // Cache the results
+  cachedFAQs = sortedFAQs
+  
+  return sortedFAQs
 }
 
 export function searchFAQs(faqs: ParsedFAQ[], query: string): ParsedFAQ[] {

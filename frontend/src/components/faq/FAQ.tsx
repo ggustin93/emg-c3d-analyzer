@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useDeferredValue } from 'react'
+import React, { useState, useMemo, useDeferredValue, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import { Accordion } from '../ui/accordion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
@@ -13,13 +13,27 @@ import { useAuth } from '../../contexts/AuthContext'
 export function FAQ() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [allFAQs, setAllFAQs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { userRole } = useAuth()
   
   // Use deferred value for search to improve performance
   const deferredSearchTerm = useDeferredValue(searchTerm)
   
   // Load all FAQs from markdown files
-  const allFAQs = useMemo(() => loadAllFAQs(), [])
+  useEffect(() => {
+    loadAllFAQs()
+      .then(faqs => {
+        setAllFAQs(faqs)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to load FAQ content:', err)
+        setError('Failed to load FAQ content. Please try again later.')
+        setLoading(false)
+      })
+  }, [])
   
   // Map auth role to FAQ role format
   const currentUserRole = useMemo(() => {
@@ -61,6 +75,62 @@ export function FAQ() {
     })
     return counts
   }, [allFAQs, currentUserRole])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <QuestionMarkCircledIcon className="h-6 w-6 text-blue-500" />
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+            </div>
+            <CardDescription className="mt-2">
+              Loading FAQ content...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="ml-3 text-gray-600">Loading FAQ content...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <QuestionMarkCircledIcon className="h-6 w-6 text-blue-500" />
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+            </div>
+            <CardDescription className="mt-2 text-red-600">
+              {error}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <InfoCircledIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <p className="text-gray-600 mb-4">We're having trouble loading the FAQ content.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   
   return (
     <div className="p-6 space-y-6">
