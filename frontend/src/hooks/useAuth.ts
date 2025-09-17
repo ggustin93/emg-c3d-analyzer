@@ -1,14 +1,15 @@
 /**
- * Simplified Authentication Hook
+ * Clean Authentication Hook
  * 
- * Following KISS principle: Direct Supabase integration without caching or complexity.
- * RLS handles all authorization - we just manage authentication state.
- * 
- * FIXED: Resolved loading state loop by implementing proper loading state management
- * and eliminating race conditions in token refresh handling.
+ * CLEAN ARCHITECTURE: Focused on React state management only
+ * - KISS: Simple state management, delegates auth operations to authUtils
+ * - DRY: Uses shared auth utility instead of duplicating auth logic
+ * - SOLID: Single responsibility - React state management only
+ * - SSoT: Supabase (via authUtils) is single source of auth truth
  */
 import { useState, useEffect, useCallback, useRef, useTransition, startTransition } from 'react'
 import { supabase } from '../lib/supabase'
+import { logout as utilLogout } from '../lib/authUtils'
 import type { User, Session } from '@supabase/supabase-js'
 
 export type UserRole = 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null
@@ -39,7 +40,7 @@ interface AuthState {
 
 interface AuthActions {
   login: (email: string, password: string) => Promise<{ data: Session | null; error: Error | null }>
-  logout: () => Promise<{ error: Error | null }>
+  logout: () => Promise<{ error: string | null }>
 }
 
 export const useAuth = (): AuthState & AuthActions => {
@@ -300,42 +301,46 @@ export const useAuth = (): AuthState & AuthActions => {
   }
 
   /**
-   * Logout the current user.
-   * Simple and direct - no complex cleanup needed.
+   * Logout the current user
+   * CLEAN: Uses shared auth utility, component handles navigation
+   * KISS: Simple auth operation - let onAuthStateChange handle state cleanup
    */
   const logout = async () => {
-    // Don't set loading during logout to avoid blocking redirect
     console.debug('[Auth] Logout initiated')
     
     try {
-      // Clear state immediately with concurrent transition to enable redirect
+      // Set loading state
+      startAuthTransition(() => {
+        setLoading(true)
+      })
+      
+      // Use shared auth utility for logout operation
+      const { error } = await utilLogout()
+      
+      if (error) {
+        console.error('[Auth] Logout error:', error)
+      } else {
+        console.debug('[Auth] Logout successful')
+      }
+      
+      // Note: Navigation should be handled by the calling component
+      // onAuthStateChange will handle state cleanup automatically
+      
+      return { error }
+    } catch (error) {
+      console.error('[Auth] Logout failed:', error)
+      
+      // Force state cleanup on error
       startAuthTransition(() => {
         setUser(null)
         setSession(null)
         setUserProfile(null)
         setUserRole(null)
-      })
-      
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('[Auth] Logout error:', error)
-        return { error }
-      }
-      
-      // Ensure loading is false so AuthGuard can redirect
-      startAuthTransition(() => {
         setLoading(false)
       })
-      console.debug('[Auth] Logout completed successfully')
-      return { error: null }
-    } catch (error) {
-      console.error('[Auth] Logout failed:', error)
-      startAuthTransition(() => {
-        setLoading(false)
-      })
+      
       return { 
-        error: error instanceof Error ? error : new Error('Logout failed') 
+        error: error instanceof Error ? error.message : 'Logout failed' 
       }
     }
   }

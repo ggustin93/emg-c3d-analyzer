@@ -8,14 +8,15 @@ import {
   Navigate,
   useNavigate,
   useLocation,
-  useNavigation
+  useNavigation,
+  redirect
 } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider } from './contexts/AuthContext';
 import { rootLoader, protectedLoader, publicLoader } from './routes/loaders';
-import { loginAction } from './routes/actions';
+import { loginAction, logoutAction } from './routes/actions';
 import LoginPage from './components/auth/LoginPage';
 import Header from './components/layout/Header';
 import Spinner from './components/ui/Spinner';
@@ -315,6 +316,11 @@ const router = createBrowserRouter([
             )
           }
         ]
+      },
+      {
+        path: 'logout',
+        action: logoutAction,
+        loader: () => redirect('/login')
       },
       {
         path: '*',
