@@ -1,173 +1,159 @@
-     │ Fix Mixed API Prefix Issue in Backend                                                 │
-     │                                                                                       │
-     │ Current Problem:                                                                      │
-     │                                                                                       │
-     │ The backend has inconsistent API prefixes:                                            │
-     │ - 4 routes have /api prefix: clinical-notes, therapists, logs, cache                  │
-     │ - 8 routes don't have /api prefix: signals, analysis, upload, scoring, export,        │
-     │ config, webhooks, mvc                                                                 │
-     │                                                                                       │
-     │ With the current Vite proxy rewrite that strips /api:                                 │
-     │ - Routes WITH /api in backend get double-stripped and break (404)                     │
-     │ - Routes WITHOUT /api in backend work correctly                                       │
-     │                                                                                       │
-     │ Best Solution: Standardize Backend Routes                                             │
-     │                                                                                       │
-     │ Option 1: Remove /api prefix from the 4 routes that have it (Recommended - KISS)      │
-     │ - Change /api/clinical-notes → /clinical-notes in clinical_notes.py                   │
-     │ - Change /api/therapists → /therapists in therapist_resolution.py                     │
-     │ - Change /api/logs → /logs in logs.py                                                 │
-     │ - Change /api/cache → /cache in cache_monitoring.py                                   │
-     │ - Keep the Vite proxy rewrite that strips /api                                        │
-     │                                                                                       │
-     │ This way:                                                                             │
-     │ - ALL backend routes have NO /api prefix (consistent)                                 │
-     │ - Frontend keeps using /api/* everywhere (consistent)                                 │
-     │ - Vite proxy strips /api for all requests (works for everything)                      │
-     │                                                                                       │
-     │ Option 2: Add /api prefix to all backend routes and remove proxy rewrite              │
-     │ - Add /api prefix to the 8 routes that don't have it                                  │
-     │ - Remove the proxy rewrite from vite.config.ts                                        │
-     │ - More changes but follows REST conventions better                                    │
-     │                                                                                       │
-     │ Implementation for Option 1 (Recommended):                                            │
-     │                                                                                       │
-     │ 1. Update backend routes (4 files):                                                   │
-     │ # clinical_notes.py line 39                                                           │
-     │ router = APIRouter(prefix="/clinical-notes", tags=["clinical-notes"])                 │
-     │                                                                                       │
-     │ # therapist_resolution.py                                                             │
-     │ router = APIRouter(prefix="/therapists", tags=["therapists"])                         │
-     │                                                                                       │
-     │ # logs.py                                                                             │
-     │ router = APIRouter(prefix="/logs", tags=["logs"])                                     │
-     │                                                                                       │
-     │ # cache_monitoring.py                                                                 │
-     │ router = APIRouter(prefix="/cache", tags=["Cache"])                                   │
-     │ 2. Keep Vite proxy rewrite as is (already done)                                       │
-     │ 3. No frontend changes needed - all services continue using /api/*                    │
-     │                                                                                       │
-     │ Benefits:                                                                             │
-     │                                                                                       │
-     │ - Fixes the immediate issue                                                           │
-     │ - Creates consistency in backend (NO /api anywhere)                                   │
-     │ - Minimal changes (only 4 lines)                                                      │
-     │ - Frontend remains unchanged                                                          │
-     │ - Follows KISS principle                                                              │
-     ╰───────────────────────────────────────────────────────────────────────────────────────╯
+# Fix API Backend Routes - Vercel Production Issues
 
-> what is the KISS, DRY, SOLID, YAGNI, SSoT compliant option ?
+**Domain**: API Architecture & Routing  
+**Status**: In Progress  
+**Priority**: Critical  
+**Date**: 2025-01-17  
+**Personas**: Backend Architect (lead), DevOps Engineer, QA Engineer, Frontend Engineer
 
-⏺ Looking at this from the perspective of core software engineering principles:
+## Problem Statement
 
-  KISS (Keep It Simple, Stupid)
+Vercel production deployment has inconsistent API routing patterns causing 404 errors for specific features (FAQ content, About page, scoring configurations) while other features (upload, authentication) work correctly.
 
-  Simplest solution: Remove /api prefix from the 4 backend routes that have it.
-  - Only 4 lines to change vs 8+ lines
-  - No frontend changes needed
-  - Proxy rewrite stays as is
+## Root Cause Analysis
 
-  DRY (Don't Repeat Yourself)
+### Pattern Analysis
+Through comprehensive codebase analysis, identified **3 distinct API calling patterns**:
 
-  Avoid repetition: Keep the proxy rewrite rule that strips /api once, rather than
-  updating dozens of frontend service calls.
-  - Single rewrite rule vs updating multiple frontend files
-  - Centralized transformation logic
+1. ✅ **Consistent API_CONFIG Usage (7 files)** - Working in production
+   - Uses `API_CONFIG.baseUrl` environment-based URLs
+   - Examples: `therapistService.ts`, `mvcService.ts`, `AppContent.tsx`
 
-  SOLID - Single Responsibility
+2. ❌ **Hardcoded `/api` Prefix (3 files)** - Broken in production  
+   - Relies on Vite development proxy (unavailable in production)
+   - **Critical files**: `useScoringConfiguration.ts` (6 calls), `logger.ts` (1 call), `adherenceService.ts` (1 call)
 
-  Each layer has one job:
-  - Frontend: Always uses /api/* pattern (consistent contract)
-  - Proxy: Strips /api prefix (single transformation responsibility)
-  - Backend: Serves routes without /api prefix (clean REST endpoints)
+3. 🔧 **Mixed Patterns** - Semi-working with fallbacks
 
-  YAGNI (You Aren't Gonna Need It)
+### Why User Observed Partial Functionality
+- **Upload working**: Uses `API_CONFIG.baseUrl` (Pattern 1) ✅
+- **FAQ content missing**: Uses `/api` hardcoded calls (Pattern 2) ❌  
+- **About page broken**: Missing route + `/api` dependencies (Pattern 2) ❌
 
-  Don't over-engineer: The backend doesn't actually need /api prefix.
-  - Backend is already deployed and working without /api on most routes
-  - Don't add complexity that isn't needed
-  - The /api prefix in 4 routes was probably added by mistake
+## Implementation Tasks
 
-  SSoT (Single Source of Truth)
+### Phase 1: Critical API Route Fixes 🚨
 
-  Backend defines the API structure: Backend routes should be consistent.
-  - Currently mixed (4 with /api, 8 without) - this violates SSoT
-  - Should be ALL with or ALL without
-  - Since majority (8 routes) don't have /api, that's the truth
+#### Task 1.1: Fix useScoringConfiguration.ts (CRITICAL)
+**File**: `src/hooks/useScoringConfiguration.ts`  
+**Persona**: Backend Architect + API Specialist  
+**Changes Required**: 6 hardcoded `/api` calls → `API_CONFIG.baseUrl`
 
-  The Principle-Compliant Solution:
+```typescript
+// Lines to fix:
+// Line 74: `/api/scoring/configurations/custom?therapist_id=${therapistId}&patient_id=${patientId}`
+// Line 79: `/api/scoring/configurations/custom?therapist_id=${therapistId}`  
+// Line 86: `/api/scoring/configurations/custom?therapist_id=${therapistId}`
+// Line 94: `/api/scoring/configurations/active`
+// Line 199: `/api/scoring/configurations/custom`
+// Line 246: `/api/scoring/configurations/default`
 
-  Remove /api prefix from the 4 backend routes that have it:
+// Replace with: `${API_CONFIG.baseUrl}/scoring/configurations/...`
+```
 
-  # Change these 4 lines:
-  router = APIRouter(prefix="/clinical-notes", tags=["clinical-notes"])  # was 
-  "/api/clinical-notes"
-  router = APIRouter(prefix="/therapists", tags=["therapists"])          # was 
-  "/api/therapists"
-  router = APIRouter(prefix="/logs", tags=["logs"])                      # was "/api/logs"
-  router = APIRouter(prefix="/cache", tags=["Cache"])                    # was 
-  "/api/cache"
+**Impact**: Fixes scoring configuration loading in production (affects therapist workflows)
 
-  This solution:
-  - ✅ KISS: Minimal changes (4 lines)
-  - ✅ DRY: Proxy handles all /api stripping
-  - ✅ SOLID: Each layer has single responsibility
-  - ✅ YAGNI: Don't add /api where not needed
-  - ✅ SSoT: Backend consistently has NO /api prefix
+#### Task 1.2: Fix logger.ts  
+**File**: `src/services/logger.ts`  
+**Persona**: Backend Architect  
+**Changes Required**: Line 65 hardcoded `/api/logs/frontend` → `${API_CONFIG.baseUrl}/logs/frontend`
 
-  Why NOT add /api to all backend routes?
-  - Would require changing 8+ routes instead of 4
-  - Would require removing proxy rewrite
-  - Adds unnecessary path segment when backend doesn't need it
-  - More complex = violates KISS
+**Impact**: Fixes frontend logging in production environment
 
-  The principle-compliant choice is clear: Remove /api from the 4 routes that have it.
+#### Task 1.3: Fix adherenceService.ts  
+**File**: `src/services/adherenceService.ts`  
+**Persona**: Backend Architect  
+**Changes Required**: Line 26 `http://localhost:8080` → `API_CONFIG.baseUrl`
 
-> /sc:implement is running… this plan. (also,  │ 2. Update frontend service to match (only 1 
-file):                                                                                        
-                         │ │
-│ │                                                                                           
-                                                                         │ │
-│ │ frontend/src/services/clinicalNotesService.ts:21                                          
-                                                                         │ │
-│ │ private static readonly BASE_PATH = API_CONFIG.baseUrl + '/clinical-notes';  // was 
-'/api/clinical-notes'                                                          │ │
-│ │                                                                                           
-                                                                         │ │
-│ │ Why This Solution is Correct                                                   ? )
+**Impact**: Fixes adherence data fetching with proper environment awareness
 
-⏺ I'll implement the KISS/DRY/SOLID compliant solution to fix the mixed API prefix issue.
-                                                                                    
-⏺ User approved Claude's plan:
-  ⎿  Implementation Plan: Remove /api Prefix from 4 Backend Routes
+### Phase 2: Environment Configuration  
 
-     The KISS/SOLID/SSoT Compliant Solution
+#### Task 2.1: Update API Config for Production
+**File**: `src/config/apiConfig.ts`  
+**Persona**: DevOps + System Architect  
+**Changes Required**: 
+```typescript
+export const API_CONFIG = {
+  baseUrl: import.meta.env.VITE_API_URL || '/api'  // Support both patterns
+}
+```
 
-     Backend Changes (4 files):
-     1. clinical_notes.py: Remove /api prefix from router
-     2. therapist_resolution.py: Remove /api prefix from router
-     3. logs.py: Remove /api prefix from router
-     4. cache_monitoring.py: Remove /api prefix from router
+#### Task 2.2: Vercel Environment Configuration
+**Platform**: Vercel Dashboard  
+**Persona**: DevOps  
+**Changes Required**: Set environment variable `VITE_API_URL=https://your-backend.herokuapp.com`
 
-     Frontend Change (1 file):
-     5. clinicalNotesService.ts: Update BASE_PATH to use /clinical-notes instead of 
-     /api/clinical-notes
+### Phase 3: Test Suite Updates  
 
-     Why This is the Correct Solution:
+#### Task 3.1: Update Test Expectations  
+**Files**: 
+- `src/hooks/__tests__/useScoringConfiguration.test.ts` (10 hardcoded `/api` expectations)
+- `src/hooks/useScoringConfiguration.test.ts` (3 hardcoded `/api` expectations)
 
-     ✅ KISS: Only 5 lines to change (minimal)
-     ✅ DRY: Proxy handles all /api stripping in one place
-     ✅ SOLID: Each layer has single responsibility
-     ✅ YAGNI: Don't add /api where not needed
-     ✅ SSoT: Backend becomes consistent - NO /api prefix anywhere
+**Persona**: QA Engineer  
+**Changes Required**: Update test expectations to use `API_CONFIG.baseUrl` pattern
 
-     Implementation Steps:
+### Phase 4: Validation & Documentation  
 
-     1. Remove /api prefix from 4 backend route definitions
-     2. Update clinicalNotesService.ts BASE_PATH
-     3. Test all endpoints work correctly
+#### Task 4.1: Cross-Environment Testing  
+**Persona**: QA Engineer + DevOps  
+**Validation Matrix**:
+- Development: Vite proxy + direct calls
+- Production: Environment-based URLs  
+- Features: Upload, FAQ, About, Scoring, Logging, Adherence
 
-     This creates a clean, consistent architecture where:
-     - Frontend always uses /api/* pattern
-     - Proxy strips /api for all requests
-     - Backend serves all routes without /api prefix
+#### Task 4.2: Architecture Documentation  
+**Persona**: Technical Writer + System Architect  
+**Deliverables**: 
+- API calling patterns documentation
+- Environment configuration guide  
+- Troubleshooting guide for future deployments
+
+## Expected Outcomes
+
+### Before Fix
+- ✅ Upload functionality (Pattern 1)
+- ❌ FAQ content loading (Pattern 2) 
+- ❌ About page (Pattern 2 + missing route)
+- ❌ Scoring configurations (Pattern 2)
+
+### After Fix  
+- ✅ All API calls work in development via Vite proxy or direct URL
+- ✅ All API calls work in production via environment-based backend URL  
+- ✅ FAQ/About content loads properly in both environments
+- ✅ Single consistent API calling pattern across codebase
+
+## Risk Assessment
+
+**Low Risk Changes**: 
+- Environment variable configuration
+- API_CONFIG usage pattern standardization
+
+**Medium Risk Changes**:
+- useScoringConfiguration.ts (critical business logic)
+- Test suite updates (extensive test modifications)
+
+**Mitigation Strategy**: 
+- Incremental deployment with rollback plan
+- Comprehensive testing before production push
+- Feature flags for gradual rollout
+
+## Success Metrics
+
+1. **Functional**: All pages load content in production (FAQ, About)
+2. **Technical**: Zero 404 API errors in browser network tab  
+3. **User Experience**: Consistent functionality across development/production
+4. **Code Quality**: Single API calling pattern across entire codebase
+
+## Dependencies
+
+- Backend deployment must be accessible from configured `VITE_API_URL`
+- Vercel build process must include environment variable
+- CORS configuration on backend must allow frontend domain
+
+---
+
+**Last Updated**: 2025-01-17  
+**Next Review**: After Phase 1 implementation  
+**Assigned Personas**: Backend Architect (lead), DevOps, QA Engineer, System Architect
