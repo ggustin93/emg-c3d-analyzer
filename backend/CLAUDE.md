@@ -78,6 +78,11 @@ response = client.get("/clinical-notes")
 response = client.post("/therapists/lookup")
 ```
 
+**Critical Production Lesson (Sep 2025)**:
+The backend consistently follows the NO `/api` prefix pattern, which is correct. The Sep 2025 production issue was caused by **frontend inconsistencies** - some frontend services were using hardcoded `/api` calls instead of `API_CONFIG.baseUrl`. The backend routing was never the problem.
+
+**Key Takeaway**: Backend routes are stable and consistent. Frontend must always use `API_CONFIG.baseUrl` for environment-aware API calls. Never hardcode `/api` or localhost URLs in frontend services.
+
 ### 2.3 Data, Tooling & Quality
 
 8.  **Define Strict, Domain-Organized Pydantic Contracts**

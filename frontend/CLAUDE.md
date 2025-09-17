@@ -52,30 +52,38 @@ This document merges **frontend engineering** (React, TypeScript) and **UX/UI de
 
 ### 2.2 API Routing Architecture
 
-**Standard Approach**: Frontend uses `/api/*` prefix consistently for all API calls
+**Standard Approach**: Frontend uses `/api/*` prefix → Vite proxy strips `/api` → Backend serves without prefix
 
 **Architecture Decision (Sep 2025)**:
-Frontend maintains a consistent `/api/*` pattern for all backend communication.
+Frontend maintains a consistent `/api/*` pattern through environment-aware configuration.
 
-**Implementation Details**:
-- **Consistent Pattern**: All API calls use `/api/*` prefix
-- **Vite Proxy**: Handles the transformation by stripping `/api` when forwarding to backend
-- **Service Layer**: All services use the `/api/*` pattern consistently
-- **Examples**:
-  ```typescript
-  // ✅ Correct - Always use /api prefix in frontend
-  const API_CONFIG = { baseUrl: '/api' }
-  fetch('/api/clinical-notes')
-  fetch('/api/therapists/lookup')
-  fetch('/api/scoring/configurations/active')
-  
-  // ❌ Wrong - Don't omit /api prefix
-  fetch('/clinical-notes')  // Will fail
-  ```
+**🚨 Critical Implementation Rule**:
+**ALWAYS use `API_CONFIG.baseUrl`** - NEVER hardcode API endpoints in frontend services.
+
+**Environment-Aware Configuration**:
+```typescript
+// src/config/apiConfig.ts
+export const API_CONFIG = {
+  baseUrl: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080')
+}
+```
+
+**Correct Implementation Patterns**:
+```typescript
+// ✅ ALWAYS use this pattern - environment-aware
+import { API_CONFIG } from '@/config/apiConfig';
+const response = await fetch(`${API_CONFIG.baseUrl}/clinical-notes`);
+const data = await fetch(`${API_CONFIG.baseUrl}/therapists/lookup`);
+const config = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/active`);
+
+// ❌ NEVER use these patterns - will break in production
+fetch('/api/clinical-notes')              // Hardcoded /api
+fetch('http://localhost:8080/endpoint')   // Hardcoded localhost
+```
 
 **Vite Configuration**:
 ```javascript
-// vite.config.ts
+// vite.config.ts - Development only
 proxy: {
   '/api': {
     target: 'http://localhost:8080',
@@ -84,6 +92,31 @@ proxy: {
   }
 }
 ```
+
+**Production Environment**:
+- Set `VITE_API_URL` environment variable in deployment platform (Vercel/Netlify)
+- Example: `VITE_API_URL=https://api.yourapp.com`
+- `API_CONFIG.baseUrl` automatically resolves to production URL
+
+**🚨 Sep 2025 Production Lesson**:
+**Problem**: Vercel deployment failures with 404 errors for FAQ/About pages
+**Root Cause**: Inconsistent API patterns across frontend services
+1. **✅ Working Services**: Used `API_CONFIG.baseUrl` (7 files) - upload functionality
+2. **❌ Broken Services**: Used hardcoded `/api` (3 files) - FAQ/About content
+3. **⚠️ Unpredictable Services**: Used hardcoded localhost (1 file)
+
+**Files Fixed**:
+- `useScoringConfiguration.ts`: 6 hardcoded `/api` calls → `${API_CONFIG.baseUrl}`
+- `logger.ts`: hardcoded `/api/logs/frontend` → `${API_CONFIG.baseUrl}/logs/frontend`
+- `adherenceService.ts`: localhost URL → `${API_CONFIG.baseUrl}`
+
+**Why "Some Routes Worked"**: Partial functionality was misleading - upload used correct patterns while content loading used broken patterns.
+
+**Prevention Strategy**:
+1. **Code Review**: Grep for hardcoded patterns: `grep -r "fetch('/api" src/`
+2. **Testing**: Integration tests without Vite proxy
+3. **Enforcement**: ESLint rule to prevent hardcoded API calls
+4. **Single Source**: All API calls MUST use `API_CONFIG.baseUrl`
 
 ### 2.3 Design & User Experience
 

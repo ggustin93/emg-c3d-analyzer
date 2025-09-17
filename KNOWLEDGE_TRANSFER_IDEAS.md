@@ -288,7 +288,51 @@ Frontend                 Vite Proxy              Backend
 - ✅ **YAGNI**: Don't add `/api` where not needed
 - ✅ **SSoT**: Backend consistently has NO `/api` prefix
 
-### 4.2 When to Use Direct Supabase vs FastAPI
+### 4.2 Critical Lesson: Inconsistent API Patterns (Sep 2025)
+
+**🚨 Production Issue: Vercel Deployment Failures**
+
+**Symptoms**: FAQ and About pages returning 404 errors, missing content on Vercel production deployment while development worked perfectly.
+
+**Root Cause**: Three distinct API calling patterns coexisting in the frontend codebase:
+1. **✅ Correct**: `API_CONFIG.baseUrl` usage (7 files) - environment-aware
+2. **❌ Broken**: Hardcoded `/api` prefix (3 critical files) - production 404s
+3. **⚠️ Unpredictable**: Hardcoded localhost URLs (1 file) - dev-only
+
+**Why "Some Routes Worked"**: Upload functionality used the correct `API_CONFIG` pattern while FAQ/About content loading used hardcoded `/api` patterns. This partial functionality masked the root cause during development testing.
+
+**Critical Files That Failed**:
+- `useScoringConfiguration.ts`: 6 hardcoded `/api` calls
+- `logger.ts`: Hardcoded `/api/logs/frontend`
+- `adherenceService.ts`: Hardcoded localhost URL
+
+**Architecture Violation**: Multiple API patterns violated the Single Source of Truth principle, creating hidden production failures.
+
+**Prevention Strategy**:
+```typescript
+// ✅ ALWAYS use this pattern - environment-aware
+import { API_CONFIG } from '@/config/apiConfig';
+const response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/active`);
+
+// ❌ NEVER use these patterns - will break in production
+fetch('/api/scoring/configurations/active')  // Hardcoded /api
+fetch('http://localhost:8080/endpoint')      // Hardcoded localhost
+```
+
+**Key Lessons**:
+1. **Partial functionality is misleading** - some routes working doesn't mean all patterns are correct
+2. **Environment awareness is critical** - dev proxy vs production direct calls
+3. **Single Source of Truth must be enforced** - one way to call APIs across entire codebase
+4. **Integration testing gap** - need tests without Vite proxy to catch production issues
+
+**Detection Strategy**: Grep for hardcoded API patterns during code review:
+```bash
+grep -r "fetch('/api" src/
+grep -r "localhost:8080" src/
+grep -r "http://" src/ | grep -v "http://localhost"
+```
+
+### 4.3 When to Use Direct Supabase vs FastAPI
 
 Our architecture follows the KISS principle - use the simplest tool that solves the problem.
 

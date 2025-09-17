@@ -455,5 +455,42 @@ import { User, Calendar, File } from 'lucide-react'
 - Check → CheckIcon
 - Plus → PlusIcon
 
+### 5.8. Critical API Routing Lessons (Sep 2025)
+
+**🚨 Production Deployment Issue: Inconsistent API Patterns**
+
+**Problem**: Vercel deployment failures with 404 errors for FAQ/About pages due to inconsistent API calling patterns across the frontend codebase.
+
+**Root Cause Analysis**: 
+- **3 Distinct API Patterns** discovered in codebase:
+  1. **✅ Working Pattern**: `API_CONFIG.baseUrl` usage (7 files) - environment-aware, production-ready
+  2. **❌ Broken Pattern**: Hardcoded `/api` prefix (3 files) - causes 404s in production  
+  3. **⚠️ Semi-Working Pattern**: Hardcoded localhost URLs (1 file) - works in dev, unpredictable in prod
+
+**Critical Files Fixed**:
+- `useScoringConfiguration.ts`: 6 hardcoded `/api` calls causing FAQ/About content failures
+- `logger.ts`: Hardcoded `/api/logs/frontend` endpoint  
+- `adherenceService.ts`: Hardcoded localhost URL with fallback logic
+
+**Architecture Decision Reinforced**:
+- **Single Source of Truth**: `API_CONFIG.baseUrl` as the ONLY way to call APIs
+- **Environment Awareness**: Development uses `/api` proxy, production uses `VITE_API_URL`
+- **Consistent Pattern**: `${API_CONFIG.baseUrl}/endpoint` across ALL frontend API calls
+
+**Prevention Strategy**:
+```typescript
+// ✅ ALWAYS use this pattern for API calls
+import { API_CONFIG } from '@/config/apiConfig';
+const response = await fetch(`${API_CONFIG.baseUrl}/scoring/configurations/active`);
+
+// ❌ NEVER use these patterns
+fetch('/api/scoring/configurations/active')  // Hardcoded /api
+fetch('http://localhost:8080/endpoint')      // Hardcoded localhost  
+```
+
+**Key Learning**: "Working for some routes" was misleading - upload functionality used correct `API_CONFIG` pattern while FAQ/About used broken hardcoded patterns. This partial functionality masked the root cause until production deployment.
+
+**Testing Gap Identified**: Need integration tests that validate API calls work in production-like environment without Vite proxy.
+
 ---
 
