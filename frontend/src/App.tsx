@@ -20,7 +20,8 @@ import LoginPage from './components/auth/LoginPage';
 import Header from './components/layout/Header';
 import Spinner from './components/ui/Spinner';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { NotFoundPage } from './components/NotFoundPage';
 
 // Lazy load dashboard components for better performance
 const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
@@ -83,11 +84,11 @@ function DashboardLayout() {
     if (path.includes('/faq')) return 'faq';
     if (path.includes('/about')) return 'about';
     if (path.includes('/dashboard')) {
-      // For dashboard, check state or default to 'sessions'
-      return location.state?.activeTab || 'sessions';
+      // For dashboard, use navigation state only - let SidebarLayout handle role-based defaults
+      return location.state?.activeTab;
     }
-    // Default fallback
-    return 'sessions';
+    // Return undefined to let SidebarLayout handle role-based defaults
+    return undefined;
   };
   
   const activeTab = getActiveTabFromRoute();
@@ -124,8 +125,8 @@ function Dashboard() {
   const { userRole } = useOutletContext<{ userRole: 'admin' | 'therapist' | 'researcher' | null }>();
   const location = useLocation();
   
-  // Read activeTab from navigation state (for Analytics/About tabs)
-  const activeTab = location.state?.activeTab || 'sessions';
+  // Read activeTab from navigation state - role-based defaults handled by SidebarLayout
+  const activeTab = location.state?.activeTab;
   
   const DashboardLoadingFallback = (
     <div className="p-6 flex items-center justify-center">
@@ -314,6 +315,10 @@ const router = createBrowserRouter([
             )
           }
         ]
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />
       }
     ]
   }
