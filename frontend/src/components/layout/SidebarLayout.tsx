@@ -90,7 +90,7 @@ export function SidebarLayout({ children, activeTab }: SidebarLayoutProps) {
   const handleTabChange = (tab: string) => {
     if (tab === 'sessions') {
       // Navigate to dashboard Sessions tab
-      navigate('/dashboard')
+      navigate('/dashboard', { state: { activeTab: 'sessions' } })
     } else if (tab === 'faq') {
       // Navigate to FAQ page
       navigate('/faq')

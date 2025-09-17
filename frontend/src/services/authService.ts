@@ -91,6 +91,12 @@ export class AuthService {
       if (data.user) {
         await this.updateLastLogin(data.user.id)
       }
+      
+      // Clear and update cache with new session
+      this.sessionCache = {
+        session: data.session,
+        timestamp: Date.now()
+      };
 
       return { 
         data: data.session, 
@@ -115,6 +121,9 @@ export class AuthService {
 
     try {
       console.log('🔄 Starting Supabase signOut...')
+      
+      // Clear session cache immediately on logout
+      this.clearSessionCache()
       
       // Direct signOut without timeout wrapper
       const { error } = await supabase.auth.signOut()
@@ -211,30 +220,57 @@ export class AuthService {
     }
   }
 
+  // Simple session cache to prevent repeated Supabase calls during navigation
+  private static sessionCache: {
+    session: Session | null;
+    timestamp: number;
+  } | null = null;
+  
+  private static readonly SESSION_CACHE_TTL = 30000; // 30 seconds
+  
   /**
-   * Get current session
+   * Get current session with caching to prevent repeated auth checks
    */
   static async getCurrentSession(): Promise<AuthResponse<Session>> {
     try {
+      // Check cache first
+      if (this.sessionCache) {
+        const now = Date.now();
+        if (now - this.sessionCache.timestamp < this.SESSION_CACHE_TTL) {
+          console.debug('🔄 Using cached session');
+          return {
+            data: this.sessionCache.session,
+            error: null,
+            success: !!this.sessionCache.session
+          };
+        }
+      }
+      
       // Add timeout to prevent hanging on initial load
       const timeout = new Promise<AuthResponse<Session>>((resolve) => 
         setTimeout(() => {
           console.warn('⚠️ Auth session check timeout - treating as unauthenticated')
-          // Clear potentially corrupted auth storage
-          this.clearCorruptedAuthState()
+          // Don't clear auth storage on timeout - it might be a network issue
           resolve({ data: null, error: 'Session check timeout', success: false })
         }, 5000) // 5 second timeout
       )
       
       const sessionCheck = supabase.auth.getSession().then(async ({ data: { session }, error }) => {
         if (error) {
-          // Clear auth state on errors that indicate corruption
-          if (error.message.includes('invalid') || error.message.includes('malformed')) {
-            console.warn('🔄 Clearing corrupted auth state')
+          // Only clear auth state on errors that truly indicate corruption
+          if (error.message.includes('invalid') || error.message.includes('malformed') || error.message.includes('JWT')) {
+            console.warn('🔄 Clearing corrupted auth state due to:', error.message)
             await this.clearCorruptedAuthState()
           }
           return { data: null, error: error.message, success: false }
         }
+        
+        // Cache the successful session
+        this.sessionCache = {
+          session,
+          timestamp: Date.now()
+        };
+        
         return { 
           data: session, 
           error: null, 
@@ -246,14 +282,20 @@ export class AuthService {
       return await Promise.race([sessionCheck, timeout])
     } catch (err) {
       console.error('Session check error:', err)
-      // Clear auth state on unexpected errors
-      await this.clearCorruptedAuthState()
+      // Don't clear auth state on general errors - might be temporary
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Authentication error', 
         success: false 
       }
     }
+  }
+  
+  /**
+   * Clear session cache (call on logout or auth state change)
+   */
+  private static clearSessionCache() {
+    this.sessionCache = null;
   }
 
   /**

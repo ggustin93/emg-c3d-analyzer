@@ -99,8 +99,8 @@ function createFatigueAlerts(recentC3DFiles: RecentC3DFile[]): PatientAlert[] {
       alertType: 'fatigue',
       alertCategory: 'Highest Reported Fatigue',
       severity: 'critical',
-      value: 9.2, // Fake value for demo
-      description: 'Reported extremely high fatigue level during session',
+      value: '9.2 ↑18%', // Fake value with increase indicator
+      description: 'Fatigue level increased by 18% from last week',
       actionRequired: 'Immediate consultation recommended',
       avatarInitials: patientWithFatigue.patient.avatar_initials,
       avatarColor: patientWithFatigue.patient.avatar_color
@@ -124,7 +124,7 @@ function createPerformanceAlerts(recentC3DFiles: RecentC3DFile[]): PatientAlert[
       alertType: 'performance',
       alertCategory: 'Performance Concerns',
       severity: 'warning',
-      value: '-23%', // Fake value for demo
+      value: '↓23%', // Using arrow to show decrease
       description: 'Performance dropped 23% in last 6 sessions',
       actionRequired: 'Review exercise technique and motivation',
       avatarInitials: patientWithPerformance.patient.avatar_initials,
@@ -171,6 +171,10 @@ function createAdherenceAlerts(adherenceData: any[], patients: Patient[]): Patie
   const avatarInitials = matchingPatient?.avatar_initials || getPatientAvatarInitials(patientData.first_name, patientData.last_name, worst.patient_id)
   const displayName = matchingPatient?.display_name || `Patient ${worst.patient_id}`
   
+  // Calculate fake change percentage for adherence
+  const changePercent = Math.round((worst.adherence_score * 0.15) - 10) // Fake calculation for demo
+  const changeIndicator = changePercent < 0 ? `↓${Math.abs(changePercent)}%` : `↑${changePercent}%`
+  
   return [{
     id: `adherence-${worst.patient_id}`,
     patientCode: worst.patient_id,
@@ -179,7 +183,7 @@ function createAdherenceAlerts(adherenceData: any[], patients: Patient[]): Patie
     alertType: 'adherence',
     alertCategory: 'Lowest Adherence',
     severity: worst.adherence_score < 50 ? 'critical' : 'warning',
-    value: `${Math.round(worst.adherence_score)}%`,
+    value: `${Math.round(worst.adherence_score)}% ${changeIndicator}`,
     description: `Only ${worst.sessions_completed} of ${worst.sessions_expected} sessions completed`,
     actionRequired: worst.adherence_score < 50 
       ? 'Immediate intervention required'
@@ -304,10 +308,31 @@ export const PatientAlerts = React.memo(function PatientAlerts({
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className={`text-right shrink-0 font-semibold text-sm ${
-                        alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
-                      }`}>
-                        {alert.value}
+                      <div className="text-right shrink-0">
+                        {(() => {
+                          const parts = alert.value.toString().split(' ')
+                          const mainValue = parts[0]
+                          const changeValue = parts[1] || ''
+                          const isIncrease = changeValue.includes('↑')
+                          const isDecrease = changeValue.includes('↓')
+                          
+                          return (
+                            <div className="flex flex-col items-end">
+                              <span className={`font-semibold text-sm ${
+                                alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
+                              }`}>
+                                {mainValue}
+                              </span>
+                              {changeValue && (
+                                <span className={`text-xs font-medium ${
+                                  isIncrease ? 'text-red-600' : isDecrease ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                  {changeValue}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
                       <Icons.ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-orange-500 group-hover:scale-110" />
                     </div>
