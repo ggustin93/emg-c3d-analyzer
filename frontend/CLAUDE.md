@@ -118,6 +118,70 @@ proxy: {
 3. **Enforcement**: ESLint rule to prevent hardcoded API calls
 4. **Single Source**: All API calls MUST use `API_CONFIG.baseUrl`
 
+### 2.2 Authentication Architecture
+
+**Standard**: Supabase Auth → React Hook → FastAPI (validation only) → RLS (authorization)
+
+**🏗️ Clean Architecture (Jan 2025)**:
+Authentication system follows SOLID/SSoT/DRY/KISS principles with single source of truth pattern.
+
+**Architecture Components**:
+1. **Frontend (React)**: 
+   - Use `useAuth` hook for auth state management
+   - Roles used for UI rendering only, not security
+   - Direct Supabase client for most operations
+
+2. **Backend (FastAPI)**: 
+   - JWT validation only via `get_current_user` dependency
+   - No authorization logic - delegates to RLS
+   - Thin authentication layer (84 lines total)
+
+3. **Database (Supabase)**: 
+   - RLS policies as single source of truth for permissions
+   - 18+ comprehensive policies across all tables
+   - Role-based access control at database level
+
+**🚨 Critical Implementation Rules**:
+
+**✅ Single Source of Truth Pattern**:
+```typescript
+// ✅ ALWAYS use shared auth utility - never direct Supabase calls
+import { getCurrentSession, login, logout } from '@/lib/authUtils';
+const { session, user, error } = await getCurrentSession();
+
+// ❌ NEVER use direct Supabase calls in components
+const { data: { session } } = await supabase.auth.getSession();
+```
+
+**✅ Proper Component Usage**:
+```typescript
+// ✅ CORRECT: Use useAuth hook for React state
+const { user, session, loading, logout } = useAuth();
+if (loading) return <LoadingSpinner />;
+if (!user) return <LoginPage />;
+
+// ❌ WRONG: Don't call auth utilities directly in components
+const handleLogout = async () => {
+  await logout(); // ❌ This bypasses React state management
+  navigate('/login'); // ❌ Navigation should be in utility
+};
+```
+
+**Architecture Decision (Jan 2025)**:
+- **Eliminated**: Dual auth systems (AuthService + useAuth)
+- **Implemented**: Single shared auth utility (`/lib/authUtils.ts`)
+- **Result**: Clean logout flow, consistent auth state, SOLID compliance
+
+**When to Use Direct Supabase vs FastAPI**:
+- **Direct Supabase**: Auth, CRUD, storage, real-time subscriptions
+- **FastAPI**: EMG processing, complex logic, external APIs, heavy computation
+
+**🔧 Development Decision**: 
+The project uses **synchronous** Supabase Python client (`supabase-py`), not async version:
+- **Client Import**: `from supabase import Client, create_client` (synchronous)
+- **Test Mocking**: **NEVER use AsyncMock** - Always use `MagicMock()` from unittest.mock
+- **Rationale**: Follows KISS principle - no unnecessary async complexity
+
 ### 2.3 Design & User Experience
 
 11. **Use `tailwind.config.js` as the Source of Truth (DRY)**

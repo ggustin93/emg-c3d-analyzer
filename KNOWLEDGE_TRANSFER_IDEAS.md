@@ -141,40 +141,55 @@ navigate('/logout')  // → logoutAction → redirect
 ## 2. Authentication System
 
 ### 2.1 Overview
-The authentication system provides secure, role-based access control with a clear separation between authentication (who you are) and authorization (what you can do). Built on Supabase Auth with PostgreSQL RLS policies, it ensures data security at the database level.
+The authentication system provides secure, role-based access control following SOLID/SSoT/DRY/KISS principles. Built with clean architecture that eliminates dual auth systems, ensuring consistent authentication state throughout the application.
 
 ```
 ┌─────────────┐      ┌──────────────┐      ┌─────────────┐
 │   Frontend  │───►  │   Supabase   │───►  │  Database   │
 │   (React)   │ JWT  │     Auth     │ RLS  │    (RLS)    │
 └─────────────┘      └──────────────┘      └─────────────┘
-       │                                           │
-       └────────── useAuth Hook ──────────────────┘
+       │                     │                     │
+   useAuth Hook         authUtils.ts         RLS Policies
+   (React State)      (Single Source)      (Authorization)
 ```
 
-### 2.2 Architecture
-- **Authentication**: Frontend with Supabase Auth (who you are)
-- **Authorization**: Database RLS policies (what you can do)
-- **Stack**: React 19 + Supabase Auth + FastAPI (JWT validation) + PostgreSQL RLS
+### 2.2 Clean Architecture (Jan 2025)
+- **Authentication**: Supabase Auth via shared utility (who you are)
+- **Authorization**: Database RLS policies (what you can do) 
+- **Stack**: React 19 + authUtils.ts + Supabase Auth + FastAPI (validation) + PostgreSQL RLS
+- **Principles**: Eliminated dual auth systems, implemented Single Source of Truth
 
-### 2.3 Implementation
+### 2.3 Architecture Components
 
-#### 2.3.1 Frontend (`useAuth` Hook)
-- Direct Supabase integration
-- Automatic session management with token refresh
-- Full user profile fetching from `user_profiles` table
-- Role-based UI rendering (not for security)
+#### 2.3.1 Shared Auth Utility (`/lib/authUtils.ts`) - **NEW**
+- **Single Source of Truth**: All auth operations go through this utility
+- **Direct Supabase Integration**: Fresh session data from authoritative source
+- **Exported Functions**: `getCurrentSession()`, `getAuthData()`, `login()`, `logout()`, `isAuthenticated()`
+- **Error Handling**: Standardized error responses across all auth operations
+- **No Caching**: Always fetch fresh auth state to avoid synchronization issues
 
-#### 2.3.2 Backend (`get_current_user`)
-- JWT validation only (no authorization logic)
-- Token pass-through for RLS enforcement
-- Returns: `{'id': user_id, 'email': email, 'token': token}`
+#### 2.3.2 React Hook (`useAuth`) - **UPDATED**
+- **React State Management**: Manages component state and loading states
+- **Session Updates**: Listens to Supabase onAuthStateChange events
+- **Profile Integration**: Fetches user profiles from `user_profiles` table
+- **Role-based UI**: Provides user role for frontend rendering (not security)
+- **Delegates Auth Operations**: Uses shared authUtils for all auth calls
 
-#### 2.3.3 Database (RLS Policies)
-- Single source of truth for permissions
-- Therapists: Access own patients only
-- Admins: Full system access
-- Researchers: Read-only access to anonymized data
+#### 2.3.3 Route Loaders (`/routes/loaders.ts`) - **UPDATED**
+- **Navigation Control**: Uses authUtils for navigation decisions
+- **Fresh Auth Checks**: No cached session data, always current state
+- **Redirect Logic**: Handles login/logout redirects based on auth status
+- **Data Preloading**: Fetches user data for authenticated routes
+
+#### 2.3.4 Backend (`get_current_user`) - **UNCHANGED**
+- **JWT Validation Only**: No authorization logic, delegates to RLS
+- **Token Pass-through**: Enables RLS enforcement at database level
+- **Returns**: `{'id': user_id, 'email': email, 'token': token}`
+
+#### 2.3.5 Database (RLS Policies) - **UNCHANGED**
+- **Single Source of Truth**: All authorization happens at database level
+- **Role-based Access**: Therapists (own patients), Admins (full), Researchers (read-only)
+- **Data Security**: All queries automatically filtered by user permissions
 
 ### 2.4 User Roles
 - **ADMIN**: Full system access
@@ -182,47 +197,110 @@ The authentication system provides secure, role-based access control with a clea
 - **RESEARCHER**: Read-only anonymized data
 - Frontend uses roles for UI only; RLS enforces actual permissions
 
-### 2.5 Authentication Flow
+### 2.5 Clean Architecture Flow (Jan 2025)
 
 ```
-User Login                API Request Flow
-──────────                ─────────────────
-                         
-1. Credentials     ───►   1. React + JWT
-2. Supabase Auth  ◄───    2. FastAPI validates
-3. JWT + Session          3. Database RLS filters
-4. Store in Hook          4. Filtered data returns
+Login Flow                    Logout Flow                API Request Flow
+──────────                    ───────────                ─────────────────
+                                                      
+1. Credentials        ───►    1. Logout Button   ───►   1. Component Request
+2. authUtils.login()          2. useAuth.logout()       2. authUtils Check
+3. Supabase Auth              3. authUtils.logout()     3. Fresh Session
+4. onAuthStateChange          4. Supabase signOut       4. FastAPI Validates
+5. useAuth Updates            5. Navigation Trigger     5. Database RLS
+6. UI Re-render               6. Route Loader           6. Filtered Data
+                              7. Redirect to Login
 ```
 
-### 2.6 Key Practices
-- JWT with automatic refresh
-- RLS as primary authorization
-- No client-side security logic
-- Single `useAuth` hook for all auth needs
-- TypeScript for type safety
+### 2.6 Critical Implementation Rules
 
-### 2.7 Common Operations
+**✅ Single Source of Truth Pattern**:
 ```typescript
-// Login
+// ✅ ALWAYS use shared auth utility in services/loaders
+import { getCurrentSession, login, logout } from '@/lib/authUtils';
+const { session, user, error } = await getCurrentSession();
+
+// ✅ ALWAYS use useAuth hook in React components
+const { user, session, loading, logout } = useAuth();
+
+// ❌ NEVER use direct Supabase calls in components/services
+const { data: { session } } = await supabase.auth.getSession();
+```
+
+**✅ Proper Component Usage**:
+```typescript
+// ✅ CORRECT: React components use useAuth hook
+const { user, session, loading, logout } = useAuth();
+if (loading) return <LoadingSpinner />;
+if (!user) return <LoginPage />;
+
+// ✅ CORRECT: Services/loaders use authUtils directly
+export async function protectedLoader() {
+  const { session, error } = await getAuthData();
+  if (!session) throw redirect('/login');
+  return { session, user: session.user };
+}
+
+// ❌ WRONG: Don't call auth utilities directly in components
+const handleLogout = async () => {
+  await logout(); // ❌ Bypasses React state management
+  navigate('/login'); // ❌ Navigation should be in utility
+};
+```
+
+### 2.7 Architecture Decision Benefits
+
+**Before (Dual Auth Systems - PROBLEMS)**:
+- AuthService with 30-second session cache
+- useAuth hook with separate session management 
+- Synchronization issues causing logout failures
+- Complex debugging due to multiple auth sources
+
+**After (Single Source of Truth - SOLUTIONS)**:
+- authUtils.ts as single source for all auth operations
+- useAuth delegates to authUtils for operations
+- Route loaders use authUtils for fresh auth checks
+- Eliminated cache synchronization complexity
+- Clean logout flow: Supabase → navigation → success
+
+### 2.8 Common Operations
+```typescript
+// Login (components use useAuth)
 const { login } = useAuth()
 await login(email, password)
 
-// Logout
+// Logout (components use useAuth - navigation handled automatically)
 const { logout } = useAuth()
 await logout()
 
-// Check auth
-const { user, userRole, userProfile } = useAuth()
+// Check auth state (components)
+const { user, userRole, userProfile, loading } = useAuth()
 
-// Protected routes handled by loaders
+// Auth checks (services/loaders use authUtils directly)
+import { isAuthenticated, getAuthData } from '@/lib/authUtils'
+const authData = await getAuthData()
+if (!authData.session) redirect('/login')
 ```
 
 
 ### 2.9 Troubleshooting
-- **Invalid token**: Force logout and re-login
-- **Email verification**: Check email for link
-- **Role not loading**: Check user_profiles table
-- **Session expired**: Automatic logout performed
+
+#### 2.9.1 Common Issues
+- **Invalid token**: Force logout and re-login via `useAuth.logout()`
+- **Email verification**: Check email for verification link
+- **Role not loading**: Check user_profiles table and profile fetching
+- **Session expired**: Automatic logout performed by onAuthStateChange
+
+#### 2.9.2 Auth Refactor Issues (Jan 2025)
+- **Logout not redirecting**: Ensure using updated authUtils.ts, not old AuthService
+- **Import errors**: Check for broken AuthService imports after refactor
+- **Session inconsistency**: All auth calls must go through authUtils.ts
+- **Navigation issues**: Route loaders should use authUtils.getAuthData()
+
+#### 2.9.3 Development vs Production
+- **API calls**: Always use `API_CONFIG.baseUrl`, never hardcode `/api` or localhost
+- **Environment variables**: Set `VITE_API_URL` for production deployment
+- **Proxy behavior**: Development uses Vite proxy, production calls direct URLs
 
 
 ### 2.10 Architecture Decision: Direct Supabase vs FastAPI
