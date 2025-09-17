@@ -56,18 +56,33 @@ jobs:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: 🔍 Detect Changes
         id: changes
         run: |
           echo "::group::📊 Analyzing changed files"
           
-          # Check what changed
-          git diff --name-only HEAD^ HEAD > changed_files.txt || echo "" > changed_files.txt
+          # Robust change detection with multiple fallbacks
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, compare with base branch
+            git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt || echo "" > changed_files.txt
+          elif git rev-parse HEAD^ >/dev/null 2>&1; then
+            # For pushes with previous commit available
+            git diff --name-only HEAD^ HEAD > changed_files.txt || echo "" > changed_files.txt
+          else
+            # Fallback for first commits or when HEAD^ is not available
+            git diff --name-only --diff-filter=A HEAD > changed_files.txt || git ls-files > changed_files.txt || echo "" > changed_files.txt
+          fi
           
-          # Determine what needs to run
-          if grep -E '\.(py|txt|toml|yaml|yml)' changed_files.txt > /dev/null 2>&1 || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "📁 Changed files detected:"
+          cat changed_files.txt || echo "No files found"
+          
+          # Determine what needs to run - ALWAYS run tests on main branch pushes
+          if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ github.event_name }}" == "push" ]; then
+            echo "tests=true" >> $GITHUB_OUTPUT
+            echo "✅ Main branch push - running all tests"
+          elif grep -E '\.(py|txt|toml|yaml|yml)' changed_files.txt > /dev/null 2>&1 || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "tests=true" >> $GITHUB_OUTPUT
             echo "✅ Backend changes detected - will run tests"
           else
@@ -75,17 +90,26 @@ jobs:
             echo "⏭️ No backend changes - skipping tests"
           fi
           
-          # Always run security scans on main branch or manual triggers
-          if grep -E '\.(py|txt|toml|yaml|yml|json)' changed_files.txt > /dev/null 2>&1 || \
-             [ "${{ github.event_name }}" == "workflow_dispatch" ] || \
-             [ "${{ github.event_name }}" == "push" ] || \
-             [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          # ALWAYS run security scans on main branch pushes or manual triggers
+          if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ github.event_name }}" == "push" ]; then
+            echo "security=true" >> $GITHUB_OUTPUT
+            echo "✅ Main branch push - running all security scans"
+          elif grep -E '\.(py|txt|toml|yaml|yml|json)' changed_files.txt > /dev/null 2>&1 || \
+               [ "${{ github.event_name }}" == "workflow_dispatch" ] || \
+               [ "${{ github.event_name }}" == "push" ]; then
             echo "security=true" >> $GITHUB_OUTPUT
             echo "✅ Will run security scans"
           else
             echo "security=false" >> $GITHUB_OUTPUT
             echo "⏭️ No security-relevant changes - skipping scans"
           fi
+          
+          # Debug output
+          echo "🔍 Debug info:"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Tests output: $(grep 'tests=' $GITHUB_OUTPUT)"
+          echo "Security output: $(grep 'security=' $GITHUB_OUTPUT)"
           
           echo "::endgroup::"
 
@@ -96,7 +120,7 @@ jobs:
   backend-tests:
     name: 🐍 Backend Tests - ${{ matrix.test-category }}
     needs: [quick-checks]
-    if: needs.quick-checks.outputs.should-run-tests == 'true'
+    if: needs.quick-checks.outputs.should-run-tests == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: Preview
     strategy:
@@ -218,6 +242,7 @@ jobs:
     name: 🎨 Frontend Tests & Build
     needs: [quick-checks]
     runs-on: ubuntu-latest
+    # Always run on main branch pushes or manual triggers
     
     steps:
       - name: 📥 Checkout Code
@@ -334,7 +359,7 @@ jobs:
   code-quality:
     name: 🔒 Security & Quality Analysis
     needs: [quick-checks]
-    if: needs.quick-checks.outputs.should-run-security == 'true'
+    if: needs.quick-checks.outputs.should-run-security == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
     steps:
