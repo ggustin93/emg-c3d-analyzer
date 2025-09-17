@@ -351,7 +351,35 @@ npm run type-check                       # TypeScript validation
   6. **Shadcn-ui** - For UI component library integration.
   7. **Serena** - For natural language processing tasks.
 
-### 5.3. Authentication Best Practices
+### 5.3. API Routing Architecture
+
+**Standard Approach**: Frontend uses `/api/*` prefix → Vite proxy strips `/api` → Backend serves without prefix
+
+**Architecture Decision (Sep 2025)**:
+- **Frontend**: Always uses `/api/*` pattern for consistency
+- **Vite Proxy**: Strips `/api` prefix when forwarding to backend (rewrite rule)
+- **Backend**: ALL routes serve without `/api` prefix (KISS principle)
+- **Result**: Clean separation of concerns - frontend has consistent API pattern, backend has clean REST routes
+
+**Principle-Based Reasoning**:
+- ✅ **KISS**: Minimal changes (4 lines), simple proxy rule
+- ✅ **DRY**: Single proxy rewrite handles all routes
+- ✅ **SOLID**: Each layer has single responsibility
+- ✅ **YAGNI**: Don't add `/api` where not needed
+- ✅ **SSoT**: Backend routes are consistent (no `/api` prefix)
+
+**Implementation**:
+```javascript
+// vite.config.ts
+proxy: {
+  '/api': {
+    target: 'http://localhost:8080',
+    rewrite: (path) => path.replace(/^\/api/, '')  // Strip /api prefix
+  }
+}
+```
+
+### 5.4. Authentication Best Practices
 
 **Architecture**: Supabase Auth → React Hook → FastAPI (validation only) → RLS (authorization)
 
@@ -374,7 +402,7 @@ npm run type-check                       # TypeScript validation
    - **Direct Supabase**: Auth, CRUD, storage, real-time subscriptions
    - **FastAPI**: EMG processing, complex logic, external APIs, heavy computation
 
-### 5.4. Supabase Python Client Architecture
+### 5.5. Supabase Python Client Architecture
 
 **Important**: The project uses the **synchronous** Supabase Python client (`supabase-py`), not the async version.
 
@@ -385,7 +413,7 @@ npm run type-check                       # TypeScript validation
   - AsyncMock returns coroutines which cause `TypeError: 'coroutine' object is not iterable`
   - Example: `mock_service = MagicMock()`, NOT `mock_service = AsyncMock()`
 
-### 5.5. Critical Testing & Architecture Lessons (Sep 2025)
+### 5.6. Critical Testing & Architecture Lessons (Sep 2025)
 
 **🚨 NEVER Use AsyncMock for Supabase Services**
 - Supabase Python client is synchronous → Use `MagicMock()` only
@@ -398,7 +426,7 @@ npm run type-check                       # TypeScript validation
 
 This follows the KISS principle - keeping the implementation simple without unnecessary async complexity when the synchronous client meets all requirements.
 
-### 5.6. Icon Library Decision (Sep 2025)
+### 5.7. Icon Library Decision (Sep 2025)
 
 **Standard**: Use `@radix-ui/react-icons` for all UI icons
 

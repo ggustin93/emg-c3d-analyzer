@@ -1,4 +1,4 @@
-# About Ghostly+ EMG Analysis Platform
+# About Trial information
 
 ## hero
 Advanced rehabilitation technology for evidence-based therapy assessment targeting muscle strength loss in hospitalized older adults.

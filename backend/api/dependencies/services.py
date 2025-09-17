@@ -12,7 +12,6 @@ from supabase import Client
 
 from services.analysis import mvc_service
 from services.c3d.processor import GHOSTLYC3DProcessor
-from services.clinical.notes_service import ClinicalNotesService
 from services.user.repositories.therapist_repository import TherapistRepository
 from services.user.therapist_resolution_service import TherapistResolutionService
 from database.supabase_client import get_supabase_client
@@ -57,22 +56,6 @@ def get_authenticated_supabase(
     """
     # Create a Supabase client with the user's JWT token for RLS enforcement
     return get_supabase_client(jwt_token=current_user['token'])
-
-
-def get_clinical_notes_service(
-    supabase: Client = Depends(get_authenticated_supabase)
-) -> ClinicalNotesService:
-    """
-    Factory for Clinical Notes Service instances.
-    Uses authenticated Supabase client to respect RLS policies.
-    
-    Args:
-        supabase: Authenticated Supabase client instance
-        
-    Returns:
-        ClinicalNotesService: Notes service instance
-    """
-    return ClinicalNotesService(supabase)
 
 
 # def get_export_service(processor: GHOSTLYC3DProcessor) -> EMGDataExporter:

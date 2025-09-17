@@ -49,7 +49,36 @@ This document establishes the **backend engineering** best practices for our sta
 7.  **Leverage Platform Features for Asynchronous Workflows**
     For non-blocking operations, use platform features like Supabase Storage webhooks. This allows for a stateless, scalable API design where heavy processing can happen in the background.
 
-### 2.2 Data, Tooling & Quality
+### 2.2 API Routing Architecture
+
+**Standard Approach**: Frontend uses `/api/*` prefix → Vite proxy strips `/api` → Backend serves without prefix
+
+**Architecture Decision (Sep 2025)**:
+All backend routes serve without `/api` prefix for consistency and simplicity.
+
+**Implementation Details**:
+- **All Routes**: Consistent pattern - NO `/api` prefix in any backend route definition
+- **Frontend Contract**: Frontend always calls `/api/*` endpoints
+- **Proxy Transformation**: Vite proxy strips `/api` before forwarding to backend
+- **Examples**:
+  ```python
+  # ✅ Correct - No /api prefix
+  router = APIRouter(prefix="/clinical-notes", tags=["clinical-notes"])
+  router = APIRouter(prefix="/therapists", tags=["therapists"])
+  router = APIRouter(prefix="/scoring", tags=["scoring"])
+  
+  # ❌ Wrong - Avoid /api prefix
+  router = APIRouter(prefix="/api/clinical-notes", ...)
+  ```
+
+**Testing Pattern**:
+```python
+# Tests use the backend's actual routes (no /api)
+response = client.get("/clinical-notes")
+response = client.post("/therapists/lookup")
+```
+
+### 2.3 Data, Tooling & Quality
 
 8.  **Define Strict, Domain-Organized Pydantic Contracts**
     Every data structure that crosses a boundary (API, service, repository) **must** be defined by a Pydantic model. Organize these models into domain-specific packages (e.g., `models/clinical/`) for clarity.

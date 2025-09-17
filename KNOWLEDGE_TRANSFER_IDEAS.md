@@ -262,7 +262,33 @@ See `docs/DATABASE_FUNCTIONS_AND_RLS.md` for complete RLS implementation.
 
 ## 4. Architecture Decisions
 
-### 4.1 When to Use Direct Supabase vs FastAPI
+### 4.1 API Routing Architecture (Sep 2025)
+
+**Standard Approach**: Frontend uses `/api/*` prefix → Vite proxy strips `/api` → Backend serves without prefix
+
+This architecture provides clean separation of concerns while maintaining consistency across the stack.
+
+```
+Frontend                 Vite Proxy              Backend
+────────                 ──────────              ───────
+/api/clinical-notes  →   Strip /api   →   /clinical-notes
+/api/therapists      →   Strip /api   →   /therapists
+/api/scoring         →   Strip /api   →   /scoring
+```
+
+**Implementation Details**:
+- **Frontend**: Always uses `/api/*` pattern (consistency)
+- **Vite Proxy**: Strips `/api` prefix via rewrite rule
+- **Backend**: ALL routes serve without `/api` prefix (simplicity)
+
+**Principle-Based Reasoning**:
+- ✅ **KISS**: Only 4 lines changed to standardize
+- ✅ **DRY**: Single proxy rule handles all routes
+- ✅ **SOLID**: Each layer has single responsibility
+- ✅ **YAGNI**: Don't add `/api` where not needed
+- ✅ **SSoT**: Backend consistently has NO `/api` prefix
+
+### 4.2 When to Use Direct Supabase vs FastAPI
 
 Our architecture follows the KISS principle - use the simplest tool that solves the problem.
 

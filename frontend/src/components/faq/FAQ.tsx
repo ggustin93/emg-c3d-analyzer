@@ -75,6 +75,9 @@ export function FAQ() {
             Find answers to common questions about the EMG C3D Analyzer platform. 
             Use the search bar or browse by category to find what you're looking for.
           </CardDescription>
+          <div className="bg-blue-50 border-l-4 border-blue-600 p-4 mt-2 rounded-r">
+            <p className="text-blue-900 text-md">Note: This section is currently under development. The content provided is for demonstration and preview purposes as we continue to enhance this feature.</p>
+          </div>
         </CardHeader>
       </Card>
       

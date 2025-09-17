@@ -50,7 +50,42 @@ This document merges **frontend engineering** (React, TypeScript) and **UX/UI de
 10. **Handle All UI States Explicitly**
     Ensure every component that fetches data properly handles its `loading`, `error`, and `empty` states. Don't leave the user guessing.
 
-### 2.2 Design & User Experience
+### 2.2 API Routing Architecture
+
+**Standard Approach**: Frontend uses `/api/*` prefix consistently for all API calls
+
+**Architecture Decision (Sep 2025)**:
+Frontend maintains a consistent `/api/*` pattern for all backend communication.
+
+**Implementation Details**:
+- **Consistent Pattern**: All API calls use `/api/*` prefix
+- **Vite Proxy**: Handles the transformation by stripping `/api` when forwarding to backend
+- **Service Layer**: All services use the `/api/*` pattern consistently
+- **Examples**:
+  ```typescript
+  // ✅ Correct - Always use /api prefix in frontend
+  const API_CONFIG = { baseUrl: '/api' }
+  fetch('/api/clinical-notes')
+  fetch('/api/therapists/lookup')
+  fetch('/api/scoring/configurations/active')
+  
+  // ❌ Wrong - Don't omit /api prefix
+  fetch('/clinical-notes')  // Will fail
+  ```
+
+**Vite Configuration**:
+```javascript
+// vite.config.ts
+proxy: {
+  '/api': {
+    target: 'http://localhost:8080',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api/, '')  // Strip /api for backend
+  }
+}
+```
+
+### 2.3 Design & User Experience
 
 11. **Use `tailwind.config.js` as the Source of Truth (DRY)**
     Your Tailwind config is the bridge between design and code. Map all design tokens—colors, fonts, spacing, and shadows—from Figma (or other tools) directly into your config.

@@ -311,26 +311,26 @@ export const AboutPage: React.FC = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <InfoCircledIcon className="h-6 w-6 text-blue-500" />
-            <CardTitle className="text-2xl">Ghostly+ EMG Analysis Platform</CardTitle>
+            <CardTitle className="text-2xl">Trial information</CardTitle>
           </div>
           <CardDescription className="mt-2">
             {heroTitle}
           </CardDescription>
         </CardHeader>
+          {/* Key Highlight Card */}
+      {heroHighlight && (
+      
+      
+      <div className="bg-blue-50 border-l-4 border-blue-600 ml-6 mr-6 mb-6 p-6 rounded-r">
+        <p className="text-blue-900" dangerouslySetInnerHTML={{
+          __html: heroHighlight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        }} />
+      </div>
+
+)}
       </Card>
 
-      {/* Key Highlight Card */}
-      {heroHighlight && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-r">
-              <p className="text-blue-900" dangerouslySetInnerHTML={{
-                __html: heroHighlight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              }} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    
 
       {/* Accordion Sections */}
       <Card>
