@@ -78,9 +78,13 @@ const researcherNavItems = [
   }
 ]
 
-export function SidebarLayout({ children, activeTab = 'sessions' }: SidebarLayoutProps) {
+export function SidebarLayout({ children, activeTab }: SidebarLayoutProps) {
   const { userRole } = useAuth()
   const navigate = useNavigate()
+  
+  // Set role-based default activeTab
+  const defaultActiveTab = userRole === 'THERAPIST' ? 'overview' : 'sessions'
+  const currentActiveTab = activeTab || defaultActiveTab
   
   // Handle navigation
   const handleTabChange = (tab: string) => {
@@ -111,7 +115,7 @@ export function SidebarLayout({ children, activeTab = 'sessions' }: SidebarLayou
       {/* Side Navigation */}
       <div className="w-64 flex-shrink-0">
         <SideNav 
-          activeTab={activeTab} 
+          activeTab={currentActiveTab} 
           onTabChange={handleTabChange}
           items={navItems}
           className="h-full"

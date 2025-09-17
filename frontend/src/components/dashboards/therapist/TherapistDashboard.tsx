@@ -12,7 +12,7 @@ import { AboutPage } from '../../about/AboutPage'
  * Therapist Dashboard - Patient management and session tracking
  * Access: THERAPIST or ADMIN roles
  */
-export function TherapistDashboard({ activeTab = 'sessions' }: { activeTab?: string }) {
+export function TherapistDashboard({ activeTab = 'overview' }: { activeTab?: string }) {
   const { userRole } = useAuth()
   const navigate = useNavigate()
   const [isNavigatingToAnalysis, setIsNavigatingToAnalysis] = useState(false)

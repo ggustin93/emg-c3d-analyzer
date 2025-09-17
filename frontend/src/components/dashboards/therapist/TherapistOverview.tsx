@@ -92,6 +92,22 @@ interface SkeletonCardProps {
   delay?: number
 }
 
+/** Patient alert types */
+type AlertSeverity = 'warning' | 'critical'
+
+/** Patient alert data structure */
+interface PatientAlert {
+  id: string
+  patientCode: string
+  patientName: string
+  alertType: 'adherence' | 'fatigue' | 'performance'
+  severity: AlertSeverity
+  value: string | number
+  description: string
+  actionRequired: string
+}
+
+
 // ===== CUSTOM HOOKS =====
 
 /** 
@@ -129,6 +145,71 @@ function formatSessionDate(dateString: string): string {
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   })
+}
+
+// Mock data functions for demo alerts (TODO: Remove in production)
+function getMockFatigueAlerts(): PatientAlert[] {
+  // Demo data with realistic patient references
+  return [
+    {
+      id: 'fatigue-001',
+      patientCode: 'P001',
+      patientName: 'Maria Smith',
+      alertType: 'fatigue',
+      severity: 'critical',
+      value: 9.2,
+      description: 'Reported extremely high fatigue level',
+      actionRequired: 'Immediate consultation recommended'
+    }
+  ]
+}
+
+function getMockPerformanceDropAlerts(): PatientAlert[] {
+  // Demo data with realistic patient references
+  return [
+    {
+      id: 'performance-001', 
+      patientCode: 'P002',
+      patientName: 'John Garcia',
+      alertType: 'performance',
+      severity: 'warning',
+      value: '-23%',
+      description: 'Performance dropped 23% in last 6 sessions',
+      actionRequired: 'Review exercise technique and motivation'
+    }
+  ]
+}
+
+// Create adherence alerts from real adherence data
+function createAdherenceAlerts(adherenceData: any[]): PatientAlert[] {
+  if (!adherenceData || adherenceData.length === 0) return []
+  
+  // Find patients with poor adherence (below 70%)
+  const poorAdherence = adherenceData
+    .filter(a => 
+      a.adherence_score !== null && 
+      a.adherence_score < 70 &&
+      a.protocol_day >= 3 // Only include eligible patients
+    )
+    .sort((a, b) => a.adherence_score - b.adherence_score) // Lowest first
+  
+  if (poorAdherence.length === 0) return []
+  
+  // Return the patient with lowest adherence
+  const worst = poorAdherence[0]
+  
+  return [{
+    id: `adherence-${worst.patient_id}`,
+    patientCode: worst.patient_id,
+    patientName: `Patient ${worst.patient_id}`, // TODO: Get real name in production
+    alertType: 'adherence',
+    severity: worst.adherence_score < 50 ? 'critical' : 'warning',
+    value: `${Math.round(worst.adherence_score)}%`,
+    description: `Only ${worst.sessions_completed} of ${worst.sessions_expected} sessions completed`,
+    actionRequired: worst.adherence_score < 50 
+      ? 'Immediate intervention required'
+      : 'Schedule follow-up call'
+  }]
 }
 
 
@@ -495,6 +576,24 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
            (adherence.length > 0 && adherence.every(a => a.adherence_score === null)) // Data exists but scores not calculated
   }, [loading, adherence, error])
 
+  // Generate patient alerts from all data sources
+  const patientAlerts = useMemo(() => {
+    const alerts: PatientAlert[] = []
+    
+    // 1. Low adherence alerts (real data)
+    if (!isAdherenceLoading && adherence.length > 0) {
+      alerts.push(...createAdherenceAlerts(adherence))
+    }
+    
+    // 2. High fatigue alerts (demo data - TODO: Replace with real data)
+    alerts.push(...getMockFatigueAlerts())
+    
+    // 3. Performance drop alerts (demo data - TODO: Replace with real data)
+    alerts.push(...getMockPerformanceDropAlerts())
+    
+    return alerts.slice(0, 3) // Limit to 3 most critical alerts
+  }, [adherence, isAdherenceLoading])
+
   // Progressive content loading effect
   useEffect(() => {
     if (!loading && !error) {
@@ -596,11 +695,66 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
           <ProgressiveContent delay={ANIMATION_DELAYS.SLOWEST}>
             <MetricCard
               title="Avg. Session Performance"
-              value="--"
+              value={(() => {
+                // TODO: remove in prod - demo mode functionality
+                const isDemo = true; // Demo mode flag
+                if (isDemo) {
+                  // Calculate demo percentage using GHOSTLY+ Performance Score formula
+                  // P_overall = w_c × S_compliance + w_s × S_symmetry + w_e × S_effort + w_g × S_game
+                  // Default weights: w_c = 0.5, w_s = 0.25, w_e = 0.25, w_g = 0.0
+                  const demoScores = {
+                    compliance: 87.3, // Example from metricsDefinitions.md
+                    symmetry: 98.8,   // Example from metricsDefinitions.md  
+                    effort: 100,      // Example from metricsDefinitions.md
+                    gameScore: 85     // Example from metricsDefinitions.md
+                  };
+                  const weights = { compliance: 0.5, symmetry: 0.25, effort: 0.25, gameScore: 0.0 };
+                  const demoPerformance = (
+                    weights.compliance * demoScores.compliance +
+                    weights.symmetry * demoScores.symmetry +
+                    weights.effort * demoScores.effort +
+                    weights.gameScore * demoScores.gameScore
+                  ).toFixed(1);
+                  return `${demoPerformance}%`;
+                }
+                return "--";
+              })()}
               icon={Icons.ActivityLogIcon}
               iconColor="text-purple-600"
-              placeholder="Performance metrics coming"
-              comingSoon
+              subtitle={(() => {
+                // TODO: remove in prod - demo mode functionality
+                const isDemo = true; // Demo mode flag
+                return isDemo ? "Demo calculation (3 patients)" : "Performance metrics coming";
+              })()}
+              comingSoon={false}
+              tooltip={
+                <Suspense fallback={
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
+                    <Icons.InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  </Button>
+                }>
+                  <ClinicalTooltip
+                    title="Average Session Performance"
+                    description="Average performance across all patients and rehabilitation sessions. Performance depends on exercise compliance (50%), muscle balance (25%), and patient effort (25%)."
+                    sections={[
+                      {
+                        title: "Score Ranges:",
+                        type: "list",
+                        items: [
+                          { description: "90%+ = Excellent progress" },
+                          { description: "80-89% = Good compliance" },
+                          { description: "70-79% = Needs improvement" },
+                          { description: "Below 70% = Intervention might be required (depends on trial protocol)" }
+                        ]
+                      }
+                    ]}
+                  >
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
+                      <Icons.InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
+                    </Button>
+                  </ClinicalTooltip>
+                </Suspense>
+              }
             />
           </ProgressiveContent>
         </div>
@@ -626,15 +780,58 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
                 </div>
               </CardHeader>
               <CardContent className="pt-0 pb-4">
-                <div className="text-center py-6 space-y-2">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                    <Icons.BellIcon className="w-6 h-6 text-orange-500" />
+                {patientAlerts.length > 0 ? (
+                  <div className="space-y-2">
+                    {patientAlerts.map((alert, index) => (
+                      <ProgressiveContent key={alert.id} delay={ANIMATION_DELAYS.FAST + (index * 50)}>
+                        <Link
+                          to={`/patients/${alert.patientCode}`}
+                          className="block p-3 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all duration-200 group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-1.5 rounded-full shrink-0 ${
+                              alert.severity === 'critical' 
+                                ? 'bg-red-100 text-red-600' 
+                                : 'bg-orange-100 text-orange-600'
+                            }`}>
+                              {alert.alertType === 'adherence' && <Icons.CrossCircledIcon className="h-3 w-3" />}
+                              {alert.alertType === 'fatigue' && <Icons.ExclamationTriangleIcon className="h-3 w-3" />}
+                              {alert.alertType === 'performance' && <Icons.ArrowDownIcon className="h-3 w-3" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <h4 className={`font-semibold text-sm ${
+                                    alert.severity === 'critical' ? 'text-red-800' : 'text-orange-800'
+                                  } group-hover:underline`}>
+                                    {alert.patientName}
+                                  </h4>
+                                  <p className="text-xs text-gray-600 mt-0.5">{alert.description}</p>
+                                </div>
+                                <div className={`text-right shrink-0 font-bold text-sm ${
+                                  alert.severity === 'critical' ? 'text-red-700' : 'text-orange-700'
+                                }`}>
+                                  {alert.value}
+                                </div>
+                              </div>
+                            </div>
+                            <Icons.ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-orange-600 transition-colors shrink-0" />
+                          </div>
+                        </Link>
+                      </ProgressiveContent>
+                    ))}
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-900">Alert System</p>
-                    <p className="text-sm text-gray-600">Patient monitoring features in development</p>
+                ) : (
+                  <div className="text-center py-6 space-y-2">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                      <Icons.CheckCircledIcon className="w-6 h-6 text-green-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-gray-900">All Clear</p>
+                      <p className="text-sm text-gray-600">No active patient alerts</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </ProgressiveContent>
