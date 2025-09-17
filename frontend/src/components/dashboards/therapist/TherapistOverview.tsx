@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useCallback, Suspense, lazy } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useTherapistDashboardData, RecentC3DFile } from '../../../hooks/useTherapistDashboardData'
@@ -6,19 +6,16 @@ import { calculateAverageAdherence } from '../../../services/adherenceService'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { Avatar, AvatarFallback } from '../../ui/avatar'
 import { Button } from '../../ui/button'
-import { ClinicalTooltip } from '../../ui/clinical-tooltip'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import Spinner from '../../ui/Spinner'
-import {
-  PersonIcon,
-  FileIcon,
-  ChevronRightIcon,
-  ExclamationTriangleIcon,
-  ActivityLogIcon,
-  TargetIcon,
-  BellIcon,
-  InfoCircledIcon
-} from '@radix-ui/react-icons'
+import * as Icons from '@radix-ui/react-icons'
+
+// Lazy load the ClinicalTooltip component for better performance
+const ClinicalTooltip = lazy(() => 
+  import('../../ui/clinical-tooltip').then(module => ({
+    default: module.ClinicalTooltip
+  }))
+)
 
 interface TherapistOverviewProps {
   className?: string
@@ -43,7 +40,7 @@ function formatSessionDate(dateString: string): string {
 
 
 // Enhanced metrics card component with improved typography and spacing
-function MetricCard({ 
+const MetricCard = React.memo(function MetricCard({ 
   title, 
   value, 
   icon: Icon, 
@@ -81,7 +78,7 @@ function MetricCard({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
-                      <InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
+                      <Icons.InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs p-3" side="left">
@@ -115,16 +112,16 @@ function MetricCard({
       </CardContent>
     </Card>
   )
-}
+})
 
 // Enhanced recent C3D file item component with improved styling
-function RecentC3DFileItem({ file }: { file: RecentC3DFile }) {
+const RecentC3DFileItem = React.memo(function RecentC3DFileItem({ file }: { file: RecentC3DFile }) {
   const navigate = useNavigate()
   
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     // Direct navigation to C3D analysis
     navigate(`/analysis?file=${file.name}${file.created_at ? `&date=${file.created_at}` : ''}`)
-  }
+  }, [navigate, file.name, file.created_at])
 
   return (
     <div 
@@ -152,11 +149,11 @@ function RecentC3DFileItem({ file }: { file: RecentC3DFile }) {
             Analyze
           </div>
         </div>
-        <ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-blue-500 group-hover:scale-110" />
+        <Icons.ChevronRightIcon className="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-blue-500 group-hover:scale-110" />
       </div>
     </div>
   )
-}
+})
 
 // Loading state component
 function DashboardLoading() {
@@ -199,18 +196,21 @@ function DashboardLoading() {
 }
 
 // Error state component
-function DashboardError({ error }: { error: Error }) {
+const DashboardError = React.memo(function DashboardError({ error }: { error: Error }) {
+  const handleTryAgain = useCallback(() => {
+    window.location.reload()
+  }, [])
   return (
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
           <div className="text-center">
-            <ExclamationTriangleIcon className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <Icons.ExclamationTriangleIcon className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Unable to load dashboard</h3>
             <p className="text-muted-foreground mb-4">
               {error.message || 'An error occurred while loading your dashboard data.'}
             </p>
-            <Button onClick={() => window.location.reload()}>
+            <Button onClick={handleTryAgain}>
               Try Again
             </Button>
           </div>
@@ -218,7 +218,7 @@ function DashboardError({ error }: { error: Error }) {
       </Card>
     </div>
   )
-}
+})
 
 // Main TherapistOverview component
 export function TherapistOverview({ className }: TherapistOverviewProps) {
@@ -241,6 +241,21 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
   }
   
   const therapistFirstName = getFirstName()
+
+  // Memoize expensive adherence calculations
+  const averageAdherence = useMemo(() => {
+    const avg = calculateAverageAdherence(adherence)
+    return avg !== null ? `${Math.round(avg)}%` : "--"
+  }, [adherence])
+
+  const adherenceSubtitle = useMemo(() => {
+    // Count eligible patients (protocol_day >= 3)
+    const eligibleCount = adherence.filter(a => a.protocol_day >= 3).length
+    const totalCount = adherence.length
+    if (eligibleCount === 0) return "No eligible patients"
+    if (eligibleCount === totalCount) return `All ${totalCount} patients`
+    return `${eligibleCount} of ${totalCount} patients`
+  }, [adherence])
 
   if (loading) {
     return <DashboardLoading />
@@ -267,7 +282,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
         <MetricCard
           title="Active Patients"
           value={activePatients}
-          icon={PersonIcon}
+          icon={Icons.PersonIcon}
           subtitle="Currently under care"
           iconColor="text-blue-600"
           tooltip={{
@@ -277,56 +292,52 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
         />
         <MetricCard
           title="Average Adherence"
-          value={(() => {
-            const avgAdherence = calculateAverageAdherence(adherence)
-            return avgAdherence !== null ? `${Math.round(avgAdherence)}%` : "--"
-          })()}
-          icon={TargetIcon}
+          value={averageAdherence}
+          icon={Icons.TargetIcon}
           iconColor="text-green-600"
-          subtitle={(() => {
-            // Count eligible patients (protocol_day >= 3)
-            const eligibleCount = adherence.filter(a => a.protocol_day >= 3).length
-            const totalCount = adherence.length
-            if (eligibleCount === 0) return "No eligible patients"
-            if (eligibleCount === totalCount) return `All ${totalCount} patients`
-            return `${eligibleCount} of ${totalCount} patients`
-          })()}
+          subtitle={adherenceSubtitle}
           tooltip={
-            <ClinicalTooltip
-              title="Average Adherence"
-              description="Average adherence score across eligible patients (≥3 trial days). Calculated as game sessions completed vs expected based on GHOSTLY+ protocol."
-              sections={[
-                {
-                  title: "Formula",
-                  type: "formula",
-                  items: [{
-                    label: "Adherence(t)",
-                    value: " = <div style='display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 4px;'><div style='border-bottom: 1px solid currentColor; padding-bottom: 2px; font-size: 0.9em;'>Game Sessions Completed(t)</div><div style='padding-top: 2px; font-size: 0.9em;'>Game Sessions Expected(t)</div></div>"
-                  }]
-                },
-                {
-                  title: "Calculation Details",
-                  type: "list",
-                  items: [{
-                    description: "Game Sessions Expected(t): 2.14 × Current Trial Day (t)"
-                  }, {
-                    description: "Average across all eligible patients (t ≥ 3 days)"
-                  }]
-                }
-              ]}
-              side="left"
-              variant="compact"
-            >
+            <Suspense fallback={
               <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
-                <InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
+                <Icons.InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
               </Button>
-            </ClinicalTooltip>
+            }>
+              <ClinicalTooltip
+                title="Average Adherence"
+                description="Average adherence score across eligible patients (≥3 trial days). Calculated as game sessions completed vs expected based on GHOSTLY+ protocol."
+                sections={[
+                  {
+                    title: "Formula",
+                    type: "formula",
+                    items: [{
+                      label: "Adherence(t)",
+                      value: " = <div style='display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 4px;'><div style='border-bottom: 1px solid currentColor; padding-bottom: 2px; font-size: 0.9em;'>Game Sessions Completed(t)</div><div style='padding-top: 2px; font-size: 0.9em;'>Game Sessions Expected(t)</div></div>"
+                    }]
+                  },
+                  {
+                    title: "Calculation Details",
+                    type: "list",
+                    items: [{
+                      description: "Game Sessions Expected(t): 2.14 × Current Trial Day (t)"
+                    }, {
+                      description: "Average across all eligible patients (t ≥ 3 days)"
+                    }]
+                  }
+                ]}
+                side="left"
+                variant="compact"
+              >
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
+                  <Icons.InfoCircledIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 transition-colors" />
+                </Button>
+              </ClinicalTooltip>
+            </Suspense>
           }
         />
         <MetricCard
           title="Avg. Session Performance"
           value="--"
-          icon={ActivityLogIcon}
+          icon={Icons.ActivityLogIcon}
           iconColor="text-purple-600"
           placeholder="Performance metrics coming"
           comingSoon
@@ -340,7 +351,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-sm">
-                <BellIcon className="h-5 w-5 text-orange-600" />
+                <Icons.BellIcon className="h-5 w-5 text-orange-600" />
               </div>
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">Patients with Alerts</CardTitle>
@@ -353,7 +364,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
           <CardContent className="pt-0 pb-4">
             <div className="text-center py-6 space-y-2">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                <BellIcon className="w-6 h-6 text-orange-500" />
+                <Icons.BellIcon className="w-6 h-6 text-orange-500" />
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-gray-900">Alert System</p>
@@ -369,7 +380,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200/80 shadow-sm">
-                  <FileIcon className="h-5 w-5 text-blue-600" />
+                  <Icons.FileIcon className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <CardTitle className="text-lg font-semibold text-gray-900">Recent Session Activity</CardTitle>
@@ -393,7 +404,7 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
             ) : (
               <div className="text-center py-6 space-y-2">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <FileIcon className="w-6 h-6 text-blue-500" />
+                  <Icons.FileIcon className="w-6 h-6 text-blue-500" />
                 </div>
                 <div className="space-y-1">
                   <p className="font-medium text-gray-900">No Recent Files</p>

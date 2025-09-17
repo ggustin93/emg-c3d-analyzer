@@ -24,6 +24,7 @@ const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/Ad
 const TherapistDashboard = React.lazy(() => import('./components/dashboards/therapist/TherapistDashboard').then(module => ({ default: module.TherapistDashboard })));
 const ResearcherDashboard = React.lazy(() => import('./components/dashboards/researcher/ResearcherDashboard').then(module => ({ default: module.ResearcherDashboard })));
 const FAQ = React.lazy(() => import('./components/faq/FAQ').then(module => ({ default: module.FAQ })));
+const AboutPage = React.lazy(() => import('./components/about/AboutPage').then(module => ({ default: module.AboutPage })));
 
 // Import analysis content and layout
 import { AppContent as AnalysisView } from './AppContent';
@@ -286,6 +287,26 @@ const router = createBrowserRouter([
                 </div>
               }>
                 <FAQ />
+              </React.Suspense>
+            )
+          }
+        ]
+      },
+      {
+        path: 'about',
+        element: <DashboardLayout />,
+        loader: protectedLoader,
+        children: [
+          {
+            index: true,
+            element: (
+              <React.Suspense fallback={
+                <div className="p-6 flex items-center justify-center">
+                  <Spinner />
+                  <span className="ml-3 text-slate-600">Loading About...</span>
+                </div>
+              }>
+                <AboutPage />
               </React.Suspense>
             )
           }

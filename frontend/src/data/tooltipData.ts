@@ -126,7 +126,7 @@ export const getOverallPerformanceScoreTooltipData = (
       {
         type: "list",
         items: [
-            { description: "Note: Component weights are configurable by the therapist in the session settings."}
+            { description: "Note: Component weights are configurable by the trial administrator in the session settings."}
         ]
       }
     ]
