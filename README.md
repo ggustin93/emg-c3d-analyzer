@@ -7,7 +7,10 @@ This repository is a research-focused EMG analysis platform, initiated as part o
 
 This project is a full-stack web application designed to analyze Electromyography (EMG) data from C3D motion capture files. It demonstrates rehabilitation technology architecture using React, FastAPI, and EMG signal processing algorithms for therapeutic assessment and research.
 
-![EMG Analysis Dashboard](assets/screenshot-v2.webp)
+![EMG Analysis Dashboard](assets/screenshot-v3.png)
+![EMG Analysis Dashboard](assets/screenshot-v3-2.png)
+![EMG Analysis Dashboard](assets/screenshot-v3-3.png)
+
 
 **Table of Contents**
 - [Features](#1-features)
