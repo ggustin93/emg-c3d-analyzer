@@ -210,13 +210,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
                 )}
               </CardTitle>
               <CardDescription>
-                🔍 <strong>PREVIEW EXTRACT</strong> - Limited sample data only (5 points per array). 📥 Complete data available in download.
-                {/* T020: Enhanced filename information */}
-                {enhancedMetadata?.enhancedFileName && enhancedMetadata.enhancedFileName !== originalFilename && (
-                  <span className="block text-sm text-green-600 mt-1">
-                    Enhanced export filename: {enhancedMetadata.enhancedFileName}
-                  </span>
-                )}
+                🔍 <strong>Preview Sample</strong> - Showing limited data (5 points per array). Full dataset available in the downloaded file.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

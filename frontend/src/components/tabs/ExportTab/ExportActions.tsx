@@ -192,7 +192,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
               {/* T018: Show enhanced filename if available */}
               Original file: {enhancedFileName || originalFilename}
               {enhancedFileName && enhancedFileName !== originalFilename && (
-                <span className="text-green-600 ml-1">(enhanced)</span>
+                <span className="text-green-600 ml-1"></span>
               )}
             </p>
           </div>
