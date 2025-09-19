@@ -1,10 +1,48 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
+import { Plugin } from 'vite'
+
+// Custom plugin to ensure content files are copied
+const copyContentPlugin = (): Plugin => ({
+  name: 'copy-content',
+  closeBundle() {
+    // Ensure content directory is copied to dist
+    const srcDir = path.resolve(__dirname, 'public/content')
+    const destDir = path.resolve(__dirname, 'dist/content')
+    
+    // Function to copy directory recursively
+    const copyDir = (src: string, dest: string) => {
+      if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest, { recursive: true })
+      }
+      
+      const entries = fs.readdirSync(src, { withFileTypes: true })
+      
+      for (const entry of entries) {
+        const srcPath = path.join(src, entry.name)
+        const destPath = path.join(dest, entry.name)
+        
+        if (entry.isDirectory()) {
+          copyDir(srcPath, destPath)
+        } else {
+          fs.copyFileSync(srcPath, destPath)
+        }
+      }
+    }
+    
+    if (fs.existsSync(srcDir)) {
+      copyDir(srcDir, destDir)
+      console.log('✅ Content files copied to dist/content')
+    }
+  }
+})
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyContentPlugin()],
+  publicDir: 'public',
   resolve: {
     alias: {
       // This directly replaces your craco alias configuration
