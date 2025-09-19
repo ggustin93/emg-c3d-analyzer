@@ -8,5 +8,8 @@
   "devDependencies": {
     "shadcn": "^3.3.0",
     "supabase": "^2.39.2"
+  },
+  "dependencies": {
+    "@docusaurus/theme-mermaid": "^3.8.1"
   }
 }
