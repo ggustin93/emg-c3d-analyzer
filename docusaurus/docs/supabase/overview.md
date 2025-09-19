@@ -1,135 +1,102 @@
 ---
 sidebar_position: 1
-title: Overview
+title: Supabase Overview
 ---
 
-# Supabase Platform Integration
+# Supabase Integration
 
-The EMG C3D Analyzer leverages Supabase as its complete backend platform, providing authentication, storage, database, and real-time capabilities.
+PostgreSQL database with built-in auth, storage, and real-time features.
 
-## Platform Architecture
+## What We Use
 
-```mermaid
-graph TD
-    A[React Frontend] -->|Auth SDK| B[Supabase Auth]
-    A -->|Storage SDK| C[Supabase Storage]
-    A -->|Database SDK| D[Supabase Database]
-    
-    B -->|JWT Token| E[FastAPI Backend]
-    C -->|Webhook Events| E
-    E -->|Queries with RLS| D
-    
-    D -->|Row Level Security| F[Protected Data]
+- **Database** → PostgreSQL with Row Level Security (RLS)
+- **Authentication** → JWT-based auth with role management  
+- **Storage** → C3D file uploads with webhook processing
+- **Real-time** → Live EMG data updates via subscriptions
+
+## Database Schema
+
+### Core Tables
+- `sessions` → Therapy session records
+- `session_parameters` → EMG analysis results
+- `contractions` → Individual muscle contraction data
+- `users` → Patient/therapist/admin accounts
+
+### Key Features
+- **18+ RLS policies** for role-based data access
+- **Foreign key constraints** maintaining data integrity
+- **Indexes** optimized for EMG data queries
+- **Triggers** for automatic timestamps and validation
+
+## Authentication Strategy
+
+**Architecture**: Supabase Auth → React Hook → FastAPI (validation only) → RLS (authorization)
+
+1. **Frontend** → `useAuth` hook manages auth state and tokens
+2. **Backend** → JWT validation via `get_current_user` dependency
+3. **Database** → RLS policies enforce permissions at row level
+
+**Roles**: 
+- `patient` → Own data only
+- `therapist` → Assigned patients 
+- `admin` → Full system access
+
+## File Storage
+
+**Bucket**: `c3d-examples`
+**Workflow**: Upload → Webhook → Background processing → Database storage
+
+1. Patient uploads C3D file → Supabase Storage
+2. Storage webhook triggers → `/webhooks/storage/c3d-upload`
+3. Backend downloads → EMG processing → Results to database
+4. Frontend shows → Real-time progress updates
+
+## RLS Security Model
+
+**Single Source of Truth**: Database-level authorization via RLS policies
+
+**Example Policy**:
+```sql
+-- Patients see only their own sessions
+CREATE POLICY "Users can view own sessions" ON sessions
+FOR SELECT USING (
+  auth.uid() = user_id OR 
+  auth.jwt() ->> 'role' = 'admin'
+);
 ```
 
-## Core Components
+## Client Configuration
 
-### 🔐 Authentication
-- **JWT-based authentication** with secure token management
-- **Role-based access control** (therapist, admin, patient)
-- **Session management** with automatic refresh
-- **Social auth providers** support
-
-[Learn more about Authentication →](./auth/overview)
-
-### 📦 Storage
-- **Direct file uploads** from frontend to Supabase Storage
-- **Webhook integration** for automated processing
-- **HMAC signature verification** for security
-- **Bucket policies** for access control
-
-[Learn more about Storage →](./storage/overview)
-
-### 🗄️ Database
-- **PostgreSQL** with advanced features
-- **Repository pattern** for clean data access
-- **Migration management** with version control
-- **Optimized queries** with indexes
-
-[Learn more about Database →](./database/overview)
-
-### 🛡️ Row Level Security (RLS)
-- **18+ security policies** protecting data
-- **Therapist-patient relationships** enforced at database level
-- **Zero-trust architecture** - never trust the client
-- **Performance optimized** policies
-
-[Learn more about RLS →](./rls/overview)
-
-## Integration Points
-
-### Frontend Integration
-```typescript
-// Direct Supabase client usage
-import { supabase } from '@/lib/supabase'
-
-// Authentication
-const { data: session } = await supabase.auth.getSession()
-
-// Storage upload
-const { data, error } = await supabase.storage
-  .from('c3d-examples')
-  .upload(path, file)
-
-// Database query (with RLS)
-const { data: sessions } = await supabase
-  .from('therapy_sessions')
-  .select('*')
-  .order('created_at', { ascending: false })
-```
-
-### Backend Integration
+**Python** (Backend):
 ```python
-# JWT validation only
-from api.dependencies.auth import get_current_user
-
-@app.post("/api/protected")
-async def protected_route(user_id: str = Depends(get_current_user)):
-    # Backend validates JWT
-    # Database enforces access via RLS
-    return {"user_id": user_id}
+from supabase import create_client
+# Uses synchronous client (not async)
+supabase = create_client(url, key)
 ```
 
-## Architecture Decisions
+**JavaScript** (Frontend):
+```javascript
+import { createClient } from '@supabase/supabase-js'
+const supabase = createClient(url, key)
+```
 
-### When to Use Direct Supabase vs FastAPI
+## When to Use Direct vs FastAPI
 
-**Use Direct Supabase for:**
+**Use Supabase Directly**:
+- Authentication and user management
 - Simple CRUD operations
-- Authentication flows
-- Real-time subscriptions
-- File uploads to Storage
-- User profile management
+- Real-time subscriptions  
+- File uploads and storage
 
-**Use FastAPI for:**
-- Complex EMG processing algorithms
-- Heavy computational tasks
+**Use FastAPI**:
+- EMG signal processing
+- Complex computations
 - External API integrations
-- Webhook processing
-- Binary file manipulation
-- Multi-step workflows
+- Heavy algorithms requiring server resources
 
-> **Principle**: Follow KISS - use the simplest tool that solves the problem effectively
+## Key Files
 
-## Security Model
-
-1. **Frontend** - Handles UI and user interactions
-2. **Supabase Auth** - Manages authentication and issues JWTs
-3. **FastAPI** - Validates JWTs but doesn't enforce authorization
-4. **RLS Policies** - Enforce all authorization at the database level
-5. **Result** - Defense in depth with multiple security layers
-
-## Performance Considerations
-
-- **Connection pooling** for optimal database performance
-- **Prepared statements** to prevent SQL injection
-- **Indexed queries** for fast data retrieval
-- **Caching strategies** with Redis for computed results
-- **Optimistic UI updates** for responsive user experience
-
-## Next Steps
-
-- [Set up Authentication](./auth/overview) - Configure user authentication
-- [Configure Storage](./storage/overview) - Set up file uploads
-- [Design Database Schema](./database/overview) - Plan your data model
-- [Implement RLS Policies](./rls/overview) - Secure your data
+- `backend/core/supabase.py` → Client configuration
+- `backend/core/auth.py` → JWT validation  
+- `supabase/migrations/` → Database schema
+- Frontend auth via `@supabase/supabase-js`

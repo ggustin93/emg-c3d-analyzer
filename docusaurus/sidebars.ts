@@ -69,7 +69,7 @@ const sidebars: SidebarsConfig = {
       label: '🎨 Frontend',
       collapsed: true,
       items: [
-        'frontend/react-architecture',
+        'frontend/overview',
       ],
     },
     {
@@ -150,6 +150,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'testing/overview',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🛠️ Development',
+      collapsed: true,
+      items: [
+        'development/infrastructure',
       ],
     },
     {
