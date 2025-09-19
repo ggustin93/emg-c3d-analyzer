@@ -48,10 +48,5 @@ export default defineConfig({
     modules: {
       localsConvention: 'camelCase'
     }
-  },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**']
   }
 })
