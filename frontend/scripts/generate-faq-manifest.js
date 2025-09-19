@@ -41,6 +41,17 @@ function findMarkdownFiles(dir, baseDir = dir) {
 function generateManifest() {
   try {
     console.log('📂 Scanning FAQ directory:', FAQ_DIR);
+    console.log('🔍 Working directory:', process.cwd());
+    console.log('🗂️ Script directory:', __dirname);
+    
+    // Check if FAQ directory exists
+    try {
+      const stat = statSync(FAQ_DIR);
+      console.log('📁 FAQ directory exists:', stat.isDirectory());
+    } catch (error) {
+      console.error('❌ FAQ directory does not exist:', FAQ_DIR);
+      console.error('Error:', error.message);
+    }
     
     // Find all markdown files
     const files = findMarkdownFiles(FAQ_DIR);
