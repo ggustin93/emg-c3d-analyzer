@@ -319,7 +319,7 @@ jobs:
           DURATION=$((END_TIME - START_TIME))
           
           # Calculate build size
-          BUILD_SIZE=$(du -sh build/ 2>/dev/null | cut -f1 || echo "N/A")
+          BUILD_SIZE=$(du -sh dist/ 2>/dev/null | cut -f1 || echo "N/A")
           echo "size=$BUILD_SIZE" >> $GITHUB_OUTPUT
           echo "duration=$DURATION" >> $GITHUB_OUTPUT
           
@@ -327,7 +327,7 @@ jobs:
           echo "⏱️ Build time: ${DURATION}s"
           
           # Verify critical files
-          if [ ! -f build/index.html ]; then
+          if [ ! -f dist/index.html ]; then
             echo "❌ Build validation failed: index.html not found"
             exit 1
           fi
@@ -339,7 +339,7 @@ jobs:
         run: |
           echo "::group::📊 Bundle Analysis"
           echo "Top 10 largest files:"
-          find build/static -name "*.js" -o -name "*.css" 2>/dev/null | while read file; do
+          find dist/assets -name "*.js" -o -name "*.css" 2>/dev/null | while read file; do
             size=$(du -h "$file" 2>/dev/null | cut -f1)
             echo "  $size - $(basename $file)"
           done | sort -hr | head -10
@@ -349,7 +349,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/build/
+          path: frontend/dist/
           retention-days: 7
 
   # ╔═════════════════════════════════════════════════════════════════════════╗
