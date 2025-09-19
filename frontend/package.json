@@ -57,7 +57,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "npm run generate-faq-manifest && tsc && vite build",
+    "build": "npm run generate-faq-manifest && tsc && vite build && cp -r public/content dist/",
     "preview": "vite preview",
     "test": "vitest",
     "type-check": "tsc --noEmit",

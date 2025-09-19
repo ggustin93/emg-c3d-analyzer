@@ -1,0 +1,23 @@
+# Vercel ignore file
+# This tells Vercel what NOT to deploy
+
+# Dependencies
+node_modules/
+
+# Source files (not needed in production)
+src/
+tests/
+*.test.ts
+*.test.tsx
+
+# Development files
+.env.local
+.env.development
+
+# Build artifacts that Vercel generates itself
+.next/
+.vercel/
+
+# IMPORTANT: Do NOT ignore dist/content
+# We need these files to be deployed
+# !dist/content/
