@@ -43,6 +43,9 @@ function generateManifest() {
     console.log('📂 Scanning FAQ directory:', FAQ_DIR);
     console.log('🔍 Working directory:', process.cwd());
     console.log('🗂️ Script directory:', __dirname);
+    console.log('🔍 Node.js version:', process.version);
+    console.log('🔍 Platform:', process.platform);
+    console.log('🔍 Environment:', process.env.NODE_ENV || 'development');
     
     // Check if FAQ directory exists
     try {
@@ -51,6 +54,37 @@ function generateManifest() {
     } catch (error) {
       console.error('❌ FAQ directory does not exist:', FAQ_DIR);
       console.error('Error:', error.message);
+      
+      // Try alternative paths for debugging
+      const altPaths = [
+        join(process.cwd(), 'public', 'content', 'faq'),
+        join(process.cwd(), 'frontend', 'public', 'content', 'faq'),
+        join(__dirname, '..', '..', 'public', 'content', 'faq')
+      ];
+      
+      console.log('🔍 Trying alternative paths:');
+      for (const altPath of altPaths) {
+        try {
+          const altStat = statSync(altPath);
+          console.log(`✅ Found at: ${altPath} (directory: ${altStat.isDirectory()})`);
+          break;
+        } catch {
+          console.log(`❌ Not found at: ${altPath}`);
+        }
+      }
+      
+      // Create empty manifest on error
+      const emptyManifest = {
+        version: '1.0.0',
+        generated: new Date().toISOString(),
+        files: [],
+        count: 0,
+        error: 'FAQ directory not found',
+        searchedPath: FAQ_DIR
+      };
+      writeFileSync(MANIFEST_OUTPUT, JSON.stringify(emptyManifest, null, 2));
+      console.log('📝 Created empty manifest due to directory error');
+      return emptyManifest;
     }
     
     // Find all markdown files
