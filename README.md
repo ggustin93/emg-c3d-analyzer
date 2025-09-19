@@ -7,9 +7,7 @@ This repository is a research-focused EMG analysis platform, initiated as part o
 
 This project is a full-stack web application designed to analyze Electromyography (EMG) data from C3D motion capture files. It demonstrates rehabilitation technology architecture using React, FastAPI, and EMG signal processing algorithms for therapeutic assessment and research.
 
-![EMG Analysis Dashboard](assets/screenshot-v3.png)
-![EMG Analysis Dashboard](assets/screenshot-v3-2.png)
-![EMG Analysis Dashboard](assets/screenshot-v3-3.png)
+
 
 
 **Table of Contents**
@@ -42,15 +40,9 @@ This project is a full-stack web application designed to analyze Electromyograph
 ## 2. Preview
 
 Here's a visual overview of the application's key features:
-
-### 2.1 EMG Signal Analysis Dashboard
-![EMG Signal Dashboard](assets/screenshot-v2.webp)
-The main analysis interface showing multi-channel EMG signals with real-time contraction detection, MVC threshold visualization, and interactive controls for signal type switching (Raw/Activated).
-
-### 2.2 Performance Analytics & Clinical Scoring
-![Performance Analytics](assets/performance-v2.webp)
-Comprehensive performance analysis with muscle-specific compliance scoring, therapeutic parameters, and visual analytics for rehabilitation progress tracking with BFR monitoring integration.
-
+![EMG Analysis Dashboard](assets/screenshot-v3-2.png)
+![EMG Analysis Dashboard](assets/screenshot-v3.png)
+![EMG Analysis Dashboard](assets/screenshot-v3-3.png)
 ## 3. Architecture Overview
 
 The GHOSTLY+ EMG Analyzer implements a **layered, domain-driven architecture** with clear separation of concerns, enabling both stateless processing (upload route) and stateful workflows (webhook route) for EMG data analysis.
