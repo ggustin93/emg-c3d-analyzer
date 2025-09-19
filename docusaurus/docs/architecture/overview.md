@@ -12,39 +12,39 @@ The EMG C3D Analyzer implements a 4-layer architecture with Domain-Driven Design
 ```mermaid
 graph TB
     subgraph "Frontend Layer"
-        UI[React + TypeScript]
-        State[Zustand Store]
-        Chart[Recharts Visualization]
+        UI[React + TypeScript]:::frontend
+        State[Zustand Store]:::frontend
+        Chart[Recharts Visualization]:::frontend
     end
     
     subgraph "API Layer"
-        A1[upload.py - 513 lines]
-        A2[webhooks.py - 355 lines]
-        A3[FastAPI Router]
+        A1[upload.py - 513 lines]:::api
+        A2[webhooks.py - 355 lines]:::api
+        A3[FastAPI Router]:::api
     end
     
     subgraph "Orchestration Layer"
-        O1[therapy_session_processor.py - 1,833 lines]
-        O2[Service Layer]
-        O3[Repository Pattern]
+        O1[therapy_session_processor.py - 1,833 lines]:::orchestration
+        O2[Service Layer]:::orchestration
+        O3[Repository Pattern]:::orchestration
     end
     
     subgraph "Processing Layer"
-        P1[processor.py - 1,496 lines]
-        P2[EMG Analysis Engine]
-        P3[Signal Processing]
+        P1[processor.py - 1,496 lines]:::processing
+        P2[EMG Analysis Engine]:::processing
+        P3[Signal Processing]:::processing
     end
     
     subgraph "Persistence Layer"
-        D1[Repository Interfaces]
-        D2[Supabase Client]
-        D3[PostgreSQL + RLS]
-        D4[File Storage]
+        D1[Repository Interfaces]:::database
+        D2[Supabase Client]:::database
+        D3[PostgreSQL + RLS]:::database
+        D4[File Storage]:::database
     end
     
     subgraph "Cache Layer"
-        C1[Redis 7.2]
-        C2[Session Cache]
+        C1[Redis 7.2]:::cache
+        C2[Session Cache]:::cache
     end
     
     UI --> A3
@@ -56,54 +56,119 @@ graph TB
     D1 --> D2
     D2 --> D3
     D2 --> D4
+    
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef api fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef orchestration fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef processing fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef database fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef cache fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#000
 ```
+
+## Core Architectural Principles
+
+- **Single Source of Truth (SoT)**: `GHOSTLYC3DProcessor` serves as the authoritative EMG analysis engine
+- **Dual Processing Modes**: Stateless (immediate response) vs Stateful (database persistence)
+- **Repository Pattern**: Clean data access layer with dependency injection
+- **Domain-Driven Design**: Services organized by business domains (clinical, c3d, infrastructure)
+- **SOLID Compliance**: Single responsibility, open/closed, and dependency inversion principles
 
 ## 4-Layer Architecture Details
 
-### Layer 1: API Layer
-**Purpose**: HTTP request handling and routing
+### Layer 1: API Layer - Dual Processing Modes
+**Purpose**: HTTP request handling and routing with two distinct processing patterns
 
-**Components**:
-- **upload.py** (513 lines): Stateless C3D file processing endpoint
-- **webhooks.py** (355 lines): Supabase Storage webhook integration
-- **FastAPI Router**: Request validation, response formatting, authentication middleware
+#### upload.py (194 lines) - Stateless Processing Route
+- **Purpose**: Immediate EMG analysis without database persistence
+- **Use Case**: Testing, preview, temporary analysis workflows
+- **Key Features**:
+  - Returns complete EMG signals and analytics in response
+  - Uses `process_c3d_file_stateless()` method
+  - FastAPI file handling with temporary storage
+  - Comprehensive error handling with HTTP status codes
+- **Integration**: Directly calls TherapySessionProcessor in stateless mode
 
-**Responsibilities**:
+#### webhooks.py (349 lines) - Stateful Processing Route
+- **Purpose**: Supabase Storage event processing with full database persistence
+- **Use Case**: Production workflow with patient/therapist relationships
+- **Key Features**:
+  - HMAC-SHA256 webhook signature verification
+  - Background processing with FastAPI BackgroundTasks
+  - Patient code extraction and UUID lookup
+  - Complete session lifecycle management
+- **Integration**: Creates session → background C3D processing → database population
+
+**Common Responsibilities**:
 - HTTP request/response handling
 - Input validation and sanitization  
 - Authentication token verification
 - Error handling and status codes
 - API documentation generation (OpenAPI/Swagger)
 
-### Layer 2: Orchestration Layer
+### Layer 2: Orchestration Layer - Workflow Management
 **Purpose**: Business logic coordination and workflow management
 
-**Components**:
-- **therapy_session_processor.py** (1,833 lines): Core session lifecycle management
-- **Service Layer**: Domain-specific business logic
-- **Repository Pattern**: Data access abstraction
+#### therapy_session_processor.py (1,669 lines) - Session Lifecycle Orchestrator
+**Architecture**: Repository pattern with dependency injection
 
-**Responsibilities**:
+**Core Responsibilities**:
+1. **Session Management**: Create, update, track therapy sessions
+2. **File Coordination**: Download from Supabase Storage, manage temporary files
+3. **Processing Orchestration**: Coordinate C3D analysis with database population
+4. **Database Population**: Populate all related tables (sessions, statistics, scores)
+
+**Design Patterns**:
+- **Repository Pattern**: Clean data access abstraction
+- **Dependency Injection**: Testable, configurable service composition
+- **Error Recovery**: Comprehensive error handling with status tracking
+
+**Key Methods**:
+```python
+async def create_session()           # Create therapy session record
+async def process_c3d_file()        # Complete processing workflow
+async def _populate_all_database_tables()  # Database persistence
+```
+
+**Service Layer Responsibilities**:
 - Patient-therapist relationship management
 - Session creation and state tracking
 - Workflow coordination across domains
-- Repository pattern implementation
-- Dependency injection for testability
-- Transaction management
+- Transaction management and rollback
+- Progress tracking and status updates
 
-### Layer 3: Processing Layer
+### Layer 3: Processing Layer - Single Source of Truth
 **Purpose**: EMG signal processing and analysis algorithms
 
-**Components**:
-- **processor.py** (1,496 lines): GHOSTLYC3DProcessor - Single Source of Truth
-- **EMG Analysis Engine**: Signal processing algorithms
-- **Signal Processing**: Filtering, envelope detection, contraction analysis
+#### processor.py (1,341 lines) - GHOSTLYC3DProcessor Class
+**Architecture**: Single Source of Truth (SoT) for all EMG processing
 
-**Responsibilities**:
-- C3D file parsing and metadata extraction
-- EMG signal filtering and preprocessing
+**Core Responsibilities**:
+1. **C3D File Parsing**: ezc3d integration with GHOSTLY-specific channel detection
+2. **EMG Signal Processing**: Filtering, envelope calculation, statistical analysis
+3. **Contraction Detection**: MVC-based amplitude and duration thresholds
+4. **Analytics Generation**: Clinical metrics (RMS, MAV, MPF, MDF, fatigue indices)
+
+**Dual Mode Support**:
+- `include_signals=True`: Full signal data (stateless mode)
+- `include_signals=False`: Analytics only (stateful mode, memory optimization)
+
+**Key Features**:
+- Flexible channel mapping for real-world C3D variations
+- Comprehensive metadata extraction
+- Performance optimization for large datasets
+- SOLID principles: single responsibility, dependency inversion
+
+**Processing Pipeline**:
+1. Parse C3D files using ezc3d library
+2. Calculate EMG metrics (RMS, MAV, MPF, MDF, fatigue indices)
+3. Detect muscle contractions using configurable thresholds
+4. Package analysis results in structured format
+5. Return either full signals or analytics based on mode
+
+**Clinical Algorithms**:
+- EMG signal filtering and preprocessing (Butterworth filters)
 - Contraction detection (10% threshold, 100ms minimum duration)
-- Statistical analysis (RMS, MAV, MPF, MDF)
+- Statistical analysis with temporal windowing
 - Fatigue index calculations
 - Performance scoring and compliance metrics
 
@@ -178,21 +243,57 @@ backend/services/
 ### Stateless (Upload Route)
 ```mermaid
 sequenceDiagram
-    Client->>API: Upload C3D
-    API->>Processor: Process file
-    Processor->>Processor: Analyze EMG
-    Processor-->>API: Complete results
-    API-->>Client: JSON response
+    participant Client
+    participant API
+    participant Processor
+    
+    rect rgb(227, 242, 253)
+        Note over Client,API: Upload Phase
+        Client->>API: Upload C3D
+    end
+    
+    rect rgb(243, 229, 245)
+        Note over API,Processor: Processing Phase
+        API->>Processor: Process file
+        Processor->>Processor: Analyze EMG
+        Processor-->>API: Complete results
+    end
+    
+    rect rgb(232, 245, 233)
+        Note over API,Client: Response Phase
+        API-->>Client: JSON response
+    end
 ```
 
 ### Stateful (Webhook Route)
 ```mermaid
 sequenceDiagram
-    Storage->>Webhook: File uploaded
-    Webhook->>Session: Create session
-    Session->>Processor: Process C3D
-    Processor->>Database: Save results
-    Database-->>Session: Confirm
+    participant Storage
+    participant Webhook
+    participant Session
+    participant Processor
+    participant Database
+    
+    rect rgb(255, 243, 224)
+        Note over Storage,Webhook: Trigger Phase
+        Storage->>Webhook: File uploaded
+    end
+    
+    rect rgb(252, 228, 236)
+        Note over Webhook,Session: Session Creation
+        Webhook->>Session: Create session
+    end
+    
+    rect rgb(243, 229, 245)
+        Note over Session,Processor: Processing Phase
+        Session->>Processor: Process C3D
+    end
+    
+    rect rgb(232, 245, 233)
+        Note over Processor,Database: Persistence Phase
+        Processor->>Database: Save results
+        Database-->>Session: Confirm
+    end
 ```
 
 ## Key Design Patterns
