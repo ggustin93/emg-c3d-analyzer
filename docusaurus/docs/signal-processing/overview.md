@@ -1,108 +1,76 @@
 ---
 sidebar_position: 1
-title: Signal Processing Overview
+title: Overview
 ---
 
-# Signal Processing Overview
+# EMG Signal Processing
 
-The EMG C3D Analyzer implements comprehensive signal processing algorithms for EMG data analysis.
+**Purpose**: Transform raw EMG data from C3D files into clinical metrics.
+
+**Source**: [`backend/emg/signal_processing.py`](https://github.com/user/emg-c3d-analyzer/blob/main/backend/emg/signal_processing.py) | [`backend/emg/emg_analysis.py`](https://github.com/user/emg-c3d-analyzer/blob/main/backend/emg/emg_analysis.py)
 
 ## Processing Pipeline
 
 ```mermaid
 graph LR
-    A[C3D File] --> B[Signal Extraction]
-    B --> C[Filtering]
-    C --> D[Envelope Detection]
-    D --> E[Contraction Detection]
-    E --> F[Statistical Analysis]
-    F --> G[Clinical Metrics]
+    A[Raw EMG<br/>990 Hz] --> B[High-Pass<br/>20 Hz]
+    B --> C[Rectify<br/>abs x]
+    C --> D[Low-Pass<br/>10 Hz]
+    D --> E[Smooth<br/>50ms]
+    E --> F[Detect<br/>Contractions]
 ```
 
-## Core Algorithms
+*Source: `signal_processing.py:45-62`*
 
-### 1. Butterworth Filtering
+## Key Parameters
 
-- **Band-pass**: 20-500Hz
-- **Order**: 4th order filter
-- **Purpose**: Remove noise and artifacts
-- **Implementation**: SciPy signal processing
+| Parameter | Value | Source Location |
+|-----------|-------|-----------------|
+| **High-Pass Filter** | 20 Hz | `signal_processing.py:48` |
+| **Low-Pass Filter** | 10 Hz | `signal_processing.py:56` |
+| **Filter Order** | 4 | `signal_processing.py:57` |
+| **Smoothing Window** | 50 ms | `signal_processing.py:61` |
+| **Detection Threshold** | 10% | `emg_analysis.py:24` |
+| **Min Contraction** | 100 ms | `emg_analysis.py:27` |
+| **Merge Gap** | 200 ms | `emg_analysis.py:29` |
 
-```python
-def apply_butterworth_filter(signal, fs=990):
-    nyquist = fs / 2
-    low = 20 / nyquist
-    high = 500 / nyquist
-    b, a = butter(4, [low, high], btype='band')
-    return filtfilt(b, a, signal)
-```
+## Dual-Signal Approach
 
-### 2. Envelope Detection
+*Implementation: `emg_analysis.py:129-131`*
 
-- **Method**: Rectification + Low-pass filter
-- **Window**: Adaptive based on signal
-- **Output**: Signal envelope for analysis
+- **Timing Signal**: Uses "Activated" or preprocessed signal for onset/offset detection
+- **Amplitude Signal**: Uses RMS envelope for intensity measurement
+- **Rationale**: Separates temporal precision from amplitude accuracy
 
-### 3. Contraction Detection
+## Output Metrics
 
-#### MVC Threshold Logic
-- **Threshold**: 20% MVC (default)
-- **Duration**: Minimum 500ms
-- **Channels**: Bilateral (CH1/CH2)
+### Contraction Analysis
+- Count, duration (ms), amplitude (RMS)
+- Work (area under curve), fatigue indicators
 
-#### Detection Algorithm
-1. Calculate baseline noise
-2. Apply MVC threshold
-3. Identify contraction periods
-4. Validate duration criteria
+### Quality Validation
+- Signal range validation (`signal_processing.py:118`)
+- Minimum sample requirements (`signal_processing.py:65`)
+- Clinical duration limits (10s-10min) (`signal_processing.py:72-73`)
 
-## Statistical Metrics
+## Clinical Thresholds
 
-### Time Domain
-- **RMS** (Root Mean Square)
-- **MAV** (Mean Absolute Value)
-- **Peak amplitude**
-- **Duration metrics**
+**Signal Quality** (`signal_processing.py:76-127`):
+- Minimum variation: 1e-10
+- Duration: 10-600 seconds
+- Sample requirement: 1000 samples minimum
 
-### Frequency Domain
-- **MPF** (Mean Power Frequency)
-- **MDF** (Median Frequency)
-- **Power spectrum analysis**
+**Detection Criteria** (`emg_analysis.py:78-85`):
+- Threshold: 10% of signal range (adaptive)
+- Duration: 100ms minimum contraction
+- Gap merging: 200ms physiological tolerance
+- Refractory: 50ms between contractions
 
-### Fatigue Analysis
-- **Fatigue index** calculation
-- **Temporal windowing**
-- **Trend analysis**
+## File References
 
-## Implementation Details
+**Core Implementation**:
+- [`signal_processing.py`](backend/emg/signal_processing.py) - Filtering and preprocessing
+- [`emg_analysis.py`](backend/emg/emg_analysis.py) - Contraction detection
+- [`processor.py`](backend/services/c3d/processor.py) - Main processing orchestration
 
-### Key Files
-- `processor.py` - Core processing engine
-- `signal_processing.py` - Algorithm implementations
-- `contraction_detector.py` - Detection logic
-
-### Performance
-- **Sampling Rate**: 990Hz
-- **Processing Time**: Less than 2s for 175s data
-- **Memory**: Optimized for large datasets
-
-## Clinical Applications
-
-### Rehabilitation Assessment
-- Motor control evaluation
-- Fatigue monitoring
-- Progress tracking
-- Performance scoring
-
-### Quality Metrics
-- Signal-to-noise ratio
-- Contraction consistency
-- Bilateral symmetry
-- Temporal patterns
-
-## Next Steps
-
-- [Butterworth Filtering Details](./butterworth-filtering)
-- [Envelope Detection](./envelope-detection)
-- [Contraction Detection](./contraction-detection)
-- [Statistical Analysis](./statistical-analysis)
+**Next**: [Filtering Details](./butterworth-filtering) | [Detection Algorithm](./contraction-detection)

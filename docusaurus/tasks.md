@@ -7,10 +7,56 @@ Complete overhaul of Docusaurus documentation to accurately reflect the sophisti
 - **Documentation**: Basic Docusaurus setup with outdated placeholders (2019-2021 blog posts)
 - **Architecture**: 4-layer system (API → Orchestration → Processing → Persistence)
 - **Tech Stack**: React 19, FastAPI, Python 3.11+, Supabase, Redis
-- **Testing**: 223 tests (135 backend, 78 frontend)
+- **Testing**: 135 tests (11 backend unit + 19 API + 3 E2E + 78 frontend)
 - **Development**: Agentic workflows with Claude Code and Cursor
 
-## Task Breakdown
+## Current Progress (Pragmatic Approach - YAGNI/KISS/DRY)
+- ✅ **Clinical Documentation**: metrics-definitions.md completed (comprehensive EMG algorithms)
+- ✅ **Backend Overview**: DDD architecture and API design patterns completed
+- 🔄 **7 Balanced Sections**: Focused 3-7 files per section approach
+- 🎯 **Essential Documentation**: Document what exists, build what's needed (no over-engineering)
+
+## Documentation Approaches
+
+### Pragmatic Approach (RECOMMENDED - YAGNI/KISS/DRY)
+
+**Timeline**: 2 weeks | **Effort**: 25-30 hours | **Team**: 1-2 people
+
+#### 7 Focused Sections (Essential Only)
+```
+docusaurus/docs/
+├── clinical/          # ✅ Domain knowledge (4 files) - COMPLETED
+├── backend/           # 🔄 Technical implementation (7 files) - IN PROGRESS
+├── frontend/          # Essential React patterns (5 files)
+├── supabase/          # Consolidated integration (4 files)
+├── testing/           # Current 135-test suite (3 files)
+├── infrastructure/    # Essential CI/CD & deployment (4 files)
+└── architecture/      # Existing + design patterns (3 files)
+```
+
+#### Essential Infrastructure Only (4 files)
+- **deployment.md** - Docker + production deployment
+- **ci-cd.md** - GitHub Actions workflow
+- **monitoring.md** - Health checks, logging, error tracking  
+- **environments.md** - Dev/staging/prod configuration
+
+**Remove**: Platform-specific guides, extensive scaling docs, complex infrastructure-as-code
+
+#### Implementation Priority
+1. **Week 1**: Complete backend + supabase essentials
+2. **Week 2**: Frontend + testing + infrastructure basics
+
+---
+
+### Comprehensive Approach (Original Plan - Over-Engineered)
+
+**Timeline**: 3 weeks | **Effort**: 75 hours | **Team**: 5-7 people
+
+*Note: This approach violates YAGNI/KISS/DRY principles but provides exhaustive coverage*
+
+---
+
+## Task Breakdown (Original Comprehensive Plan)
 
 ### Phase 1: Foundation & Cleanup (Priority: Critical)
 
@@ -326,11 +372,38 @@ docs/development/
 ./start_dev.sh               # Docker development
 ```
 
-#### Task 6.3: DevOps & CI/CD Documentation
-**Effort**: 6 hours  
-**Create New Section**: `docs/devops/`
+#### Task 6.3: DevOps & CI/CD Documentation (STREAMLINED)
+**Effort**: 6 hours (was 14+ hours in original)  
+**Create New Section**: `docs/infrastructure/` (Essential Only)
 
-**Files to Create**:
+**Files to Create** (Pragmatic Approach):
+```
+docs/infrastructure/
+├── deployment.md        # Docker + production deployment
+├── ci-cd.md            # GitHub Actions workflow
+├── monitoring.md       # Health checks, logging, error tracking
+└── environments.md     # Dev/staging/prod configuration
+```
+
+**Essential DevOps Components**:
+- GitHub Actions for CI/CD
+- Docker containerization (development & production)
+- Environment management (dev/staging/prod)
+- Basic monitoring and error tracking
+
+**REMOVED (YAGNI)**:
+- ❌ Platform-specific deployment guides (Coolify)
+- ❌ Extensive scaling strategies before basics work
+- ❌ Complex infrastructure-as-code before simple deployment proven
+- ❌ Advanced monitoring before core functionality exists
+
+---
+
+#### Original Comprehensive DevOps Plan (Over-Engineered)
+<details>
+<summary>Click to view original 12+ file DevOps plan</summary>
+
+**Files to Create** (Original Over-Engineered Approach):
 ```
 docs/devops/
 ├── overview.md          # DevOps architecture
@@ -362,6 +435,8 @@ docs/devops/
 - Coolify for self-hosted deployment
 - Infrastructure as Code principles
 - Monitoring and observability
+
+</details>
 
 #### Task 6.4: Deployment Documentation
 **Effort**: 4 hours  

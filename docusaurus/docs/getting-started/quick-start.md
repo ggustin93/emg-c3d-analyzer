@@ -54,22 +54,8 @@ Once running, you can access:
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080/docs
-- **Documentation**: http://localhost:3002
+- **Documentation**: http://localhost:3200
 
-## 4. Upload Your First C3D File
-
-1. Navigate to the Upload tab
-2. Click "Choose File" and select a C3D file
-3. Click "Upload and Process"
-4. View the analysis results in real-time!
-
-## Test Data
-
-Use our sample C3D file for testing:
-- **File**: `Ghostly_Emg_20230321_17-50-17-0881.c3d`
-- **Size**: 2.74MB
-- **Duration**: 175.1 seconds
-- **Expected Results**: 20 CH1 and 9 CH2 contractions
 
 ## Next Steps
 

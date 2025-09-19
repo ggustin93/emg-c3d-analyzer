@@ -5,47 +5,61 @@ title: Testing Overview
 
 # Testing Strategy
 
-Comprehensive test suite with 223 tests ensuring system reliability.
+Comprehensive test suite with 111 tests ensuring system reliability and quality across backend EMG processing and frontend user interface.
 
 ## Test Distribution
 
 ```mermaid
-pie title Test Coverage (223 Total)
-    "Backend Unit" : 16
-    "Backend API" : 20
-    "Backend Integration" : 96
+pie title Test Coverage (111 Total Tests)
+    "Backend Unit" : 11
+    "Backend API" : 19
     "Backend E2E" : 3
-    "Frontend Components" : 45
+    "Frontend Component" : 45
     "Frontend Hooks" : 33
 ```
+
+### Test Statistics
+- **Total Tests**: 111 (33 backend + 78 frontend)
+- **Backend Coverage**: 62% (EMG processing focus)
+- **Frontend Pass Rate**: 100% (78/78 tests passing)
+- **E2E Tests**: 3 comprehensive workflow tests with real C3D files
 
 ## Running Tests
 
 ### All Tests
 ```bash
-# Complete test suite
+# Complete test suite - runs all 111 tests with environment validation
 ./start_dev_simple.sh --test
 
-# Backend only (135 tests)
-cd backend && python -m pytest tests/ -v
+# Backend only (33 tests total)
+cd backend
+source venv/bin/activate  # Required for backend testing
+python -m pytest tests/ -v
 
-# Frontend only (78 tests)
-cd frontend && npm test -- --run
+# Frontend only (78 tests total, 100% passing)
+cd frontend
+npm test -- --run        # Run once with results summary
+npm test                 # Run in watch mode for development
 ```
 
 ### Backend Tests
 ```bash
-# Unit tests
-pytest tests/test_emg_analysis.py
+# Unit tests (11 tests)
+pytest tests/test_emg_analysis.py -v
 
-# API tests
-pytest tests/test_api_endpoints.py
+# API tests (19 tests)
+pytest tests/test_api_endpoints.py -v
 
-# E2E with real C3D
-pytest tests/test_e2e_complete_workflow.py
+# E2E with real C3D (3 tests)
+pytest tests/test_e2e_complete_workflow.py -v -s
 
-# Coverage report
-pytest tests/ --cov=backend
+# Coverage report (62% EMG processing coverage)
+pytest tests/ --cov=backend --cov-report=html
+
+# Run specific test categories
+pytest tests/ -k "test_emg" -v     # EMG analysis tests
+pytest tests/ -k "test_api" -v     # API endpoint tests
+pytest tests/ -k "test_e2e" -v     # End-to-end tests
 ```
 
 ### Frontend Tests
@@ -90,12 +104,36 @@ frontend/src/
 
 ### Critical Test Lessons
 
+#### Supabase Client Mocking
 ```python
-# ✅ CORRECT - Supabase is synchronous
+# ✅ CORRECT - Supabase Python client is synchronous
+from unittest.mock import MagicMock
 mock_service = MagicMock()
+mock_service.from_.return_value.select.return_value.execute.return_value.data = [...]
 
-# ❌ WRONG - Causes coroutine errors
-mock_service = AsyncMock()
+# ❌ WRONG - AsyncMock causes coroutine errors
+from unittest.mock import AsyncMock
+mock_service = AsyncMock()  # TypeError: 'coroutine' object is not iterable
+```
+
+**Key Principle**: The Supabase Python client (`supabase-py`) is **synchronous**, not async. Always use `MagicMock` for testing, never `AsyncMock`.
+
+#### Common Test Patterns
+```python
+# Mocking Supabase client
+@patch('services.clinical.therapy_session_service.get_supabase_client')
+def test_service_method(mock_get_client):
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    
+    # Setup query chain
+    mock_client.table.return_value.select.return_value.execute.return_value.data = [
+        {"id": "123", "status": "completed"}
+    ]
+    
+    # Test the service
+    result = service.process_session("123")
+    assert result.status == "completed"
 ```
 
 ## Coverage Targets

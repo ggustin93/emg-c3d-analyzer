@@ -76,15 +76,17 @@ REDIS_CONNECTION_TIMEOUT=20
 
 ```env
 # Signal Processing
-SAMPLING_RATE=990
-FILTER_LOW_FREQ=20
-FILTER_HIGH_FREQ=500
-FILTER_ORDER=4
+SAMPLING_RATE=1000          # Default sampling rate in Hz
+FILTER_LOW_FREQ=20          # High-pass filter cutoff
+FILTER_HIGH_FREQ=500        # Low-pass filter cutoff
+FILTER_ORDER=4              # Butterworth filter order
+SMOOTHING_WINDOW=100        # Envelope detection window
 
 # Contraction Detection
-MVC_THRESHOLD=0.2    # 20% of MVC
-MIN_CONTRACTION_DURATION=0.5  # seconds
-MAX_CONTRACTION_GAP=0.2       # seconds
+MVC_THRESHOLD=0.1           # 10% of maximum amplitude
+MIN_CONTRACTION_DURATION=0.1  # 100ms minimum duration
+MERGE_THRESHOLD=0.2         # 200ms for merging related contractions
+REFRACTORY_PERIOD=0.05      # 50ms refractory period
 ```
 
 #### Performance Settings

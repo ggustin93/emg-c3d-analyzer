@@ -20,7 +20,14 @@ const sidebars: SidebarsConfig = {
         'getting-started/quick-start',
         'getting-started/installation',
         'getting-started/configuration',
-        'getting-started/first-analysis',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🏗️ Architecture',
+      collapsed: false,
+      items: [
+        'architecture/overview',
       ],
     },
     {
@@ -32,14 +39,7 @@ const sidebars: SidebarsConfig = {
         'signal-processing/butterworth-filtering',
         'signal-processing/envelope-detection',
         'signal-processing/contraction-detection',
-      ],
-    },
-    {
-      type: 'category',
-      label: '🏗️ Architecture',
-      collapsed: true,
-      items: [
-        'architecture/overview',
+        'signal-processing/parameters',
       ],
     },
     {

@@ -14,8 +14,15 @@ Complete setup instructions for the EMG C3D Analyzer development environment.
 - **RAM**: 8GB minimum (16GB recommended)
 - **Storage**: 5GB free space
 - **CPU**: 2+ cores
+- **Browser**: Chrome, Firefox, Safari, or Edge (latest versions)
+- **Network**: Internet connection for Supabase integration
 
 ### Software Prerequisites
+- **Python**: 3.11 or higher
+- **Node.js**: 20.0.0 or higher
+- **Git**: For version control
+- **Docker**: Optional, for containerized deployment
+- **Redis**: 7.2+ (optional, for caching)
 
 #### Python Setup
 ```bash
@@ -84,13 +91,34 @@ cd backend
 python scripts/migrate.py
 ```
 
-## Docker Installation (Optional)
+## Installation Methods
 
-### Prerequisites
+### Method 1: Simple Development Script (Recommended)
+
+The easiest way to get started:
+
+```bash
+# Clone the repository
+git clone https://github.com/ggustin93/emg-c3d-analyzer.git
+cd emg-c3d-analyzer
+
+# Start everything with one command
+./start_dev_simple.sh
+
+# This will:
+# - Install all dependencies
+# - Start backend server (port 8080)
+# - Start frontend server (port 3000)
+# - Open your browser automatically
+```
+
+### Method 2: Docker Installation
+
+#### Prerequisites
 - Docker Desktop installed
 - Docker Compose v2+
 
-### Build and Run
+#### Build and Run
 
 ```bash
 # Build containers
@@ -101,6 +129,20 @@ docker-compose up
 
 # Or use the helper script
 ./start_dev.sh
+```
+
+### Method 3: Manual Installation
+
+Follow the Python and Node.js setup steps above, then:
+
+```bash
+# Start backend
+cd backend
+uvicorn main:app --reload --port 8080
+
+# Start frontend (new terminal)
+cd frontend
+npm start
 ```
 
 ## Verify Installation
