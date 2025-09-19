@@ -284,7 +284,7 @@ docs/backend/
 
 ---
 
-### Phase 6: Testing & Deployment (Priority: High)
+### Phase 6: Testing & DevOps (Priority: High)
 
 #### Task 6.1: Testing Documentation
 **Effort**: 4 hours  
@@ -297,7 +297,7 @@ docs/testing/
 ├── backend-testing.md   # 135 Python tests
 ├── frontend-testing.md  # 78 React tests
 ├── e2e-testing.md      # Real C3D data tests
-└── ci-cd.md           # GitHub Actions
+└── test-automation.md  # AI-powered testing
 ```
 
 **Test Organization**:
