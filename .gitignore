@@ -186,7 +186,10 @@ frontend/coverage/.tmp
 .obsidian/
 coverage/
 
-docs/
+
+backup_tasks*
+
+docs-backup/
 
 .specify/*
 specs/*
