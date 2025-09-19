@@ -58,14 +58,6 @@ const sidebars: SidebarsConfig = {
         'frontend/react-architecture',
       ],
     },
-    {
-      type: 'category',
-      label: '📝 Examples',
-      collapsed: true,
-      items: [
-        'examples/markdown-features',
-      ],
-    },
   ],
 };
 
