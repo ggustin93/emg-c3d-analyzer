@@ -23,7 +23,7 @@ Performance scoring system for elderly rehabilitation (≥65 years) with Blood F
 
 ## Performance Score Formula
 
-$$P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times S_{effort} + w_g \times S_{game}$$
+$$P_{\text{overall}} = w_c \times S_{\text{compliance}} + w_s \times S_{\text{symmetry}} + w_e \times S_{\text{effort}} + w_g \times S_{\text{game}}$$
 
 **Default Weights** ($\sum w_i = 1$):
 - $w_c = 0.5$ (Therapeutic Compliance)
@@ -33,7 +33,7 @@ $$P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times
 
 ## 1. Therapeutic Compliance
 
-$$S_{compliance} = \frac{S_{comp}^{left} + S_{comp}^{right}}{2} \times C_{BFR}$$
+$$S_{\text{compliance}} = \frac{S_{\text{comp}}^{\text{left}} + S_{\text{comp}}^{\text{right}}}{2} \times C_{\text{BFR}}$$
 
 **BFR Safety Gate**:
 $$C_{BFR} = \begin{cases}
@@ -42,7 +42,7 @@ $$C_{BFR} = \begin{cases}
 \end{cases}$$
 
 **Per-Muscle Compliance**:
-$$S_{comp}^{muscle} = w_{comp} \times R_{comp} + w_{int} \times R_{int} + w_{dur} \times R_{dur}$$
+$$S_{\text{comp}}^{\text{muscle}} = w_{\text{comp}} \times R_{\text{comp}} + w_{\text{int}} \times R_{\text{int}} + w_{\text{dur}} \times R_{\text{dur}}$$
 
 | Component | Formula | Description |
 |-----------|---------|-------------|
@@ -53,7 +53,7 @@ $$S_{comp}^{muscle} = w_{comp} \times R_{comp} + w_{int} \times R_{int} + w_{dur
 ## 2. Muscle Symmetry
 
 **Clinical Formula** (Asymmetry Index):
-$$S_{symmetry} = \left(1 - \frac{|S_{comp}^{left} - S_{comp}^{right}|}{S_{comp}^{left} + S_{comp}^{right}}\right) \times 100$$
+$$S_{\text{symmetry}} = \left(1 - \frac{|S_{\text{comp}}^{\text{left}} - S_{\text{comp}}^{\text{right}}|}{S_{\text{comp}}^{\text{left}} + S_{\text{comp}}^{\text{right}}}\right) \times 100$$
 
 **Clinical Interpretation**:
 - **>90%** = Excellent symmetry (return-to-sport criteria)
@@ -73,7 +73,7 @@ Based on post-session **Borg CR-10 Scale**:
 
 ## 4. Game Performance Score
 
-$$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \times 100$$
+$$S_{\text{game}} = \frac{\text{game points achieved}}{\text{max achievable points}} \times 100$$
 
 **Note**: Optional metric (default weight = 0.0)
 
@@ -105,13 +105,13 @@ $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \t
 - Game score: 850/1000 points
 
 **Calculations**:
-- $S_{comp}^{left} = \frac{1}{3}(0.92 + 0.82 + 0.91) = 88.3\%$
-- $S_{comp}^{right} = \frac{1}{3}(1.00 + 0.67 + 0.92) = 86.2\%$
-- $S_{compliance} = \frac{88.3 + 86.2}{2} \times 1.0 = 87.3\%$
-- $S_{symmetry} = \left(1 - \frac{|88.3-86.2|}{88.3+86.2}\right) \times 100 = 98.8\%$
-- $S_{effort} = 100\%$ (RPE = 6)
+- $S_{\text{comp}}^{\text{left}} = \frac{1}{3}(0.92 + 0.82 + 0.91) = 88.3\%$
+- $S_{\text{comp}}^{\text{right}} = \frac{1}{3}(1.00 + 0.67 + 0.92) = 86.2\%$
+- $S_{\text{compliance}} = \frac{88.3 + 86.2}{2} \times 1.0 = 87.3\%$
+- $S_{\text{symmetry}} = \left(1 - \frac{|88.3-86.2|}{88.3+86.2}\right) \times 100 = 98.8\%$
+- $S_{\text{effort}} = 100\%$ (RPE = 6)
 
 **Overall Performance**:
-$$P_{overall} = 0.5 \times 87.3 + 0.25 \times 98.8 + 0.25 \times 100 = 93.4\%$$
+$$P_{\text{overall}} = 0.5 \times 87.3 + 0.25 \times 98.8 + 0.25 \times 100 = 93.4\%$$
 
 **Clinical Interpretation**: Excellent rehabilitation performance - optimal therapeutic benefit achieved.
