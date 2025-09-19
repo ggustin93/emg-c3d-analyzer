@@ -44,6 +44,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '🔌 API',
+      collapsed: true,
+      items: [
+        'api/overview',
+      ],
+    },
+    {
+      type: 'category',
       label: '⚙️ Backend',
       collapsed: true,
       items: [
@@ -56,6 +64,102 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'frontend/react-architecture',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🗄️ Supabase',
+      collapsed: true,
+      items: [
+        'supabase/overview',
+        {
+          type: 'category',
+          label: '🔐 Authentication',
+          collapsed: true,
+          items: [
+            'supabase/auth/overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: '💾 Database',
+          collapsed: true,
+          items: [
+            'supabase/database/overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: '🔒 Row Level Security',
+          collapsed: true,
+          items: [
+            'supabase/rls/overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: '📦 Storage',
+          collapsed: true,
+          items: [
+            'supabase/storage/overview',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      label: '🚀 DevOps',
+      collapsed: true,
+      items: [
+        'devops/overview',
+        {
+          type: 'category',
+          label: '🔄 CI/CD',
+          collapsed: true,
+          items: [
+            'devops/ci-cd/overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: '🐳 Docker',
+          collapsed: true,
+          items: [
+            'devops/docker/overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: '⚡ Coolify',
+          collapsed: true,
+          items: [
+            'devops/coolify/overview',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      label: '🧪 Testing',
+      collapsed: true,
+      items: [
+        'testing/overview',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🤖 Agentic Development',
+      collapsed: true,
+      items: [
+        'agentic-development/overview',
+        {
+          type: 'category',
+          label: '🧠 Claude Code',
+          collapsed: true,
+          items: [
+            'agentic-development/claude-code/overview',
+          ],
+        },
       ],
     },
   ],
