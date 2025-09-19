@@ -9,21 +9,23 @@ Clinical scoring algorithms for GHOSTLY+ rehabilitation therapy.
 
 ## Overview
 
-Performance scoring system for elderly rehabilitation (≥65 years) with Blood Flow Restriction (BFR) therapy.
+Performance scoring system for elderly rehabilitation ($\geq 65$ years) with Blood Flow Restriction (BFR) therapy.
 
 ## Study Protocol
 
-**GHOSTLY+ TBM Study**: 120 hospitalized adults (≥65 years)
+**GHOSTLY+ TBM Study**: 120 hospitalized adults ($\geq 65$ years)
 
 **Intervention**:
 - 5 therapy sessions/week × 14 days
 - Each session = 3 game sessions (2-min rest)
 - Each game = 12 contractions per muscle (left + right quadriceps)
-- Target: ≥75% MVC intensity under 50% AOP BFR
+- Target: $\geq 75\%$ MVC intensity under 50% AOP BFR
 
 ## Performance Score Formula
 
-$$P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times S_{effort} + w_g \times S_{game}$$
+$$
+P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times S_{effort} + w_g \times S_{game}
+$$
 
 **Default Weights** ($\sum w_i = 1$):
 - $w_c = 0.5$ (Therapeutic Compliance)
@@ -33,32 +35,41 @@ $$P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times
 
 ## 1. Therapeutic Compliance
 
-$$S_{compliance} = \frac{S_{comp,left} + S_{comp,right}}{2} \times C_{BFR}$$
+$$
+S_{compliance} = \frac{S_{comp,left} + S_{comp,right}}{2} \times C_{BFR}
+$$
 
 **BFR Safety Gate**:
-$$C_{BFR} = \begin{cases}
-1.0 & \text{if pressure} \in [45\%, 55\%] \text{ AOP} \\
+$$
+C_{BFR} = \begin{cases}
+1.0 & \text{if pressure} \in [45\%, 55\%] \ \text{AOP} \\
 0.0 & \text{otherwise}
-\end{cases}$$
+\end{cases}
+$$
 
 **Per-Muscle Compliance**:
-$$S_{comp,muscle} = w_{comp} \times R_{comp} + w_{int} \times R_{int} + w_{dur} \times R_{dur}$$
+$$
+S_{comp,muscle} = w_{comp} \times R_{comp} + w_{int} \times R_{int} + w_{dur} \times R_{dur}
+$$
 
 | Component | Formula | Description |
 |-----------|---------|-------------|
 | Completion Rate ($R_{comp}$) | $\frac{\text{contractions completed}}{12}$ | All prescribed contractions |
-| Intensity Rate ($R_{int}$) | $\frac{\text{reps} \geq 75\% \text{MVC}}{\text{reps completed}}$ | Force threshold achievement |
+| Intensity Rate ($R_{int}$) | $\frac{\text{reps} \geq 75\% \ \text{MVC}}{\text{reps completed}}$ | Force threshold achievement |
 | Duration Rate ($R_{dur}$) | $\frac{\text{reps} \geq \text{duration threshold}}{\text{reps completed}}$ | Time requirement compliance |
 
 ## 2. Muscle Symmetry
 
 **Clinical Formula** (Asymmetry Index):
-$$S_{symmetry} = \left(1 - \frac{|S_{comp,left} - S_{comp,right}|}{S_{comp,left} + S_{comp,right}}\right) \times 100$$
+
+$$
+S_{symmetry} = \left(1 - \frac{|S_{comp,left} - S_{comp,right}|}{S_{comp,left} + S_{comp,right}}\right) \times 100
+$$
 
 **Clinical Interpretation**:
 - **>90%** = Excellent symmetry (return-to-sport criteria)
 - **80-90%** = Good symmetry (acceptable for daily activities)  
-- **<80%** = Poor symmetry (requires therapeutic intervention)
+- **&lt;80%** = Poor symmetry (requires therapeutic intervention)
 
 ## 3. Subjective Effort Score
 
@@ -73,7 +84,9 @@ Based on post-session **Borg CR-10 Scale**:
 
 ## 4. Game Performance Score
 
-$$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \times 100$$
+$$
+S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \times 100
+$$
 
 **Note**: Optional metric (default weight = 0.0)
 
@@ -99,9 +112,9 @@ $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \t
 **Scenario**: 72-year-old patient, Day 5, BFR at 52% AOP
 
 **Session Metrics**:
-- Left muscle: 11/12 completed (92%), 9/11 ≥75% MVC (82%), 10/11 ≥2s (91%)
-- Right muscle: 12/12 completed (100%), 8/12 ≥75% MVC (67%), 11/12 ≥2s (92%)
-- Post-session RPE: 6
+- Left muscle: 11/12 completed (92%), 9/11 $\geq 75\%$ MVC (82%), 10/11 $\geq 2$s (91%)
+- Right muscle: 12/12 completed (100%), 8/12 $\geq 75\%$ MVC (67%), 11/12 $\geq 2$s (92%)
+- Post-session RPE: 6  
 - Game score: 850/1000 points
 
 **Calculations**:
@@ -112,6 +125,9 @@ $$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \t
 - $S_{effort} = 100\%$ (RPE = 6)
 
 **Overall Performance**:
-$$P_{\text{overall}} = 0.5 \times 87.3 + 0.25 \times 98.8 + 0.25 \times 100 = 93.4\%$$
+
+$$
+P_{overall} = 0.5 \times 87.3 + 0.25 \times 98.8 + 0.25 \times 100 = 93.4\%
+$$
 
 **Clinical Interpretation**: Excellent rehabilitation performance - optimal therapeutic benefit achieved.

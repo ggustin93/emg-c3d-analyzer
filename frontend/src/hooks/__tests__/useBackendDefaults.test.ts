@@ -2,6 +2,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useBackendDefaults } from '../useBackendDefaults';
 
+// Mock API_CONFIG to return '/api' in test environment
+vi.mock('@/config/apiConfig', () => ({
+  API_CONFIG: {
+    baseUrl: '/api'
+  }
+}));
+
 describe('useBackendDefaults', () => {
   // Save original fetch
   const originalFetch = global.fetch;
@@ -9,15 +16,11 @@ describe('useBackendDefaults', () => {
   beforeEach(() => {
     // Reset fetch mock before each test
     global.fetch = vi.fn();
-    
-    // Don't mock VITE_API_URL - let it use default behavior
-    // In test environment, API_CONFIG.baseUrl will default to '/api'
   });
   
   afterEach(() => {
     // Restore original fetch
     global.fetch = originalFetch;
-    vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
   
@@ -65,8 +68,7 @@ describe('useBackendDefaults', () => {
   });
   
   it('should use fallback URL when environment variable is not set', async () => {
-    // Remove environment variable
-    vi.unstubAllEnvs();
+    // API_CONFIG is mocked to use '/api' consistently
     
     const mockDefaults = {
       target_contractions_ch1: 10,

@@ -76,10 +76,17 @@ describe('useAnalysisQuery Cache Behavior', () => {
       processingTime: 150  // Add mock processing time in milliseconds
     };
     
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockAnalysisResponse),
-    } as Response);
+    mockedFetch.mockImplementation(() => {
+      // Add small delay to simulate real API processing time
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: () => Promise.resolve(mockAnalysisResponse),
+          } as Response);
+        }, 10); // 10ms delay to ensure processingTime > 0
+      });
+    });
   });
 
   afterEach(() => {
