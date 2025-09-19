@@ -1,0 +1,31 @@
+# Backend (not needed for frontend deployment)
+backend/
+*.py
+*.pyc
+__pycache__/
+.pytest_cache/
+venv/
+
+# Environment files
+.env
+.env.*
+
+# Development files
+.DS_Store
+*.log
+.git/
+.github/
+
+# Documentation source files (but NOT the content we need)
+docusaurus/
+CLAUDE.md
+README.md
+
+# Scripts and configs we don't need in deployment
+scripts/
+*.sh
+
+# IMPORTANT: Do NOT ignore:
+# - frontend/ directory itself
+# - *.md files in frontend/public (our FAQ content)
+# - Any other frontend source files
