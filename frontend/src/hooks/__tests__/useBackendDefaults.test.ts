@@ -60,8 +60,8 @@ describe('useBackendDefaults', () => {
     expect(result.current.defaults).toEqual(mockDefaults);
     expect(result.current.error).toBe(null);
     
-    // Verify correct URL was called
-    expect(global.fetch).toHaveBeenCalledWith('http://test-backend/config/defaults');
+    // Verify correct URL was called - API_CONFIG.baseUrl resolves to 'http://localhost:8080' in tests
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/config/defaults');
   });
   
   it('should use fallback URL when environment variable is not set', async () => {
@@ -95,7 +95,7 @@ describe('useBackendDefaults', () => {
       expect(result.current.loading).toBe(false);
     });
     
-    // Should use fallback URL
+    // Should use API_CONFIG baseUrl which defaults to 'http://localhost:8080' when no env var set
     expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/config/defaults');
     expect(result.current.defaults).toEqual(mockDefaults);
   });

@@ -52,7 +52,7 @@ export interface BadgeProps {
  */
 export const resolvePatientId = (file: C3DFile): string => {
   // ⭐ PRIORITY 1: Storage Subfolder (HIGHEST PRIORITY - User Request)
-  const subfolderMatch = file.name.match(/^(P\d{3})\//);
+  const subfolderMatch = file.name?.match(/^(P\d{3})\//);
   if (subfolderMatch) {
     const patientId = subfolderMatch[1];
     return patientId;
@@ -69,7 +69,7 @@ export const resolvePatientId = (file: C3DFile): string => {
   }
   
   // 🔄 Filename Pattern Extraction (Last Resort)
-  const filenameMatch = file.name.match(/[_-](P\d{3})[_-]/i);
+  const filenameMatch = file.name?.match(/[_-](P\d{3})[_-]/i);
   if (filenameMatch) {
     const patientId = filenameMatch[1].toUpperCase();
     return patientId;

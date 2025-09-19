@@ -559,7 +559,7 @@ export function AppContent() {
       setIsLoading(false);
       setProcessingStep(1); // Reset processing step
     }
-  }, [handleSuccess, handleError, sessionParams, setUploadDate, analysisQuery.data, analysisQuery.isStale, analysisQuery.isLoading]);
+  }, [handleSuccess, handleError, sessionParams, setUploadDate, analysisQuery]);
 
   // Track if we've already loaded the file from URL to prevent infinite loops
   const [hasLoadedFromUrl, setHasLoadedFromUrl] = useState(false);
