@@ -3,61 +3,104 @@ sidebar_position: 1
 title: Architecture Overview
 ---
 
-# Architecture Overview
+# System Architecture
 
-The EMG C3D Analyzer follows a **4-layer architecture** with Domain-Driven Design (DDD) principles.
+4-layer architecture with Domain-Driven Design (DDD) for the EMG C3D Analyzer.
 
-## System Architecture
+## 4-Layer Architecture
+
+```mermaid
+graph TB
+    subgraph "API Layer"
+        A1[upload.py - 194 lines]
+        A2[webhooks.py - 349 lines]
+    end
+    
+    subgraph "Orchestration Layer"
+        O1[therapy_session_processor.py - 1,669 lines]
+    end
+    
+    subgraph "Processing Layer"
+        P1[processor.py - 1,341 lines]
+    end
+    
+    subgraph "Persistence Layer"
+        D1[Repositories]
+        D2[Supabase]
+    end
+    
+    A1 --> O1
+    A2 --> O1
+    O1 --> P1
+    O1 --> D1
+    D1 --> D2
+```
+
+## Layer Responsibilities
+
+### API Layer
+- **upload.py**: Stateless C3D processing
+- **webhooks.py**: Supabase Storage integration
+- HTTP concerns, validation, responses
+
+### Orchestration Layer
+- **therapy_session_processor.py**: Session lifecycle
+- Workflow coordination
+- Repository pattern with dependency injection
+
+### Processing Layer
+- **processor.py**: GHOSTLYC3DProcessor
+- Single Source of Truth for EMG analysis
+- Signal processing algorithms
+
+### Persistence Layer
+- Repository pattern implementation
+- Supabase client operations
+- File storage management
+
+## Domain Organization
 
 ```
-┌─────────────────────────┐      ┌───────────────────────────┐      ┌─────────────────────────┐
-│    React 19 Frontend    │◄──── │     FastAPI Backend       │ ───► │   Supabase Platform     │
-│ (Zustand, TypeScript)   │ HTTP │  (EMG Processing Engine)  │ SQL  │ (PostgreSQL & Storage)  │
-└─────────────────────────┘      └───────────────────────────┘      └─────────────────────────┘
+backend/services/
+├── clinical/       # Healthcare domain
+├── c3d/           # File processing domain
+├── data/          # Export/metadata domain
+├── infrastructure/ # Cross-cutting concerns
+└── cache/         # Performance optimization
 ```
 
-## Architecture Principles
+## Processing Modes
 
-### 1. Domain-Driven Design (DDD)
-- Clear separation of concerns
-- Domain boundaries around business logic
-- Services organized by domain (clinical, data, infrastructure)
+### Stateless (Upload Route)
+```mermaid
+sequenceDiagram
+    Client->>API: Upload C3D
+    API->>Processor: Process file
+    Processor->>Processor: Analyze EMG
+    Processor-->>API: Complete results
+    API-->>Client: JSON response
+```
 
-### 2. Single Source of Truth (SSoT)
-- Database: Supabase PostgreSQL
-- Configuration: Environment variables
-- Design tokens: Tailwind configuration
+### Stateful (Webhook Route)
+```mermaid
+sequenceDiagram
+    Storage->>Webhook: File uploaded
+    Webhook->>Session: Create session
+    Session->>Processor: Process C3D
+    Processor->>Database: Save results
+    Database-->>Session: Confirm
+```
 
-### 3. SOLID Principles
-- **Single Responsibility**: Each module has one purpose
-- **Open/Closed**: Open for extension, closed for modification
-- **Liskov Substitution**: Derived classes are substitutable
-- **Interface Segregation**: No unused interface dependencies
-- **Dependency Inversion**: Depend on abstractions
+## Key Design Patterns
 
-## Processing Pipeline
+- **Repository Pattern**: Clean data access
+- **Dependency Injection**: Testable services
+- **Single Source of Truth**: Processor as authority
+- **Domain-Driven Design**: Business-focused organization
 
-The EMG processing pipeline consists of three main stages:
+## Performance
 
-1. **Signal Processing** - Filtering and envelope detection
-2. **Contraction Detection** - MVC threshold analysis
-3. **Clinical Metrics** - Statistical analysis and scoring
-
-## Key Components
-
-### Backend Services
-- `processor.py` (1,341 lines) - Core EMG processing
-- `therapy_session_processor.py` (1,669 lines) - Session orchestration
-- `upload.py` - Stateless processing route
-- `webhooks.py` - Stateful webhook handling
-
-### Frontend Components
-- `sessionStore.ts` - Zustand state management
-- `EMGPlot.tsx` - Real-time visualization
-- `usePerformanceMetrics.ts` - Business logic hooks
-
-## Next Steps
-
-- [Processing Pipeline Details](./processing-pipeline)
-- [Domain-Driven Design](./domain-driven-design)
-- [SOLID Principles in Practice](./solid-principles)
+- **Redis Caching**: 50x speed improvement
+- **Async Processing**: Non-blocking operations
+- **Background Tasks**: Webhook processing
+- **Connection Pooling**: Database optimization

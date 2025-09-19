@@ -3,70 +3,130 @@ sidebar_position: 1
 title: Introduction
 ---
 
-# EMG C3D Analyzer Documentation
+# GHOSTLY+ EMG C3D Analyzer
 
-Welcome to the technical documentation for the **GHOSTLY+ EMG C3D Analyzer** - a rehabilitation technology platform designed to process and analyze Electromyography (EMG) data from C3D files.
+**Research-focused EMG analysis platform for the GHOSTLY+ rehabilitation gaming project**
 
-## 🎯 Project Overview
+<div style={{backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px', padding: '12px', marginBottom: '20px'}}>
+⚠️ <strong>Research Software Notice</strong><br/>
+This platform is under active development for rehabilitation research. It processes C3D files from the GHOSTLY serious game platform and is not intended for medical diagnosis or clinical production use.
+</div>
 
-The EMG C3D Analyzer processes C3D files from the GHOSTLY rehabilitation game, extracting and analyzing EMG signals for therapeutic assessment. It provides real-time analysis, clinical metrics, and performance scoring for rehabilitation professionals.
+## 🎯 Platform Purpose
 
-### Key Features
+The EMG C3D Analyzer serves as a **rehabilitation technology demonstrator**, bridging the gap between serious gaming therapy and clinical assessment. It transforms raw motion capture data from the GHOSTLY+ game into actionable therapeutic insights through advanced signal processing and analysis.
 
-- **Real-time EMG Processing**: Analyze C3D files with 175+ seconds of data at 990Hz
-- **Clinical Metrics**: RMS, MAV, MPF, MDF, fatigue analysis, and more
-- **Performance Scoring**: Evidence-based performance assessment
-- **Stateless & Stateful Modes**: Flexible processing for different use cases
-- **50x Performance**: Redis caching for lightning-fast repeated operations
+### Core Capabilities
 
-## 🏗️ Architecture
+#### 📊 **EMG Signal Processing**
+- GHOSTLY-specific dual-channel detection (CH1, CH2)
+- Drag-and-drop C3D file upload with instant processing
+- Real-time signal filtering and envelope detection
+- Sampling rate adaptation (1000-2000 Hz support)
 
-The system follows a **4-layer architecture** with Domain-Driven Design:
+#### 🔬 **Clinical Analysis Metrics**  
+- **Time Domain**: RMS (Root Mean Square), MAV (Mean Absolute Value)
+- **Frequency Domain**: MPF (Mean Power Frequency), MDF (Median Frequency)
+- **Fatigue Assessment**: Progressive fatigue indices with temporal windowing
+- **Performance Scoring**: GHOSTLY+ compliance metrics with BFR monitoring
 
+#### 💪 **Contraction Detection**
+- Automated identification with configurable MVC thresholds (20% default)
+- Duration-based validation (500ms minimum)
+- Peak amplitude and timing analysis
+- Channel-specific contraction counting
+
+#### 📈 **Interactive Visualization**
+- Multi-channel synchronized plotting
+- Zoom/pan with contraction highlighting
+- Real-time parameter adjustment
+- Export-ready clinical reports
+
+### Processing Modes
+- **Stateless Mode**: Immediate analysis without persistence (upload route)
+- **Stateful Mode**: Database-backed with session management (webhook route)
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TB
+    subgraph "Frontend"
+        A[React 19 + TypeScript]
+        B[Zustand State]
+        C[Recharts Viz]
+    end
+    
+    subgraph "Backend"
+        D[FastAPI]
+        E[EMG Engine]
+        F[Redis Cache]
+    end
+    
+    subgraph "Supabase"
+        G[PostgreSQL + RLS]
+        H[Storage]
+        I[Auth]
+    end
+    
+    A -->|REST API| D
+    D -->|Process| E
+    E -->|50x Cache| F
+    D -->|Store| G
+    A -->|Upload| H
+    A -->|JWT| I
 ```
-Frontend (React 19) → Backend (FastAPI) → Processing Engine → Supabase
-```
 
-### Technology Stack
+### 4-Layer Architecture
+1. **API Layer**: `upload.py` (194 lines), `webhooks.py` (349 lines)
+2. **Orchestration**: `therapy_session_processor.py` (1,669 lines)
+3. **Processing**: `processor.py` (1,341 lines) - Single Source of Truth
+4. **Persistence**: Repository pattern with Supabase
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend** | React 19, TypeScript, Zustand | Interactive UI with real-time updates |
-| **Backend** | FastAPI, Python 3.11 | EMG processing and API services |
-| **Processing** | NumPy, SciPy, ezc3d | Signal analysis and computation |
-| **Database** | Supabase (PostgreSQL) | Data persistence and authentication |
-| **Infrastructure** | Docker, Coolify | Containerization and deployment |
+### Tech Stack
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Frontend** | React 19, TypeScript, Zustand, Tailwind, shadcn/ui | Interactive clinical UI |
+| **Backend** | FastAPI, Python 3.11+, NumPy, SciPy, ezc3d | EMG processing engine |
+| **Database** | Supabase (PostgreSQL with 18+ RLS policies) | Secure data persistence |
+| **Cache** | Redis 7.2 | 50x performance improvement |
+| **DevOps** | Docker, GitHub Actions, Coolify | CI/CD and deployment |
+| **AI Dev** | Claude Code, Cursor, MCP Servers | Agentic development |
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 20+
-- Docker (optional)
-- Supabase account
-
-### Development Setup
+## Quick Start
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/ggustin93/emg-c3d-analyzer.git
 cd emg-c3d-analyzer
 
-# Start development environment
+# Start development (recommended)
 ./start_dev_simple.sh
 
-# Or with webhook testing
+# With webhooks
 ./start_dev_simple.sh --webhook
+
+# Docker alternative
+./start_dev.sh
 ```
 
-The application will be available at:
+### Access Points
 - Frontend: http://localhost:3000
-- Backend: http://localhost:8080
-- Docs: http://localhost:3001 (this documentation)
+- API Docs: http://localhost:8080/docs
+- Documentation: http://localhost:3002
 
-## 📚 Next Steps
+## Documentation Sections
 
-- Explore the [Architecture Overview](/docs/architecture/overview) to understand the system design
-- Review [API Documentation](/docs/api/endpoints/upload) for integration details
-- Check out the development workflow guides for your specific role
+### Platform & Infrastructure
+- **[Supabase Platform](./supabase/overview)** - Authentication, Storage, Database, RLS
+- **[DevOps & CI/CD](./devops/overview)** - Docker, GitHub Actions, Coolify
+- **[API Reference](./api/overview)** - REST endpoints and patterns
+
+### Development
+- **[Architecture](./architecture/overview)** - 4-layer system design
+- **[Agentic Development](./agentic-development/overview)** - Claude Code & Cursor workflows
+- **[Testing](./testing/overview)** - 223 tests across frontend/backend
+
+### Domain Specifics
+- **[Signal Processing](./signal-processing/overview)** - EMG algorithms and metrics
+- **[Frontend](./frontend/react-architecture)** - React components and state
+- **[Backend](./backend/api-design)** - FastAPI services and processing

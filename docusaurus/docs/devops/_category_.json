@@ -1,0 +1,8 @@
+{
+  "label": "DevOps & CI/CD",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "DevOps practices, CI/CD pipelines, Docker containerization, and Coolify deployment."
+  }
+}
