@@ -86,4 +86,4 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 - **Frontend Image**: ~50MB (production)
 - **Backend Image**: ~150MB (with dependencies)
 - **Build Time**: ~3 minutes (with cache)
-- **Cold Start**: <10 seconds
+- **Cold Start**: Less than 10 seconds

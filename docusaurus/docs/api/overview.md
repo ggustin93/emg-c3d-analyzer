@@ -50,7 +50,7 @@ Processes files uploaded to Supabase Storage, saves results to database.
 
 ### 📊 Analysis Endpoints
 
-#### GET /analysis/{session_id}/contractions
+#### GET /analysis/\{session_id\}/contractions
 **Retrieve detected contractions**
 ```json
 {
@@ -67,7 +67,7 @@ Processes files uploaded to Supabase Storage, saves results to database.
 }
 ```
 
-#### GET /analysis/{session_id}/statistics
+#### GET /analysis/\{session_id\}/statistics
 **EMG statistical metrics**
 ```json
 {
@@ -95,11 +95,11 @@ Processes files uploaded to Supabase Storage, saves results to database.
 
 ### 📁 Export Endpoints
 
-#### GET /export/csv/{session_id}
+#### GET /export/csv/\{session_id\}
 **Export session data as CSV**
 - Returns CSV file with EMG data, contractions, and metrics
 
-#### GET /export/report/{session_id}
+#### GET /export/report/\{session_id\}
 **Generate clinical report**  
 - Returns PDF with visualizations and clinical summary
 

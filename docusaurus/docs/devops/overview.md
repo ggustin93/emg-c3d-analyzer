@@ -106,4 +106,4 @@ REDIS_URL=redis://redis:6379
 - **Build Time**: ~3 minutes
 - **Test Suite**: ~2 minutes
 - **Deployment**: ~1 minute
-- **Rollback**: <30 seconds
+- **Rollback**: Less than 30 seconds
