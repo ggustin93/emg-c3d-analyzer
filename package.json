@@ -2,7 +2,7 @@
   "name": "emg-c3d-analyzer-root",
   "private": true,
   "scripts": {
-    "build": "cd frontend && npm ci && npm run build && cd .. && mv frontend/dist .",
+    "build": "cd frontend && npm ci && npm run build && cd .. && rm -rf dist && mv frontend/dist .",
     "install": "cd frontend && npm ci"
   },
   "devDependencies": {
