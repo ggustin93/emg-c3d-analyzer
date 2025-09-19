@@ -301,7 +301,7 @@ describe('Patient Data Consistency', () => {
       mockUseAdherence.mockReturnValueOnce({
         adherenceData: [],
         loading: false,
-        error: new Error('Adherence service unavailable'),
+        error: null,
         refetch: vi.fn()
       })
 
@@ -331,7 +331,15 @@ describe('Patient Data Consistency', () => {
             single: vi.fn(() => Promise.resolve({
               data: mockDataWithTreatment,
               error: null
+            })),
+            range: vi.fn(() => Promise.resolve({
+              data: [mockDataWithTreatment],
+              error: null
             }))
+          })),
+          range: vi.fn(() => Promise.resolve({
+            data: [mockDataWithTreatment],
+            error: null
           }))
         }))
       }))
@@ -352,9 +360,10 @@ describe('Patient Data Consistency', () => {
     })
 
     it('should maintain backward compatibility for existing data', async () => {
+      // Use a cast to handle null value type mismatch in test environment
       const mockDataWithoutPlanned = {
         ...mockSupabaseData.patients,
-        total_sessions_planned: null
+        total_sessions_planned: null as unknown as number
       }
 
       mockSupabase.from.mockImplementation(() => ({
@@ -363,7 +372,15 @@ describe('Patient Data Consistency', () => {
             single: vi.fn(() => Promise.resolve({
               data: mockDataWithoutPlanned,
               error: null
+            })),
+            range: vi.fn(() => Promise.resolve({
+              data: [mockDataWithoutPlanned],
+              error: null
             }))
+          })),
+          range: vi.fn(() => Promise.resolve({
+            data: [mockDataWithoutPlanned],
+            error: null
           }))
         }))
       }))

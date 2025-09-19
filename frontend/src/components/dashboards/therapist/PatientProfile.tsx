@@ -198,7 +198,7 @@ export function PatientProfile() {
           : patientData.patient_medical_info
 
         // Get accurate session data from C3D files (same pattern as PatientManagement)
-        let sessionData = { session_count: 0, last_session: null }
+        let sessionData: { session_count: number; last_session: string | null } = { session_count: 0, last_session: null }
         try {
           const patientSessionData = await C3DSessionsService.getPatientSessionData([patientId])
           if (patientSessionData.length > 0) {
