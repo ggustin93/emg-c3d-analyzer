@@ -32,6 +32,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '🏥 Clinical',
+      collapsed: true,
+      items: [
+        'clinical/metrics-definitions',
+      ],
+    },
+    {
+      type: 'category',
       label: '📊 Signal Processing',
       collapsed: true,
       items: [
@@ -44,18 +52,16 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '🔌 API',
-      collapsed: true,
-      items: [
-        'api/overview',
-      ],
-    },
-    {
-      type: 'category',
       label: '⚙️ Backend',
       collapsed: true,
       items: [
+        'backend/overview',
         'backend/api-design',
+        'backend/database-integration',
+        'backend/testing-strategy',
+        'backend/caching-redis',
+        'backend/webhooks-processing',
+        'backend/deployment',
       ],
     },
     {
