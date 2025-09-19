@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'docusaurus/**'
       - '.github/workflows/deploy-docs.yml'
 
   # Allows you to run this workflow manually from the Actions tab
@@ -35,15 +35,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: docs/package-lock.json
+          cache-dependency-path: docusaurus/package-lock.json
           
       - name: Install dependencies
         run: npm ci
-        working-directory: ./docs
+        working-directory: ./docusaurus
         
       - name: Build documentation
         run: npm run build
-        working-directory: ./docs
+        working-directory: ./docusaurus
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -51,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs/build'
+          path: './docusaurus/build'
 
   # Deployment job
   deploy:
