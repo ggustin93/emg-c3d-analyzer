@@ -1,27 +1,16 @@
 import { parse } from 'yaml'
 import { FAQItem, FAQCategory, UserRole } from './types'
 
-// FAQ content files configuration
-const FAQ_CATEGORIES = [
-  'getting-started',
-  'patients', 
-  'sessions',
-  'export',
-  'technical'
-] as const
-
-// Known FAQ files structure
-const FAQ_FILES = [
-  'getting-started/what-is-platform.md',
-  'getting-started/how-to-login.md',
-  'patients/add-patient.md',
-  'sessions/upload-c3d.md',
-  'export/export-data.md'
-] as const
-
 export interface ParsedFAQ extends Omit<FAQItem, 'answer'> {
   answer: string
   id: string
+}
+
+interface FAQManifest {
+  version: string
+  generated: string
+  files: string[]
+  count: number
 }
 
 function parseFrontmatter(content: string) {
@@ -63,6 +52,55 @@ function parseFAQFile(content: string, filePath: string): ParsedFAQ {
 
 // Cache for loaded FAQs
 let cachedFAQs: ParsedFAQ[] | null = null
+let manifestCache: FAQManifest | null = null
+
+/**
+ * Load FAQ manifest
+ */
+async function loadManifest(): Promise<FAQManifest | null> {
+  if (manifestCache) {
+    return manifestCache
+  }
+
+  try {
+    const baseUrl = window.location.origin
+    const manifestUrl = `${baseUrl}/content/faq/manifest.json`
+    
+    const response = await fetch(manifestUrl)
+    if (!response.ok) {
+      console.warn('FAQ manifest not found, falling back to static list')
+      return null
+    }
+    
+    manifestCache = await response.json()
+    console.log(`Loaded FAQ manifest with ${manifestCache?.count} files`)
+    return manifestCache
+  } catch (error) {
+    console.error('Error loading FAQ manifest:', error)
+    return null
+  }
+}
+
+/**
+ * Get list of FAQ files (from manifest or fallback)
+ */
+async function getFAQFiles(): Promise<string[]> {
+  // Try to load from manifest first
+  const manifest = await loadManifest()
+  if (manifest && manifest.files && manifest.files.length > 0) {
+    return manifest.files
+  }
+  
+  // Fallback to hardcoded list if manifest is not available
+  console.log('Using fallback FAQ file list')
+  return [
+    'getting-started/what-is-platform.md',
+    'getting-started/how-to-login.md',
+    'patients/add-patient.md',
+    'sessions/upload-c3d.md',
+    'export/export-data.md'
+  ]
+}
 
 export async function loadAllFAQs(): Promise<ParsedFAQ[]> {
   // Return cached data if available
@@ -72,8 +110,11 @@ export async function loadAllFAQs(): Promise<ParsedFAQ[]> {
 
   const faqs: ParsedFAQ[] = []
   
+  // Get list of FAQ files
+  const faqFiles = await getFAQFiles()
+  
   // Load each FAQ file
-  for (const filePath of FAQ_FILES) {
+  for (const filePath of faqFiles) {
     try {
       // Build absolute URL for production
       const baseUrl = window.location.origin

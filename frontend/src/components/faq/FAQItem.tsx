@@ -1,5 +1,7 @@
 import React from 'react'
-import Markdown from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeSanitize from 'rehype-sanitize'
 import { 
   AccordionItem,
   AccordionTrigger,
@@ -29,31 +31,33 @@ export function FAQItem({ item, value }: FAQItemProps) {
       </AccordionTrigger>
       <AccordionContent className="pb-4">
         <div className="prose prose-slate prose-sm max-w-none">
-          <Markdown
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeSanitize]}
             components={{
               // Override default styles for better readability
-              h3: ({children}) => (
+              h3: ({children}: {children?: React.ReactNode}) => (
                 <h3 className="text-base font-semibold text-slate-900 mt-4 mb-2">{children}</h3>
               ),
-              p: ({children}) => (
+              p: ({children}: {children?: React.ReactNode}) => (
                 <p className="text-slate-700 leading-relaxed mb-3">{children}</p>
               ),
-              ul: ({children}) => (
+              ul: ({children}: {children?: React.ReactNode}) => (
                 <ul className="list-disc list-inside space-y-1 mb-3 text-slate-700">{children}</ul>
               ),
-              ol: ({children}) => (
+              ol: ({children}: {children?: React.ReactNode}) => (
                 <ol className="list-decimal list-inside space-y-1 mb-3 text-slate-700">{children}</ol>
               ),
-              li: ({children}) => (
+              li: ({children}: {children?: React.ReactNode}) => (
                 <li className="text-slate-700">{children}</li>
               ),
-              strong: ({children}) => (
+              strong: ({children}: {children?: React.ReactNode}) => (
                 <strong className="font-semibold text-slate-900">{children}</strong>
               ),
-              code: ({children}) => (
+              code: ({children}: {children?: React.ReactNode}) => (
                 <code className="px-1 py-0.5 bg-slate-100 rounded text-sm text-slate-800">{children}</code>
               ),
-              blockquote: ({children}) => (
+              blockquote: ({children}: {children?: React.ReactNode}) => (
                 <blockquote className="border-l-4 border-slate-300 pl-4 italic text-slate-600 my-3">
                   {children}
                 </blockquote>
@@ -61,7 +65,7 @@ export function FAQItem({ item, value }: FAQItemProps) {
             }}
           >
             {item.answer}
-          </Markdown>
+          </ReactMarkdown>
           {item.lastUpdated && (
             <p className="text-xs text-muted-foreground mt-4 border-t pt-2">
               Last updated: {item.lastUpdated}
