@@ -5,84 +5,64 @@ title: EMG Performance Metrics
 
 # EMG Performance Metrics
 
-Comprehensive technical specification of the GHOSTLY+ performance scoring algorithm for clinical rehabilitation research.
+Clinical scoring algorithms for GHOSTLY+ rehabilitation therapy.
 
 ## Overview
 
-The GHOSTLY+ EMG C3D Analyzer implements a scientifically validated performance scoring system designed for elderly rehabilitation (≥65 years) using Blood Flow Restriction (BFR) therapy. This system measures therapeutic compliance, muscle symmetry, and patient effort to provide real-time feedback and long-term adherence tracking.
+Performance scoring system for elderly rehabilitation (≥65 years) with Blood Flow Restriction (BFR) therapy.
 
-## Clinical Context
+## Study Protocol
 
-**GHOSTLY+ TBM Study**: Multicenter randomized controlled trial with 120 hospitalized adults (≥65 years) with restricted lower-limb mobility.
+**GHOSTLY+ TBM Study**: 120 hospitalized adults (≥65 years)
 
-**Intervention Protocol**:
-- **5 Therapy Sessions per week** over 14 days
-- Each **Therapy Session** = 3 Game Sessions (with 2-min rest periods)
-- Each **Game Session** = 12 isometric contractions per muscle (left + right quadriceps)
+**Intervention**:
+- 5 therapy sessions/week × 14 days
+- Each session = 3 game sessions (2-min rest)
+- Each game = 12 contractions per muscle (left + right quadriceps)
 - Target: ≥75% MVC intensity under 50% AOP BFR
 
-**Primary Outcome**: Lower-limb muscle strength (MicroFet Dynamometer)
+## Performance Score Formula
 
-## Core Metrics
+$$P_{overall} = w_c \times S_{compliance} + w_s \times S_{symmetry} + w_e \times S_{effort} + w_g \times S_{game}$$
 
-### Real-Time Performance Score
+**Default Weights** ($\sum w_i = 1$):
+- $w_c = 0.5$ (Therapeutic Compliance)
+- $w_s = 0.25$ (Muscle Symmetry)  
+- $w_e = 0.25$ (Subjective Effort)
+- $w_g = 0.0$ (Game Performance)
 
-Calculated after each Game Session using weighted components:
+## 1. Therapeutic Compliance
 
-```
-P_overall = w_c × S_compliance + w_s × S_symmetry + w_e × S_effort + w_g × S_game
-```
+$$S_{compliance} = \frac{S_{comp}^{left} + S_{comp}^{right}}{2} \times C_{BFR}$$
 
-**Default Weights** (research-determined, Σw_i = 1):
-- **w_c = 0.5** (Therapeutic Compliance) - Primary therapeutic indicator
-- **w_s = 0.25** (Muscle Symmetry) - Bilateral balance assessment  
-- **w_e = 0.25** (Subjective Effort) - Patient-reported exertion
-- **w_g = 0.0** (Game Performance) - Optional engagement metric
-
-### 1. Therapeutic Compliance Score
-
-Measures execution quality within a single Game Session:
-
-```
-S_compliance = ((S_comp^left + S_comp^right) / 2) × C_BFR
-```
-
-**BFR Safety Gate** (Critical Safety Mechanism):
-```
-C_BFR = {
-  1.0  if pressure ∈ [45%, 55%] AOP
-  0.0  otherwise (full penalty)
-}
-```
+**BFR Safety Gate**:
+$$C_{BFR} = \begin{cases}
+1.0 & \text{if pressure} \in [45\%, 55\%] \text{ AOP} \\
+0.0 & \text{otherwise}
+\end{cases}$$
 
 **Per-Muscle Compliance**:
-```
-S_comp^muscle = w_comp × R_comp + w_int × R_int + w_dur × R_dur
-```
+$$S_{comp}^{muscle} = w_{comp} \times R_{comp} + w_{int} \times R_{int} + w_{dur} \times R_{dur}$$
 
 | Component | Formula | Description |
 |-----------|---------|-------------|
-| Completion Rate (R_comp) | contractions completed / 12 | All prescribed contractions completed |
-| Intensity Rate (R_int) | reps ≥75% MVC / reps completed | Force threshold achievement |
-| Duration Rate (R_dur) | reps ≥duration threshold / reps completed | Time requirement compliance |
+| Completion Rate ($R_{comp}$) | $\frac{\text{contractions completed}}{12}$ | All prescribed contractions |
+| Intensity Rate ($R_{int}$) | $\frac{\text{reps} \geq 75\% \text{MVC}}{\text{reps completed}}$ | Force threshold achievement |
+| Duration Rate ($R_{dur}$) | $\frac{\text{reps} \geq \text{duration threshold}}{\text{reps completed}}$ | Time requirement compliance |
 
-### 2. Muscle Symmetry Score
+## 2. Muscle Symmetry
 
-**Clinical Formula** (Evidence-based medical standard):
-```
-S_symmetry = (1 - |S_comp^left - S_comp^right| / (S_comp^left + S_comp^right)) × 100
-```
-
-**Medical Rationale**: This formula represents the clinically standard Asymmetry Index used in rehabilitation medicine and peer-reviewed research.
+**Clinical Formula** (Asymmetry Index):
+$$S_{symmetry} = \left(1 - \frac{|S_{comp}^{left} - S_{comp}^{right}|}{S_{comp}^{left} + S_{comp}^{right}}\right) \times 100$$
 
 **Clinical Interpretation**:
-- **\>90%** = Excellent symmetry (return-to-sport criteria)
+- **>90%** = Excellent symmetry (return-to-sport criteria)
 - **80-90%** = Good symmetry (acceptable for daily activities)  
-- **\<80%** = Poor symmetry (requires therapeutic intervention)
+- **<80%** = Poor symmetry (requires therapeutic intervention)
 
-### 3. Subjective Effort Score
+## 3. Subjective Effort Score
 
-Based on post-session Rating of Perceived Exertion (RPE) using the **Borg CR-10 Scale**:
+Based on post-session **Borg CR-10 Scale**:
 
 | RPE Range | Score | Clinical Interpretation |
 |-----------|-------|------------------------|
@@ -91,57 +71,32 @@ Based on post-session Rating of Perceived Exertion (RPE) using the **Borg CR-10 
 | 2, 8 | 60% | Suboptimal range |
 | 0-1, 9-10 | 20% | Poor/dangerous |
 
-**Clinical Validation**: Calibrated for elderly rehabilitation where moderate intensity (RPE 4-6) provides optimal balance between therapeutic benefit and safety.
+## 4. Game Performance Score
 
-### 4. Game Performance Score
+$$S_{game} = \frac{\text{game points achieved}}{\text{max achievable points}} \times 100$$
 
-```
-S_game = (game points achieved / max achievable points) × 100
-```
+**Note**: Optional metric (default weight = 0.0)
 
-**Note**: Optional metric with default weight of 0.0. Highly game-dependent and primarily measures patient engagement rather than therapeutic execution.
+## MVC Determination Priority
 
-## Longitudinal Adherence
-
-**Inter-session Protocol Consistency**:
-```
-Adherence(t) = (Game Sessions completed by day t / Game Sessions expected by day t) × 100
-```
-
-Where:
-- t = current protocol day (t ≥ 3 for measurement stability)
-- Expected rate: 15 Game Sessions per 7 days ≈ 2.14 × t
-
-**Clinical Thresholds**:
-- **Excellent**: ≥85% (meeting/exceeding frequency)
-- **Good**: 70-84% (adequate with minor gaps)
-- **Moderate**: 50-69% (suboptimal, intervention consideration)
-- **Poor**: \<50% (significant concern, support needed)
-
-## MVC Determination Workflow
-
-**3-Tier Priority Cascade** for Maximum Voluntary Contraction thresholds:
+**3-Tier Cascade** for Maximum Voluntary Contraction thresholds:
 
 ### Priority 1: C3D Metadata (Highest Priority)
-- **Source**: Pre-session MVC assessment recorded in C3D file metadata
+- **Source**: Pre-session MVC assessment in C3D file metadata
 - **Fields**: `mvc_ch1`, `mvc_ch2` from baseline session
-- **Method**: Dedicated MVC assessment session before therapeutic intervention
-- **Reliability**: Gold standard - direct measurement under standardized conditions
+- **Reliability**: Gold standard - direct measurement
 
 ### Priority 2: Patient Database (Future Implementation)
 - **Source**: Historical MVC values from patient's previous sessions
 - **Method**: Database lookup using patient UUID
-- **Use Cases**: Continuity across therapy sessions, trending analysis
 
 ### Priority 3: Self-Calibration (Default)
 - **Source**: Backend-calculated from current session EMG analysis
-- **Method**: Clinical estimation using peak detection from processed EMG signals
 - **Pipeline**: Raw EMG → High-pass Filter (20Hz) → Rectification → Low-pass Filter (10Hz) → RMS Envelope → Peak Detection
-
 
 ## Clinical Example
 
-**Scenario**: 72-year-old patient, Day 5, BFR active at 52% AOP
+**Scenario**: 72-year-old patient, Day 5, BFR at 52% AOP
 
 **Session Metrics**:
 - Left muscle: 11/12 completed (92%), 9/11 ≥75% MVC (82%), 10/11 ≥2s (91%)
@@ -150,30 +105,13 @@ Where:
 - Game score: 850/1000 points
 
 **Calculations**:
-- S_comp^left = ⅓(0.92 + 0.82 + 0.91) = 88.3%
-- S_comp^right = ⅓(1.00 + 0.67 + 0.92) = 86.2%
-- S_compliance = (88.3 + 86.2)/2 × 1.0 = 87.3%
-- S_symmetry = (1 - |88.3-86.2|/(88.3+86.2)) × 100 = 98.8%
-- S_effort = 100% (RPE = 6)
-- S_game = 85%
+- $S_{comp}^{left} = \frac{1}{3}(0.92 + 0.82 + 0.91) = 88.3\%$
+- $S_{comp}^{right} = \frac{1}{3}(1.00 + 0.67 + 0.92) = 86.2\%$
+- $S_{compliance} = \frac{88.3 + 86.2}{2} \times 1.0 = 87.3\%$
+- $S_{symmetry} = \left(1 - \frac{|88.3-86.2|}{88.3+86.2}\right) \times 100 = 98.8\%$
+- $S_{effort} = 100\%$ (RPE = 6)
 
 **Overall Performance**:
-```
-P_overall = (0.5 × 87.3 + 0.25 × 98.8 + 0.25 × 100 + 0.0 × 85) × 1.0 = 93.4%
-```
+$$P_{overall} = 0.5 \times 87.3 + 0.25 \times 98.8 + 0.25 \times 100 = 93.4\%$$
 
 **Clinical Interpretation**: Excellent rehabilitation performance - optimal therapeutic benefit achieved.
-
-## Implementation Notes
-
-- **Real-time Calculation**: All metrics calculated during session for immediate feedback
-- **Configurable Weights**: All weights adjustable through settings interface
-- **Safety Priority**: BFR violations override all other performance metrics
-- **Clinical Population**: Optimized for hospitalized older adults with mobility restrictions
-- **Open Source**: Available at [OpenFeasyo](https://github.com/openfeasyo/OpenFeasyo)
-
-## Next Steps
-
-- [Clinical Protocols](./protocols) - Detailed therapeutic protocols and safety guidelines
-- [Compliance Standards](./compliance-standards) - Regulatory and quality standards
-- [Backend Implementation](../backend/emg-analysis) - Technical implementation details

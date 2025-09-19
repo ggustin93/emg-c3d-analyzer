@@ -50,13 +50,6 @@ graph LR
     F --> G[Documentation]
 ```
 
-## Key Benefits
-
-- **Speed**: 5-10x faster development
-- **Quality**: Consistent code patterns
-- **Coverage**: Comprehensive testing
-- **Documentation**: Always up-to-date
-
 ## Project Configuration
 
 ### CLAUDE.md
@@ -95,12 +88,4 @@ Cursor IDE configuration:
 
 # Generate documentation
 /sc:document
-```
-
-### Cursor
-```
-Cmd+K - Inline editing
-Cmd+L - Chat with AI
-Tab - Accept suggestion
-Cmd+Shift+L - Add file context
 ```

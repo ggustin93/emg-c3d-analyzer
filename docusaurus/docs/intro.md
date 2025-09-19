@@ -45,7 +45,7 @@ Access:
 
 ## Key Features
 
-- Drag-and-drop C3D file upload
+- C3D file processing via Supabase Storage webhooks
 - Real-time EMG signal visualization
 - Automated contraction detection
 - Clinical performance scoring
