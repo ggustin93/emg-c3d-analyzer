@@ -262,7 +262,7 @@ export const AboutPage: React.FC = () => {
   useEffect(() => {
     // Load markdown content from public directory
     const baseUrl = window.location.origin
-    const url = `${baseUrl}/content/about.md`
+    const url = `${baseUrl}/about.md`
     console.log(`Loading About content from: ${url}`)
     
     fetch(url)

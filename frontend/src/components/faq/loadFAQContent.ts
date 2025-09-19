@@ -64,7 +64,7 @@ async function loadManifest(): Promise<FAQManifest | null> {
 
   try {
     const baseUrl = window.location.origin
-    const manifestUrl = `${baseUrl}/content/faq/manifest.json`
+    const manifestUrl = `${baseUrl}/faq-manifest.json`
     
     const response = await fetch(manifestUrl)
     if (!response.ok) {
@@ -94,11 +94,11 @@ async function getFAQFiles(): Promise<string[]> {
   // Fallback to hardcoded list if manifest is not available
   console.log('Using fallback FAQ file list')
   return [
-    'getting-started/what-is-platform.md',
-    'getting-started/how-to-login.md',
-    'patients/add-patient.md',
-    'sessions/upload-c3d.md',
-    'export/export-data.md'
+    'faq-what-is-platform.md',
+    'faq-how-to-login.md',
+    'faq-add-patient.md',
+    'faq-upload-c3d.md',
+    'faq-export-data.md'
   ]
 }
 
@@ -118,7 +118,7 @@ export async function loadAllFAQs(): Promise<ParsedFAQ[]> {
     try {
       // Build absolute URL for production
       const baseUrl = window.location.origin
-      const url = `${baseUrl}/content/faq/${filePath}`
+      const url = `${baseUrl}/${filePath}`
       console.log(`Loading FAQ from: ${url}`)
       
       const response = await fetch(url)

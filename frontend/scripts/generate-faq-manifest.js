@@ -7,14 +7,14 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Path to FAQ content directory
-const FAQ_DIR = join(__dirname, '..', 'public', 'content', 'faq');
-const MANIFEST_OUTPUT = join(__dirname, '..', 'public', 'content', 'faq', 'manifest.json');
+// Path to public directory (FAQ files are now at root)
+const PUBLIC_DIR = join(__dirname, '..', 'public');
+const MANIFEST_OUTPUT = join(__dirname, '..', 'public', 'faq-manifest.json');
 
 /**
- * Recursively find all markdown files in a directory
+ * Find all FAQ markdown files (starting with 'faq-')
  */
-function findMarkdownFiles(dir, baseDir = dir) {
+function findFAQMarkdownFiles(dir) {
   const files = [];
   
   const items = readdirSync(dir);
@@ -22,13 +22,9 @@ function findMarkdownFiles(dir, baseDir = dir) {
     const fullPath = join(dir, item);
     const stat = statSync(fullPath);
     
-    if (stat.isDirectory()) {
-      // Recursively search subdirectories
-      files.push(...findMarkdownFiles(fullPath, baseDir));
-    } else if (item.endsWith('.md')) {
-      // Add markdown files with relative path from base directory
-      const relativePath = relative(baseDir, fullPath);
-      files.push(relativePath.replace(/\\/g, '/')); // Normalize path separators
+    // Only look for FAQ files at root level (not in subdirectories)
+    if (!stat.isDirectory() && item.startsWith('faq-') && item.endsWith('.md')) {
+      files.push(item); // Just the filename, no path needed since they're at root
     }
   }
   
@@ -40,38 +36,17 @@ function findMarkdownFiles(dir, baseDir = dir) {
  */
 function generateManifest() {
   try {
-    console.log('📂 Scanning FAQ directory:', FAQ_DIR);
+    console.log('📂 Scanning public directory for FAQ files:', PUBLIC_DIR);
     console.log('🔍 Working directory:', process.cwd());
     console.log('🗂️ Script directory:', __dirname);
-    console.log('🔍 Node.js version:', process.version);
-    console.log('🔍 Platform:', process.platform);
-    console.log('🔍 Environment:', process.env.NODE_ENV || 'development');
     
-    // Check if FAQ directory exists
+    // Check if public directory exists
     try {
-      const stat = statSync(FAQ_DIR);
-      console.log('📁 FAQ directory exists:', stat.isDirectory());
+      const stat = statSync(PUBLIC_DIR);
+      console.log('📁 Public directory exists:', stat.isDirectory());
     } catch (error) {
-      console.error('❌ FAQ directory does not exist:', FAQ_DIR);
+      console.error('❌ Public directory does not exist:', PUBLIC_DIR);
       console.error('Error:', error.message);
-      
-      // Try alternative paths for debugging
-      const altPaths = [
-        join(process.cwd(), 'public', 'content', 'faq'),
-        join(process.cwd(), 'frontend', 'public', 'content', 'faq'),
-        join(__dirname, '..', '..', 'public', 'content', 'faq')
-      ];
-      
-      console.log('🔍 Trying alternative paths:');
-      for (const altPath of altPaths) {
-        try {
-          const altStat = statSync(altPath);
-          console.log(`✅ Found at: ${altPath} (directory: ${altStat.isDirectory()})`);
-          break;
-        } catch {
-          console.log(`❌ Not found at: ${altPath}`);
-        }
-      }
       
       // Create empty manifest on error
       const emptyManifest = {
@@ -79,16 +54,16 @@ function generateManifest() {
         generated: new Date().toISOString(),
         files: [],
         count: 0,
-        error: 'FAQ directory not found',
-        searchedPath: FAQ_DIR
+        error: 'Public directory not found',
+        searchedPath: PUBLIC_DIR
       };
       writeFileSync(MANIFEST_OUTPUT, JSON.stringify(emptyManifest, null, 2));
       console.log('📝 Created empty manifest due to directory error');
       return emptyManifest;
     }
     
-    // Find all markdown files
-    const files = findMarkdownFiles(FAQ_DIR);
+    // Find all FAQ markdown files (starting with 'faq-')
+    const files = findFAQMarkdownFiles(PUBLIC_DIR);
     
     // Sort files for consistent ordering
     files.sort();
