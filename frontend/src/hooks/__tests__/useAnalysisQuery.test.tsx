@@ -72,7 +72,8 @@ describe('useAnalysisQuery Cache Behavior', () => {
       metadata: {
         score: 85,
         level: 2
-      }
+      },
+      processingTime: 150  // Add mock processing time in milliseconds
     };
     
     mockedFetch.mockResolvedValue({
