@@ -133,15 +133,11 @@ Where:
 - **Method**: Database lookup using patient UUID
 - **Use Cases**: Continuity across therapy sessions, trending analysis
 
-### Priority 3: Self-Calibration (Current Session)
+### Priority 3: Self-Calibration (Default)
 - **Source**: Backend-calculated from current session EMG analysis
 - **Method**: Clinical estimation using peak detection from processed EMG signals
 - **Pipeline**: Raw EMG → High-pass Filter (20Hz) → Rectification → Low-pass Filter (10Hz) → RMS Envelope → Peak Detection
 
-### Fallback: Session Defaults
-- **Source**: Development/testing defaults (SessionDefaults.MVC_CH1/CH2)
-- **Values**: 150μV per channel (1.5e-4 mV)
-- **Use Cases**: Development, testing, when other sources unavailable
 
 ## Clinical Example
 
