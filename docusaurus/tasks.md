@@ -326,18 +326,56 @@ docs/development/
 ./start_dev.sh               # Docker development
 ```
 
-#### Task 6.3: Deployment Documentation
+#### Task 6.3: DevOps & CI/CD Documentation
+**Effort**: 6 hours  
+**Create New Section**: `docs/devops/`
+
+**Files to Create**:
+```
+docs/devops/
+├── overview.md          # DevOps architecture
+├── ci-cd/
+│   ├── overview.md      # CI/CD pipeline overview
+│   ├── github-actions.md    # GitHub Actions workflows
+│   ├── testing-pipeline.md  # Automated testing
+│   └── deployment-pipeline.md # Deployment automation
+├── docker/
+│   ├── overview.md      # Docker architecture
+│   ├── development.md   # Docker development setup
+│   ├── production.md    # Production containers
+│   └── docker-compose.md    # Multi-container orchestration
+├── coolify/
+│   ├── overview.md      # Coolify platform overview
+│   ├── setup.md        # Coolify installation
+│   ├── deployment.md   # Application deployment
+│   └── monitoring.md   # Coolify monitoring
+└── infrastructure/
+    ├── monitoring.md    # Application monitoring
+    ├── logging.md      # Centralized logging
+    ├── security.md     # Security best practices
+    └── scaling.md      # Scaling strategies
+```
+
+**Key DevOps Components**:
+- GitHub Actions for CI/CD
+- Docker containerization (development & production)
+- Coolify for self-hosted deployment
+- Infrastructure as Code principles
+- Monitoring and observability
+
+#### Task 6.4: Deployment Documentation
 **Effort**: 4 hours  
 **Create New Section**: `docs/deployment/`
 
 **Files to Create**:
 ```
 docs/deployment/
+├── overview.md          # Deployment strategies
 ├── vercel-frontend.md   # Frontend deployment
 ├── docker-backend.md    # Backend containerization
 ├── supabase-setup.md   # Database configuration
-├── monitoring.md       # Application monitoring
-└── security-checklist.md   # Production security
+├── production-checklist.md  # Pre-deployment checklist
+└── rollback-procedures.md   # Rollback strategies
 ```
 
 ---

@@ -6,6 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
+  root: '.',
   resolve: {
     alias: {
       // This directly replaces your craco alias configuration
