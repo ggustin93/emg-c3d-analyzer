@@ -79,6 +79,49 @@ Storage ──► Webhook ──► Session ──► Process ──► Database
 | `/health` | GET | Health check | Monitor |
 | `/logs/frontend` | POST | Error logging | Debug |
 
+## Service Layer Interactions
+
+```
+         API Routes                    Service Layer
+    ┌────────────────┐           ┌─────────────────────┐
+    │ upload.py      │──────────►│ processor.py        │
+    │ (194 lines)    │           │ (1,505 lines)      │
+    └────────────────┘           └─────────────────────┘
+                                          │
+    ┌────────────────┐                    ▼
+    │ webhooks.py    │           ┌─────────────────────┐
+    │ (349 lines)    │──────────►│ therapy_session_    │
+    └────────────────┘           │ processor.py        │
+                                 │ (1,840 lines)      │
+                                 └──────┬──────────────┘
+                                        │
+                              ┌─────────▼──────────┐
+                              │   Repositories     │
+                              │  (Sync Supabase)   │
+                              └────────────────────┘
+```
+
+## Error Handling & Resilience
+
+```
+Request ──► Validation ──► Processing ──► Response
+   │            │              │             │
+   ▼            ▼              ▼             ▼
+400 Bad     401 Unauth    500 Server    200 Success
+Request     No/Invalid    Processing    + Data
+            JWT           Error
+```
+
+### Error Response Format
+```json
+{
+  "error": "Processing failed",
+  "detail": "Invalid EMG channel data",
+  "status_code": 422,
+  "request_id": "uuid-here"
+}
+```
+
 ## Authentication Flow
 
 ```
@@ -137,10 +180,36 @@ Decision Matrix:
   └──────────────────┴─────────────┴──────────────┘
 ```
 
+## Caching Strategy
+
+```
+Request → Redis Cache → Hit? ──Yes──► Return Cached
+            │            │
+            │            No
+            │            ▼
+            │        Process → Store → Return Fresh
+            │                    │
+            └────────────────────┘
+                  TTL: 3600s
+```
+
+### Cache Keys
+- `session:{id}` - Therapy session data
+- `emg:{file_hash}` - Processed EMG results
+- `score:{session_id}` - Performance scores
+
+## Rate Limiting
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| `/upload` | 10 requests | 1 min |
+| `/webhooks` | 100 requests | 1 min |
+| `/api/*` | 1000 requests | 1 min |
+
 ## Best Practices
 
 1. **Choose Wisely**: Direct Supabase for simple ops, FastAPI for complex
-2. **Minimize Latency**: Avoid unnecessary backend round-trips
-3. **Single Source of Truth**: Processing logic in FastAPI, data in Supabase
-4. **Monitor Performance**: Track response times for both surfaces
-5. **Document Usage**: Specify which API in component docs
+2. **Cache Heavy Operations**: Use Redis for expensive EMG calculations
+3. **Validate Early**: Check JWT and permissions at API boundary
+4. **Monitor Performance**: Track p50, p95, p99 latencies
+5. **Version APIs**: Use headers for versioning, not URLs
