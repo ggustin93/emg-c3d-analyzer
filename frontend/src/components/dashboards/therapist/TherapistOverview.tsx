@@ -1,3 +1,30 @@
+/**
+ * TherapistOverview - Main Therapist Dashboard with Real-Time Patient Monitoring
+ * 
+ * Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+ * GitHub: @ggustin93
+ * Project: GHOSTLY+ EMG C3D Analyzer
+ * Updated: September 2025
+ * 
+ * Architecture Notes:
+ * - Complex dashboard orchestrating multiple data streams
+ * - Real-time patient alert system with severity classification
+ * - Performance metrics dashboard with adherence tracking
+ * - Progressive loading system with skeleton states
+ * - 864 lines of sophisticated UI orchestration
+ * 
+ * Key Features:
+ * - Patient Alert System: Real-time monitoring with clinical thresholds
+ * - Metrics Dashboard: Adherence, fatigue, and performance tracking
+ * - Recent Activity Feed: C3D file processing status
+ * - Progressive UX: Sophisticated loading states and animations
+ * 
+ * Production Considerations:
+ * - Optimized for real-time updates
+ * - Lazy loading for performance
+ * - Responsive design for tablets/desktop
+ * - Accessibility compliance (WCAG 2.1)
+ */
 import React, { useMemo, useCallback, Suspense, lazy, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'

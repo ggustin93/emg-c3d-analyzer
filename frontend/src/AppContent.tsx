@@ -1,3 +1,34 @@
+/**
+ * AppContent - Main Application Router and Authentication Orchestrator
+ * 
+ * Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+ * GitHub: @ggustin93
+ * Project: GHOSTLY+ EMG C3D Analyzer
+ * Updated: September 2025
+ * 
+ * PURPOSE: Main application container managing routing and authentication
+ * 
+ * Architecture Notes:
+ * - Central application router with authentication guard
+ * - Role-based routing (ADMIN, THERAPIST, RESEARCHER)
+ * - Manages global application state and data flow
+ * - Coordinates between authentication and main UI components
+ * - 860 lines of application orchestration logic
+ * 
+ * Key Responsibilities:
+ * - Authentication state management via AuthGuard
+ * - Role-based dashboard routing
+ * - EMG analysis data orchestration
+ * - Session state management with Zustand
+ * - API integration and data fetching coordination
+ * 
+ * Production Considerations:
+ * - Lazy loading for performance optimization
+ * - Error boundaries for graceful failure handling
+ * - Responsive layout for clinical workstations
+ * - Session persistence across page refreshes
+ */
+
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { EMGAnalysisResult } from './types/emg';

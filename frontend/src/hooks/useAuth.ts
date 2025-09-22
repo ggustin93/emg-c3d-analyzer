@@ -1,11 +1,29 @@
 /**
- * Clean Authentication Hook
+ * useAuth Hook - Authentication Orchestrator for Supabase Integration
+ * 
+ * Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+ * GitHub: @ggustin93
+ * Project: GHOSTLY+ EMG C3D Analyzer
+ * Updated: September 2025
  * 
  * CLEAN ARCHITECTURE: Focused on React state management only
  * - KISS: Simple state management, delegates auth operations to authUtils
  * - DRY: Uses shared auth utility instead of duplicating auth logic
  * - SOLID: Single responsibility - React state management only
  * - SSoT: Supabase (via authUtils) is single source of auth truth
+ * 
+ * Architecture Notes:
+ * - Central authentication hook for entire React application
+ * - Integrates with Supabase Auth for user management
+ * - Manages user roles (ADMIN, THERAPIST, RESEARCHER)
+ * - Optimized for performance with React Transitions
+ * - 361 lines of authentication orchestration logic
+ * 
+ * Production Considerations:
+ * - Concurrent transitions prevent UI blocking
+ * - Automatic session refresh handling
+ * - Secure logout with state cleanup
+ * - RLS policy compliance (roles for UI only)
  */
 import { useState, useEffect, useCallback, useRef, useTransition, startTransition } from 'react'
 import { supabase } from '../lib/supabase'
@@ -356,7 +374,3 @@ export const useAuth = (): AuthState & AuthActions => {
     logout
   }
 }
-
-// Clean authentication hook: 200 lines with proper loading state management
-// Fixed: Loading state loops, token refresh handling, and race conditions
-// Maintains simplicity while ensuring reliable authentication state

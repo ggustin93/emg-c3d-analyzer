@@ -1,3 +1,35 @@
+/**
+ * C3D File Browser - Central Data Access and Selection Hub
+ * 
+ * Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+ * GitHub: @ggustin93
+ * Project: GHOSTLY+ EMG C3D Analyzer
+ * Updated: September 2025
+ * 
+ * PURPOSE: Main interface for browsing, filtering, and selecting C3D files for analysis
+ * Current Implementation: 641 lines of complex state orchestration
+ * 
+ * Architecture Notes:
+ * - Central hub for file selection and metadata display
+ * - Integrates TanStack Query for intelligent caching and data synchronization
+ * - Orchestrates patient/therapist/session relationship resolution
+ * - Implements advanced filtering, sorting, and pagination
+ * - Manages clinical notes integration and real-time updates
+ * 
+ * Key Features:
+ * - Multi-criteria filtering (patient, therapist, date, size, notes)
+ * - Role-based access control for uploads and patient visibility
+ * - Column visibility preferences with localStorage persistence
+ * - Real-time session data resolution from therapy_sessions table
+ * - Performance optimized with React.memo and useMemo hooks
+ * 
+ * Production Considerations:
+ * - Critical for daily therapist workflows
+ * - Handles large file libraries (100+ files) efficiently
+ * - Graceful error handling with retry mechanisms
+ * - Supports both online (Supabase) and offline (mock) modes
+ */
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

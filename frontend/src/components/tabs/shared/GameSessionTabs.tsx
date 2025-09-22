@@ -1,9 +1,21 @@
 /**
- * GameSessionTabs - EMG Analysis Dashboard Component
+ * GameSessionTabs - Central UI Orchestrator for EMG Analysis
+ * 
+ * Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+ * GitHub: @ggustin93
+ * Project: GHOSTLY+ EMG C3D Analyzer
+ * Updated: September 2025
  * 
  * A comprehensive tabbed interface for EMG data analysis and visualization.
  * Provides five main views: EMG Analysis, Performance Analysis, BFR Monitoring,
  * Export functionality, and Settings configuration.
+ * 
+ * Architecture Notes:
+ * - Central UI orchestrator managing 5 critical analysis tabs
+ * - Integrates with Zustand store for session state management
+ * - Coordinates complex data flows between analysis components
+ * - Main user interaction point for clinical analysis workflow
+ * - 433 lines of UI orchestration and state management
  * 
  * Key Features:
  * - Real-time EMG signal visualization with interactive charts
@@ -25,6 +37,11 @@
  * - **export**: Export - Data export functionality (CSV, JSON, PDF)
  * - **settings**: Settings - Configuration for signal processing and visualization
  * 
+ * Production Considerations:
+ * - Performance optimized with React.memo and useCallback
+ * - Responsive design for clinical workstations
+ * - Accessibility compliance for keyboard navigation
+ * - Real-time data updates without UI blocking
  */
 
 import { Card, CardContent } from '@/components/ui/card';
