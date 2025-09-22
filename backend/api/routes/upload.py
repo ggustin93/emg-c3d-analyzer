@@ -1,20 +1,42 @@
-"""Upload Routes - STATELESS EMG Processing.
-================================================
+"""
+Upload Routes - Stateless EMG Processing & File Orchestration
 
-PURPOSE: Direct C3D file upload for immediate EMG analysis WITHOUT database storage.
+Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+GitHub: @ggustin93
+Project: GHOSTLY+ EMG C3D Analyzer
+Updated: September 2025
+
+PURPOSE: Direct C3D file upload for immediate EMG analysis WITHOUT database storage
 
 KEY BEHAVIORS:
 - ✅ RETURNS: Full EMG signals and analysis results
-- ❌ DOES NOT: Store data in Supabase database
+- ❌ DOES NOT: Store data in Supabase database (stateless)
 - ❌ DOES NOT: Create therapy_sessions records
 
-USE CASE: Testing, preview, or temporary analysis where persistence is not needed.
+Architecture Notes:
+- Stateless processing mode for testing and preview
+- Direct integration with GHOSTLYC3DProcessor
+- Returns complete signal data for visualization
+- Complementary to webhook route (stateful processing)
+- 513 lines of upload orchestration logic
+
+Processing Pipeline:
+1. File validation and size checks
+2. Temporary file handling with cleanup
+3. EMG signal extraction via GHOSTLYC3DProcessor
+4. Complete analytics generation
+5. Signal data return for visualization
+
+Security Considerations:
+- File size validation (MAX_FILE_SIZE limit)
+- Secure temporary file handling
+- Automatic cleanup on completion/error
+- Input validation and sanitization
 
 DIFFERENCE FROM WEBHOOK:
-- Upload Route: Stateless processing → Returns signals → No DB storage
-- Webhook Route: Stateful processing → No signal return → Full DB storage
+- Upload Route: Stateless → Returns signals → No DB storage
+- Webhook Route: Stateful → No signal return → Full DB storage
 
-SINGLE RESPONSIBILITY: Stateless file processing with EMG signal extraction.
 """
 
 import logging

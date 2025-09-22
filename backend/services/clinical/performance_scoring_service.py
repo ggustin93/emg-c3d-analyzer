@@ -1,7 +1,12 @@
-"""Performance Scoring Service.
-===========================
+"""
+Performance Scoring Service - GHOSTLY+ Therapeutic Algorithm Implementation
 
-🎯 GHOSTLY+ Performance Metrics Calculation Service
+Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+GitHub: @ggustin93
+Project: GHOSTLY+ EMG C3D Analyzer
+Updated: September 2025
+
+PURPOSE: GHOSTLY+ Performance Metrics Calculation Service
 Based on Clinical Trial Protocol (metricsDefinitions.md)
 
 This service implements the complete scoring algorithm with:
@@ -12,8 +17,27 @@ This service implements the complete scoring algorithm with:
 - Game Performance Score (S_game)
 - Longitudinal Adherence Score
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-12
+Architecture Notes:
+- Implements GHOSTLY+ therapeutic scoring algorithms
+- Central authority for clinical performance metrics
+- Configurable scoring weights for research flexibility
+- Integration with scoring_configuration database
+- 1,065 lines of clinical decision support logic
+
+Clinical Scoring Components:
+- MVC Compliance: Threshold adherence and contraction quality
+- Muscle Symmetry: Bilateral balance assessment
+- Temporal Consistency: Contraction timing analysis
+- Subjective Effort: RPE (Rating of Perceived Exertion) integration
+- Game Performance: In-game metrics correlation
+- Adherence Tracking: Longitudinal compliance monitoring
+
+Production Considerations:
+- Research-grade algorithm implementation
+- Configurable thresholds per patient/study
+- Comprehensive validation against clinical protocols
+- Real-time performance calculation capability
+- Supports multi-center clinical trials
 """
 
 import logging

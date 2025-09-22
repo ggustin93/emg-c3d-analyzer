@@ -1,32 +1,39 @@
 """
-Therapy Session Processor - Workflow Orchestrator.
-================================================
+Therapy Session Processor - Production-Critical Session Lifecycle Orchestrator
+
+Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+GitHub: @ggustin93
+Project: GHOSTLY+ EMG C3D Analyzer
+Updated: September 2025
 
 🎯 PURPOSE: Complete C3D processing pipeline orchestration
 - Manages end-to-end therapy session lifecycle from upload to analytics
 - Coordinates file download, C3D processing, and database population
 - Orchestrates multiple services to create complete session records
 
-🔗 RESPONSIBILITIES:
-- Create therapy session database records
-- Download C3D files from Supabase Storage
-- Orchestrate EMG analysis via c3d_processor.py
-- Populate ALL related database tables (emg_statistics with processing_config JSONB, etc.)
-- Update session status and analytics cache
-- Extract and store session timestamps (C3D TIME field)
-
-📊 OUTPUT: Complete therapy session with full database population
-
-⚠️ NOTE: This service is intentionally comprehensive for webhook processing.
-For individual operations, use the specific services directly.
-
-🏗️ ARCHITECTURE:
-- Uses repository pattern for domain-separated data access (DDD principles)
-- Timestamps managed automatically by database triggers
+Architecture Notes:
+- Session lifecycle orchestrator for C3D → EMG → Clinical assessment workflow
+- Dual processing modes: stateless (upload) and stateful (webhooks)
+- Integrates with GHOSTLYC3DProcessor (Single Source of Truth pattern)
+- 4-layer architecture: API → Orchestration → Processing → Persistence
+- Repository pattern for domain-separated data access (DDD principles)
 - SOLID principles with dependency injection and service composition
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-14 | Refactored: 2025-08-26
+Clinical Processing Pipeline:
+1. C3D file validation and channel detection
+2. EMG signal processing and contraction analysis
+3. Clinical metrics calculation (RMS, MAV, MPF, MDF)
+4. Therapeutic performance scoring (GHOSTLY+ algorithms)
+5. Compliance and engagement assessment
+6. Session summary generation with clinical recommendations
+
+Production Considerations:
+- Resilient error handling with graceful degradation
+- Comprehensive validation at each processing stage
+- Performance monitoring and structured logging
+- Optimized Supabase operations with RLS compliance
+- Backward compatibility for legacy data formats
+- 1,833 lines of production-critical orchestration logic
 """
 
 import asyncio

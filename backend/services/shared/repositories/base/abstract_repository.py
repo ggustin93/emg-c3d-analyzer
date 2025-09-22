@@ -15,8 +15,7 @@
 - Schema separation support (public/private)
 - Comprehensive CRUD operations with Pydantic models
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27 | Enhanced: 2025-08-28
+UDate: 2025-08-27 | Enhanced: 2025-08-28
 """
 
 import logging

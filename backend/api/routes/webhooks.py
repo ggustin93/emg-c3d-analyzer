@@ -1,27 +1,47 @@
-"""Webhook System - STATEFUL Database Processing.
-====================================================
+"""
+Webhook System - Stateful Database Processing & Supabase Integration
 
-PURPOSE: Process C3D files from Supabase Storage events WITH full database persistence.
+Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+GitHub: @ggustin93
+Project: GHOSTLY+ EMG C3D Analyzer
+Updated: September 2025
+
+PURPOSE: Process C3D files from Supabase Storage events WITH full database persistence
 
 KEY BEHAVIORS:
 - ✅ STORES: Complete analysis results in database
 - ✅ CREATES: therapy_sessions, emg_statistics records
 - ❌ DOES NOT: Return EMG signals (background processing)
 
-USE CASE: Production workflow where C3D files are uploaded to Supabase Storage
-and need complete database persistence with background processing.
+Architecture Notes:
+- Stateful processing mode for production workflow
+- Supabase Storage webhook integration
+- Full database persistence with RLS compliance
+- Background processing via TherapySessionProcessor
+- 355 lines of webhook orchestration logic
+
+Webhook Processing Pipeline:
+1. Receive Supabase Storage event (INSERT/UPDATE)
+2. Validate webhook signature and payload
+3. Extract file metadata and patient/therapist info
+4. Trigger TherapySessionProcessor for full processing
+5. Store complete results in database tables
+
+Security Considerations:
+- Webhook signature validation
+- Event type filtering (INSERT/UPDATE only)
+- Secure file download from Supabase Storage
+- RLS policy compliance for data access
 
 DIFFERENCE FROM UPLOAD:
-- Webhook Route: Stateful processing → Full DB storage → No signal return
-- Upload Route: Stateless processing → No DB storage → Returns signals
+- Webhook Route: Stateful → Full DB storage → No signal return
+- Upload Route: Stateless → No DB storage → Returns signals
 
-SOLID PRINCIPLES: 
-- Single Responsibility: Webhook event handling and DB persistence
-- Open/Closed: Extensible for new webhook types
-- DRY: Reuses TherapySessionProcessor for consistency
-
-Author: EMG C3D Analyzer Team
-Date: 2025-08-14
+Production Considerations:
+- Asynchronous processing for scalability
+- Comprehensive error handling and logging
+- Idempotent processing (safe for retries)
+- Integration with clinical workflow
 """
 
 import json

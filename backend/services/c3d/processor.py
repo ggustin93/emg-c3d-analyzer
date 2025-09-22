@@ -1,35 +1,44 @@
-"""GHOSTLY+ C3D File Processor Service.
-==================================
+"""
+GHOSTLYC3DProcessor - Single Source of Truth for EMG Signal Processing
 
-🎯 PURPOSE: Core EMG Signal Analysis Engine
+Author: Guillaume Gustin with assistance from Claude Code (Sonnet 3.5, Sonnet 4)
+GitHub: @ggustin93
+Project: GHOSTLY+ EMG C3D Analyzer
+Updated: September 2025
+
+PURPOSE: Core EMG Signal Analysis Engine - The Single Source of Truth
 - Processes C3D files from GHOSTLY game for EMG signal analysis
 - Performs contraction detection and therapeutic compliance analysis
 - Generates detailed analytics (compliance rates, temporal statistics)
+- Central processing authority for all EMG data in the system
 
-🔗 DEPENDENCIES:
-- Uses signal_processing.py for low-level EMG filtering and RMS
-- Uses emg_analysis.py for contraction detection and metrics
-- Uses c3d_utils.py for shared metadata extraction (DRY principle)
+Architecture Notes:
+- Implements Single Source of Truth (SoT) pattern for EMG processing
+- Core engine for the entire EMG analysis pipeline
+- Flexible channel mapping supporting GHOSTLY game variations
+- Resilient to input data variations with intelligent fallbacks
+- 1,496 lines of sophisticated signal processing logic
 
-📊 OUTPUT: Complete analytics dictionary with per-channel results
+Dependencies & Integration:
+- signal_processing.py: Low-level EMG filtering and RMS calculations
+- emg_analysis.py: Contraction detection and clinical metrics
+- c3d_utils.py: Shared metadata extraction (DRY principle)
+- Integrates with therapy_session_processor.py for orchestration
 
-ASSUMPTIONS & PARAMETERS:
-========================
-1. EMG DATA PROCESSING:
-   - Sampling rate: Default 1000 Hz if not specified in C3D file
-   - Channel naming: Assumes channels with 'activated' or activity names ('jumping', 'shooting')
-   - Signal processing: Smoothing window applied to reduce noise
+Clinical Processing Parameters:
+- Sampling rate: 1000 Hz default (configurable per file)
+- Contraction threshold: 10% of maximum amplitude (research-validated)
+- Minimum contraction duration: 100ms (clinical relevance threshold)
+- Smoothing window: 100 samples (100-160ms optimal per research)
+- Merge threshold: 200ms for physiologically related contractions
+- Refractory period: 50ms to prevent artifact detection
 
-2. CONTRACTION DETECTION:
-   - Threshold: 10% of maximum amplitude by default (threshold_factor=0.10)
-     * Optimized based on 2024-2025 clinical research (5-20% range standard)
-     * 10% provides optimal sensitivity/specificity balance for rehabilitation therapy
-   - Minimum duration: 100ms by default (min_duration_ms=100)
-     * Increased from 50ms for clinical relevance and noise reduction
-   - Smoothing window size: 100 samples by default (smoothing_window=100)
-     * Increased from 25 for better stability (100-160ms optimal range per research)
-   - Merge threshold: 200ms for physiologically related contractions
-   - Refractory period: 50ms to prevent artifact detection
+Production Considerations:
+- Handles large C3D files (2.74MB+ clinical data)
+- Graceful degradation for missing channels
+- Comprehensive validation and error recovery
+- Performance optimized for real-time processing
+- Backward compatibility with legacy GHOSTLY formats
 """
 
 import logging
