@@ -207,13 +207,7 @@ Common issues and quick fixes:
 - Docker Setup: `/docker/compose/docker-compose.coolify.yml`
 - Environment Config: Check respective platform dashboards
 
-## Getting Help
 
-If you encounter issues:
-1. Check the troubleshooting table above
-2. Review service logs for specific errors
-3. Verify all environment variables are set
-4. Ask in the team's #deployment Slack channel
 
 ---
 

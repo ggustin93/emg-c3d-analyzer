@@ -3,43 +3,21 @@ sidebar_position: 1
 title: Introduction
 ---
 
-# Ghostly+ Dashboard Documentation
+# EMG C3D Analyzer Documentation
 
-The Ghostly+ Dashboard is a clinical research platform for processing and analyzing electromyography data from GHOSTLY rehabilitation game sessions. Built with React, FastAPI, and Supabase, it provides therapists with automated signal analysis, contraction detection, and performance metrics to track patient progress. This documentation covers the system architecture, implementation details, and deployment procedures for developers and system administrators.
+This system analyzes electromyography (EMG) data from GHOSTLY rehabilitation game sessions. It processes C3D motion capture files to help therapists track patient muscle activity, measure therapeutic compliance, and monitor rehabilitation progress through automated signal analysis and clinical metrics.
 
-## Documentation Structure
+## Documentation Overview
 
-### 🚀 Getting Started
-- [Quick Start](./getting-started/quick-start.md) - Get running in minutes
-- [Installation](./getting-started/installation.md) - Detailed setup instructions
-- [Configuration](./getting-started/configuration.md) - Environment and settings
-
-### 📍 Roadmap
-- [Work in Progress](./roadmap/work-in-progress.md) - Active development and future improvements
-
-### 🏗️ Architecture
-- [System Architecture](./architecture.md) - 6-layer architecture with dual API strategy
-
-### 🏥 Clinical
-- [Metrics Definitions](./clinical/metrics-definitions.md) - Clinical calculations and scoring
-
-### 📊 Signal Processing
-- [Signal Processing Overview](./signal-processing/overview.md) - Complete EMG processing pipeline with filtering, envelope detection, contraction detection, and clinical metrics
-
-### ⚙️ Backend
-- [Backend Architecture](./backend.md) - FastAPI backend with EMG processing, domain-driven design, and Supabase integration
-
-### 🎨 Frontend
-- [Overview](./frontend/overview.md) - Complete React 18.3 architecture with TypeScript, React Router v7, TanStack Query, and Zustand state management
-
-### 🚀 DevOps
-- [Complete DevOps Guide](./devops/devops.md) - Deployment, CI/CD, and infrastructure for all environments
-
-### 🧪 Testing
-- [Testing Architecture](./testing.md) - Comprehensive testing guide with 227+ tests, quality gates, and E2E validation
-
-### 🛠️ Development
-- [Infrastructure](./development/infrastructure.md) - Development environment
-- [Scripts](./development/scripts.md) - Development and deployment scripts
-- [Agentic Development](./development/agentic-development.md) - AI-assisted development
-- [Claude Code](./development/claude-code.md) - AI pair programming
+| Section | Description |
+|---------|-------------|
+| **[🚀 Getting Started](./getting-started.md)** | Set up and run the system in 5 minutes |
+| **[🏗️ Architecture](./architecture.md)** | System design and technical architecture |
+| **[🏥 Clinical](./clinical/metrics-definitions.md)** | Clinical metrics and scoring algorithms |
+| **[📊 Signal Processing](./signal-processing/overview.md)** | EMG signal analysis pipeline |
+| **[⚙️ Backend](./backend.md)** | FastAPI server and processing engine |
+| **[🎨 Frontend](./frontend/overview.md)** | React application and user interface |
+| **[🧪 Testing](./testing.md)** | Test suites and quality assurance |
+| **[🚀 DevOps](./devops/devops.md)** | Deployment and CI/CD pipelines |
+| **[🛠️ Development](./development.md)** | Development workflow and Claude Code integration |
+| **[📍 Roadmap](./roadmap/work-in-progress.md)** | Upcoming features and improvements |

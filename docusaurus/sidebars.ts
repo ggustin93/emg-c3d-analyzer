@@ -13,22 +13,9 @@ const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro',
     {
-      type: 'category',
+      type: 'doc',
+      id: 'getting-started',
       label: '🚀 Getting Started',
-      collapsed: false,
-      items: [
-        'getting-started/quick-start',
-        'getting-started/installation',
-        'getting-started/configuration',
-      ],
-    },
-    {
-      type: 'category',
-      label: '📍 Roadmap',
-      collapsed: false,
-      items: [
-        'roadmap/work-in-progress',
-      ],
     },
     {
       type: 'doc',
@@ -36,12 +23,9 @@ const sidebars: SidebarsConfig = {
       label: '🏗️ Architecture',
     },
     {
-      type: 'category',
-      label: '🏥 Clinical',
-      collapsed: true,
-      items: [
-        'clinical/metrics-definitions',
-      ],
+      type: 'doc',
+      id: 'clinical/metrics-definitions',
+      label: '🏥 Clinical Metrics',
     },
     {
       type: 'doc',
@@ -69,14 +53,14 @@ const sidebars: SidebarsConfig = {
       label: '🧪 Testing',
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'development',
       label: '🛠️ Development',
-      collapsed: true,
-      items: [
-        'development/infrastructure',
-        'development/scripts',
-        'development/agentic-development',
-      ],
+    },
+    {
+      type: 'doc',
+      id: 'roadmap/work-in-progress',
+      label: '📍 Roadmap',
     },
   ],
 };
