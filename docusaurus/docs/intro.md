@@ -18,8 +18,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Work in Progress](./roadmap/work-in-progress.md) - Active development and future improvements
 
 ### 🏗️ Architecture
-- [Overview](./architecture/overview.md) - System design and tech stack
-- [Critical Files](./architecture/critical-files.md) - Core components analysis
+- [System Architecture](./architecture.md) - 6-layer architecture with dual API strategy
 
 ### 🏥 Clinical
 - [Metrics Definitions](./clinical/metrics-definitions.md) - Clinical calculations and scoring
@@ -37,8 +36,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Complete DevOps Guide](./devops/devops.md) - Deployment, CI/CD, and infrastructure for all environments
 
 ### 🧪 Testing
-- [Overview](./testing/overview.md) - Testing strategy and coverage
-- [Backend Testing](./testing/backend-testing.md) - Comprehensive test suite
+- [Testing Architecture](./testing.md) - Comprehensive testing guide with 227+ tests, quality gates, and E2E validation
 
 ### 🛠️ Development
 - [Infrastructure](./development/infrastructure.md) - Development environment

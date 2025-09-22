@@ -31,13 +31,9 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'architecture',
       label: '🏗️ Architecture',
-      collapsed: false,
-      items: [
-        'architecture/overview',
-        'architecture/critical-files',
-      ],
     },
     {
       type: 'category',
@@ -68,13 +64,9 @@ const sidebars: SidebarsConfig = {
       label: '🚀 DevOps',
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'testing',
       label: '🧪 Testing',
-      collapsed: true,
-      items: [
-        'testing/overview',
-        'testing/backend-testing',
-      ],
     },
     {
       type: 'category',
