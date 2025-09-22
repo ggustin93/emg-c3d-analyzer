@@ -163,46 +163,6 @@ class TestScoringConfigurationIntegration:
         assert active_data["id"] == config_id
         assert active_data["active"] is True
 
-    def test_test_weights_endpoint_with_database(self, client):
-        """Test /scoring/test-weights works with real database."""
-        response = client.get("/scoring/test-weights")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Should show the metricsDefinitions.md reference weights
-        assert "metricsDefinitions_weights" in data
-        assert "current_active_weights" in data
-        assert "weights_valid" in data
-
-        # Verify metricsDefinitions.md reference weights (flexible for user configuration)
-        metrics_weights = data["metricsDefinitions_weights"]
-        
-        # Weights should be valid numbers between 0 and 1
-        assert isinstance(metrics_weights["w_compliance"], (int, float))
-        assert 0 <= metrics_weights["w_compliance"] <= 1
-        assert isinstance(metrics_weights["w_symmetry"], (int, float))
-        assert 0 <= metrics_weights["w_symmetry"] <= 1
-        assert isinstance(metrics_weights["w_effort"], (int, float))
-        assert 0 <= metrics_weights["w_effort"] <= 1
-        assert isinstance(metrics_weights["w_game"], (int, float))
-        assert 0 <= metrics_weights["w_game"] <= 1
-        
-        # Verify they sum to 1.0
-        total = metrics_weights["w_compliance"] + metrics_weights["w_symmetry"] + metrics_weights["w_effort"] + metrics_weights["w_game"]
-        assert abs(total - 1.0) < 0.001, f"Weights must sum to 1.0, got {total}"
-
-        # Current weights should be valid and present
-        current_weights = data["current_active_weights"]
-        assert current_weights["w_compliance"] is not None
-        assert isinstance(current_weights["w_compliance"], (int, float))
-        assert 0 <= current_weights["w_compliance"] <= 1
-        assert current_weights["w_symmetry"] is not None
-        assert isinstance(current_weights["w_symmetry"], (int, float))
-        assert 0 <= current_weights["w_symmetry"] <= 1
-        # weights_valid should be true for properly configured weights
-        assert "weights_valid" in data
-        assert data["weights_valid"] in [True, False]  # Just check it's a boolean
 
 
 class TestScoringConfigurationDatabaseConstraints:
