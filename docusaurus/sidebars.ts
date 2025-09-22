@@ -45,7 +45,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'doc',
       id: 'devops/devops',
-      label: '🚀 DevOps',
+      label: '🔧 DevOps',
     },
     {
       type: 'doc',
