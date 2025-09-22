@@ -32,15 +32,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Parameters](./signal-processing/parameters.md) - Processing configuration
 
 ### ⚙️ Backend
-- [Overview](./backend/overview.md) - Unified FastAPI + Supabase architecture
-- [API Design](./backend/api-design.md) - RESTful endpoints
-- [Authentication](./backend/authentication.md) - Auth flow and JWT validation
-- [Database Schema](./backend/database-schema.md) - PostgreSQL schema and repository pattern
-- [RLS Policies](./backend/rls-policies.md) - Row-level security authorization
-- [Storage & Uploads](./backend/storage-uploads.md) - C3D file management
-- [Webhooks Processing](./backend/webhooks-processing.md) - Event-driven processing
-- [Caching & Redis](./backend/caching-redis.md) - Performance optimization
-- [Architecture Decisions](./backend/architecture-decisions.md) - Key design choices
+- [Backend Architecture](./backend.md) - FastAPI backend with EMG processing, domain-driven design, and Supabase integration
 
 ### 🎨 Frontend
 - [Overview](./frontend/overview.md) - Complete React 18.3 architecture with TypeScript, React Router v7, TanStack Query, and Zustand state management

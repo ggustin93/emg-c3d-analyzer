@@ -53,20 +53,9 @@ const sidebars: SidebarsConfig = {
       label: '📊 Signal Processing',
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'backend',
       label: '⚙️ Backend',
-      collapsed: true,
-      items: [
-        'backend/overview',
-        'backend/api-design',
-        'backend/authentication',
-        'backend/database-schema',
-        'backend/rls-policies',
-        'backend/storage-uploads',
-        'backend/webhooks-processing',
-        'backend/caching-redis',
-        'backend/architecture-decisions',
-      ],
     },
     {
       type: 'doc',
