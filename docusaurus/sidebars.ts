@@ -63,16 +63,9 @@ const sidebars: SidebarsConfig = {
       label: '🎨 Frontend',
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'devops/devops',
       label: '🚀 DevOps',
-      collapsed: true,
-      items: [
-        'devops/overview',
-        'devops/deployment',
-        'devops/ci-cd',
-        'devops/docker',
-        'devops/coolify',
-      ],
     },
     {
       type: 'category',

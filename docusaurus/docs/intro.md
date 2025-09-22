@@ -38,11 +38,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Overview](./frontend/overview.md) - Complete React 18.3 architecture with TypeScript, React Router v7, TanStack Query, and Zustand state management
 
 ### 🚀 DevOps
-- [Overview](./devops/overview.md) - Infrastructure and deployment
-- [Backend Deployment](./devops/deployment.md) - Production setup
-- [CI/CD](./devops/ci-cd.md) - Automated workflows
-- [Docker](./devops/docker.md) - Containerization
-- [Coolify](./devops/coolify.md) - Self-hosted PaaS
+- [Complete DevOps Guide](./devops/devops.md) - Deployment, CI/CD, and infrastructure for all environments
 
 ### 🧪 Testing
 - [Overview](./testing/overview.md) - Testing strategy and coverage
