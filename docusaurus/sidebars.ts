@@ -48,16 +48,9 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'signal-processing/overview',
       label: '📊 Signal Processing',
-      collapsed: true,
-      items: [
-        'signal-processing/overview',
-        'signal-processing/butterworth-filtering',
-        'signal-processing/envelope-detection',
-        'signal-processing/contraction-detection',
-        'signal-processing/parameters',
-      ],
     },
     {
       type: 'category',

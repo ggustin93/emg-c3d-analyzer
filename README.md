@@ -87,6 +87,10 @@ The GHOSTLY+ EMG Analyzer implements a **layered, domain-driven architecture** w
                                └───────────────────────────┘
 ```
 
+#### 3.1.1 Signal Processing Implementation
+
+The EMG signal processing pipeline implements a dual-signal approach leveraging both the pre-processed "Activated" signal from GHOSTLY C3D files for temporal detection and our computed RMS envelope for amplitude assessment. This strategy optimizes both timing precision and intensity measurement for therapeutic assessment. For detailed technical documentation on the signal processing algorithms, parameters, and clinical validation requirements, see [Signal Processing Overview](docusaurus/docs/signal-processing/overview.md).
+
 ### 3.2 Layered Architecture Pattern
 
 The system implements a **4-layer architecture** with clear separation of concerns and well-defined dependencies:
@@ -379,9 +383,12 @@ Supabase provides **PostgreSQL database and secure file storage** with authentic
 
 ## 4. Tech Stack
 
+### Frontend Architecture
+The frontend application provides the user interface for medical professionals working with EMG rehabilitation data. For detailed frontend documentation including architecture, component organization, and development setup, see the [Frontend README](frontend/README.md).
+
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | React 19, TypeScript, Tailwind CSS, shadcn/ui, Recharts, Zustand |
+| **Frontend** | React 18.3, TypeScript 4.9, Tailwind CSS, shadcn/ui, Recharts, Zustand 4.5 |
 | **Backend** | Python 3.10+, FastAPI, Pydantic, ezc3d, scipy, numpy, pandas |
 | **EMG Processing** | Advanced signal processing algorithms, statistical analysis, clinical metrics |
 | **Cache Layer** | Redis 7.2 with graceful fallback, 50x performance improvement |
