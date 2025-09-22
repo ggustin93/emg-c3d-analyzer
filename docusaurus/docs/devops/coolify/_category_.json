@@ -1,8 +1,0 @@
-{
-  "label": "Coolify",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "Self-hosted PaaS deployment with Coolify."
-  }
-}

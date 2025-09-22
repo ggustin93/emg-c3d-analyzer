@@ -5,7 +5,7 @@ title: DevOps Overview
 
 # DevOps & Infrastructure
 
-Containerization, CI/CD, and deployment strategies for the EMG C3D Analyzer.
+Containerization, CI/CD, and deployment strategies for the Ghostly+ Dashboard.
 
 ## Architecture
 

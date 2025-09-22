@@ -5,7 +5,7 @@ title: Coolify Overview
 
 # Coolify Deployment
 
-Self-hosted PaaS for easy deployment and management of the EMG C3D Analyzer.
+Self-hosted PaaS for easy deployment and management of the Ghostly+ Dashboard.
 
 ## What is Coolify?
 
