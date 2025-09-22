@@ -34,7 +34,7 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title={`${siteConfig.title} - Technical Documentation`}
-      description="Technical documentation for GHOSTLY+ EMG C3D Analyzer - A rehabilitation technology platform for EMG signal processing and analysis">
+      description="Technical documentation for Ghostly+ Dashboard - A rehabilitation technology platform for EMG signal processing and analysis">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

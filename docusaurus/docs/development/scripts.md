@@ -5,7 +5,7 @@ title: Development Scripts
 
 # Development Scripts Reference
 
-Comprehensive guide to all development scripts and utilities for the EMG C3D Analyzer.
+Comprehensive guide to all development scripts and utilities for the Ghostly+ Dashboard.
 
 ## Primary Development Scripts
 

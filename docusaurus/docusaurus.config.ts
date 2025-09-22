@@ -7,7 +7,7 @@ import rehypeKatex from 'rehype-katex';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'EMG C3D Analyzer',
+  title: 'Ghostly+ Dashboard',
   tagline: 'Technical Documentation for GHOSTLY+ Rehabilitation Platform',
   favicon: 'img/favicon.ico',
 
@@ -79,9 +79,9 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'EMG C3D Analyzer',
+      title: 'Ghostly+ Dashboard',
       logo: {
-        alt: 'EMG C3D Analyzer Logo',
+        alt: 'Ghostly+ Dashboard Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -149,7 +149,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} GHOSTLY+ EMG C3D Analyzer. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Ghostly+ Dashboard. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

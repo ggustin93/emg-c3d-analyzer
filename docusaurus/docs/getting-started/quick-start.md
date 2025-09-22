@@ -5,7 +5,7 @@ title: Quick Start
 
 # Quick Start Guide
 
-Get the EMG C3D Analyzer up and running in under 5 minutes!
+Get the Ghostly+ Dashboard up and running in under 5 minutes!
 
 ## Prerequisites
 

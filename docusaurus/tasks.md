@@ -1,7 +1,7 @@
-# EMG C3D Analyzer - Documentation Update Tasks
+# Ghostly+ Dashboard - Documentation Update Tasks
 
 ## Project Overview
-Complete overhaul of Docusaurus documentation to accurately reflect the sophisticated EMG C3D Analyzer platform, including Supabase integration and modern development workflows.
+Complete overhaul of Docusaurus documentation to accurately reflect the sophisticated Ghostly+ Dashboard platform, including Supabase integration and modern development workflows.
 
 ## Current State Assessment
 - **Documentation**: Basic Docusaurus setup with outdated placeholders (2019-2021 blog posts)

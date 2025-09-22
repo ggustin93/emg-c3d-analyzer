@@ -5,7 +5,7 @@ title: Installation
 
 # Installation Guide
 
-Complete setup instructions for the EMG C3D Analyzer development environment.
+Complete setup instructions for the Ghostly+ Dashboard development environment.
 
 ## System Requirements
 
