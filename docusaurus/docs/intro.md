@@ -25,11 +25,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Metrics Definitions](./clinical/metrics-definitions.md) - Clinical calculations and scoring
 
 ### 📊 Signal Processing
-- [Overview](./signal-processing/overview.md) - EMG processing pipeline
-- [Butterworth Filtering](./signal-processing/butterworth-filtering.md) - Signal filtering
-- [Envelope Detection](./signal-processing/envelope-detection.md) - Amplitude extraction
-- [Contraction Detection](./signal-processing/contraction-detection.md) - Event identification
-- [Parameters](./signal-processing/parameters.md) - Processing configuration
+- [Signal Processing Overview](./signal-processing/overview.md) - Complete EMG processing pipeline with filtering, envelope detection, contraction detection, and clinical metrics
 
 ### ⚙️ Backend
 - [Backend Architecture](./backend.md) - FastAPI backend with EMG processing, domain-driven design, and Supabase integration

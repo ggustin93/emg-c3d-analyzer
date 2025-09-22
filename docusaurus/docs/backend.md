@@ -161,6 +161,249 @@ The system uses a comprehensive set of tables for clinical data management. You 
 
 All database operations go through repository classes that provide a clean interface. The backend uses the synchronous Supabase Python client for simplicity (following KISS principle), with repositories abstracting database operations for each domain. This pattern enables easy testing through dependency injection and keeps business logic separate from data access.
 
+## Row Level Security (RLS) - The Authorization Layer
+
+### Overview
+
+Row Level Security (RLS) is the critical authorization layer that protects all sensitive data in the GHOSTLY+ system. While FastAPI validates JWT tokens (authentication), RLS policies enforce who can access what data (authorization) at the database level. This creates an unbypassable security layer that ensures HIPAA compliance and patient data privacy.
+
+**View All Policies**: [Supabase RLS Policies Dashboard](https://supabase.com/dashboard/project/egihfsmxphqcsjotmhmm/auth/policies)
+
+### RLS Architecture
+
+```mermaid
+graph TB
+    subgraph "User Request Flow"
+        User[User Action] --> Frontend[React Frontend]
+        Frontend --> |JWT Token| API{API Route?}
+    end
+    
+    subgraph "Authorization Paths"
+        API -->|Complex Logic| FastAPI[FastAPI Backend]
+        API -->|Simple CRUD| DirectDB[Direct Supabase]
+        
+        FastAPI --> |Service Role| DB[(PostgreSQL)]
+        DirectDB --> |User JWT| DB
+    end
+    
+    subgraph "RLS Security Layer"
+        DB --> RLS{RLS Policies}
+        
+        RLS --> |Check Role| Role[get_user_role()]
+        RLS --> |Check Ownership| Therapist[get_current_therapist_id()]
+        RLS --> |Check Identity| Auth[auth.uid()]
+        
+        Role --> Decision{Authorized?}
+        Therapist --> Decision
+        Auth --> Decision
+        
+        Decision -->|Yes| Data[Return Data]
+        Decision -->|No| Denied[Access Denied]
+    end
+    
+    style User fill:#e1f5fe
+    style Frontend fill:#fce4ec
+    style FastAPI fill:#f3e5f5
+    style DirectDB fill:#e8f5e9
+    style DB fill:#fff3e0
+    style RLS fill:#ffebee
+    style Data fill:#c8e6c9
+    style Denied fill:#ffcdd2
+```
+
+### Security Model - Role Hierarchy
+
+The system implements a comprehensive role-based access control (RBAC) model with four distinct roles:
+
+| Role | Access Level | Typical Use Cases |
+|------|--------------|-------------------|
+| **admin** | Full system access | System administration, user management, global configuration |
+| **therapist** | Patient-specific access | Clinical sessions, patient management, therapy data |
+| **researcher** | Anonymized read-only | Research analysis, population studies, outcome metrics |
+| **service_role** | Backend operations | C3D processing, automated workflows, system tasks |
+
+### RLS Policy Implementation
+
+#### Policy Categories and Coverage
+
+The system implements **30+ RLS policies** across all tables, organized into these categories:
+
+**1. Patient Data Protection Policies**
+```sql
+-- Example: Therapists can only access their assigned patients
+CREATE POLICY "therapist_own_patients" ON patients
+FOR ALL TO public
+USING (
+    therapist_id = auth.uid() 
+    OR get_user_role() = 'admin'
+);
+```
+
+**2. Clinical Data Access Policies**
+```sql
+-- Example: EMG data accessible only for authorized sessions
+CREATE POLICY "authorized_emg_access" ON emg_statistics
+FOR SELECT TO public
+USING (
+    EXISTS (
+        SELECT 1 FROM therapy_sessions ts
+        JOIN patients p ON p.id = ts.patient_id
+        WHERE ts.id = emg_statistics.session_id
+        AND (
+            p.therapist_id = auth.uid()
+            OR get_user_role() IN ('admin', 'researcher')
+        )
+    )
+);
+```
+
+**3. User-Generated Content Policies**
+```sql
+-- Example: Clinical notes only accessible by author
+CREATE POLICY "clinical_notes_ownership" ON clinical_notes
+FOR ALL TO public
+USING (auth.uid() = author_id);
+```
+
+### Key Security Functions
+
+The RLS system relies on three core security functions:
+
+```sql
+-- 1. Get current user's role from profile
+get_user_role() RETURNS TEXT
+-- Returns: 'therapist' | 'admin' | 'researcher' | 'anonymous'
+
+-- 2. Validate therapist identity and active status
+get_current_therapist_id() RETURNS UUID
+-- Returns: UUID of therapist if valid and active, NULL otherwise
+
+-- 3. Supabase built-in authentication user ID
+auth.uid() RETURNS UUID
+-- Returns: Currently authenticated user's ID
+```
+
+### Table-Level RLS Coverage
+
+| Table | Policies | Protection Level | Key Restrictions |
+|-------|----------|------------------|------------------|
+| **patients** | 7 policies | High | Therapist-patient assignment enforced |
+| **therapy_sessions** | 7 policies | High | Session access by patient ownership |
+| **emg_statistics** | 3 policies | High | Clinical data protection |
+| **performance_scores** | 3 policies | High | Performance metrics isolation |
+| **patient_medical_info** | 2 policies | Critical | HIPAA-protected medical data |
+| **clinical_notes** | 4 policies | High | Author-only access |
+| **user_profiles** | 11 policies | Medium | Self-management + admin override |
+| **bfr_monitoring** | 4 policies | High | Session-based access control |
+| **scoring_configuration** | 4 policies | Medium | Admin-only modifications |
+| **audit_log** | 1 policy | Critical | Admin-only access |
+| **export_history** | 1 policy | High | User-specific export tracking |
+| **session_settings** | 3 policies | High | Session-based configuration |
+
+### RLS Best Practices
+
+#### 1. Defense in Depth
+- **Multiple Layers**: Auth → JWT Validation → RLS Policies → Data Access
+- **Fail-Safe Defaults**: No access unless explicitly granted by policy
+- **Comprehensive Coverage**: Every table with sensitive data has RLS enabled
+
+#### 2. Performance Optimization
+- **Indexed Columns**: Foreign keys and auth.uid() columns are indexed
+- **Policy Efficiency**: Policies use EXISTS clauses for optimal query planning
+- **Caching**: Helper functions cache role lookups within transactions
+
+#### 3. Testing and Validation
+```sql
+-- Test RLS policies by impersonating different roles
+SET LOCAL role = 'authenticated';
+SET LOCAL request.jwt.claim.sub = 'therapist-uuid-here';
+
+-- Verify data isolation
+SELECT * FROM patients;  -- Should only show assigned patients
+```
+
+#### 4. Monitoring and Auditing
+- All data access logged in `audit_log` table
+- Failed access attempts tracked for security monitoring
+- Regular policy review through Supabase dashboard
+
+### Common RLS Patterns
+
+#### Pattern 1: Ownership-Based Access
+```sql
+-- User can only access their own data
+USING (auth.uid() = user_id)
+```
+
+#### Pattern 2: Role-Based Access
+```sql
+-- Admin can access everything
+USING (get_user_role() = 'admin')
+```
+
+#### Pattern 3: Relationship-Based Access
+```sql
+-- Therapist can access their patients' data
+USING (
+    patient_id IN (
+        SELECT id FROM patients 
+        WHERE therapist_id = auth.uid()
+    )
+)
+```
+
+#### Pattern 4: Composite Access
+```sql
+-- Combine multiple conditions
+USING (
+    auth.uid() = owner_id 
+    OR get_user_role() = 'admin'
+    OR (
+        get_user_role() = 'researcher' 
+        AND is_anonymized = true
+    )
+)
+```
+
+### Security Implications
+
+**✅ Strengths:**
+- **Unbypassable**: RLS enforced at database level, cannot be circumvented by application bugs
+- **HIPAA Compliant**: Patient data isolation meets healthcare privacy requirements
+- **Zero Trust**: Every query filtered through policies, no exceptions
+- **Audit Trail**: Complete tracking of all data access and modifications
+- **Granular Control**: Precise permissions per table, operation, and role
+
+**⚠️ Considerations:**
+- Service role bypasses RLS - use sparingly and audit all usage
+- Policy complexity can impact query performance - optimize with EXPLAIN ANALYZE
+- Testing requires careful role impersonation to validate all paths
+
+### Troubleshooting RLS Issues
+
+**Common Problems and Solutions:**
+
+1. **"No rows returned" when data exists**
+   - Check active RLS policies: `SELECT * FROM pg_policies WHERE tablename = 'your_table';`
+   - Verify user role: `SELECT get_user_role();`
+   - Test with service role to confirm data exists
+
+2. **Performance degradation**
+   - Analyze policy execution: `EXPLAIN ANALYZE SELECT ...;`
+   - Add indexes on columns used in policies
+   - Simplify complex policy conditions
+
+3. **Policy conflicts**
+   - Review overlapping policies in dashboard
+   - Use PERMISSIVE vs RESTRICTIVE policies appropriately
+   - Test each role systematically
+
+### Further Resources
+
+- **Live Policy Management**: [Supabase RLS Dashboard](https://supabase.com/dashboard/project/egihfsmxphqcsjotmhmm/auth/policies)
+- **Supabase RLS Documentation**: [Row Level Security Guide](https://supabase.com/docs/guides/auth/row-level-security)
+- **PostgreSQL RLS Reference**: [PostgreSQL Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+
 ## Processing & Webhooks
 
 ### Processing Pipeline
