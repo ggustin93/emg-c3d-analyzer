@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from services.cache import get_cache_patterns, get_redis_cache
 
-router = APIRouter(prefix="/cache", tags=["Cache"])
+router = APIRouter(prefix="/cache", tags=["cache"])
 logger = logging.getLogger(__name__)
 
 

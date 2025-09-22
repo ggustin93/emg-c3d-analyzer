@@ -18,7 +18,6 @@ from fastapi.responses import JSONResponse
 from api.routes import (
     analysis,
     cache_monitoring,
-    export,
     health,
     logs,
     mvc,
@@ -221,7 +220,6 @@ def create_app() -> FastAPI:
     app.include_router(health.router)  # Health checks
     app.include_router(upload.router)  # C3D file upload
     app.include_router(analysis.router)  # EMG analysis
-    app.include_router(export.router)  # Data export
     app.include_router(mvc.router)  # MVC calibration
     app.include_router(signals.router)  # Signal processing
     app.include_router(webhooks.router)  # Supabase webhooks
@@ -231,7 +229,7 @@ def create_app() -> FastAPI:
     app.include_router(logs.router)  # Frontend log collection
     app.include_router(therapist_router)  # Therapist resolution
     
-    logger.info("FastAPI application configured", routes=13)
+    logger.info("FastAPI application configured", routes=12)
     return app
 
 

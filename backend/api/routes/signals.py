@@ -316,12 +316,3 @@ async def _extract_single_channel_jit(
             os.unlink(tmp_file_path)
 
 
-@router.get("/health")
-async def health_check() -> dict[str, Any]:
-    """Health check endpoint for JIT signal generation service."""
-    return {
-        "service": "JIT Signal Generation",
-        "status": "healthy",
-        "optimization": "99% storage reduction active",
-        "features": ["on-demand", "memory-efficient", "single-channel-extraction"],
-    }

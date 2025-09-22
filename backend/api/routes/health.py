@@ -5,8 +5,6 @@ System health monitoring endpoints.
 Single responsibility: Application health status.
 """
 
-import os
-import sys
 from datetime import datetime
 
 from fastapi import APIRouter
@@ -20,28 +18,6 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
-@router.get("/health/debug")
-async def health_debug():
-    """Debug endpoint showing environment status for troubleshooting."""
-    return {
-        "status": "running",
-        "timestamp": datetime.now().isoformat(),
-        "environment": {
-            "SUPABASE_URL": "SET" if os.getenv("SUPABASE_URL") else "MISSING",
-            "SUPABASE_ANON_KEY": "SET" if os.getenv("SUPABASE_ANON_KEY") else "MISSING",
-            "SUPABASE_SERVICE_KEY": "SET" if os.getenv("SUPABASE_SERVICE_KEY") else "MISSING",
-            "REDIS_URL": os.getenv("REDIS_URL", "not set"),
-            "ENVIRONMENT": os.getenv("ENVIRONMENT", "not set"),
-            "HOST": os.getenv("HOST", "not set"),
-            "PORT": os.getenv("PORT", "not set"),
-            "LOG_LEVEL": os.getenv("LOG_LEVEL", "not set"),
-        },
-        "system": {
-            "working_dir": os.getcwd(),
-            "python_version": sys.version,
-            "python_executable": sys.executable,
-        }
-    }
 
 
 @router.get("/")
@@ -54,14 +30,22 @@ async def root():
         "endpoints": {
             "health": "GET /health - Health check endpoint",
             "upload": "POST /upload - Upload and process a C3D file",
-            "export": "POST /export - Export comprehensive analysis data as JSON",
-            "mvc_estimate": "POST /mvc/estimate - Estimate MVC values for EMG signals",
-            "scores": {
-                "calculate": "POST /scores/calculate - Calculate GHOSTLY+ performance scores",
-                "update_rpe": "POST /scores/update-rpe - Update RPE for a session",
-                "update_game": "POST /scores/update-game - Update game scores for a session",
-                "adherence": "GET /scores/adherence - Get adherence score for a patient",
-                "synthetic": "POST /scores/synthetic - Generate synthetic scoring data",
+            "analysis": "POST /analysis/recalc - Recalculate EMG analysis",
+            "export": {
+                "data": "POST /export - Export comprehensive analysis data",
+                "session": "GET /export/session/{session_id} - Export session data"
             },
-        },
+            "mvc": "POST /mvc/calibrate - Calibrate MVC values for EMG signals",
+            "signals": {
+                "get": "GET /signals/jit/{session_id}/{channel} - Get signal data",
+                "channels": "GET /signals/jit/{session_id}/channels - Get channel info"
+            },
+            "scoring": {
+                "configurations": "GET /scoring/configurations - List scoring configurations",
+                "active": "GET /scoring/configurations/active - Get active configuration",
+                "adherence": "GET /scoring/adherence/{patient_code} - Get adherence score"
+            },
+            "webhooks": "POST /webhooks/storage/c3d-upload - Process C3D file uploads",
+            "therapists": "POST /therapists/lookup - Resolve therapist information"
+        }
     }

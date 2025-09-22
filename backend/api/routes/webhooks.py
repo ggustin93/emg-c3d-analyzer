@@ -359,17 +359,3 @@ async def _process_c3d_background(session_code: str, bucket: str, object_path: s
 # === HEALTH CHECK ===
 
 
-@router.get("/health")
-async def webhook_health() -> dict:
-    """Webhook service health check."""
-    return {
-        "service": "C3D Webhook Processing",
-        "status": "healthy",
-        "database_tables": [
-            "therapy_sessions",
-            "emg_statistics", 
-            "performance_scores",
-            "processing_parameters",
-        ],
-        "features": ["background_processing", "signature_verification", "status_tracking"],
-    }

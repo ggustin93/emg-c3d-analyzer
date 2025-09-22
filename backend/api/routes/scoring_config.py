@@ -349,44 +349,6 @@ async def create_custom_scoring_configuration(config: ScoringConfigurationReques
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/test-weights")
-async def test_scoring_weights():
-    """Test endpoint to verify current scoring weights."""
-    try:
-        from services.clinical.performance_scoring_service import (
-            PerformanceScoringService,
-        )
-
-        service = PerformanceScoringService()
-        # Use a valid UUID format for testing (falls back to defaults when not found)
-        test_session_id = "550e8400-e29b-41d4-a716-446655440001"
-        test_weights = service._load_scoring_weights_from_database(test_session_id)
-
-        return {
-            "metricsDefinitions_weights": {
-                "w_compliance": 0.400,
-                "w_symmetry": 0.250,
-                "w_effort": 0.200,
-                "w_game": 0.150,
-            },
-            "current_active_weights": {
-                "w_compliance": test_weights.w_compliance,
-                "w_symmetry": test_weights.w_symmetry,
-                "w_effort": test_weights.w_effort,
-                "w_game": test_weights.w_game,
-                "w_completion": test_weights.w_completion,
-                "w_intensity": test_weights.w_intensity,
-                "w_duration": test_weights.w_duration,
-            },
-            "weights_valid": test_weights.validate() if hasattr(test_weights, 'validate') else True,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(f"Failed to test scoring weights: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.put("/configurations/default", response_model=ScoringConfigurationResponse)
 async def update_default_configuration(config: ScoringConfigurationRequest):

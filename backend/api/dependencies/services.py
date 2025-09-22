@@ -17,9 +17,6 @@ from services.user.therapist_resolution_service import TherapistResolutionServic
 from database.supabase_client import get_supabase_client
 from api.dependencies.auth import get_current_user
 
-# Export service implementation pending - tracked in domain architecture
-
-
 def get_c3d_processor(file_path: str = "") -> GHOSTLYC3DProcessor:
     """Factory for C3D processor instances.
 
@@ -58,18 +55,6 @@ def get_authenticated_supabase(
     return get_supabase_client(jwt_token=current_user['token'])
 
 
-# def get_export_service(processor: GHOSTLYC3DProcessor) -> EMGDataExporter:
-#     """
-#     Factory for export service instances.
-#
-#     Args:
-#         processor: C3D processor instance
-#
-#     Returns:
-#         EMGDataExporter: Export service instance
-#     """
-#     return EMGDataExporter(processor)
-# TODO: Implement export service
 
 
 def get_therapist_repository(
