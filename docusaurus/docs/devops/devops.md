@@ -186,6 +186,122 @@ Common issues and quick fixes:
 | High memory usage | Increase Coolify resource limits |
 | Build fails | Clear Docker cache in Coolify |
 
+## Self-Hosted Supabase Deployment
+
+For production environments requiring data sovereignty and GDPR compliance, deploy your own Supabase instance.
+
+### Production Database Setup (3 Steps)
+
+#### 1. Create Supabase Project
+- Go to [https://app.supabase.com](https://app.supabase.com) for cloud-hosted
+- Or deploy self-hosted Supabase using [Docker](https://supabase.com/docs/guides/self-hosting/docker)
+- Save your project URL and keys from API Settings
+
+#### 2. Deploy Database Schema
+```bash
+# Using Supabase CLI (Recommended for production)
+supabase link --project-ref YOUR_PROJECT_REF
+psql $DATABASE_URL < supabase/migrations/production_snapshot_2025_09_11.sql
+
+# Or via Dashboard SQL Editor
+# Copy entire production_snapshot_2025_09_11.sql and run
+```
+
+**Production snapshot includes:**
+- 13 tables (11 public + 2 private)
+- 33 stored procedures and functions
+- All RLS policies for security
+- Triggers and indexes for performance
+- Default scoring configurations
+
+#### 3. Create Storage Bucket
+```bash
+# Create storage bucket for C3D files
+supabase storage create c3d-examples --public false
+
+# Or via Dashboard: Storage → New Bucket
+```
+
+### Production Environment Variables
+
+```bash
+# Backend (.env)
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key  # Keep secret!
+SUPABASE_ANON_KEY=your-anon-key
+
+# Frontend (.env)
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_API_URL=https://your-api-domain.com  # Production API URL
+```
+
+### Production Verification
+
+```sql
+-- Verify database deployment
+SELECT 
+    'Tables' as item, COUNT(*) as count, '13' as expected
+FROM information_schema.tables 
+WHERE table_schema IN ('public', 'private')
+UNION ALL
+SELECT 
+    'Functions', COUNT(*), '33'
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public';
+```
+
+### Creating a Full Production Snapshot
+
+To capture your complete database state including all procedures, RLS policies, and triggers:
+
+```bash
+# Method 1: Using Supabase CLI (Recommended)
+supabase db dump --schema-only > production_snapshot_$(date +%Y_%m_%d).sql
+
+# Method 2: Using pg_dump with all objects
+pg_dump --schema-only --no-owner --no-privileges \
+  --create --clean --if-exists \
+  -h db.YOUR_PROJECT.supabase.co \
+  -U postgres \
+  -d postgres > production_snapshot_$(date +%Y_%m_%d).sql
+
+# Method 3: Extract from Supabase Dashboard
+# SQL Editor → Run this query → Export results
+SELECT 
+  'CREATE OR REPLACE FUNCTION ' || proname || '(' || 
+  pg_get_function_identity_arguments(oid) || ') RETURNS ' ||
+  pg_get_function_result(oid) || ' AS $$ ' || 
+  prosrc || ' $$ LANGUAGE ' || lanname || ';'
+FROM pg_proc p
+JOIN pg_language l ON p.prolang = l.oid
+WHERE pronamespace = 'public'::regnamespace;
+```
+
+**What gets captured:**
+- All tables with exact structure
+- All 33+ stored procedures and functions
+- All RLS policies and permissions
+- All triggers and indexes
+- All views and materialized views
+- Default data and configurations
+
+### Production Deployment Checklist
+
+- [ ] All 13 tables created with correct structure
+- [ ] All 33 functions deployed and working
+- [ ] RLS policies active on all tables
+- [ ] Storage bucket created with policies
+- [ ] Default scoring configurations inserted
+- [ ] Environment variables configured
+- [ ] API endpoints responding correctly
+- [ ] Authentication flow verified
+- [ ] Webhook integration configured
+- [ ] Database backups configured
+
+**Full documentation**: See `/supabase/README.md` for migration management, troubleshooting, and utilities.
+
 ## Security Reminders
 
 - 🔐 Never commit secrets - use environment variables

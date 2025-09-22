@@ -3,9 +3,22 @@ sidebar_position: 1
 title: Introduction
 ---
 
-# EMG C3D Analyzer Documentation
+# Ghostly+ Dashboard Documentation
 
-This system analyzes electromyography (EMG) data from GHOSTLY rehabilitation game sessions. It processes C3D motion capture files to help therapists track patient muscle activity, measure therapeutic compliance, and monitor rehabilitation progress through automated signal analysis and clinical metrics.
+The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation game sessions. It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly patients (65+ years) undergoing Blood Flow Restriction therapy.
+
+## Video Demo
+
+<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden'}}>
+  <iframe 
+    src="https://player.vimeo.com/video/1119476263" 
+    style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
+    frameBorder="0" 
+    allow="autoplay; fullscreen; picture-in-picture" 
+    allowFullScreen
+    title="EMG C3D Analyzer Demo">
+  </iframe>
+</div>
 
 ## Documentation Overview
 
