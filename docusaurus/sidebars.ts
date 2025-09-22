@@ -24,12 +24,18 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '📍 Roadmap',
+      collapsed: false,
+      items: [
+        'roadmap/work-in-progress',
+      ],
+    },
+    {
+      type: 'category',
       label: '🏗️ Architecture',
       collapsed: false,
       items: [
-        'architecture/index',
         'architecture/overview',
-        'architecture/enhanced-architecture',
         'architecture/critical-files',
       ],
     },
@@ -121,30 +127,9 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'devops/overview',
-        {
-          type: 'category',
-          label: '🔄 CI/CD',
-          collapsed: true,
-          items: [
-            'devops/ci-cd/overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: '🐳 Docker',
-          collapsed: true,
-          items: [
-            'devops/docker/overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: '⚡ Coolify',
-          collapsed: true,
-          items: [
-            'devops/coolify/overview',
-          ],
-        },
+        'devops/ci-cd',
+        'devops/docker',
+        'devops/coolify',
       ],
     },
     {
@@ -161,22 +146,8 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'development/infrastructure',
-      ],
-    },
-    {
-      type: 'category',
-      label: '🤖 Agentic Development',
-      collapsed: true,
-      items: [
-        'agentic-development/overview',
-        {
-          type: 'category',
-          label: '🧠 Claude Code',
-          collapsed: true,
-          items: [
-            'agentic-development/claude-code/overview',
-          ],
-        },
+        'development/scripts',
+        'development/agentic-development',
       ],
     },
   ],
