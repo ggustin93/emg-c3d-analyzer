@@ -32,32 +32,30 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Parameters](./signal-processing/parameters.md) - Processing configuration
 
 ### ⚙️ Backend
-- [Overview](./backend/overview.md) - FastAPI architecture
+- [Overview](./backend/overview.md) - Unified FastAPI + Supabase architecture
 - [API Design](./backend/api-design.md) - RESTful endpoints
-- [Database Integration](./backend/database-integration.md) - Supabase setup
-- [Testing Strategy](./backend/testing-strategy.md) - Test coverage
-- [Caching & Redis](./backend/caching-redis.md) - Performance optimization
+- [Authentication](./backend/authentication.md) - Auth flow and JWT validation
+- [Database Schema](./backend/database-schema.md) - PostgreSQL schema and repository pattern
+- [RLS Policies](./backend/rls-policies.md) - Row-level security authorization
+- [Storage & Uploads](./backend/storage-uploads.md) - C3D file management
 - [Webhooks Processing](./backend/webhooks-processing.md) - Event-driven processing
-- [Deployment](./backend/deployment.md) - Production setup
+- [Caching & Redis](./backend/caching-redis.md) - Performance optimization
+- [Architecture Decisions](./backend/architecture-decisions.md) - Key design choices
 
 ### 🎨 Frontend
 - [Overview](./frontend/overview.md) - React architecture
 
-### 🗄️ Supabase
-- [Overview](./supabase/overview.md) - Platform integration
-- [Authentication](./supabase/auth/overview.md) - User management
-- [Database](./supabase/database/overview.md) - PostgreSQL schema
-- [Row Level Security](./supabase/rls/overview.md) - Authorization policies
-- [Storage](./supabase/storage/overview.md) - File management
 
 ### 🚀 DevOps
 - [Overview](./devops/overview.md) - Infrastructure and deployment
+- [Backend Deployment](./devops/deployment.md) - Production setup
 - [CI/CD](./devops/ci-cd.md) - Automated workflows
 - [Docker](./devops/docker.md) - Containerization
 - [Coolify](./devops/coolify.md) - Self-hosted PaaS
 
 ### 🧪 Testing
 - [Overview](./testing/overview.md) - Testing strategy and coverage
+- [Backend Testing](./testing/backend-testing.md) - Comprehensive test suite
 
 ### 🛠️ Development
 - [Infrastructure](./development/infrastructure.md) - Development environment

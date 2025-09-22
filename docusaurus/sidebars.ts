@@ -66,11 +66,13 @@ const sidebars: SidebarsConfig = {
       items: [
         'backend/overview',
         'backend/api-design',
-        'backend/database-integration',
-        'backend/testing-strategy',
-        'backend/caching-redis',
+        'backend/authentication',
+        'backend/database-schema',
+        'backend/rls-policies',
+        'backend/storage-uploads',
         'backend/webhooks-processing',
-        'backend/deployment',
+        'backend/caching-redis',
+        'backend/architecture-decisions',
       ],
     },
     {
@@ -83,50 +85,11 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: '🗄️ Supabase',
-      collapsed: true,
-      items: [
-        'supabase/overview',
-        {
-          type: 'category',
-          label: '🔐 Authentication',
-          collapsed: true,
-          items: [
-            'supabase/auth/overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: '💾 Database',
-          collapsed: true,
-          items: [
-            'supabase/database/overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: '🔒 Row Level Security',
-          collapsed: true,
-          items: [
-            'supabase/rls/overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: '📦 Storage',
-          collapsed: true,
-          items: [
-            'supabase/storage/overview',
-          ],
-        },
-      ],
-    },
-    {
-      type: 'category',
       label: '🚀 DevOps',
       collapsed: true,
       items: [
         'devops/overview',
+        'devops/deployment',
         'devops/ci-cd',
         'devops/docker',
         'devops/coolify',
@@ -138,6 +101,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'testing/overview',
+        'testing/backend-testing',
       ],
     },
     {

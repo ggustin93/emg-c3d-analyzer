@@ -34,13 +34,13 @@ graph TB
     end
     
     subgraph "Orchestration Layer"
-        O1[therapy_session_processor.py - 1,669 lines]:::orchestration
+        O1[therapy_session_processor.py - 1,840 lines]:::orchestration
         O2[Service Layer]:::orchestration
         O3[Repository Pattern]:::orchestration
     end
     
     subgraph "Processing Layer"
-        P1[processor.py - 1,341 lines]:::processing
+        P1[processor.py - 1,505 lines]:::processing
         P2[EMG Analysis Engine]:::processing
         P3[Signal Processing]:::processing
     end
@@ -89,7 +89,7 @@ The API layer serves as the system's entry point, handling HTTP requests and res
 
 The orchestration layer coordinates complex workflows across multiple services and repositories. It manages the complete therapy session lifecycle, from patient lookup to result persistence, implementing the Repository pattern for clean data access abstraction. This layer ensures transactional consistency and proper error handling while keeping business logic decoupled from both API and database concerns.
 
-- `therapy_session_processor.py` (1,669 lines) - Session management
+- `therapy_session_processor.py` (1,840 lines) - Session management
 - Repository pattern for data access
 - Service layer coordination
 
@@ -97,7 +97,7 @@ The orchestration layer coordinates complex workflows across multiple services a
 
 The processing layer contains the core EMG analysis engine, serving as the single source of truth for all signal processing operations. It implements specialized algorithms for contraction detection, fatigue analysis, and clinical metric calculation. This layer operates in a stateless manner, accepting C3D binary data and returning structured analysis results without any database dependencies.
 
-- `processor.py` (1,341 lines) - EMG analysis engine
+- `processor.py` (1,505 lines) - EMG analysis engine
 - Single source of truth for all processing
 - Signal processing algorithms
 

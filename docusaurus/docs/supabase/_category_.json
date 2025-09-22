@@ -1,8 +1,0 @@
-{
-  "label": "Supabase Platform",
-  "position": 3,
-  "link": {
-    "type": "generated-index",
-    "description": "Complete documentation for Supabase integration including Authentication, Storage, Database, and Row Level Security."
-  }
-}
