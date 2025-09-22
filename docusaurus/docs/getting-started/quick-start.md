@@ -56,9 +56,3 @@ Once running, you can access:
 - **Backend API**: http://localhost:8080/docs
 - **Documentation**: http://localhost:3200
 
-
-## Next Steps
-
-- [Installation Guide](./installation) - Detailed setup instructions
-- [Configuration](./configuration) - Environment variables and settings
-- [First Analysis](./first-analysis) - Understanding the results

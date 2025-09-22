@@ -203,7 +203,3 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
-## Next Steps
-
-- [Configuration](./configuration) - Detailed configuration options
-- [First Analysis](./first-analysis) - Process your first C3D file

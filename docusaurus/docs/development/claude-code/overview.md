@@ -1,21 +1,15 @@
 ---
 sidebar_position: 1
-title: Agentic Development Overview
+title: Claude Code Overview
 ---
+https://www.youtube.com/watch?v=amEUIuBKwvg&t=383s 
+
+
 
 # Agentic Development
 
-AI-powered development workflows using Claude Code and Cursor IDE.
-
-## What is Agentic Development?
-
-Development approach where AI agents assist with:
-- Code generation and refactoring
-- Test creation and validation
-- Documentation maintenance
-- Code review and optimization
-
-## Tools We Use
+AI-powered development workflows using Claude Code, Cursor IDE and SuperClaude framework.
+## Tools 
 
 ### 🤖 [Claude Code](./claude-code/overview)
 Command-line AI assistant with:
@@ -59,13 +53,6 @@ Project instructions for Claude Code:
 - Code patterns
 - Testing requirements
 
-### .cursorrules
-Cursor IDE configuration:
-- Code style preferences
-- Framework patterns
-- Security guidelines
-- Performance requirements
-
 ## Best Practices
 
 1. **Always verify AI output** - Don't blindly accept
@@ -73,19 +60,3 @@ Cursor IDE configuration:
 3. **Test everything** - AI can make mistakes
 4. **Review changes** - Understand what was generated
 
-## Common Commands
-
-### Claude Code
-```bash
-# Load project context
-/sc:load
-
-# Implement feature
-/sc:implement "user authentication"
-
-# Run tests
-/sc:test --coverage
-
-# Generate documentation
-/sc:document
-```

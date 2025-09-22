@@ -3,10 +3,9 @@ sidebar_position: 1
 title: Architecture Overview
 ---
 
-# System Architecture
+# 1. System Architecture
 
 Simple 4-layer architecture for EMG data processing.
-
 ## Overview
 
 ```mermaid
@@ -65,7 +64,12 @@ graph TB
     classDef cache fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#000
 ```
 
-## Layers
+## Tech stack
+
+![/Users/pwablo/Documents/GitHub/emg-c3d-analyzer/docusaurus/docs/architecture/architecture_stack.webp](file:///Users/pwablo/Documents/GitHub/emg-c3d-analyzer/docusaurus/docs/architecture/architecture_stack.webp)
+
+
+## 4 Layers
 
 ### 1. API Layer
 - `upload.py` (194 lines) - Direct file processing
@@ -87,7 +91,7 @@ graph TB
 - File storage for C3D files
 - Redis cache for performance
 
-## Processing Modes
+## 2 Processing Modes (2 routes)
 
 ### Stateless (Upload)
 ```mermaid
@@ -116,10 +120,3 @@ sequenceDiagram
     Session->>Processor: Process C3D
     Processor->>Database: Save results
 ```
-
-## Key Principles
-
-- **Single Source of Truth**: `GHOSTLYC3DProcessor` handles all EMG analysis
-- **Repository Pattern**: Clean data access separation
-- **RLS Authorization**: Database enforces permissions
-- **Synchronous Design**: Simpler testing and debugging

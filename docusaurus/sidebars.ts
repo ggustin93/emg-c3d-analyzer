@@ -27,7 +27,10 @@ const sidebars: SidebarsConfig = {
       label: '🏗️ Architecture',
       collapsed: false,
       items: [
+        'architecture/index',
         'architecture/overview',
+        'architecture/enhanced-architecture',
+        'architecture/critical-files',
       ],
     },
     {

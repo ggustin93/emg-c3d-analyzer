@@ -266,8 +266,3 @@ HEALTH_CHECK_PATH=/health
 READY_CHECK_PATH=/ready
 METRICS_PATH=/metrics
 ```
-
-## Next Steps
-
-- [First Analysis](./first-analysis) - Process your first C3D file
-- [Environment Variables Reference](/docs/devops/environment-config) - Complete list

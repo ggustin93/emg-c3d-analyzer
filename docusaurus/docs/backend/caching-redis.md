@@ -42,8 +42,3 @@ redis-server
 docker run -d -p 6379:6379 redis:7-alpine
 ```
 
-## TTL Settings
-
-- EMG analysis: 2 hours
-- MVC values: 24 hours  
-- Performance scores: 1 hour
