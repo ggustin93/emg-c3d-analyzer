@@ -69,12 +69,9 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'frontend/overview',
       label: '🎨 Frontend',
-      collapsed: true,
-      items: [
-        'frontend/overview',
-      ],
     },
     {
       type: 'category',

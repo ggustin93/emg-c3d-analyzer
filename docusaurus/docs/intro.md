@@ -43,8 +43,7 @@ The Ghostly+ Dashboard is a clinical research platform for processing and analyz
 - [Architecture Decisions](./backend/architecture-decisions.md) - Key design choices
 
 ### 🎨 Frontend
-- [Overview](./frontend/overview.md) - React architecture
-
+- [Overview](./frontend/overview.md) - Complete React 18.3 architecture with TypeScript, React Router v7, TanStack Query, and Zustand state management
 
 ### 🚀 DevOps
 - [Overview](./devops/overview.md) - Infrastructure and deployment

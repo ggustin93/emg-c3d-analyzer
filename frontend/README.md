@@ -1,194 +1,197 @@
 # GHOSTLY+ EMG C3D Analyzer - Frontend
 
-This directory contains the React TypeScript frontend for the GHOSTLY+ EMG C3D Analyzer application. It provides an interactive interface for uploading C3D files, configuring analysis parameters, and visualizing EMG data with comprehensive analytics.
+## Overview
+
+This frontend application serves as the user interface for the GHOSTLY+ EMG C3D Analyzer system. It processes electromyography data from C3D files generated during rehabilitation therapy sessions. The application supports three user roles - therapists who manage patient care, researchers who analyze clinical data, and administrators who configure the system. The interface is designed for medical professionals working with elderly patients in hospital rehabilitation settings.
 
 ## Architecture
 
-React application with TypeScript, component-based design, and state management for EMG data visualization.
+```mermaid
+graph TD
+    App["App.tsx<br/>Entry Point"] --> Router["React Router v7<br/>Route Management"]
+    Router --> Auth{"Authentication<br/>Check"}
+    Auth -->|Not Authenticated| Login["Login Page<br/>Supabase Auth"]
+    Auth -->|Authenticated| Role{"User Role<br/>Detection"}
+    Role -->|Admin Role| Admin["Admin Dashboard<br/>• User Management<br/>• System Config"]
+    Role -->|Therapist Role| Therapist["Therapist Dashboard<br/>• Patient Care<br/>• Clinical Tools"]
+    Role -->|Researcher Role| Researcher["Researcher Dashboard<br/>• Data Analysis<br/>• Export Tools"]
+    
+    style App fill:#e1f5fe
+    style Router fill:#fff3e0
+    style Auth fill:#fce4ec
+    style Login fill:#ffebee
+    style Role fill:#f3e5f5
+    style Admin fill:#e8f5e9
+    style Therapist fill:#e3f2fd
+    style Researcher fill:#f3e5f5
+```
 
-### Key Technologies
+### Technology Stack
 
-- **React 19**: Concurrent rendering and hooks
-- **TypeScript**: Type safety throughout
-- **Tailwind CSS**: Utility-first CSS
-- **shadcn/ui**: Accessible UI components
-- **Recharts**: EMG signal visualization
-- **Zustand**: State management
+The application uses React 18.3 with TypeScript 4.9 to provide type safety during development. React Router v7 handles navigation with its data loader pattern, ensuring data is fetched before components render - eliminating loading states and providing sub-200ms page transitions. Vite 5.4 serves as our build tool, offering fast development server startup and hot module replacement.
 
-### Primary Components
+For state management, we use TanStack Query to cache server responses and handle data synchronization, while Zustand 4.5 manages client-side UI state like session parameters. The visual layer combines Tailwind CSS for utility-first styling with shadcn/ui components built on Radix UI primitives, ensuring accessibility compliance out of the box. Recharts powers our EMG signal visualization, handling up to 10,000 data points efficiently through intelligent downsampling. The Supabase client provides authentication and real-time features when needed.
 
-- **App.tsx**: Main application component that orchestrates file upload, analysis, and visualization
-- **components/**: Reusable UI components organized by function
-  - `app/`: Application-specific components (ChannelSelection, StatsPanel, etc.)
-  - `sessions/`: Game session analysis and performance components
-  - `ui/`: Base UI components (Button, Card, Input, etc.)
-- **hooks/**: Custom React hooks for data management and UI logic
-- **store/**: Zustand store for session parameter management
-- **types/**: TypeScript definitions for EMG data structures
+### Directory Structure
 
-## Client-Side Data Processing
-
-The frontend processes data locally to eliminate server round-trips:
-
-### Bundled Data Pattern
-- Receives all EMG signal data in a single API response
-- Processes and caches data locally for immediate visualization
-- Implements intelligent downsampling for performance optimization
-- Handles both raw and activated signal variants seamlessly
-
-### Real-Time Visualization
-- **Interactive Charts**: Recharts-based EMG signal plotting with zoom and pan
-- **Multi-Channel Comparison**: Side-by-side visualization of multiple EMG channels
-- **Performance Metrics**: Real-time calculation of analysis statistics
-- **Responsive Design**: Optimized for both desktop and mobile viewing
-
-## Channel Management
-
-Flexible channel handling for various C3D naming conventions:
-
-### Channel Logic Architecture
-- **Raw Channel Names**: Uses original C3D channel names as internal identifiers
-- **Display Mapping**: Supports user-defined channel-to-muscle name mappings
-- **Consistent State**: Maintains raw channel names in application state
-- **Visual Flexibility**: Allows therapists to configure muscle names and colors
-
-### Components
-- **ChannelSelection**: Dropdown selectors with muscle name display
-- **ChannelFilter**: Filter buttons for single/comparison views
-- **SettingsPanel**: Configuration interface for muscle naming and colors
-- **MuscleNameDisplay**: Consistent muscle name rendering across components
-
-## Data Consistency Architecture
-
-The frontend implements **Single Source of Truth (SoT)** for all analytics data:
-
-### Backend Analytics Priority
-- **Primary Source**: Backend analytics flags (`meets_mvc`, `meets_duration`, `is_good`) are authoritative
-- **Consistent Values**: All components use identical real-time values from backend calculations
-- **Fallback Logic**: Graceful frontend calculations only when backend flags are missing
-- **Priority Chain**: Backend > Per-muscle > Global > Default thresholds
-
-### Key Components Using SoT
-- **useContractionAnalysis**: Trusts backend flags, uses centralized duration threshold logic
-- **useLiveAnalytics**: Calls `MVCService.recalc()` and trusts backend analytics entirely  
-- **StatsPanel**: Uses `computeAcceptanceRates()` with backend data as single source of truth
-- **useEnhancedPerformanceMetrics**: Prioritizes backend `meets_mvc` and `meets_duration` flags
-- **TherapeuticParametersSettings**: Validates frontend calculations against backend thresholds
-
-### Benefits
-- **Consistent UI**: All components show identical acceptance rates and quality scores
-- **Trusted Analytics**: Backend is the authoritative source across the entire application
-- **Better Clinical Decisions**: Eliminates confusion from conflicting metrics in different UI sections
-
-## State Management
-
-The application uses **Zustand** for efficient state management:
-
-### Session Parameters Store
-- **Channel Mappings**: User-defined channel-to-muscle name mappings
-- **Color Schemes**: Customizable muscle color assignments
-- **MVC Values**: Per-channel maximum voluntary contraction thresholds
-- **Analysis Settings**: Configurable analysis parameters
-
-### Data Flow
-1. **Upload**: C3D file processed by backend, returns complete analysis
-2. **State Update**: Session parameters and analysis results stored locally
-3. **Visualization**: Components reactively update based on state changes
-4. **Persistence**: Settings maintained across analysis sessions
-
-## Performance Optimizations
-
-### Intelligent Downsampling
-- **Adaptive Sampling**: Adjusts data points based on chart width and performance
-- **Preservation**: Maintains signal fidelity while optimizing render performance
-- **User Control**: Configurable downsampling levels for different use cases
-
-### Efficient Rendering
-- **Memoization**: React.memo and useMemo for expensive computations
-- **Lazy Loading**: Component splitting for improved initial load times
-- **Debounced Updates**: Smooth interaction without performance degradation
-
-## Testing Architecture
-
-The frontend implements **testing** following React/TypeScript best practices:
-
-### Test Organization
-- **Co-located Unit Tests**: `__tests__/` directories next to source code
-- **Integration Tests**: `src/tests/` for cross-component workflows
-- **Component Tests**: Component-specific test files for UI validation
-- **Hook Tests**: Custom hook testing with comprehensive coverage
-
-### Test Structure
 ```
 src/
-├── hooks/
-│   ├── usePerformanceMetrics.ts
-│   └── __tests__/
-│       └── usePerformanceMetrics.test.ts
-├── components/tabs/SignalPlotsTab/
-│   ├── EMGChart.tsx
-│   └── __tests__/
-│       └── contraction-filtering.test.ts
-└── tests/
-    ├── authBestPractices.test.tsx
-    └── authFlowTest.tsx
+├── components/           # UI components by domain
+│   ├── dashboards/      # Role-specific interfaces
+│   │   ├── admin/       # User management, system config
+│   │   ├── therapist/   # Patient management, clinical tools
+│   │   └── researcher/  # Analysis workspace, data export
+│   ├── tabs/            # Analysis interface tabs
+│   │   ├── SignalPlotsTab/    # EMG signal visualization
+│   │   ├── PerformanceTab/    # Clinical metrics
+│   │   ├── ExportTab/         # Data export tools
+│   │   └── SettingsTab/       # Session configuration
+│   ├── auth/            # Authentication components
+│   ├── c3d/             # C3D file browser and upload
+│   ├── faq/             # Dynamic FAQ system
+│   └── ui/              # Base components (Button, Card, etc.)
+├── routes/              # React Router configuration
+├── hooks/               # Custom React hooks
+├── services/            # API integration layer
+├── lib/                 # Utilities (authUtils, etc.)
+├── store/               # Zustand stores
+└── config/              # Application configuration
 ```
 
-### Test Framework
-- **Vitest**: Fast unit testing with TypeScript support and jest-dom matchers
-- **Testing Library**: Component testing with user interaction focus and React.StrictMode compatibility
-- **Coverage**: Test coverage for critical business logic (78 tests passing - 100% success rate)
+## Data Flow
 
-## Available Scripts
-
-### Development
-```bash
-npm start          # Development server on localhost:3000
-npm test           # Run test suite (watch mode)
-npm test -- --run  # Run tests once with results
-npm run build      # Production build
+```mermaid
+graph LR
+    Upload[C3D Upload] --> API[FastAPI Backend]
+    API --> Process[EMG Processing]
+    Process --> Bundle[Bundled Response]
+    Bundle --> Cache[TanStack Query Cache]
+    Cache --> Store[Zustand Store]
+    Store --> UI[React Components]
+    UI --> Charts[Recharts Visualization]
 ```
 
-### Testing
-```bash
-npm test hooks                      # Run hook tests (comprehensive coverage)
-npm test components                 # Run component tests (React.StrictMode compatible) 
-npm test -- --coverage             # Run tests with coverage report
-npm test usePerformanceMetrics     # Run specific test suite
-npm test -- --run                  # Run all tests once (78 total, 100% passing)
+### Processing Pipeline
+- **Single API Response**: Complete analysis bundle (175.1s @ 990Hz)
+- **Local Caching**: TanStack Query with 5-minute stale time
+- **State Management**: Zustand for session parameters and UI state
+- **Visualization**: Recharts with intelligent downsampling (10,000 points max)
+
+## Common Usage Patterns
+
+### Authentication with useAuth Hook
+```typescript
+import { useAuth } from '@/hooks/useAuth'
+
+function MyComponent() {
+  const { user, userRole, loading, logout } = useAuth()
+  
+  if (loading) return <LoadingSpinner />
+  if (!user) return <LoginPage />
+  
+  // Component content for authenticated users
+  return (
+    <div>
+      <h1>Welcome, {userRole}</h1>
+      <button onClick={logout}>Sign Out</button>
+    </div>
+  )
+}
 ```
 
-### Code Quality
-```bash
-npm run lint       # ESLint analysis
-npm run type-check # TypeScript validation
+### Navigation with React Router
+```typescript
+import { useNavigate } from 'react-router-dom'
+
+function MyComponent() {
+  const navigate = useNavigate()
+  
+  // Programmatic navigation
+  const handleAnalysis = () => {
+    navigate('/analysis?file=test.c3d')
+  }
+  
+  return <button onClick={handleAnalysis}>Open Analysis</button>
+}
 ```
 
-## Configuration
+### Protected Dashboard Example
+```typescript
+import { useAuth } from '@/hooks/useAuth'
+import { useQuery } from '@tanstack/react-query'
 
-### Environment Variables
-- `REACT_APP_API_URL`: Backend API endpoint (defaults to http://localhost:8080)
+function TherapistDashboard() {
+  const { user, userRole } = useAuth()
+  
+  const { data: sessions } = useQuery({
+    queryKey: ['therapy-sessions'],
+    queryFn: fetchTherapySessions,
+    enabled: userRole === 'THERAPIST'
+  })
+  
+  return (
+    <DashboardLayout>
+      <PatientList sessions={sessions} />
+    </DashboardLayout>
+  )
+}
+```
 
-### Deployment
-The build output is optimized for static hosting and can be deployed to:
-- Vercel, Netlify, or similar static hosting platforms
-- CDN with proper routing configuration for single-page applications
+## Navigation System
 
-## Key Features
+The navigation system uses React Router v7's data loading patterns, where route loaders pre-fetch data before components render. This approach eliminates loading states - users never see spinners during navigation. Protected routes validate authentication in their loaders, redirecting to login if needed while preserving the intended destination.
 
-### EMG Analysis Interface
-- **File Upload**: Drag-and-drop C3D file processing
-- **Parameter Configuration**: Therapist-configurable MVC thresholds and analysis settings
-- **Real-Time Feedback**: Immediate analysis results and error handling
+```typescript
+// Route loaders ensure data is ready before render
+import { getAuthData } from '../lib/authUtils'
+import { redirect } from 'react-router-dom'
 
-### Visualization Dashboard
-- **Multi-Channel Charts**: Interactive EMG signal visualization
-- **Performance Cards**: Clinical metrics and assessment scores
-- **Comparison Views**: Side-by-side muscle performance analysis
-- **Export Capabilities**: Analysis results and visualizations
+export async function protectedLoader() {
+  const authData = await getAuthData()
+  if (!authData.session) {
+    const from = window.location.pathname
+    throw redirect(`/login?from=${encodeURIComponent(from)}`)
+  }
+  return authData
+}
+```
 
-### Clinical Workflow
-- **Muscle Naming**: Intuitive channel-to-muscle mapping interface
-- **Color Coding**: Consistent visual schemes across all components
-- **Session Management**: Parameter persistence and workflow continuity
-- **Accessibility**: WCAG-compliant interface design
+## UI Components
+
+The interface is built with shadcn/ui components, which are React components built on Radix UI primitives and styled with Tailwind CSS. This combination provides accessible, keyboard-navigable components that follow WAI-ARIA patterns by default. Components are composable - a Card contains CardHeader, CardTitle, CardDescription, and CardContent sections that can be mixed and matched as needed.
+
+Common components include form controls (Button, Input, Select), layout elements (Card, Tabs, ScrollArea), overlays (Dialog, Popover, Tooltip), and feedback components (Toast, Alert, Progress). Each component accepts standard HTML attributes and can be customized through Tailwind classes while maintaining accessibility features like focus management and screen reader support.
+
+## Performance Considerations
+
+The application employs several optimization strategies to maintain responsive performance. Routes are code-split using React.lazy(), loading only the JavaScript needed for the current view. Chart rendering is optimized by downsampling EMG data to a maximum of 10,000 points - sufficient for visual analysis while keeping frame rates smooth. Search and filter inputs use 300ms debouncing to avoid excessive API calls during typing. Component re-renders are minimized through React.memo for pure components and useMemo for expensive calculations.
+
+## Testing
+
+The project uses Vitest with React Testing Library for testing, with over 59 test files co-located in `__tests__/` directories near the components they test. Tests focus on user behavior rather than implementation details, ensuring critical workflows like authentication, data processing, and clinical features work as expected from the user's perspective.
+
+## Development
+
+Start the development server with `npm run dev`, which launches Vite on port 5173 with hot module replacement. The build process (`npm run build`) runs TypeScript compilation followed by Vite's production bundler, creating optimized static assets. Tests run through Vitest (`npm test`) in watch mode during development, with 59+ test files providing coverage of critical business logic and user workflows.
+
+## Configuration and Deployment
+
+The application uses environment variables prefixed with `VITE_` for configuration. During development, the Vite proxy handles API calls to the backend running on port 8080. In production, `VITE_API_URL` points to your backend endpoint, while Supabase credentials enable authentication and storage features.
+
+The application deploys to three environments, each serving different purposes. Development uses Vercel for the frontend and Render for the backend, providing quick iteration cycles with automatic deployments. Staging runs on Digital Ocean with Coolify Cloud (Debian 13) for integration testing. Production operates on a VUB-hosted machine with self-hosted Coolify (Debian), ensuring data sovereignty and institutional control.
+
+In all environments, the frontend builds to static assets that can be served by any web server, with client-side routing handled through HTML5 history API. All routes serve the same index.html file, allowing React Router to take over navigation.
+
+## Essential Documentation
+
+### Top 5 Frontend Resources
+- **React 18**: [Official Documentation](https://react.dev/)
+- **TypeScript**: [Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- **React Router v7**: [Documentation](https://reactrouter.com/)
+- **TanStack Query**: [React Quick Start](https://tanstack.com/query/v5/docs/framework/react/quick-start)
+- **shadcn/ui**: [Components](https://ui.shadcn.com/)
+
+## Contributing
+
+When working on this codebase, refer to the project documentation in `/docusaurus/docs` for architecture patterns and `/src/components/tabs/README.md` for component organization. The project follows standard React patterns with TypeScript for type safety and uses the API_CONFIG pattern (defined in `/src/config/apiConfig.ts`) for all backend communication to ensure environment-aware API calls.
+
