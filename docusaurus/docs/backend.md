@@ -56,7 +56,7 @@ The codebase is organized by business domain, making it easy to find code relate
 ```
 backend/
 ├── api/                    # HTTP endpoints and routing
-│   └── routes/            # 13 route modules (no /api prefix)
+│   └── routes/            # API route modules (no /api prefix)
 ├── services/              # Business logic organized by domain
 │   ├── clinical/          # Therapy sessions and patient management
 │   ├── c3d/              # C3D file processing (core algorithms)
@@ -67,7 +67,7 @@ backend/
 ├── models/               # Pydantic data models
 ├── emg/                  # Core signal processing algorithms
 ├── database/             # Supabase client configuration
-└── tests/                # 227 tests across unit/integration/e2e
+└── tests/                # Comprehensive test suite (unit/integration/e2e)
 ```
 
 The most critical code lives in `services/c3d/processor.py` (1,505 lines) which handles the complex C3D parsing and EMG extraction, and `services/clinical/therapy_session_processor.py` (1,840 lines) which orchestrates the entire analysis workflow.
@@ -170,43 +170,18 @@ Row Level Security (RLS) enforces data access control at the database level, ens
 ### How RLS Works
 
 ```mermaid
-graph TB
-    subgraph "User Request Flow"
-        User[User Action] --> Frontend[React Frontend]
-        Frontend --> |JWT Token| API{API Route?}
-    end
+graph LR
+    Request[API Request] --> DB[(PostgreSQL)]
+    DB --> RLS{RLS Policies}
+    RLS --> Check[Check: Role + Ownership + Identity]
+    Check --> |Authorized| Data[Return Data]
+    Check --> |Denied| Block[Access Denied]
     
-    subgraph "Authorization Paths"
-        API -->|Complex Logic| FastAPI[FastAPI Backend]
-        API -->|Simple CRUD| DirectDB[Direct Supabase]
-        
-        FastAPI --> |Service Role| DB[(PostgreSQL)]
-        DirectDB --> |User JWT| DB
-    end
-    
-    subgraph "RLS Security Layer"
-        DB --> RLS{RLS Policies}
-        
-        RLS --> |Check Role| Role[Check User Role]
-        RLS --> |Check Ownership| Therapist[Check Therapist ID]
-        RLS --> |Check Identity| Auth[Check User ID]
-        
-        Role --> Decision{Authorized?}
-        Therapist --> Decision
-        Auth --> Decision
-        
-        Decision -->|Yes| Data[Return Data]
-        Decision -->|No| Denied[Access Denied]
-    end
-    
-    style User fill:#e1f5fe
-    style Frontend fill:#fce4ec
-    style FastAPI fill:#f3e5f5
-    style DirectDB fill:#e8f5e9
+    style Request fill:#e1f5fe
     style DB fill:#fff3e0
     style RLS fill:#ffebee
     style Data fill:#c8e6c9
-    style Denied fill:#ffcdd2
+    style Block fill:#ffcdd2
 ```
 
 ### Security Roles
@@ -300,12 +275,12 @@ uvicorn main:app --reload --port 8080
 
 ### Testing
 
-The backend includes a comprehensive test suite with 227 tests using pytest, covering unit tests for core EMG algorithms, integration tests for component interactions, and end-to-end tests with real clinical data. Tests focus on EMG processing accuracy, API endpoint validation, and database operations, ensuring the reliability of clinical metrics and therapy session workflows.
+The backend includes a comprehensive test suite using pytest, covering unit tests for core EMG algorithms, integration tests for component interactions, and end-to-end tests with real clinical data. Tests focus on EMG processing accuracy, API endpoint validation, and database operations, ensuring the reliability of clinical metrics and therapy session workflows.
 
 **Testing Commands:**
 ```bash
 # Quick test execution
-./run_tests_with_env.sh              # Run all 227 tests with environment loaded
+./run_tests_with_env.sh              # Run all tests with environment loaded
 ./run_tests_with_env.sh e2e          # Run only E2E tests  
 ./run_tests_with_env.sh quick        # Run tests excluding E2E
 

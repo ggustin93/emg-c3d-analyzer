@@ -31,13 +31,12 @@ graph TD
     end
     
     subgraph "Quality Gates"
-        Unit --> Coverage{Coverage ≥62%}
-        Integration --> Validation{All Pass}
+        Unit --> Validation{Tests Pass}
+        Integration --> Validation
         API --> Contract{API Contract}
         E2E --> Clinical{Clinical Accuracy}
         
-        Coverage --> Deploy[Deployment Ready]
-        Validation --> Deploy
+        Validation --> Deploy[Deployment Ready]
         Contract --> Deploy
         Clinical --> Deploy
     end
@@ -54,10 +53,10 @@ graph TD
 
 ### Test Structure
 
-The testing suite includes comprehensive coverage across both backend and frontend:
+The testing suite provides comprehensive validation across both backend and frontend:
 
-- **Backend**: 45 test files with pytest covering EMG processing, API endpoints, and E2E workflows
-- **Frontend**: 27 test files with Vitest covering React components, hooks, and user interactions
+- **Backend**: pytest test suite covering EMG processing, API endpoints, and E2E workflows
+- **Frontend**: Vitest test suite covering React components, hooks, and user interactions  
 - **Test Strategy**: Focus on behavior testing with real C3D data validation
 
 ## Backend Testing (Python/pytest)
@@ -92,7 +91,7 @@ backend/tests/
 # Manual execution
 cd backend
 source venv/bin/activate
-python -m pytest tests/ -v           # All 48 tests
+python -m pytest tests/ -v           # Run all tests
 python -m pytest tests/ --cov=.      # With coverage report
 python -m pytest -m e2e -v -s        # E2E with output
 ```
@@ -140,8 +139,8 @@ cd frontend
 
 # Test execution modes
 npm test                    # Watch mode for development
-npm test -- --run          # Run once (78 tests)
-npm test -- --coverage     # Coverage report
+npm test -- --run          # Run test suite once
+npm test -- --coverage     # With coverage report
 npm test hooks             # Test specific pattern
 
 # Build validation
