@@ -21,7 +21,8 @@ import LoginPage from './components/auth/LoginPage';
 import Header from './components/layout/Header';
 import Spinner from './components/ui/Spinner';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
-import { ErrorBoundary } from './components/ErrorBoundary'
+import { ErrorBoundary } from './components/errors/ErrorBoundary'
+import { RouterErrorBoundary } from './components/errors/RouterErrorBoundary'
 import { NotFoundPage } from './components/NotFoundPage';
 
 // Lazy load dashboard components for better performance
@@ -30,6 +31,9 @@ const TherapistDashboard = React.lazy(() => import('./components/dashboards/ther
 const ResearcherDashboard = React.lazy(() => import('./components/dashboards/researcher/ResearcherDashboard').then(module => ({ default: module.ResearcherDashboard })));
 const FAQ = React.lazy(() => import('./components/faq/FAQ').then(module => ({ default: module.FAQ })));
 const AboutPage = React.lazy(() => import('./components/about/AboutPage').then(module => ({ default: module.AboutPage })));
+
+// Test component for error capture (development only)
+const TestErrorCapture = React.lazy(() => import('./components/TestErrorCapture').then(module => ({ default: module.TestErrorCapture })));
 
 // Import analysis content and layout
 import { AppContent as AnalysisView } from './AppContent';
@@ -226,7 +230,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <RootLayout />,
     loader: rootLoader,
-    errorElement: <ErrorBoundary />,
+    errorElement: <RouterErrorBoundary />,
     children: [
       {
         index: true,
@@ -297,6 +301,27 @@ const router = createBrowserRouter([
           }
         ]
       },
+      // Test route for error capture (development only)
+      ...(import.meta.env.DEV ? [{
+        path: 'test-errors',
+        element: <DashboardLayout />,
+        loader: protectedLoader,
+        children: [
+          {
+            index: true,
+            element: (
+              <React.Suspense fallback={
+                <div className="p-6 flex items-center justify-center">
+                  <Spinner />
+                  <span className="ml-3 text-slate-600">Loading Test Suite...</span>
+                </div>
+              }>
+                <TestErrorCapture />
+              </React.Suspense>
+            )
+          }
+        ]
+      }] : []),
       {
         path: 'about',
         element: <DashboardLayout />,
@@ -335,7 +360,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ErrorBoundary level="page" name="Application">
+          <RouterProvider router={router} />
+        </ErrorBoundary>
         {process.env.NODE_ENV === 'development' && (
           <ReactQueryDevtools initialIsOpen={false} />
         )}

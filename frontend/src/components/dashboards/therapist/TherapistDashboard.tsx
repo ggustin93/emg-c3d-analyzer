@@ -7,6 +7,7 @@ import Spinner from '../../ui/Spinner'
 import { PatientManagement } from './PatientManagement'
 import { TherapistOverview } from './TherapistOverview'
 import { AboutPage } from '../../about/AboutPage'
+import { navigateToAnalysis } from '../../../utils/navigationUtils'
 
 /**
  * Therapist Dashboard - Patient management and session tracking
@@ -34,7 +35,7 @@ export function TherapistDashboard({ activeTab = 'overview' }: { activeTab?: str
     setIsNavigatingToAnalysis(true)
     // Small delay to show loading state before navigation
     setTimeout(() => {
-      navigate(`/analysis?file=${filename}${uploadDate ? `&date=${uploadDate}` : ''}`)
+      navigateToAnalysis(navigate, filename)
     }, 100)
   }
 

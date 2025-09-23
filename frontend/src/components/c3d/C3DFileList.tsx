@@ -165,12 +165,12 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   const handleFileAnalyze = (fileId: string, fileName: string) => {
     setLoadingFileId(fileId);
     
-    // Find the file to get its upload date
+    // Find the file to pass metadata
     const selectedFile = files.find(file => file.id === fileId);
     
     if (selectedFile) {
-      // Pass upload date and file data to avoid race condition
-      onFileSelect(fileName, selectedFile.created_at, selectedFile);
+      // Pass file data for metadata, but no date (session timestamp is in filename)
+      onFileSelect(fileName, undefined, selectedFile);
     } else {
       onFileSelect(fileName);
     }

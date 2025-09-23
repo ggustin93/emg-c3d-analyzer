@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { navigateToAnalysis } from '@/utils/navigationUtils';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -223,15 +224,11 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
     if (onFileSelect) {
       onFileSelect(filename, uploadDate);
     } else {
-      // Navigate to analysis page with URL parameters
-      // This will trigger AppContent's handleQuickSelect via URL params
-      const encodedFilename = encodeURIComponent(filename);
-      const dateParam = uploadDate || new Date().toISOString();
-      
+      // Navigate to analysis page - session timestamp is in filename (SSoT principle)
       logger.info(LogCategory.DATA_PROCESSING, `🚀 Navigating to analysis for file: ${filename}`);
       
-      // Use URL navigation to trigger the main analysis flow
-      navigate(`/analysis?file=${encodedFilename}&date=${dateParam}`);
+      // Use centralized navigation utility
+      navigateToAnalysis(navigate, filename);
     }
   };
 

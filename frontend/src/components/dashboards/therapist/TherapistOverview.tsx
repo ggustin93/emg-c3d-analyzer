@@ -27,6 +27,7 @@
  */
 import React, { useMemo, useCallback, Suspense, lazy, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { navigateToAnalysis } from '@/utils/navigationUtils'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useTherapistDashboardQuery, RecentC3DFile } from '../../../hooks/useTherapistDashboardQuery'
 import { calculateAverageAdherence } from '../../../services/adherenceService'
@@ -369,9 +370,9 @@ const RecentC3DFileItem = React.memo(function RecentC3DFileItem({ file }: { file
   const navigate = useNavigate()
   
   const handleClick = useCallback(() => {
-    // Direct navigation to C3D analysis
-    navigate(`/analysis?file=${file.name}${file.created_at ? `&date=${file.created_at}` : ''}`)
-  }, [navigate, file.name, file.created_at])
+    // Direct navigation to C3D analysis - session timestamp is in filename (SSoT principle)
+    navigateToAnalysis(navigate, file.name)
+  }, [navigate, file.name])
 
   return (
     <div 

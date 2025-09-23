@@ -7,6 +7,8 @@
  * and provides a single place to modify the backend endpoint.
  */
 
+import { logger, LogCategory } from '@/services/logger';
+
 /**
  * API Configuration object with all backend-related settings
  */
@@ -55,3 +57,179 @@ export const getApiUrl = (endpoint: string): string => {
 
 // Type export for TypeScript usage
 export type ApiConfig = typeof API_CONFIG;
+
+// Store original fetch for fallback
+const originalFetch = window.fetch;
+
+// Generate or get correlation ID for request tracking
+const getCorrelationId = (): string => {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Enhanced fetch function with error logging and monitoring
+ * @param input - URL or Request object
+ * @param init - Request options
+ * @returns Promise<Response>
+ */
+export const enhancedFetch: typeof fetch = async (input, init) => {
+  const startTime = performance.now();
+  const correlationId = getCorrelationId();
+  const method = init?.method || 'GET';
+  const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
+  
+  // Log request start in development
+  if (import.meta.env.DEV) {
+    logger.debug(LogCategory.API, `→ ${method} ${url}`, {
+      correlationId,
+      headers: init?.headers,
+    });
+  }
+  
+  try {
+    const response = await originalFetch(input, init);
+    const duration = performance.now() - startTime;
+    
+    // Log slow requests (>3 seconds)
+    if (duration > 3000) {
+      logger.warn(LogCategory.API, `Slow API request: ${method} ${url}`, {
+        url,
+        method,
+        duration: Math.round(duration),
+        correlationId,
+        status: response.status,
+      });
+    }
+    
+    // Log non-2xx responses as errors
+    if (!response.ok) {
+      // Clone response to read body without consuming it
+      const cloned = response.clone();
+      let errorDetails: any = {};
+      
+      try {
+        // Try to parse error response as JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          errorDetails = await cloned.json();
+        } else {
+          errorDetails = { message: await cloned.text() };
+        }
+      } catch {
+        errorDetails = { message: 'Unable to parse error response' };
+      }
+      
+      logger.error(LogCategory.API, `API Error: ${method} ${url}`, {
+        url,
+        method,
+        status: response.status,
+        statusText: response.statusText,
+        error: errorDetails,
+        duration: Math.round(duration),
+        correlationId,
+      });
+    }
+    
+    // Log successful response in development
+    if (import.meta.env.DEV && response.ok) {
+      logger.debug(LogCategory.API, `← ${method} ${url} [${response.status}]`, {
+        correlationId,
+        duration: Math.round(duration),
+      });
+    }
+    
+    return response;
+    
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    
+    // Network or other errors
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isOffline = !navigator.onLine;
+    
+    logger.error(LogCategory.API, `Network Error: ${method} ${url}`, {
+      url,
+      method,
+      error: errorMessage,
+      duration: Math.round(duration),
+      correlationId,
+      offline: isOffline,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    // Re-throw the error for proper handling
+    throw error;
+  }
+};
+
+/**
+ * API client with built-in logging and error handling
+ * Use this instead of direct fetch calls for consistent error tracking
+ */
+export const apiClient = {
+  /**
+   * Make a GET request with logging
+   */
+  async get(endpoint: string, options?: RequestInit) {
+    const url = getApiUrl(endpoint);
+    return enhancedFetch(url, {
+      ...options,
+      method: 'GET',
+      headers: {
+        ...API_CONFIG.headers,
+        ...options?.headers,
+      },
+    });
+  },
+  
+  /**
+   * Make a POST request with logging
+   */
+  async post(endpoint: string, body?: any, options?: RequestInit) {
+    const url = getApiUrl(endpoint);
+    return enhancedFetch(url, {
+      ...options,
+      method: 'POST',
+      headers: {
+        ...API_CONFIG.headers,
+        ...options?.headers,
+      },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    });
+  },
+  
+  /**
+   * Make a PUT request with logging
+   */
+  async put(endpoint: string, body?: any, options?: RequestInit) {
+    const url = getApiUrl(endpoint);
+    return enhancedFetch(url, {
+      ...options,
+      method: 'PUT',
+      headers: {
+        ...API_CONFIG.headers,
+        ...options?.headers,
+      },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    });
+  },
+  
+  /**
+   * Make a DELETE request with logging
+   */
+  async delete(endpoint: string, options?: RequestInit) {
+    const url = getApiUrl(endpoint);
+    return enhancedFetch(url, {
+      ...options,
+      method: 'DELETE',
+      headers: {
+        ...API_CONFIG.headers,
+        ...options?.headers,
+      },
+    });
+  },
+};
+
+// Optional: Override global fetch to catch all API calls
+// Uncomment the following line to enable global interception
+// window.fetch = enhancedFetch;

@@ -29,7 +29,7 @@
  * - Session persistence across page refreshes
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
@@ -204,34 +204,42 @@ export function AppContent() {
     resetChannelSelections,
   } = useChannelManagement(analysisResult, signalType);
 
-  // Ensure muscle mappings are initialized
+  // Ensure muscle mappings are initialized - using ref to prevent infinite loops
+  const isInitialized = useRef(false);
+  
   useEffect(() => {
+    // Exit early if already initialized
+    if (isInitialized.current) return;
+    
     // Check if we need to initialize the mappings
     const hasChannelMuscleMapping = sessionParams.channel_muscle_mapping && 
-                                   typeof sessionParams.channel_muscle_mapping === 'object';
+                                   typeof sessionParams.channel_muscle_mapping === 'object' &&
+                                   Object.keys(sessionParams.channel_muscle_mapping).length > 0;
     const hasMuscleColorMapping = sessionParams.muscle_color_mapping && 
-                                 typeof sessionParams.muscle_color_mapping === 'object';
-                                 
-    const needsInitialization = !hasChannelMuscleMapping || !hasMuscleColorMapping ||
-                               (hasChannelMuscleMapping && Object.keys(sessionParams.channel_muscle_mapping).length === 0) ||
-                               (hasMuscleColorMapping && Object.keys(sessionParams.muscle_color_mapping).length === 0);
+                                 typeof sessionParams.muscle_color_mapping === 'object' &&
+                                 Object.keys(sessionParams.muscle_color_mapping).length > 0;
     
-    if (needsInitialization) {
+    // Only initialize if mappings are truly empty
+    if (!hasChannelMuscleMapping || !hasMuscleColorMapping) {
+      isInitialized.current = true; // Mark as initialized BEFORE state update
+      
       setSessionParams(prev => ({
         ...prev,
-        channel_muscle_mapping: {
-          ...(prev.channel_muscle_mapping || {}),
-          "CH1": "Left Quadriceps",
-          "CH2": "Right Quadriceps"
-        },
-        muscle_color_mapping: {
-          ...(prev.muscle_color_mapping || {}),
-          "Left Quadriceps": "#3b82f6", // Blue
-          "Right Quadriceps": "#ef4444"  // Red
-        }
+        channel_muscle_mapping: hasChannelMuscleMapping ? 
+          prev.channel_muscle_mapping : 
+          {
+            "CH1": "Left Quadriceps",
+            "CH2": "Right Quadriceps"
+          },
+        muscle_color_mapping: hasMuscleColorMapping ? 
+          prev.muscle_color_mapping : 
+          {
+            "Left Quadriceps": "#3b82f6", // Blue
+            "Right Quadriceps": "#ef4444"  // Red
+          }
       }));
     }
-  }, [sessionParams.channel_muscle_mapping, sessionParams.muscle_color_mapping, setSessionParams]);
+  }, []); // Empty dependency array - runs once per mount
 
   const {
     plotChannel1Data,

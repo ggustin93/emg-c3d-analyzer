@@ -1,10 +1,10 @@
 import React from 'react';
 import { useRouteError, isRouteErrorResponse, Link } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { ExclamationTriangleIcon, HomeIcon, ReloadIcon } from '@radix-ui/react-icons';
 
-export function ErrorBoundary() {
+export function RouterErrorBoundary() {
   const error = useRouteError();
   
   if (isRouteErrorResponse(error)) {
