@@ -609,12 +609,13 @@ export function AppContent() {
     const fileParam = searchParams.get('file');
     const dateParam = searchParams.get('date');
     
-    // Only auto-load if we have URL parameters, no current analysis, not already loading,
+    // Only auto-load if we have file parameter, no current analysis, not already loading,
     // and haven't already loaded from URL
-    if (fileParam && dateParam && !analysisResult && !isLoading && isAuthenticated && !hasLoadedFromUrl) {
+    // Note: dateParam is optional - upload date will be fetched from Supabase metadata if needed
+    if (fileParam && !analysisResult && !isLoading && isAuthenticated && !hasLoadedFromUrl) {
       logger.info(LogCategory.LIFECYCLE, '🔗 Auto-loading file from URL parameters', { 
         file: fileParam, 
-        date: dateParam 
+        date: dateParam || 'will fetch from metadata'
       });
       
       // Mark that we've loaded from URL to prevent repeated calls
@@ -622,11 +623,11 @@ export function AppContent() {
       
       // Decode the file parameter (it's URL encoded)
       const decodedFilename = decodeURIComponent(fileParam);
-      handleQuickSelect(decodedFilename, dateParam);
+      handleQuickSelect(decodedFilename, dateParam || undefined);
     }
     
     // Reset the flag when URL params change or are removed
-    if (!fileParam || !dateParam) {
+    if (!fileParam) {
       setHasLoadedFromUrl(false);
     }
   }, [searchParams, analysisResult, isLoading, isAuthenticated, hasLoadedFromUrl, handleQuickSelect]);
