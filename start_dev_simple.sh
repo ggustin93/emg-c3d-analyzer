@@ -3,7 +3,15 @@
 # Enhanced Development Server Start Script
 # Starts both backend and frontend development servers with monitoring
 # Compatible with Bash 3.2+ (macOS)
-# Version: 2.0.0
+# Version: 2.1.0 - Added port cleanup management
+#
+# Port Management Features:
+# - Automatically detects and kills processes on required ports (8080, 5173, 3000, 6379, 4040)
+# - Uses graceful termination (SIGTERM) followed by force kill (SIGKILL) if necessary
+# - Cross-platform support for macOS and Linux
+# - Safety checks to prevent killing critical system processes
+# - User confirmation prompts for safety (skipped in verbose mode or CI environments)
+# - Comprehensive logging of all port cleanup actions
 
 # Colors for output
 RED='\033[0;31m'
@@ -36,6 +44,7 @@ HEALTH_CHECK_COUNT=0
 USE_WEBHOOK=false
 RUN_TESTS=false
 VERBOSE=false
+KILL_PORTS=true
 
 # Circuit breaker configuration
 MAX_RETRIES=3
@@ -60,15 +69,25 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        --kill-ports)
+            KILL_PORTS=true
+            shift
+            ;;
+        --no-kill-ports)
+            KILL_PORTS=false
+            shift
+            ;;
         --help|-h)
             cat << EOF
 Usage: $0 [OPTIONS]
 
 Options:
-  --webhook    Enable webhook support with ngrok tunnel
-  --test       Run test suite before starting servers
-  --verbose    Enable verbose output
-  --help       Show this help message
+  --webhook         Enable webhook support with ngrok tunnel
+  --test            Run test suite before starting servers
+  --verbose         Enable verbose output
+  --kill-ports      Kill processes on required ports before starting (default)
+  --no-kill-ports   Skip port cleanup (use existing processes)
+  --help            Show this help message
 
 Environment Variables:
   BACKEND_PORT   Backend server port (default: 8080)
@@ -77,9 +96,9 @@ Environment Variables:
   LOG_LEVEL      Logging level (default: INFO)
 
 Examples:
-  $0                    # Start standard dev environment
-  $0 --webhook          # Start with webhook support
-  $0 --test --verbose   # Run tests with verbose output
+  $0                       # Start with automatic port cleanup
+  $0 --no-kill-ports       # Start without killing existing processes
+  $0 --webhook --verbose   # Start with webhook support and verbose output
 
 EOF
             exit 0
@@ -334,12 +353,255 @@ cleanup() {
     echo -e "${GREEN}✓ All servers stopped successfully${NC}"
 }
 
+# Port management functions
+get_port_processes() {
+    local port=$1
+    local processes=()
+    
+    # Cross-platform port detection (macOS and Linux)
+    if command -v lsof &> /dev/null; then
+        # Use lsof (preferred on macOS)
+        while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+                processes+=("$line")
+            fi
+        done < <(lsof -ti :$port 2>/dev/null)
+    elif command -v ss &> /dev/null; then
+        # Use ss (modern Linux)
+        while IFS= read -r line; do
+            local pid=$(echo "$line" | grep -o 'pid=[0-9]*' | cut -d'=' -f2)
+            if [[ -n "$pid" ]]; then
+                processes+=("$pid")
+            fi
+        done < <(ss -tlnp | grep ":$port " 2>/dev/null)
+    elif command -v netstat &> /dev/null; then
+        # Fallback to netstat
+        if [[ "$(uname)" == "Darwin" ]]; then
+            # macOS netstat
+            while IFS= read -r line; do
+                local pid=$(echo "$line" | awk '{print $9}' | cut -d'/' -f1)
+                if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                    processes+=("$pid")
+                fi
+            done < <(netstat -anp tcp 2>/dev/null | grep "\.${port} " | grep LISTEN)
+        else
+            # Linux netstat
+            while IFS= read -r line; do
+                local pid=$(echo "$line" | awk '{print $7}' | cut -d'/' -f1)
+                if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                    processes+=("$pid")
+                fi
+            done < <(netstat -tlnp 2>/dev/null | grep ":$port ")
+        fi
+    fi
+    
+    printf '%s\n' "${processes[@]}"
+}
+
+get_process_info() {
+    local pid=$1
+    local info=""
+    
+    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+        # Get process command and user (cross-platform)
+        if command -v ps &> /dev/null; then
+            if [[ "$(uname)" == "Darwin" ]]; then
+                # macOS ps format
+                info=$(ps -p "$pid" -o pid,user,command 2>/dev/null | tail -1)
+            else
+                # Linux ps format
+                info=$(ps -p "$pid" -o pid,user,command --no-headers 2>/dev/null | head -1)
+            fi
+        fi
+        
+        # Fallback if ps fails
+        if [[ -z "$info" ]]; then
+            info="PID: $pid (process info unavailable)"
+        fi
+    fi
+    
+    echo "$info"
+}
+
+is_safe_to_kill() {
+    local pid=$1
+    local cmd_info="$(get_process_info "$pid")"
+    
+    # Safety checks - DO NOT kill these critical processes
+    local unsafe_patterns=(
+        "systemd"
+        "kernel"
+        "init"
+        "/sbin/"
+        "/usr/sbin/"
+        "ssh"
+        "NetworkManager"
+        "launchd"
+        "WindowServer"
+        "Finder"
+    )
+    
+    for pattern in "${unsafe_patterns[@]}"; do
+        if [[ "$cmd_info" =~ $pattern ]]; then
+            log "WARNING" "Refusing to kill potentially critical process: $cmd_info"
+            return 1
+        fi
+    done
+    
+    # Additional checks
+    local user=$(echo "$cmd_info" | awk '{print $2}')
+    if [[ "$user" == "root" ]] && [[ ! "$cmd_info" =~ (node|python|uvicorn|npm|redis|ngrok) ]]; then
+        log "WARNING" "Refusing to kill root process that's not a known dev tool: $cmd_info"
+        return 1
+    fi
+    
+    return 0
+}
+
+kill_port_processes() {
+    local port=$1
+    local port_name=$2
+    local killed_any=false
+    
+    log "INFO" "Checking for processes on port $port ($port_name)..."
+    
+    local processes=($(get_port_processes "$port"))
+    
+    if [[ ${#processes[@]} -eq 0 ]]; then
+        log "INFO" "✓ Port $port is available"
+        return 0
+    fi
+    
+    log "INFO" "Found ${#processes[@]} process(es) on port $port"
+    
+    # Show what processes will be affected
+    for pid in "${processes[@]}"; do
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            local info="$(get_process_info "$pid")"
+            echo -e "${YELLOW}  → Process: $info${NC}"
+            log "INFO" "Process on port $port: $info"
+        fi
+    done
+    
+    # Ask for confirmation for safety (skip in verbose mode or CI environments)
+    if [[ "$VERBOSE" != "true" ]] && [[ -t 0 ]] && [[ ${#processes[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}Kill these processes on port $port? [y/N]${NC}"
+        read -r -n 1 confirmation
+        echo
+        if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
+            log "INFO" "User chose not to kill processes on port $port"
+            return 1
+        fi
+    elif [[ "$VERBOSE" == "true" ]]; then
+        log "INFO" "Auto-proceeding to kill processes (verbose mode enabled)"
+    fi
+    
+    # Kill processes gracefully, then forcefully if needed
+    for pid in "${processes[@]}"; do
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            if ! is_safe_to_kill "$pid"; then
+                continue
+            fi
+            
+            local info="$(get_process_info "$pid")"
+            
+            # Graceful termination (SIGTERM)
+            log "INFO" "Sending SIGTERM to PID $pid..."
+            if kill -TERM "$pid" 2>/dev/null; then
+                # Wait up to 5 seconds for graceful shutdown
+                local count=0
+                while [[ $count -lt 5 ]] && kill -0 "$pid" 2>/dev/null; do
+                    sleep 1
+                    ((count++))
+                done
+                
+                # Check if process is still running
+                if kill -0 "$pid" 2>/dev/null; then
+                    log "WARNING" "Process $pid did not respond to SIGTERM, sending SIGKILL..."
+                    if kill -9 "$pid" 2>/dev/null; then
+                        echo -e "${GREEN}✓ Force killed process: $info${NC}"
+                        log "SUCCESS" "Force killed process on port $port: $info"
+                        killed_any=true
+                    else
+                        echo -e "${RED}✗ Failed to kill process: $info${NC}"
+                        log "ERROR" "Failed to kill process on port $port: $info"
+                    fi
+                else
+                    echo -e "${GREEN}✓ Gracefully stopped process: $info${NC}"
+                    log "SUCCESS" "Gracefully stopped process on port $port: $info"
+                    killed_any=true
+                fi
+            else
+                log "ERROR" "Failed to send SIGTERM to PID $pid"
+            fi
+        fi
+    done
+    
+    # Final verification
+    sleep 1
+    local remaining_processes=($(get_port_processes "$port"))
+    if [[ ${#remaining_processes[@]} -eq 0 ]]; then
+        if [[ "$killed_any" == "true" ]]; then
+            echo -e "${GREEN}✓ Port $port is now available${NC}"
+            log "SUCCESS" "Port $port cleanup completed"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗ Some processes on port $port could not be killed${NC}"
+        log "ERROR" "Port $port cleanup incomplete - ${#remaining_processes[@]} processes remain"
+        return 1
+    fi
+}
+
+cleanup_development_ports() {
+    if [[ "$KILL_PORTS" != "true" ]]; then
+        log "INFO" "Port cleanup disabled by --no-kill-ports flag"
+        return 0
+    fi
+    
+    echo -e "\n${BLUE}═══════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}                   Port Cleanup Manager                 ${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
+    
+    log "INFO" "Starting port cleanup for development servers..."
+    
+    local ports_to_check=(
+        "${BACKEND_PORT:-8080}:Backend"
+        "${FRONTEND_PORT:-5173}:Frontend (Vite)"
+        "3000:Frontend (React)"
+        "${REDIS_PORT:-6379}:Redis"
+        "4040:Ngrok API"
+    )
+    
+    local cleanup_success=true
+    
+    for port_info in "${ports_to_check[@]}"; do
+        local port="${port_info%:*}"
+        local name="${port_info#*:}"
+        
+        if ! kill_port_processes "$port" "$name"; then
+            cleanup_success=false
+        fi
+    done
+    
+    if [[ "$cleanup_success" == "true" ]]; then
+        echo -e "${GREEN}✓ Port cleanup completed successfully${NC}"
+        log "SUCCESS" "All required ports are now available"
+    else
+        echo -e "${YELLOW}⚠ Some ports could not be cleaned up${NC}"
+        echo -e "${YELLOW}  Services may fail to start or use alternative ports${NC}"
+        log "WARNING" "Port cleanup completed with warnings"
+    fi
+    
+    echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
+}
+
 # Set up trap for cleanup
 trap cleanup EXIT INT TERM
 
 # Main execution starts here
 echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}     Enhanced Development Server Manager v2.0           ${NC}"
+echo -e "${YELLOW}     Enhanced Development Server Manager v2.1           ${NC}"
 echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
 
 # Acquire lock
@@ -657,6 +919,7 @@ start_health_monitoring() {
 # Main execution
 check_prerequisites
 run_tests
+cleanup_development_ports
 start_redis
 start_backend || exit 1
 start_frontend || exit 1
