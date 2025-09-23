@@ -7,8 +7,6 @@
  * and provides a single place to modify the backend endpoint.
  */
 
-import { logger, LogCategory } from '@/services/logger';
-
 /**
  * API Configuration object with all backend-related settings
  */
@@ -66,6 +64,15 @@ const getCorrelationId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Lazy-load logger to avoid circular dependency
+let loggerModule: any = null;
+const getLogger = async () => {
+  if (!loggerModule) {
+    loggerModule = await import('@/services/logger');
+  }
+  return loggerModule;
+};
+
 /**
  * Enhanced fetch function with error logging and monitoring
  * @param input - URL or Request object
@@ -78,9 +85,12 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
   const method = init?.method || 'GET';
   const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
   
+  // Lazy-load logger for development logging
+  const loggerLib = await getLogger();
+  
   // Log request start in development
-  if (import.meta.env.DEV) {
-    logger.debug(LogCategory.API, `→ ${method} ${url}`, {
+  if (import.meta.env.DEV && loggerLib) {
+    loggerLib.logger.debug(loggerLib.LogCategory.API, `→ ${method} ${url}`, {
       correlationId,
       headers: init?.headers,
     });
@@ -91,8 +101,8 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
     const duration = performance.now() - startTime;
     
     // Log slow requests (>3 seconds)
-    if (duration > 3000) {
-      logger.warn(LogCategory.API, `Slow API request: ${method} ${url}`, {
+    if (duration > 3000 && loggerLib) {
+      loggerLib.logger.warn(loggerLib.LogCategory.API, `Slow API request: ${method} ${url}`, {
         url,
         method,
         duration: Math.round(duration),
@@ -119,20 +129,22 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
         errorDetails = { message: 'Unable to parse error response' };
       }
       
-      logger.error(LogCategory.API, `API Error: ${method} ${url}`, {
-        url,
-        method,
-        status: response.status,
-        statusText: response.statusText,
-        error: errorDetails,
-        duration: Math.round(duration),
-        correlationId,
-      });
+      if (loggerLib) {
+        loggerLib.logger.error(loggerLib.LogCategory.API, `API Error: ${method} ${url}`, {
+          url,
+          method,
+          status: response.status,
+          statusText: response.statusText,
+          error: errorDetails,
+          duration: Math.round(duration),
+          correlationId,
+        });
+      }
     }
     
     // Log successful response in development
-    if (import.meta.env.DEV && response.ok) {
-      logger.debug(LogCategory.API, `← ${method} ${url} [${response.status}]`, {
+    if (import.meta.env.DEV && response.ok && loggerLib) {
+      loggerLib.logger.debug(loggerLib.LogCategory.API, `← ${method} ${url} [${response.status}]`, {
         correlationId,
         duration: Math.round(duration),
       });
@@ -147,15 +159,17 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isOffline = !navigator.onLine;
     
-    logger.error(LogCategory.API, `Network Error: ${method} ${url}`, {
-      url,
-      method,
-      error: errorMessage,
-      duration: Math.round(duration),
-      correlationId,
-      offline: isOffline,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    if (loggerLib) {
+      loggerLib.logger.error(loggerLib.LogCategory.API, `Network Error: ${method} ${url}`, {
+        url,
+        method,
+        error: errorMessage,
+        duration: Math.round(duration),
+        correlationId,
+        offline: isOffline,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    }
     
     // Re-throw the error for proper handling
     throw error;

@@ -12,7 +12,6 @@
  * - Health monitoring
  */
 import { Logger, ILogObj } from "tslog";
-import { API_CONFIG } from '@/config/apiConfig';
 
 export enum LogCategory {
   API = "api",
@@ -57,13 +56,20 @@ interface LogEntry {
 }
 
 // Default configuration
+// Lazy-load API endpoint to avoid circular dependency
+const getApiEndpoint = (): string => {
+  // Dynamically construct the API endpoint
+  const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080');
+  return `${baseUrl}/logs/frontend`;
+};
+
 const DEFAULT_CONFIG: LoggerConfig = {
   flushIntervalMs: 1000,
   maxBufferSize: 100,
   maxRetries: 3,
   retryDelayMs: 1000,
   enableLocalStorage: true,
-  apiEndpoint: `${API_CONFIG.baseUrl}/logs/frontend`,
+  apiEndpoint: '', // Will be set lazily
   isDevelopment: import.meta.env.DEV,
 };
 
@@ -173,7 +179,9 @@ class BrowserFileTransport {
 
   private async sendLogsWithRetry(logs: string[], attempt = 0): Promise<void> {
     try {
-      const response = await fetch(config.apiEndpoint, {
+      // Get API endpoint lazily to avoid circular dependency
+      const apiEndpoint = config.apiEndpoint || getApiEndpoint();
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logs }),
