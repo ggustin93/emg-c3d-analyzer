@@ -1,19 +1,33 @@
 # syntax=docker/dockerfile:1
 
 # =============================================================================
+# Platform Configuration for Multi-Architecture Support
+# =============================================================================
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# =============================================================================
 # Stage 1: Build the React Application (Vite) - Debian-based for stability
 # =============================================================================
-FROM node:20-slim AS builder
+# Use buildplatform for faster builds on ARM64 Macs with Rosetta emulation
+FROM --platform=${BUILDPLATFORM:-linux/amd64} node:20-slim AS builder
 
-# Set build arguments
+# Set build arguments for Vite environment variables (from .env)
 ARG NODE_ENV=production
+ARG VITE_API_URL
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+# Legacy REACT_APP_ variables for backwards compatibility
 ARG REACT_APP_API_URL
 ARG REACT_APP_SUPABASE_URL
 ARG REACT_APP_SUPABASE_ANON_KEY
 
-# Set build environment variables
+# Set build environment variables (Vite uses VITE_ prefix)
 ENV NODE_ENV=${NODE_ENV} \
     NODE_OPTIONS="--max-old-space-size=2048" \
+    VITE_API_URL=${VITE_API_URL} \
+    VITE_SUPABASE_URL=${VITE_SUPABASE_URL} \
+    VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY} \
     REACT_APP_API_URL=${REACT_APP_API_URL} \
     REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL} \
     REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
@@ -33,17 +47,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY frontend/package.json frontend/package-lock.json ./
 
 # Copy TypeScript configuration files (required for tsc)
-COPY frontend/tsconfig.json frontend/tsconfig.node.json ./
+COPY frontend/tsconfig.json ./
+
+# Configure npm for ARM64 compatibility and optimal builds
+RUN npm config set legacy-peer-deps true && \
+    npm config set prefer-offline true && \
+    npm config set audit false && \
+    npm config set fund false && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000
 
 # Install TypeScript globally first to ensure it's available for npm scripts
 RUN npm install -g typescript
 
+# Install dependencies with ARM64 workaround for Rollup
+# First, clean any existing modules and lock files to ensure fresh install
+RUN rm -rf node_modules package-lock.json
+
 # Install dependencies with clean install (including dev deps for Vite build)
-# Set npm to use legacy peer deps to avoid rollup native module issues
-# Force include dev dependencies for build stage even in production mode
+# Use npm install instead of ci for better ARM64 compatibility
 RUN --mount=type=cache,target=/root/.npm \
-    npm config set legacy-peer-deps true && \
-    npm ci --only=production=false --prefer-offline --no-audit --legacy-peer-deps
+    npm install --legacy-peer-deps --prefer-offline --no-audit || \
+    (echo "Retrying with cache clear..." && npm cache clean --force && \
+     npm install --legacy-peer-deps --prefer-offline --no-audit)
 
 # Copy frontend source code
 COPY frontend/ .
@@ -63,7 +89,7 @@ RUN apk add --no-cache curl
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 
 # Copy custom nginx configuration
-COPY frontend/nginx.conf /etc/nginx/nginx.conf
+COPY docker/frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from builder stage (using correct build output directory)
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
