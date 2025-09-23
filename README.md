@@ -12,9 +12,20 @@ The Ghostly+ Dashboard is developed as part of the GHOSTLY+ rehabilitation resea
 
 ## Video Demo
 
-[![GHOSTLY+ Dashboard Demo](https://img.shields.io/badge/Watch-Demo_Video-006DAA?style=for-the-badge&logo=vimeo&logoColor=white)](https://vimeo.com/1119476263)
-
-Click the badge above to watch a demonstration of the GHOSTLY+ Dashboard in action, showcasing EMG analysis and clinical metrics visualization.
+<div align="center">
+  <a href="https://vimeo.com/1119476263">
+    <img src="https://img.shields.io/badge/▶_Watch_Demo-2_min_video-1ab7ea?style=for-the-badge&logo=vimeo&logoColor=white" alt="Watch Demo Video" />
+  </a>
+  
+  <br />
+  <br />
+  
+  <a href="https://vimeo.com/1119476263">
+    <img src="https://i.vimeocdn.com/video/2059960720-0f526f2c3b995c1ace16435fd766ccc4d231a57498e7d8a5f98ffea6e57f4ce0-d_640?region=us" width="640" alt="GHOSTLY+ Dashboard Demo Thumbnail" />
+  </a>
+  
+  <p><em>Click the image above to watch a 2-minute demonstration of the GHOSTLY+ Dashboard in action,<br/>showcasing EMG analysis, clinical metrics visualization, and therapist workflows.</em></p>
+</div>
 
 ## What It Does
 
