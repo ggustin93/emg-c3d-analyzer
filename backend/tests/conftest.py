@@ -281,10 +281,9 @@ def protect_trial_scoring_config():
         # Create service client for full access
         client = get_supabase_client(use_service_key=True)
         
-        # Fixed UUID for GHOSTLY-TRIAL-DEFAULT
         trial_config_id = "a0000000-0000-0000-0000-000000000001"
         
-        # Correct weights from metricsDefinitions.md
+        # Correct weights per metricsDefinitions.md
         correct_weights = {
             "weight_compliance": 0.50,
             "weight_symmetry": 0.25,
@@ -314,8 +313,7 @@ def protect_trial_scoring_config():
         test_created_ids = post_test_ids - pre_test_ids
         
         for config_id in test_created_ids:
-            # Don't delete GHOSTLY-TRIAL-DEFAULT even if test created it
-            if config_id != trial_config_id:
+            if config_id != trial_config_id:  # Preserve GHOSTLY-TRIAL-DEFAULT
                 client.table("scoring_configuration").delete().eq("id", config_id).execute()
         
         # Restore GHOSTLY-TRIAL-DEFAULT to correct state

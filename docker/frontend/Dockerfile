@@ -66,22 +66,20 @@ RUN npm config set legacy-peer-deps true \
 
 # 🔧 Install dependencies INSIDE container for correct platform
 # This ensures we get linux/amd64 binaries instead of darwin/arm64 from host
+# Install ALL dependencies (production + dev) for build process
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production --legacy-peer-deps
-
-# Install development dependencies needed for build
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps
+    npm ci --include=dev --legacy-peer-deps
 
 # Copy source code (after dependencies for better caching)
 COPY frontend/ .
 
 # 🏗️ Build application with platform-specific dependencies
 # Vite will use the correct esbuild binary for linux/amd64
+# The build script runs: tsc && vite build
 RUN npm run build
 
-# Verify build output
-RUN ls -la dist/ && echo "Build completed successfully"
+# Verify build output exists
+RUN ls -la dist/ > /dev/null && echo "✅ Build completed successfully"
 
 # =============================================================================
 # Stage 2: Production Web Server
