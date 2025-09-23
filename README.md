@@ -1,165 +1,80 @@
-# GHOSTLY+ EMG C3D Analyzer
+# GHOSTLY+ Dashboard
 
 A rehabilitation technology platform for analyzing Electromyography (EMG) data from C3D motion capture files, developed as part of the GHOSTLY+ serious game project for elderly rehabilitation.
 
-⚠️ **Research Software Notice**: This is a research-focused platform under active development. It is designed specifically for C3D files from the GHOSTLY game platform and is not intended for medical diagnosis or production clinical use.
+<details open>
+<summary>⚠️ <strong>Research Software Notice</strong></summary>
 
-## Quick Overview
+The Ghostly+ Dashboard is developed as part of the GHOSTLY+ rehabilitation research project. It is intended for **research and educational purposes only** and is **not validated for medical diagnosis or production clinical use**.
 
-### What It Does
-Processes EMG signals from rehabilitation therapy sessions to assess muscle activity, detect contractions, and calculate clinical performance metrics for therapeutic assessment.
+</details>
+
+
+## Video Demo
+
+<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden'}}>
+  <iframe 
+    src="https://player.vimeo.com/video/1119476263" 
+    style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
+    frameBorder="0" 
+    allow="autoplay; fullscreen; picture-in-picture" 
+    allowFullScreen
+    title="Ghostly+ Dashboard Demo">
+  </iframe>
+</div>
+
+## What It Does
+
+The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation game sessions.  
+It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly participants (65+) undergoing Blood Flow Restriction therapy.
 
 ### Key Features
-- 📊 **EMG Signal Processing** - RMS, MAV, frequency analysis, fatigue indices
-- 🎮 **GHOSTLY Integration** - Processes C3D files from the serious game
-- 📈 **Clinical Metrics** - Compliance, symmetry, effort, and game performance scoring
-- 🔬 **Research Tools** - Export capabilities and detailed analytics
-- 🏥 **Healthcare Ready** - HIPAA considerations, audit logging, role-based access
-
-### Tech Stack
-- **Frontend**: React 19, TypeScript, Zustand, Recharts
-- **Backend**: FastAPI, Python, NumPy/SciPy
-- **Database**: Supabase (PostgreSQL with RLS)
-- **Infrastructure**: Docker, Redis caching
-
-## Getting Started
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/emg-c3d-analyzer.git
-cd emg-c3d-analyzer
-
-# Start development environment
-./start_dev_simple.sh    # Starts both backend and frontend
-
-# Or start services individually:
-# Backend (port 8080)
-cd backend
-uvicorn main:app --reload --port 8080
-
-# Frontend (port 5173)
-cd frontend
-npm install
-npm run dev
-```
-
-## Documentation
-
-### 📚 Comprehensive Guides
-- **[Backend Documentation](docusaurus/docs/backend.md)** - Architecture, API, database schema
-- **[Frontend Documentation](docusaurus/docs/frontend/overview.md)** - Components, state management, UI
-- **[Signal Processing](docusaurus/docs/signal-processing/overview.md)** - EMG algorithms and clinical metrics
-- **[Development Setup](docusaurus/docs/development/setup.md)** - Environment configuration
-
-### 🚀 Quick References
-- **API Documentation**: http://localhost:8080/docs (FastAPI Swagger)
-- **Database Schema**: [Supabase Dashboard](https://supabase.com/dashboard/project/egihfsmxphqcsjotmhmm/database/schemas)
-- **Component Library**: Run `npm run storybook` in frontend
-
-## Architecture
-
-```
-┌─────────────────────────┐      ┌───────────────────────────┐      ┌─────────────────────────┐
-│    React Frontend       │◄──── │     FastAPI Backend       │ ───► │   Supabase Platform     │
-│ (TypeScript, Zustand)   │ HTTP │  (EMG Processing Engine)  │ SQL  │ (PostgreSQL & Storage)  │
-└─────────────────────────┘      └───────────────────────────┘      └─────────────────────────┘
-                                              │
-                                              ▼
-                               ┌───────────────────────────┐
-                               │   EMG Analysis Pipeline   │
-                               │   - Signal Processing     │
-                               │   - Contraction Detection │
-                               │   - Clinical Metrics      │
-                               └───────────────────────────┘
-```
-
-## Testing
-
-The project includes comprehensive test coverage:
-
-- **Backend**: 227 tests (pytest) - `./run_tests_with_env.sh`
-- **Frontend**: 78 tests (Vitest) - `npm test`
-- **E2E Tests**: Full workflow validation with real clinical data
-
-## Development
-
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL (via Supabase)
-- Redis (optional, for caching)
-
-### Environment Setup
-Create `.env` files in both frontend and backend directories:
-
-**Backend `.env`:**
-```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-key
-JWT_SECRET=your-jwt-secret
-REDIS_URL=redis://localhost:6379
-```
-
-**Frontend `.env`:**
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_API_URL=http://localhost:8080
-```
-
-## Project Structure
-
-```
-emg-c3d-analyzer/
-├── frontend/            # React application
-│   ├── src/
-│   │   ├── components/  # UI components
-│   │   ├── hooks/       # Custom React hooks
-│   │   ├── services/    # API services
-│   │   └── stores/      # Zustand state management
-│   └── tests/           # Frontend tests
-├── backend/             # FastAPI server
-│   ├── api/routes/      # API endpoints
-│   ├── services/        # Business logic (domain-driven)
-│   ├── models/          # Pydantic models
-│   ├── emg/             # Signal processing algorithms
-│   └── tests/           # Backend tests (227 tests)
-└── docusaurus/          # Documentation site
-    └── docs/            # Markdown documentation
-```
-
-## Contributing
-
-We welcome contributions! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for new features
-4. Ensure all tests pass
-5. Submit a pull request
-
-See [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-## Research Context
-
-This software was developed as part of the GHOSTLY+ project, a serious game for elderly rehabilitation. The system processes EMG data to assess therapeutic compliance and track patient progress in gamified rehabilitation exercises.
-
-### Clinical Metrics
-- **Compliance Score**: Measures exercise completion and intensity
-- **Symmetry Score**: Evaluates bilateral muscle activation balance
-- **Effort Score**: Assesses perceived exertion (RPE-based)
-- **Game Performance**: Tracks achievement in the serious game
-
-## License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-- GHOSTLY+ Research Team
-- VUB - Vrije Universiteit Brussel
-- Clinical partners and therapists
-- Open-source contributors
+- **EMG Signal Processing** – Contraction detection, RMS, MAV, frequency analysis, fatigue indices  
+- **GHOSTLY+ Integration** – Seamless processing of C3D files from the serious game  
+- **Clinical Metrics** – Compliance, symmetry, effort, and rehabilitation performance analysis  
+- **Research Tools** – Data export capabilities and detailed analytics  
+- **Healthcare-Oriented Design** – Role-based access, audit logging, HIPAA considerations (research-level, not production-certified)  
 
 ---
 
-**Note**: This is research software. For production deployment or clinical use, additional validation, security hardening, and regulatory compliance would be required.
+## Quick Start
+
+> ℹ️ The repository address still uses the historical name `emg-c3d-analyzer`.
+
+```bash
+# Clone the repository
+git clone https://github.com/ggustin93/emg-c3d-analyzer.git
+cd emg-c3d-analyzer
+
+# Choose your development method:
+
+# Option A: Native Development
+./start_dev_simple.sh    # Runs backend + frontend locally
+
+# Option B: Docker Development
+./start_dev_docker.sh    # Runs in isolated containers with cross-platform support
+
+Your app will be running at:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
+- **API Docs**: http://localhost:8080/docs
+
+For detailed setup instructions, see [Getting Started Guide](docusaurus/docs/getting-started.md).
+
+## Documentation Overview
+
+| Section | Description |
+|---------|-------------|
+| **[🚀 Getting Started](docusaurus/docs/getting-started.md)** | Set up and run the system in 5 minutes |
+| **[🏗️ Architecture](docusaurus/docs/architecture.md)** | System design and technical architecture |
+| **[🏥 Clinical](docusaurus/docs/clinical/metrics-definitions.md)** | Clinical metrics and scoring algorithms |
+| **[📊 Signal Processing](docusaurus/docs/signal-processing/overview.md)** | EMG signal analysis pipeline |
+| **[⚙️ Backend](docusaurus/docs/backend.md)** | FastAPI server and processing engine |
+| **[🎨 Frontend](docusaurus/docs/frontend/overview.md)** | React application and user interface |
+| **[🧪 Testing](docusaurus/docs/testing.md)** | Test suites and quality assurance |
+| **[🚀 DevOps](docusaurus/docs/devops/devops.md)** | Deployment and CI/CD pipelines |
+| **[🛠️ Development](docusaurus/docs/development.md)** | Development workflow and Claude Code integration |
+| **[📍 Roadmap](docusaurus/docs/roadmap/work-in-progress.md)** | Upcoming features and improvements |
+
+
+---
