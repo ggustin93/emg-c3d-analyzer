@@ -151,11 +151,17 @@ docker_compose() {
         exit 1
     fi
     
+    # Build env-file argument if .env exists
+    local env_file_arg=""
+    if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+        env_file_arg="--env-file=${SCRIPT_DIR}/.env"
+    fi
+    
     # Use the appropriate docker compose command
     if [[ "$USE_LEGACY_COMPOSE" == "true" ]]; then
-        docker-compose -f "$compose_file" --project-name "$PROJECT_NAME" "$@"
+        docker-compose -f "$compose_file" --project-name "$PROJECT_NAME" $env_file_arg "$@"
     else
-        docker compose -f "$compose_file" --project-name "$PROJECT_NAME" "$@"
+        docker compose -f "$compose_file" --project-name "$PROJECT_NAME" $env_file_arg "$@"
     fi
 }
 

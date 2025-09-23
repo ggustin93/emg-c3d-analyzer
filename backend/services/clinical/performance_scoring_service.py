@@ -985,7 +985,9 @@ class PerformanceScoringService:
                     
                     # Calculate cutoff date for protocol day boundary
                     # Protocol day 7 means we want files from the last 7 days (including today)
-                    cutoff_date = datetime.now(timezone.utc) - timedelta(days=protocol_day)
+                    # Use date-only comparison to avoid timezone and time-of-day issues
+                    today = datetime.now(timezone.utc).date()
+                    cutoff_date = today - timedelta(days=protocol_day - 1)
                     
                     # Filter files for this patient within protocol day boundary
                     # GHOSTLY C3D filenames pattern: Ghostly_Emg_YYYYMMDD_HH-MM-SS-SSSS.c3d
@@ -997,7 +999,8 @@ class PerformanceScoringService:
                             session_date = extract_session_date_from_filename(filename)
                             # Count only sessions within protocol day boundary
                             # Files from the last 'protocol_day' days should be counted
-                            if session_date and session_date.replace(tzinfo=timezone.utc) > cutoff_date:
+                            # Use date-only comparison to avoid timezone issues
+                            if session_date and session_date.date() >= cutoff_date:
                                 completed_sessions += 1
                 else:
                     # Fallback to therapy_sessions table if patient_code not found
