@@ -26,7 +26,7 @@ cd emg-c3d-analyzer
 ./start_dev_simple.sh --install
 ```
 
-✨ **What this does:**
+**What this does:**
 - Creates a Python virtual environment automatically
 - Installs all backend and frontend dependencies
 - Sets up everything you need to run the app
@@ -57,8 +57,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
 > 🔐 **Security Note**: Never commit `.env` files! The service key has admin privileges - keep it secret.
-
-📍 **Find your keys**: [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+ **Find your keys**: [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
 ### Step 3: Launch! 🚀
 
@@ -67,23 +66,17 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
 Your app is now running at:
-- 🎨 **Frontend**: http://localhost:3000 (configured port)
-- ⚙️ **Backend API**: http://localhost:8080
-- 📚 **API Docs**: http://localhost:8080/docs
+-  **Frontend**: http://localhost:3000 (configured port)
+-  **Backend API**: http://localhost:8080
+-  **API Docs**: http://localhost:8080/docs
 
-## ✅ Verify Everything Works
+## Verify Everything Works
 
 ### Quick Health Check
 ```bash
 curl http://localhost:8080/health
 ```
 Expected response: `{"status": "healthy", "version": "1.0.0"}`
-
-### Upload a Test File
-1. Open http://localhost:3000 in your browser
-2. Click "Upload C3D File"
-3. Select a test file
-4. Success! You should see EMG analysis results 🎉
 
 ## 🔧 Common Issues & Quick Fixes
 
@@ -135,25 +128,15 @@ Redis is optional for development. If you see Redis warnings:
 - Or just ignore the warnings - the app works without caching
 </details>
 
-## 🎯 What's Next?
+## What's Next?
 
 ### Essential Commands
 - **Run tests**: `./start_dev_simple.sh --test`
 - **Stop all services**: `./start_dev_simple.sh --kill`
 - **Backend only**: `./start_dev_simple.sh --backend-only`
 - **Enable webhooks**: `./start_dev_simple.sh --webhook`
-
-### Learn More
-- 📖 [API Documentation](http://localhost:8080/docs) - Interactive API explorer
-- 🧪 [Testing Guide](./testing.md) - Running the test suite
-- 🚀 [Deployment Guide](./deployment.md) - Production deployment
-- 🔧 [Development Guide](./development.md) - Advanced development setup
-
-### Optional Enhancements
 - **Redis** for caching: `brew install redis` (macOS) or `apt install redis` (Ubuntu)
 - **ngrok** for webhooks: `brew install ngrok` then `ngrok config add-authtoken YOUR_TOKEN`
-- **Docker** alternative: See [Docker Setup](./docker.md) for containerized development
-
 ---
 
 <details>
@@ -181,7 +164,7 @@ The frontend will start on port 3000 (configured in vite.config.ts), or 3001/300
 </details>
 
 <details>
-<summary>🐳 Advanced: Docker Setup</summary>
+<summary>🐳 Advanced: Docker Setup (work in progress)</summary>
 
 For a fully containerized environment:
 
@@ -189,6 +172,5 @@ For a fully containerized environment:
 ./start_dev_docker.sh
 ```
 
-This runs everything in Docker containers with hot-reload enabled. See [Docker Guide](./docker.md) for details.
-</details>
+This runs everything in Docker containers with hot-reload enabled. </details>
 
