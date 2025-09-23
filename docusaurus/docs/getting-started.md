@@ -5,7 +5,7 @@ title: Getting Started
 
 # Getting Started
 
-Get your EMG C3D Analyzer running in 5 minutes! This guide walks you through the quickest path from download to analyzing rehabilitation data.
+This guide covers quick installation and setup of the Ghostly+ Dashboard for EMG analysis and rehabilitation data processing.
 
 ## Prerequisites
 
@@ -18,20 +18,14 @@ Before you begin, ensure you have:
 
 ## 🚀 Quick Start (3 Steps)
 
-### Step 1: Clone and Install
+### Step 1: Clone
 
 ```bash
 git clone https://github.com/ggustin93/emg-c3d-analyzer.git
 cd emg-c3d-analyzer
-./start_dev_simple.sh --install
 ```
 
-**What this does:**
-- Creates a Python virtual environment automatically
-- Installs all backend and frontend dependencies
-- Sets up everything you need to run the app
-
-### Step 2: Configure Supabase
+### Step 2: Configure Environment
 
 Create configuration files from the examples:
 
@@ -59,17 +53,37 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 > 🔐 **Security Note**: Never commit `.env` files! The service key has admin privileges - keep it secret.
  **Find your keys**: [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
-### Step 3: Launch! 🚀
+### Step 3: Start and Launch! 🚀
 
+Choose your development method:
+
+**Option A: Native Development**
 ```bash
 ./start_dev_simple.sh
 ```
+- Creates Python virtual environment automatically
+- Installs backend and frontend dependencies
+- Direct access to source code and processes
 
-The script automatically:
-- ✅ Cleans up any processes using required ports
-- ✅ Starts backend and frontend servers
-- ✅ Monitors server health
-- ✅ Provides detailed logging
+**Option B: Docker Development**
+```bash
+./start_dev_docker.sh
+```
+- Creates isolated containers for backend and frontend services
+- Handles cross-platform compatibility (Intel/ARM64)
+- Provides consistent environment across machines
+
+:::info Docker Requirements
+- Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop/))
+- Minimum 4GB RAM (8GB+ recommended)
+- CPU with virtualization support (Intel VT-x or AMD-V)
+:::
+
+Both scripts automatically:
+- ✅ Clean up processes using required ports
+- ✅ Start backend and frontend servers
+- ✅ Monitor server health
+- ✅ Provide detailed logging
 
 Your app is now running at:
 -  **Frontend**: http://localhost:3000 (configured port)
@@ -84,7 +98,7 @@ Your app is now running at:
 ```bash
 curl http://localhost:8080/health
 ```
-Expected response: `{"status": "healthy", "version": "1.0.0"}`
+Expected response: `{"status": "healthy", "timestamp": "2025-01-XX..."}`
 
 ## 🔧 Common Issues & Quick Fixes
 
@@ -115,8 +129,8 @@ lsof -i :8080  # or :3000 for frontend
 If the app won't start due to missing packages:
 
 ```bash
-# Re-run with install flag
-./start_dev_simple.sh --install
+# Re-run to install missing dependencies
+./start_dev_simple.sh
 ```
 </details>
 
@@ -142,17 +156,6 @@ Redis is optional for development. If you see Redis warnings:
 - Or just ignore the warnings - the app works without caching
 </details>
 
-## What's Next?
-
-### Essential Commands
-- **Run tests**: `./start_dev_simple.sh --test`
-- **Stop all services**: Press `Ctrl+C` (automatic port cleanup on next run)
-- **Disable port cleanup**: `./start_dev_simple.sh --no-kill-ports`
-- **Backend only**: `./start_dev_simple.sh --backend-only`
-- **Enable webhooks**: `./start_dev_simple.sh --webhook`
-- **Verbose mode**: `./start_dev_simple.sh --verbose`
-- **Redis** for caching: `brew install redis` (macOS) or `apt install redis` (Ubuntu)
-- **ngrok** for webhooks: `brew install ngrok` then `ngrok config add-authtoken YOUR_TOKEN`
 ---
 
 <details>
@@ -179,16 +182,5 @@ npm start  # or npm run dev
 The frontend will start on port 3000 (configured in vite.config.ts), or 3001/3002/etc. if that port is busy.
 </details>
 
-<details>
-<summary>🐳 Advanced: Docker Setup (work in progress)</summary>
-
-For a fully containerized environment:
-
-```bash
-./start_dev_docker.sh
-```
-
-This runs everything in Docker containers with hot-reload enabled.
-
-</details>
+For advanced Docker operations and development workflows, see [Development Guide](./development.md).
 

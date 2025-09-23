@@ -24,10 +24,15 @@ npm install -g @anthropic-ai/claude-code
 cd emg-c3d-analyzer
 claude
 
-# Standard development
+# Native development (recommended)
 ./start_dev_simple.sh              # Backend + Frontend
 ./start_dev_simple.sh --test       # With test suite
 ./start_dev_simple.sh --webhook    # With ngrok tunnel
+
+# Docker development
+./start_dev_docker.sh               # Containerized stack
+./start_dev_docker.sh --build       # Rebuild images
+./start_dev_docker.sh logs          # View all logs
 ```
 
 ## MCP Architecture
@@ -76,7 +81,8 @@ graph LR
 
 | Task | Command | Description |
 |------|---------|-------------|
-| **Start Dev** | `./start_dev_simple.sh` | Backend and frontend servers |
+| **Start Dev (Native)** | `./start_dev_simple.sh` | Backend and frontend servers |
+| **Start Dev (Docker)** | `./start_dev_docker.sh` | Containerized development |
 | **Run Tests** | `./start_dev_simple.sh --test` | Complete test suite |
 | **Webhooks** | `./start_dev_simple.sh --webhook` | Includes ngrok tunnel |
 | **Backend Only** | `cd backend && uvicorn main:app --reload` | FastAPI on port 8080 |
@@ -152,7 +158,7 @@ For Supabase Storage webhooks, use ngrok for local testing:
 ngrok config add-authtoken YOUR_TOKEN
 
 # Start with webhook support
-./start_dev.sh --webhook
+./start_dev_simple.sh --webhook
 
 # Monitor webhook activity
 tail -f logs/backend.error.log | grep -E "(🚀|📁|🔄|✅|❌)"
@@ -197,16 +203,48 @@ VITE_API_URL=http://localhost:8080  # Production differs
 
 ## Docker Operations
 
+### Development Environment
+
 ```bash
-# Build and run
+# Start development stack
+./start_dev_docker.sh                   # Full development environment
+./start_dev_docker.sh --build           # Rebuild images and start
+./start_dev_docker.sh --staging         # Use staging configuration
+./start_dev_docker.sh --production      # Use production configuration
+
+# Container management
+./start_dev_docker.sh logs              # View all logs
+./start_dev_docker.sh logs backend      # View specific service logs
+./start_dev_docker.sh shell backend     # Open shell in container
+./start_dev_docker.sh status            # Show service status
+./start_dev_docker.sh down              # Stop all services
+
+# Advanced operations
+./start_dev_docker.sh clean-docker      # Clean Docker resources
+./start_dev_docker.sh clean-docker --aggressive  # Remove all unused images
+./start_dev_docker.sh clean-docker --all         # Clean everything (including volumes)
+```
+
+### Manual Docker Commands
+
+```bash
+# Build and run manually
 docker build -f backend/Dockerfile -t emg-backend .
 docker run -p 8080:8080 --env-file .env emg-backend
 
-# Docker Compose
-docker-compose up -d                    # Start detached
-docker-compose logs -f backend          # View logs
-docker-compose down -v                  # Stop and clean
+# Docker Compose (if using directly)
+docker compose -f docker/compose/docker-compose.dev.yml up -d
+docker compose logs -f backend
+docker compose down -v
 ```
+
+### Docker Features
+
+- **ARM64/Apple Silicon**: Automatic platform detection and compatibility
+- **Health Monitoring**: Built-in service health checks and recovery
+- **Error Handling**: Comprehensive error recovery and cleanup
+- **Disk Management**: Advanced cleanup with disk space monitoring
+- **Multiple Environments**: Support for dev, staging, and production configs
 
 ## Common Issues & Solutions
 
