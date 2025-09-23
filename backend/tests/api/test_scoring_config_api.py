@@ -195,7 +195,7 @@ class TestScoringConfigurationAPIFixed:
         # Prepare configuration with only some fields (others use defaults)
         partial_config = {
             "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
-            "weight_compliance": 0.60,
+            "weight_compliance": 0.50,  # Fixed: was 0.60, causing sum > 1.0 with defaults
             # Other fields will use defaults from the model
         }
         
@@ -207,7 +207,7 @@ class TestScoringConfigurationAPIFixed:
         if response.status_code == 200:
             data = response.json()
             # Verify the explicitly set field
-            assert data["weight_compliance"] == 0.60
+            assert data["weight_compliance"] == 0.50  # Fixed to match test value
             # Other fields should have defaults (0.25, 0.25, 0.0 for main weights)
             assert data["weight_symmetry"] == 0.25  # Default from model
             assert data["weight_effort"] == 0.25    # Default from model

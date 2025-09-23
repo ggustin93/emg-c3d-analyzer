@@ -101,6 +101,9 @@ services:
       context: ../../
       dockerfile: docker/frontend/Dockerfile
       target: production
+      platforms:
+        - linux/amd64
+        - linux/arm64
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
@@ -109,7 +112,6 @@ services:
         - VITE_SENTRY_DSN=${SENTRY_DSN:-}
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
-        - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
     image: emg-frontend:production-${VERSION:-latest}
     container_name: emg-frontend-prod
     environment:

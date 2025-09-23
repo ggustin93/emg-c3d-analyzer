@@ -81,10 +81,6 @@ services:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-        # Legacy React App variables for compatibility
-        - REACT_APP_API_URL=${VITE_API_URL:-http://localhost:8080}
-        - REACT_APP_SUPABASE_URL=${VITE_SUPABASE_URL}
-        - REACT_APP_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
         # Build configuration
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}

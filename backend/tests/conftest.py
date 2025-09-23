@@ -258,6 +258,98 @@ def sample_c3d_info() -> dict:
 
 
 # =====================================================
+# Protection Fixtures for Critical Configuration
+# =====================================================
+
+@pytest.fixture(autouse=True)
+def protect_trial_scoring_config():
+    """
+    Automatic fixture that protects GHOSTLY-TRIAL-DEFAULT configuration from test corruption.
+    
+    This fixture runs before and after EVERY test to ensure the trial configuration
+    remains intact with correct weights and UUID.
+    """
+    from database.supabase_client import get_supabase_client
+    import os
+    
+    # Skip protection if no Supabase environment configured
+    if not os.getenv("SUPABASE_URL") or not os.getenv("SUPABASE_SERVICE_KEY"):
+        yield
+        return
+    
+    try:
+        # Create service client for full access
+        client = get_supabase_client(use_service_key=True)
+        
+        # Fixed UUID for GHOSTLY-TRIAL-DEFAULT
+        trial_config_id = "a0000000-0000-0000-0000-000000000001"
+        
+        # Correct weights from metricsDefinitions.md
+        correct_weights = {
+            "weight_compliance": 0.50,
+            "weight_symmetry": 0.25,
+            "weight_effort": 0.25,
+            "weight_game": 0.00,
+            "weight_completion": 0.333,
+            "weight_intensity": 0.333,
+            "weight_duration": 0.334,
+        }
+        
+        # Check if GHOSTLY-TRIAL-DEFAULT exists and backup its state
+        existing = client.table("scoring_configuration").select("*").eq(
+            "configuration_name", "GHOSTLY-TRIAL-DEFAULT"
+        ).execute()
+        
+        original_state = existing.data[0] if existing.data else None
+        
+        # Track test-created configurations for cleanup
+        pre_test_configs = client.table("scoring_configuration").select("id").execute()
+        pre_test_ids = {config["id"] for config in pre_test_configs.data}
+        
+        yield  # Run the test
+        
+        # Post-test cleanup: Remove any test-created configurations
+        post_test_configs = client.table("scoring_configuration").select("id").execute()
+        post_test_ids = {config["id"] for config in post_test_configs.data}
+        test_created_ids = post_test_ids - pre_test_ids
+        
+        for config_id in test_created_ids:
+            # Don't delete GHOSTLY-TRIAL-DEFAULT even if test created it
+            if config_id != trial_config_id:
+                client.table("scoring_configuration").delete().eq("id", config_id).execute()
+        
+        # Restore GHOSTLY-TRIAL-DEFAULT to correct state
+        if original_state:
+            # Update back to original state with correct weights
+            restore_data = {**correct_weights, "active": True}
+            client.table("scoring_configuration").update(restore_data).eq(
+                "id", trial_config_id
+            ).execute()
+        else:
+            # Ensure GHOSTLY-TRIAL-DEFAULT exists with correct configuration
+            # Check again in case test created it
+            check_again = client.table("scoring_configuration").select("id").eq(
+                "configuration_name", "GHOSTLY-TRIAL-DEFAULT"
+            ).execute()
+            
+            if not check_again.data:
+                # Create it with fixed UUID and correct weights
+                config_data = {
+                    "id": trial_config_id,
+                    "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
+                    "description": "Default scoring configuration for GHOSTLY+ clinical trial",
+                    **correct_weights,
+                    "active": True,
+                    "is_global": True,
+                }
+                client.table("scoring_configuration").insert(config_data).execute()
+        
+    except Exception as e:
+        # Log but don't fail tests if cleanup has issues
+        print(f"⚠️ Scoring configuration protection warning: {e}")
+
+
+# =====================================================
 # Cleanup Fixtures for Supabase Storage and Database
 # =====================================================
 

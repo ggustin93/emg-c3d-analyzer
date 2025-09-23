@@ -1,0 +1,106 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Project-Level .dockerignore - Infrastructure as Code
+# ═══════════════════════════════════════════════════════════════════════════
+# 
+# Purpose: Prevent host-specific dependencies from being copied into containers
+# Critical: Fixes esbuild platform mismatch (@esbuild/darwin-arm64 → @esbuild/linux-x64)
+# DevOps Best Practice: Always install dependencies inside container for correct platform
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+# 🚨 CRITICAL: Prevent host-specific node_modules from entering container
+# This is the root cause of platform mismatches in Docker builds
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+
+# Build outputs (should be generated inside container)
+**/dist/
+**/build/
+**/*.tgz
+**/coverage/
+
+# Development files (not needed in production containers)
+**/.git/
+**/.gitignore
+**/README.md
+**/*.md
+**/Dockerfile*
+**/docker-compose*.yml
+**/.dockerignore
+
+# Environment files (secrets should be passed as build args)
+**/.env*
+!**/.env.example
+
+# IDE and development tools
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# OS generated files
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+
+# Logs (should be handled by container logging)
+**/*.log
+**/logs/
+
+# Cache directories
+**/.eslintcache
+**/.cache/
+**/.npm/
+**/.yarn/
+**/.pnp.*
+
+# Testing files (run separately in CI/CD)
+**/coverage/
+**/.nyc_output/
+**/*.lcov
+
+# TypeScript build artifacts
+**/*.tsbuildinfo
+**/tsconfig.json.bak
+
+# Temporary directories
+**/tmp/
+**/temp/
+
+# Storybook
+**/.storybook/
+**/storybook-static/
+
+# Python cache (for backend)
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+
+# Virtual environments
+**/venv/
+**/env/
+**/.venv/
+
+# Database files
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Runtime data
+**/pids/
+**/*.pid
+**/*.seed
+**/*.pid.lock

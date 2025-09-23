@@ -401,7 +401,7 @@ run_tests() {
 }
 
 cleanup() {
-    log HEADER "Cleanup"
+    log HEADER "Basic Cleanup"
     
     # Stop containers
     docker_compose down -v --remove-orphans
@@ -410,7 +410,155 @@ cleanup() {
     log INFO "Removing unused Docker resources..."
     docker system prune -f --volumes
     
-    log SUCCESS "Cleanup complete"
+    log SUCCESS "Basic cleanup complete"
+}
+
+# Enhanced Docker cleanup with disk space management
+clean_docker() {
+    log HEADER "Docker Deep Clean"
+    
+    local aggressive=false
+    local all=false
+    local dry_run=false
+    
+    # Parse options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --aggressive) aggressive=true ;;
+            --all) all=true ;;
+            --dry-run) dry_run=true ;;
+            *) ;;
+        esac
+        shift
+    done
+    
+    # Show current disk usage
+    log INFO "Current Docker disk usage:"
+    docker system df
+    echo ""
+    
+    # Show available disk space
+    local disk_usage=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
+    local disk_free=$(df -h / | awk 'NR==2 {print $4}')
+    log INFO "System disk: ${disk_usage}% used, ${disk_free} free"
+    
+    # Warn if disk space is low
+    if [[ $(df / | awk 'NR==2 {print $4}') -lt 10485760 ]]; then  # Less than 10GB
+        log WARNING "Low disk space detected! Less than 10GB free."
+    fi
+    
+    echo ""
+    
+    if [[ "$dry_run" == "true" ]]; then
+        log INFO "DRY RUN MODE - No changes will be made"
+        echo ""
+    fi
+    
+    # Step 1: Clean stopped containers
+    log INFO "Step 1/5: Cleaning stopped containers..."
+    if [[ "$dry_run" == "true" ]]; then
+        docker container ls -a --filter status=exited --filter status=created -q | wc -l | xargs -I {} echo "Would remove {} stopped containers"
+    else
+        local containers_before=$(docker container ls -a -q | wc -l)
+        docker container prune -f
+        local containers_after=$(docker container ls -a -q | wc -l)
+        log SUCCESS "Removed $((containers_before - containers_after)) containers"
+    fi
+    echo ""
+    
+    # Step 2: Clean dangling images
+    log INFO "Step 2/5: Cleaning dangling images..."
+    if [[ "$dry_run" == "true" ]]; then
+        docker images -f "dangling=true" -q | wc -l | xargs -I {} echo "Would remove {} dangling images"
+    else
+        local images_before=$(docker images -q | wc -l)
+        docker image prune -f
+        local images_after=$(docker images -q | wc -l)
+        log SUCCESS "Removed $((images_before - images_after)) dangling images"
+    fi
+    echo ""
+    
+    # Step 3: Clean all unused images (if aggressive)
+    if [[ "$aggressive" == "true" ]]; then
+        log INFO "Step 3/5: Cleaning ALL unused images (aggressive mode)..."
+        if [[ "$dry_run" == "true" ]]; then
+            docker images -q | wc -l | xargs -I {} echo "Would potentially remove up to {} images"
+        else
+            read -p "$(echo -e "${YELLOW}⚠️  This will remove ALL unused images. Continue? (y/N): ${NC}")" -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                docker image prune -a -f
+                log SUCCESS "Removed all unused images"
+            else
+                log INFO "Skipped removing unused images"
+            fi
+        fi
+    else
+        log INFO "Step 3/5: Skipping unused images (use --aggressive to remove)"
+    fi
+    echo ""
+    
+    # Step 4: Clean build cache
+    log INFO "Step 4/5: Cleaning build cache..."
+    if [[ "$dry_run" == "true" ]]; then
+        docker builder du --filter=unused=true | grep -E "^[0-9]" | awk '{sum+=$2} END {print "Would remove approximately", sum/1024/1024, "MB of build cache"}'
+    else
+        docker builder prune -f
+        log SUCCESS "Cleaned build cache"
+    fi
+    echo ""
+    
+    # Step 5: Clean volumes (if --all specified)
+    if [[ "$all" == "true" ]]; then
+        log WARNING "Step 5/5: Cleaning unused volumes (THIS WILL DELETE DATA)..."
+        if [[ "$dry_run" == "true" ]]; then
+            docker volume ls -f dangling=true -q | wc -l | xargs -I {} echo "Would remove {} unused volumes"
+        else
+            read -p "$(echo -e "${RED}⚠️  WARNING: This will DELETE unused volumes and their data. Continue? (y/N): ${NC}")" -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                docker volume prune -f
+                log SUCCESS "Removed unused volumes"
+            else
+                log INFO "Skipped removing volumes"
+            fi
+        fi
+    else
+        log INFO "Step 5/5: Skipping volumes (use --all to clean)"
+    fi
+    echo ""
+    
+    # Final system prune for networks and remaining items
+    if [[ "$dry_run" != "true" ]]; then
+        log INFO "Final cleanup pass..."
+        docker network prune -f 2>/dev/null || true
+    fi
+    
+    # Show final disk usage
+    echo ""
+    log INFO "Final Docker disk usage:"
+    docker system df
+    echo ""
+    
+    # Show reclaimed space
+    local new_disk_free=$(df -h / | awk 'NR==2 {print $4}')
+    log SUCCESS "Cleanup complete! Free space: ${disk_free} → ${new_disk_free}"
+}
+
+# Check disk space and suggest cleanup if needed
+check_disk_space() {
+    local available_gb=$(df / | awk 'NR==2 {print $4}' | awk '{print int($1/1024/1024)}')
+    
+    if [[ $available_gb -lt 5 ]]; then
+        log ERROR "Critical: Less than 5GB free disk space!"
+        log WARNING "Run '${SCRIPT_NAME} clean-docker --aggressive' to free up space"
+        return 1
+    elif [[ $available_gb -lt 10 ]]; then
+        log WARNING "Warning: Less than 10GB free disk space"
+        log INFO "Consider running '${SCRIPT_NAME} clean-docker' to free up space"
+    fi
+    
+    return 0
 }
 
 # --- Usage Information ---
@@ -423,15 +571,16 @@ ${BOLD}Usage:${NC}
   ${SCRIPT_NAME} [COMMAND] [OPTIONS]
 
 ${BOLD}Commands:${NC}
-  ${GREEN}up${NC}        Start all services (default)
-  ${GREEN}down${NC}      Stop all services
-  ${GREEN}restart${NC}   Restart all services
-  ${GREEN}status${NC}    Show service status
-  ${GREEN}logs${NC}      Show logs (optionally specify service)
-  ${GREEN}shell${NC}     Open shell in container (default: backend)
-  ${GREEN}test${NC}      Run all tests
-  ${GREEN}cleanup${NC}   Stop services and remove volumes
-  ${GREEN}help${NC}      Show this help message
+  ${GREEN}up${NC}           Start all services (default)
+  ${GREEN}down${NC}         Stop all services
+  ${GREEN}restart${NC}      Restart all services
+  ${GREEN}status${NC}       Show service status
+  ${GREEN}logs${NC}         Show logs (optionally specify service)
+  ${GREEN}shell${NC}        Open shell in container (default: backend)
+  ${GREEN}test${NC}         Run all tests
+  ${GREEN}cleanup${NC}      Stop services and remove volumes (basic)
+  ${GREEN}clean-docker${NC} Deep clean Docker resources (advanced)
+  ${GREEN}help${NC}         Show this help message
 
 ${BOLD}Options:${NC}
   ${GREEN}--build${NC}       Rebuild images before starting
@@ -444,6 +593,9 @@ ${BOLD}Examples:${NC}
   ${SCRIPT_NAME} logs backend       # View backend logs
   ${SCRIPT_NAME} shell frontend     # Open shell in frontend container
   ${SCRIPT_NAME} test               # Run all tests
+  ${SCRIPT_NAME} clean-docker       # Clean Docker resources
+  ${SCRIPT_NAME} clean-docker --aggressive  # Remove all unused images
+  ${SCRIPT_NAME} clean-docker --all # Clean everything (including volumes)
 
 ${BOLD}Environment:${NC}
   Configure settings in ${CYAN}.env${NC} file
@@ -476,8 +628,8 @@ main() {
             --prod|--production) CURRENT_COMPOSE_FILE="$COMPOSE_PROD_FILE" ;;
             --help|-h) usage; exit 0 ;;
             *) 
-                if [[ "$command" == "logs" || "$command" == "shell" ]]; then
-                    # These commands accept a service name
+                if [[ "$command" == "logs" || "$command" == "shell" || "$command" == "clean-docker" ]]; then
+                    # These commands accept additional arguments
                     break
                 else
                     log ERROR "Unknown option: $1"
@@ -494,6 +646,11 @@ main() {
     detect_architecture
     setup_environment
     
+    # Check disk space for operations that need it
+    if [[ "$command" == "up" || "$command" == "start" || "$command" == "restart" ]]; then
+        check_disk_space || true  # Warn but don't block
+    fi
+    
     # Execute command
     case "$command" in
         up|start)     start_services ;;
@@ -504,6 +661,7 @@ main() {
         shell|exec)   open_shell "$@" ;;
         test)         run_tests ;;
         cleanup|clean) cleanup ;;
+        clean-docker) clean_docker "$@" ;;
         help|-h)      usage ;;
         *)
             log ERROR "Unknown command: ${command}"

@@ -1,7 +1,7 @@
-backend_pid=51183
-frontend_pid=51377
-redis_pid=51174
+backend_pid=26271
+frontend_pid=26311
+redis_pid=26264
 ngrok_pid=
-monitoring_pid=51486
-start_time=1758634296
+monitoring_pid=26386
+start_time=1758636640
 webhook_enabled=false

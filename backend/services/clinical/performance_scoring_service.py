@@ -713,10 +713,12 @@ class PerformanceScoringService:
             
             if existing.data:
                 logger.debug("Found existing GHOSTLY-TRIAL-DEFAULT configuration")
-                return existing.data[0]["id"]
+                # Always return the fixed UUID for consistency
+                return "a0000000-0000-0000-0000-000000000001"
             
-            # Create the default configuration from config.py
+            # Create the default configuration from config.py with fixed UUID
             config_data = {
+                "id": "a0000000-0000-0000-0000-000000000001",  # Fixed UUID for GHOSTLY-TRIAL-DEFAULT
                 "configuration_name": "GHOSTLY-TRIAL-DEFAULT",
                 "description": "Default scoring configuration for GHOSTLY+ trial - auto-created from config.py",
                 "weight_compliance": defaults.WEIGHT_COMPLIANCE,
@@ -727,6 +729,7 @@ class PerformanceScoringService:
                 "weight_intensity": defaults.WEIGHT_INTENSITY,
                 "weight_duration": defaults.WEIGHT_DURATION,
                 "active": True,
+                "is_global": True,  # Mark as global configuration
                 "rpe_mapping": defaults.DEFAULT_RPE_MAPPING  # Already a dict, no need for json.dumps
             }
             
