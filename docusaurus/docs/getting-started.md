@@ -65,10 +65,18 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ./start_dev_simple.sh
 ```
 
+The script automatically:
+- ✅ Cleans up any processes using required ports
+- ✅ Starts backend and frontend servers
+- ✅ Monitors server health
+- ✅ Provides detailed logging
+
 Your app is now running at:
 -  **Frontend**: http://localhost:3000 (configured port)
 -  **Backend API**: http://localhost:8080
 -  **API Docs**: http://localhost:8080/docs
+
+> **💡 Pro tip**: The script automatically handles port conflicts! If something is already running on port 8080 or 3000, it will clean it up for you (with confirmation).
 
 ## Verify Everything Works
 
@@ -83,16 +91,22 @@ Expected response: `{"status": "healthy", "version": "1.0.0"}`
 <details>
 <summary>Port already in use</summary>
 
-If you see "Address already in use" errors:
+**No action needed!** The script now automatically handles port conflicts by default.
+
+If you see "Address already in use" errors and automatic cleanup was disabled:
 
 ```bash
-# Kill services on the ports
-./start_dev_simple.sh --kill
+# Just run the script normally - it will clean up ports automatically
+./start_dev_simple.sh
 
-# Or manually find and stop the process:
+# Or if you disabled automatic cleanup, re-enable it:
+./start_dev_simple.sh --kill-ports
+
+# To manually check what's using a port:
 lsof -i :8080  # or :3000 for frontend
-kill -9 <PID>
 ```
+
+> **Note**: The script will ask for confirmation before killing processes unless running in `--verbose` mode.
 </details>
 
 <details>
@@ -132,9 +146,11 @@ Redis is optional for development. If you see Redis warnings:
 
 ### Essential Commands
 - **Run tests**: `./start_dev_simple.sh --test`
-- **Stop all services**: `./start_dev_simple.sh --kill`
+- **Stop all services**: Press `Ctrl+C` (automatic port cleanup on next run)
+- **Disable port cleanup**: `./start_dev_simple.sh --no-kill-ports`
 - **Backend only**: `./start_dev_simple.sh --backend-only`
 - **Enable webhooks**: `./start_dev_simple.sh --webhook`
+- **Verbose mode**: `./start_dev_simple.sh --verbose`
 - **Redis** for caching: `brew install redis` (macOS) or `apt install redis` (Ubuntu)
 - **ngrok** for webhooks: `brew install ngrok` then `ngrok config add-authtoken YOUR_TOKEN`
 ---
