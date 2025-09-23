@@ -172,5 +172,7 @@ For a fully containerized environment:
 ./start_dev_docker.sh
 ```
 
-This runs everything in Docker containers with hot-reload enabled. </details>
+This runs everything in Docker containers with hot-reload enabled.
+
+</details>
 
