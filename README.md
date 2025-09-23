@@ -12,16 +12,9 @@ The Ghostly+ Dashboard is developed as part of the GHOSTLY+ rehabilitation resea
 
 ## Video Demo
 
-<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden'}}>
-  <iframe 
-    src="https://player.vimeo.com/video/1119476263" 
-    style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
-    frameBorder="0" 
-    allow="autoplay; fullscreen; picture-in-picture" 
-    allowFullScreen
-    title="Ghostly+ Dashboard Demo">
-  </iframe>
-</div>
+[![GHOSTLY+ Dashboard Demo](https://img.shields.io/badge/Watch-Demo_Video-006DAA?style=for-the-badge&logo=vimeo&logoColor=white)](https://vimeo.com/1119476263)
+
+Click the badge above to watch a demonstration of the GHOSTLY+ Dashboard in action, showcasing EMG analysis and clinical metrics visualization.
 
 ## What It Does
 
@@ -53,6 +46,7 @@ cd emg-c3d-analyzer
 
 # Option B: Docker Development
 ./start_dev_docker.sh    # Runs in isolated containers with cross-platform support
+```
 
 Your app will be running at:
 - **Frontend**: http://localhost:3000
