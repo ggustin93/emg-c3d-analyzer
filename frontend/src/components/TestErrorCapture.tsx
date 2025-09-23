@@ -162,7 +162,7 @@ export function TestErrorCapture() {
             <li>✅ Global JS errors → Caught by window.onerror</li>
             <li>✅ Promise rejections → Caught by unhandledrejection</li>
             <li>✅ Console errors → Intercepted and logged</li>
-            <li>✅ Slow API → Warning logged for requests >3s</li>
+            <li>✅ Slow API → Warning logged for requests &gt;3s</li>
             <li>✅ Infinite loops → ErrorBoundary catches max depth</li>
             <li>✅ Network errors → Logged with offline detection</li>
           </ul>
