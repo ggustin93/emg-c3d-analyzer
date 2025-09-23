@@ -140,19 +140,30 @@ class TestScoringConfigurationIntegration:
 
     def test_activate_configuration_in_database(self, client):
         """Test PUT /scoring/configurations/{id}/activate works with database."""
-        # First get all configurations
-        response = client.get("/scoring/configurations")
-        configs = response.json()
+        # First, create a test configuration to ensure we have something to activate
+        from config import ScoringDefaults
+        test_config = {
+            "configuration_name": "Test Activation Config",
+            "description": "Created for activation test",
+            "weight_compliance": ScoringDefaults.WEIGHT_COMPLIANCE,
+            "weight_symmetry": ScoringDefaults.WEIGHT_SYMMETRY,
+            "weight_effort": ScoringDefaults.WEIGHT_EFFORT,
+            "weight_game": ScoringDefaults.WEIGHT_GAME,
+            "weight_completion": 0.333,
+            "weight_intensity": 0.333,
+            "weight_duration": 0.334,
+        }
+        
+        # Create the test configuration (will be inactive by default)
+        create_response = client.post("/scoring/configurations", json=test_config)
+        assert create_response.status_code == 200
+        created_config = create_response.json()
+        config_id = created_config["id"]
+        
+        # Verify it was created as inactive
+        assert created_config["active"] is False
 
-        # Find a non-active configuration to activate
-        inactive_config = next((c for c in configs if not c["active"]), None)
-
-        if inactive_config is None:
-            pytest.skip("No inactive configuration available for activation test")
-
-        config_id = inactive_config["id"]
-
-        # Activate it
+        # Now activate it
         activate_response = client.put(f"/scoring/configurations/{config_id}/activate")
         assert activate_response.status_code == 200
 

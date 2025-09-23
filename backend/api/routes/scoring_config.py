@@ -180,13 +180,14 @@ async def create_scoring_configuration(config: ScoringConfigurationRequest):
 
 @router.put("/configurations/{config_id}/activate")
 async def activate_scoring_configuration(config_id: str):
-    """Activate a scoring configuration (deactivates others)."""
+    """Activate a scoring configuration (deactivates others except GHOSTLY-TRIAL-DEFAULT)."""
     try:
         supabase = get_supabase_client(use_service_key=True)
 
-        # First, deactivate all configurations
+        # First, deactivate all configurations except the protected GHOSTLY-TRIAL-DEFAULT
+        # The database trigger will prevent deactivation of GHOSTLY-TRIAL-DEFAULT during trial
         supabase.table("scoring_configuration").update({"active": False}).neq(
-            "id", "00000000-0000-0000-0000-000000000000"
+            "configuration_name", "GHOSTLY-TRIAL-DEFAULT"
         ).execute()
 
         # Then activate the specified one
