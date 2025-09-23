@@ -32,6 +32,7 @@ services:
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       
       # Redis cache configuration (from .env with fallback)
+      # Note: Backend connects to Redis via internal Docker network on port 6379
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_CACHE_TTL_SECONDS=${REDIS_CACHE_TTL_SECONDS:-3600}
       - REDIS_MAX_CACHE_SIZE_MB=${REDIS_MAX_CACHE_SIZE_MB:-100}
@@ -113,7 +114,9 @@ services:
     container_name: emg-redis-dev
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Using port 6380 on host to avoid conflict with local Redis (6379)
+      # Container still uses standard Redis port 6379 internally
+      - "6380:6379"
     volumes:
       - redis_data:/data
     # Optional: Add redis.conf if you have custom configuration

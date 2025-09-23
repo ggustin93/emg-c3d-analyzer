@@ -167,6 +167,29 @@ docker_compose() {
 
 # --- Environment Setup ---
 
+# =============================================================================
+# SUPABASE SELF-HOSTING OPTION (Future Enhancement)
+# =============================================================================
+# 
+# For self-hosted Supabase instead of cloud, see:
+# - Official docs: https://supabase.com/docs/guides/self-hosting/docker
+# - Example config: docker/compose/docker-compose.staging.yml (lines 214-235)
+#
+# Required services: PostgreSQL, PostgREST, GoTrue (Auth), Storage, 
+# Realtime, Kong Gateway, Studio Dashboard, and optional Vector/Logflare
+#
+# Key environment variables:
+#   SUPABASE_MODE=local|cloud  # Toggle between modes
+#   SUPABASE_JWT_SECRET        # 32+ char secret (openssl rand -hex 32)
+#   POSTGRES_PASSWORD          # Database password
+#   SUPABASE_ANON_KEY         # Generated from JWT secret
+#   SUPABASE_SERVICE_KEY      # Generated from JWT secret
+#
+# Resource requirements: ~4GB RAM, 2+ CPU cores
+# Ports: 5433 (DB), 8000 (API), 3001 (Studio)
+#
+# =============================================================================
+
 setup_environment() {
     log HEADER "Environment Setup"
     
