@@ -2,13 +2,22 @@
 
 A rehabilitation technology platform for analyzing Electromyography (EMG) data from C3D motion capture files, developed as part of the GHOSTLY+ serious game project for elderly rehabilitation.
 
-<details open>
-<summary>⚠️ <strong>Research Software Notice</strong></summary>
+> [!NOTE]
+> *This dashboard is part of the GHOSTLY+ rehabilitation research project. It is intended for research and educational purposes only and has not been validated for medical diagnosis or clinical use.*
 
-The Ghostly+ Dashboard is developed as part of the GHOSTLY+ rehabilitation research project. It is intended for **research and educational purposes only** and is **not validated for medical diagnosis or production clinical use**.
+## Tech Stack
 
-</details>
+<div align="center">
 
+| Component | Technology | Purpose |
+|:---------:|:----------:|:-------:|
+| **Frontend** | ![React](https://img.shields.io/badge/React%2019-61DAFB?style=flat-square&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white) | Type-safe UI with modern React hooks |
+| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![Python](https://img.shields.io/badge/Python%203.10-3776AB?style=flat-square&logo=python&logoColor=white) | High-performance API with auto-docs |
+| **Database** | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white) | Secure data with Row Level Security |
+| **Processing** | ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white) ![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white) | EMG signal analysis & filtering |
+| **Deployment** | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Coolify](https://img.shields.io/badge/Coolify-000000?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMEMzLjU4IDAgMCAzLjU4IDAgOHMzLjU4IDggOCA4IDgtMy41OCA4LTgtMy41OC04LTgtOHptMCAxNGMtMy4zMSAwLTYtMi42OS02LTZzMi42OS02IDYtNiA2IDIuNjkgNiA2LTIuNjkgNi02IDZ6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=) | Self-hosted with SSL & monitoring |
+
+</div>
 
 ## Video Demo
 
