@@ -4,8 +4,6 @@
 Models for therapy sessions, EMG statistics, and session settings.
 Manages the core clinical workflow from C3D upload to analysis completion.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime, timezone

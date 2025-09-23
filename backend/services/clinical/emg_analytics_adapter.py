@@ -10,8 +10,6 @@ ARCHITECTURAL PRINCIPLE: Single Responsibility
 
 USAGE: Upload route orchestration between EMG processing and clinical scoring
 
-Author: EMG C3D Analyzer Team
-Date: 2025-09-11
 """
 
 import logging

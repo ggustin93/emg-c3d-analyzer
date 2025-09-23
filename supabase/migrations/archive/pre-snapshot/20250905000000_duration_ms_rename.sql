@@ -1,7 +1,6 @@
 -- Migration: Rename patient duration columns from seconds to milliseconds
 -- Date: 2025-09-05
 -- Purpose: Standardize all duration fields to milliseconds for consistency
--- Author: EMG C3D Analyzer Team
 
 BEGIN;
 

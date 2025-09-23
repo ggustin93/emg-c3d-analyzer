@@ -4,8 +4,6 @@
 Models for patient records including pseudonymized data and PII handling.
 Supports GDPR-compliant patient data management with separate PII storage.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime, timezone

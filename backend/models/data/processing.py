@@ -4,8 +4,6 @@
 Models for EMG signal processing configuration including filters,
 RMS calculations, and MVC parameters.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime, timezone

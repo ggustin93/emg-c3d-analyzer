@@ -12,8 +12,6 @@ Repositories:
 
 Note: UserRepository moved to services.user.repositories (proper domain separation)
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """
 
 from services.clinical.repositories.emg_data_repository import EMGDataRepository

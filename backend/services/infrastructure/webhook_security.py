@@ -4,8 +4,6 @@
 Simple, secure webhook signature verification.
 Follows security best practices for webhook authentication.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-14
 """
 
 import hashlib

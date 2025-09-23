@@ -19,8 +19,6 @@ Key Features Tested:
 
 These tests ensure Schema v2.1+ compliance with per-channel BFR support.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 Updated: Per-channel BFR monitoring implementation
 """
 

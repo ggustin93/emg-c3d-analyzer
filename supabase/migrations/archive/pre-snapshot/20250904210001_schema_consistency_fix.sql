@@ -7,7 +7,6 @@
 -- SOLUTION: Move field to contraction_quality_metrics JSONB group
 -- This eliminates duplication and fixes index inconsistency
 -- 
--- Author: EMG C3D Analyzer Team
 -- Date: 2025-09-04
 
 BEGIN;

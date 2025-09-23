@@ -1,7 +1,6 @@
 -- Migration: Optimize EMG Statistics Schema
 -- Purpose: Consolidate temporal statistics into JSONB and clarify contraction field names
 -- Date: 2025-09-02
--- Author: EMG C3D Analyzer Team
 
 -- ============================================================================
 -- STEP 1: Add new columns with clear naming

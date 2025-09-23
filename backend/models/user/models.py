@@ -4,8 +4,6 @@
 Models for user profiles, authentication, and role-based access control.
 Supports therapists, researchers, and administrators.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime

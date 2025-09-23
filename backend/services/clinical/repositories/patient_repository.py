@@ -12,8 +12,6 @@
 - UUID foreign key relationships
 - Optimized queries with proper indexing
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """
 
 import logging

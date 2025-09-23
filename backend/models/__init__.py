@@ -12,8 +12,6 @@ Architecture:
 - data/: Data processing domain (C3D, processing parameters)
 - response/: Standard API response formats
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 # =============================================================================

@@ -13,6 +13,4 @@ Domains:
 - infrastructure: Cross-cutting infrastructure services
 - user: User management and authentication services
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """

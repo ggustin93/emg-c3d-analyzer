@@ -14,8 +14,6 @@
 - Institution-based grouping
 - UUID foreign key relationships with auth system
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """
 
 import logging

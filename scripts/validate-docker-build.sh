@@ -93,7 +93,8 @@ else
 fi
 
 # Get image details
-IMAGE_SIZE=$(docker image inspect "$BUILD_TAG" --format='{{.Size}}' | numfmt --to=iec)
+IMAGE_SIZE_BYTES=$(docker image inspect "$BUILD_TAG" --format='{{.Size}}')
+IMAGE_SIZE=$(echo "$IMAGE_SIZE_BYTES" | awk '{printf "%.1f MB", $1/1024/1024}')
 IMAGE_ARCH=$(docker image inspect "$BUILD_TAG" --format='{{.Architecture}}')
 IMAGE_OS=$(docker image inspect "$BUILD_TAG" --format='{{.Os}}')
 

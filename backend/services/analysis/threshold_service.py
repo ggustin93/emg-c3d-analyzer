@@ -1,13 +1,11 @@
-"""Unified Threshold Service - Professional MVC & Duration Threshold Management.
+"""Unified Threshold Service - MVC & Duration Threshold Management.
 
-Senior Software Engineer Implementation:
+Features:
 - Signal-agnostic threshold calculation
 - MVC zero-value intelligent fallback
 - Clinical minimum validation
 - Single source of truth pattern
 - Comprehensive error handling
-
-Created: 2025-01-18
 """
 
 import logging

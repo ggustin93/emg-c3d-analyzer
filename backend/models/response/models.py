@@ -3,8 +3,6 @@
 
 Standard response formats for API endpoints and utility validation functions.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from typing import Any

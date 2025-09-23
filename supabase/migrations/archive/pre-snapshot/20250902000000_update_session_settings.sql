@@ -1,6 +1,5 @@
 -- Migration: Update session_settings table to remove deprecated fields
 -- Date: 2025-09-02
--- Author: EMG C3D Analyzer Team
 -- Description: Remove deprecated fields (duration_threshold_seconds, target_contractions, 
 --              expected_contractions_per_muscle) and add per-channel duration fields
 --              (target_duration_ch1, target_duration_ch2)

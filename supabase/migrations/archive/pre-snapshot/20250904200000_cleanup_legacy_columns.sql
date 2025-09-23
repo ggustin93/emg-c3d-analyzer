@@ -1,7 +1,6 @@
 -- Migration: Remove Legacy EMG Statistics Columns After JSONB Migration
 -- Purpose: Clean up redundant columns now that data is in JSONB clinical groups
 -- Date: 2025-09-04
--- Author: EMG C3D Analyzer Team - Database Schema Cleanup
 -- Dependencies: 20250904190000_optimize_emg_statistics_clinical_groups.sql
 
 -- ============================================================================

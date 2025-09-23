@@ -11,8 +11,6 @@ generates signal data on-demand when needed for visualization.
 - Signals generated only when needed
 - Memory efficient processing
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-14
 """
 
 import logging

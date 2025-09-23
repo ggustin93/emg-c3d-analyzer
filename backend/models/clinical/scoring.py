@@ -4,8 +4,6 @@
 Models for GHOSTLY+ performance scoring system including configuration and results.
 Implements clinical trial compliance metrics and bilateral analysis.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime, timezone

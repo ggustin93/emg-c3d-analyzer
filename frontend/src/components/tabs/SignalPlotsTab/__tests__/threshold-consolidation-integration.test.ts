@@ -2,13 +2,11 @@
  * Integration test for threshold consolidation (duplicate elimination)
  * Validates the complete solution for the user's screenshot issue
  * 
- * Author: Senior Software Engineer (20+ years experience)
- * Created: 2025-01-18
  */
 
 import { describe, it, expect } from 'vitest';
 
-describe('Threshold Consolidation - Senior Engineering Solution', () => {
+describe('Threshold Consolidation Solution', () => {
   describe('Integration: EMGChartLegend + useUnifiedThresholds', () => {
     it('should eliminate duplicate threshold displays by design', () => {
       // Test the key insight: the old system had duplicates because it iterated

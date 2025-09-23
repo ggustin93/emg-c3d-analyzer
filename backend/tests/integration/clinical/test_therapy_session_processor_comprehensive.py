@@ -3,8 +3,6 @@
 Tests all database table populations, BFR per-channel monitoring, 
 performance scores, Redis caching, and complete workflow coverage.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 import asyncio

@@ -1,6 +1,5 @@
 -- Migration: Update therapy_sessions table to use session_code instead of session_id
 -- Date: 2025-09-02
--- Author: EMG C3D Analyzer Team
 -- Description: Rename session_id to session_code with new format "P###S###"
 --              where P### is patient code and S### is session number
 --

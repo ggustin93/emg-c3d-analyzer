@@ -4,8 +4,6 @@
 All enumeration types used across the application domains.
 Provides type safety and consistent value validation.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from enum import Enum

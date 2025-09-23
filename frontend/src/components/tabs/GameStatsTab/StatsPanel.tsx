@@ -53,7 +53,7 @@ const getScoreLabel = (score: number): { label: string; color: string } => {
   return { label: colors.label || 'Unknown', color: colors.text };
 };
 
-// Expert tooltips for clinical metrics
+// Tooltips for clinical metrics
 const expertTooltips = {
   contractionQuantity: "Quantitative assessment of neuromuscular activation patterns. The total number of contractions indicates overall muscle recruitment frequency, which correlates with motor unit activation thresholds and neural drive efficiency.",
   

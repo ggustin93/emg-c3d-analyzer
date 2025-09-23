@@ -4,8 +4,6 @@
 Models for C3D file technical metadata including sampling rates,
 channel information, and file processing details.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 from datetime import datetime, timezone

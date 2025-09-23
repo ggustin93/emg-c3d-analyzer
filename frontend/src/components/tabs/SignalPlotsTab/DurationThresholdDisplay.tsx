@@ -1,14 +1,12 @@
 /**
- * Duration Threshold Display Component - Professional Threshold Transparency
+ * Duration Threshold Display Component
  * 
- * Senior Software Engineer Implementation:
- * - Visual duration threshold display complementing MVC thresholds
- * - Comprehensive calculation tooltip with clinical context
- * - Integration with unified threshold system
- * - Professional UI/UX design matching MVC display
+ * Visual duration threshold display that:
+ * - Complements MVC thresholds
+ * - Provides calculation tooltip with clinical context
+ * - Integrates with unified threshold system
+ * - Matches MVC display design
  * 
- * Author: Senior Software Engineer (20+ years experience)
- * Created: 2025-01-19
  */
 
 import React from 'react';
@@ -35,7 +33,7 @@ const formatDuration = (ms: number): string => {
 };
 
 /**
- * Professional Duration Threshold Display with clinical transparency
+ * Duration Threshold Display with clinical transparency
  */
 export const DurationThresholdDisplay: React.FC<DurationThresholdDisplayProps> = ({
   unifiedThresholds,

@@ -11,8 +11,6 @@ Usage:
     data = {"result": np.float32(1.23), "array": np.array([1, 2, 3])}
     json_string = json.dumps(data, cls=NumpyEncoder)
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 import json

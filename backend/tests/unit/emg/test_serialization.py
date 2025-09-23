@@ -4,8 +4,6 @@
 Tests that all potential numpy return types can be JSON serialized
 using the NumpyEncoder for EMG analysis results.
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-28
 """
 
 import json

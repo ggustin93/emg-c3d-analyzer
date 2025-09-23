@@ -1,6 +1,5 @@
 -- Rollback Migration: Restore deprecated fields to session_settings table
 -- Date: 2025-09-02
--- Author: EMG C3D Analyzer Team
 -- Description: Rollback script to restore the previous schema if needed
 --
 -- WARNING: This will lose any per-channel granularity in duration settings

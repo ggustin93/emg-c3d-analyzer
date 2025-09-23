@@ -12,8 +12,6 @@
 - Indexed queries by session_id and channel_name
 - Batch processing with proper error handling
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """
 
 import logging

@@ -17,8 +17,6 @@ KISS Principle: Focused test for one specific issue
 DRY Principle: Reusable mock setup and assertion helpers  
 SOLID Principle: Single responsibility - tests normalization only
 
-Author: EMG C3D Analyzer Team
-Date: 2025-09-09
 """
 
 import asyncio

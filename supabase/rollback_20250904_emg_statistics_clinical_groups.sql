@@ -1,7 +1,6 @@
 -- ROLLBACK SCRIPT: EMG Statistics Clinical Groups Migration
 -- Purpose: Emergency rollback for migration 20250904190000_optimize_emg_statistics_clinical_groups.sql
 -- Date: 2025-09-04
--- Author: EMG C3D Analyzer Team - Database Schema Optimization Project
 -- Branch: feature/database-schema-optimization
 
 -- ⚠️  WARNING: This is an emergency rollback script

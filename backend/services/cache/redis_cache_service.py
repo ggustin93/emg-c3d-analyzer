@@ -25,8 +25,6 @@
 - Hit rate monitoring and cache statistics
 - Memory-efficient with configurable size limits
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27 | Migration from DB cache to Redis
 """
 
 import gzip

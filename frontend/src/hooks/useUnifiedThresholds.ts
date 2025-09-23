@@ -1,16 +1,14 @@
 /**
- * Unified Thresholds Hook - Professional React State Management
+ * Unified Thresholds Hook - React State Management
  * 
- * Senior Software Engineer Implementation:
+ * Features:
  * - Signal-agnostic threshold consolidation
- * - Proper memoization with stable references
+ * - Memoization with stable references
  * - Zustand state integration
- * - Base channel deduplication 
- * - Comprehensive error boundary handling
- * - Performance-optimized dependency arrays
+ * - Base channel deduplication
+ * - Error boundary handling
+ * - Optimized dependency arrays
  * 
- * Author: Senior Software Engineer (20+ years experience)
- * Created: 2025-01-18
  */
 
 import { useMemo, useCallback } from 'react';

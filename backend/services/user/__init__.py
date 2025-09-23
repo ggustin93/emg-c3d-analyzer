@@ -8,8 +8,6 @@ Separated from clinical domain to follow Domain-Driven Design principles.
 Repositories:
 - UserRepository: User profiles, authentication, and RBAC
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-27
 """
 
 from services.user.repositories.user_repository import UserRepository

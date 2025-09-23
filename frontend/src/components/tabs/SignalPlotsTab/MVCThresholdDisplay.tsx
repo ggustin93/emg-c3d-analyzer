@@ -1,14 +1,11 @@
 /**
- * MVC Threshold Display Component - Professional Threshold Transparency
+ * MVC Threshold Display Component
  * 
- * Senior Software Engineer Implementation:
- * - Visual MVC threshold display on top of EMG chart
+ * Visual MVC threshold display on top of EMG chart with:
  * - Comprehensive calculation tooltip with source transparency
  * - Integration with unified threshold system
- * - Professional UI/UX design with clinical context
+ * - Clinical context display
  * 
- * Author: Senior Software Engineer (20+ years experience)
- * Created: 2025-01-18
  */
 
 import React from 'react';

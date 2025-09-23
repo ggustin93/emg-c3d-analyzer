@@ -1,7 +1,6 @@
 -- Migration: Cleanup redundant EMG Statistics columns
 -- Purpose: Remove deprecated columns that have been replaced by JSONB structure
 -- Date: 2025-09-04
--- Author: EMG C3D Analyzer Team - Database Schema Optimization Project
 -- Branch: feature/database-schema-optimization
 
 -- ============================================================================

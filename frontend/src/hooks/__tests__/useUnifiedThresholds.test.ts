@@ -1,9 +1,7 @@
 /**
- * Professional test suite for useUnifiedThresholds hook
+ * Test suite for useUnifiedThresholds hook
  * Validates signal-agnostic threshold consolidation and MVC zero-value handling
  * 
- * Author: Senior Software Engineer (20+ years experience)
- * Created: 2025-01-18
  */
 
 import { renderHook } from '@testing-library/react';

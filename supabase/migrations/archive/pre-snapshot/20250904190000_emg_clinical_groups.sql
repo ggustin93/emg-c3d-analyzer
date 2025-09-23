@@ -1,7 +1,6 @@
 -- Migration: Add JSONB columns and indexes for EMG Statistics
 -- Purpose: Add 4 clinical JSONB groups to existing schema
 -- Date: 2025-09-04
--- Author: EMG C3D Analyzer Team - Database Schema Optimization Project
 -- Branch: feature/database-schema-optimization
 
 -- ============================================================================

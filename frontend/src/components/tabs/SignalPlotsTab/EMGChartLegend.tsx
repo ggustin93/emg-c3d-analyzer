@@ -1,15 +1,13 @@
 /**
- * EMG Chart Legend Component - Professional Senior Engineer Implementation
+ * EMG Chart Legend Component
  * 
- * Senior Software Engineer Implementation (20+ years experience):
+ * Features:
  * - Signal-agnostic threshold display (eliminates duplicates)
  * - Unified threshold hook integration
- * - Professional React patterns with proper memoization
+ * - React patterns with proper memoization
  * - Clean UI with no duplicate threshold displays
- * - Optimal performance with stable references
+ * - Optimized performance with stable references
  * 
- * Author: Senior Software Engineer
- * Updated: 2025-01-18
  */
 
 import React, { useState } from 'react';

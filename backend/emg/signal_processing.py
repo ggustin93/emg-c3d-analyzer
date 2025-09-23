@@ -21,8 +21,6 @@ DESIGN PRINCIPLES:
 3. Clinical Consistency: Same processing for all channels and sessions
 4. Scientific Rigor: No black-box processing from external systems
 
-Author: EMG C3D Analyzer Team
-Date: 2025-08-08
 """
 
 import logging
