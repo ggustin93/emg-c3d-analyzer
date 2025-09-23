@@ -1,0 +1,168 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EMG C3D Analyzer - Development Environment
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Purpose: Local development environment with hot-reload and debugging support
+# Services: Backend API, Frontend UI, Redis Cache
+# Usage: docker compose -f docker-compose.yml up
+#
+# Required Environment Variables (from .env):
+#   - SUPABASE_URL: Your Supabase project URL
+#   - SUPABASE_ANON_KEY: Supabase anonymous key
+#   - SUPABASE_SERVICE_KEY: Supabase service key
+#   - VITE_API_URL: Frontend API URL (default: http://localhost:8080)
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ../../
+      dockerfile: docker/backend/Dockerfile
+      target: production
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+    container_name: emg-backend-dev
+    environment:
+      # Database configuration (from .env file)
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      
+      # Redis cache configuration (from .env with fallback)
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_CACHE_TTL_SECONDS=${REDIS_CACHE_TTL_SECONDS:-3600}
+      - REDIS_MAX_CACHE_SIZE_MB=${REDIS_MAX_CACHE_SIZE_MB:-100}
+      - REDIS_KEY_PREFIX=emg_analysis
+      
+      # Application settings (from .env file)
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SECRET_KEY=${SECRET_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      
+      # File storage
+      - DATA_BASE_DIR=/app/data
+      - UPLOAD_DIR=/app/data/uploads
+      - RESULTS_DIR=/app/data/results
+      - CACHE_DIR=/app/data/cache
+      
+      # CORS settings for development
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:8080
+    volumes:
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - emg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Frontend Web Application
+  frontend:
+    build:
+      context: ../../
+      dockerfile: docker/frontend/Dockerfile
+      target: production
+      args:
+        # Pass Vite environment variables from .env file
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        # Legacy React App variables for compatibility
+        - REACT_APP_API_URL=${VITE_API_URL:-http://localhost:8080}
+        - REACT_APP_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - REACT_APP_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        # Build configuration
+        - BUILDKIT_INLINE_CACHE=1
+        - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+        - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
+    container_name: emg-frontend-dev
+    environment:
+      # Runtime environment variables from .env
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - emg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Redis Cache Service
+  redis:
+    image: redis:7.2-alpine
+    container_name: emg-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    # Optional: Add redis.conf if you have custom configuration
+    # - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    # command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - emg-network
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+  # Redis Insight (optional - Redis GUI)
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: emg-redis-insight-dev
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - emg-network
+    profiles:
+      - redis-gui
+
+volumes:
+  redis_data:
+    driver: local
+  backend_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  emg-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Usage:
+# Development: docker-compose up -d
+# With Redis GUI: docker-compose --profile redis-gui up -d

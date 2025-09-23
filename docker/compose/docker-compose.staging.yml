@@ -1,0 +1,286 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# EMG C3D Analyzer - Staging Environment (Digital Ocean + Coolify Cloud)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Purpose: Staging deployment for pre-production testing and validation
+# Deployment: Digital Ocean via Coolify Cloud
+# Services: Backend API, Frontend UI, Redis (optional), Metabase (optional)
+# Usage: Deploy via Coolify Cloud dashboard with automatic builds
+#
+# Features:
+#   - Automatic SSL certificates via Let's Encrypt
+#   - Built-in monitoring and logging
+#   - Zero-downtime deployments
+#   - Optional Redis caching and Metabase analytics
+#
+# ══════════════════════════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Core Services (Always Active)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Backend API Service
+  backend:
+    build:
+      context: ../../
+      dockerfile: docker/backend/Dockerfile
+      target: production
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+    image: emg-backend:staging-${VERSION:-latest}
+    container_name: emg-backend-staging
+    environment:
+      # Environment
+      - ENVIRONMENT=staging
+      - DEBUG=false
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Supabase configuration (Cloud or Self-Hosted)
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      
+      # Optional Redis configuration
+      - ENABLE_REDIS=${ENABLE_REDIS:-false}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_CACHE_TTL_SECONDS=${REDIS_CACHE_TTL_SECONDS:-3600}
+      - REDIS_MAX_CACHE_SIZE_MB=${REDIS_MAX_CACHE_SIZE_MB:-100}
+      - REDIS_KEY_PREFIX=emg_staging
+      
+      # File storage
+      - DATA_BASE_DIR=/app/data
+      - UPLOAD_DIR=/app/data/uploads
+      - RESULTS_DIR=/app/data/results
+      - CACHE_DIR=/app/data/cache
+      
+      # Security
+      - SECRET_KEY=${SECRET_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000}
+    volumes:
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - emg-network
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=backend"
+      - "coolify.port=8080"
+    # Conditional dependency on Redis (if enabled)
+    depends_on:
+      - ${REDIS_DEPENDS_ON:-backend}  # Self-reference if Redis disabled
+
+  # Frontend Web Application  
+  frontend:
+    build:
+      context: ../../
+      dockerfile: docker/frontend/Dockerfile
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_ENVIRONMENT=staging
+        - BUILDKIT_INLINE_CACHE=1
+        - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+        - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
+    image: emg-frontend:staging-${VERSION:-latest}
+    container_name: emg-frontend-staging
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_ENVIRONMENT=staging
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - emg-network
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=frontend"
+      - "coolify.port=8080"
+      - "coolify.public=true"  # Public entry point
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Optional Services (Uncomment to Enable)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Redis Cache Service (Uncomment to enable caching)
+  # redis:
+  #   image: redis:7.2-alpine
+  #   container_name: emg-redis-staging
+  #   restart: unless-stopped
+  #   command: >
+  #     redis-server
+  #     --appendonly yes
+  #     --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+  #     --maxmemory-policy allkeys-lru
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - emg-network
+  #   labels:
+  #     - "coolify.managed=true"
+  #     - "coolify.service=redis"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Metabase Analytics Platform (Uncomment to enable analytics)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # metabase:
+  #   image: metabase/metabase:v0.48.0
+  #   container_name: emg-metabase-staging
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     # Metabase Application Database
+  #     MB_DB_TYPE: postgres
+  #     MB_DB_DBNAME: metabase_staging
+  #     MB_DB_PORT: 5432
+  #     MB_DB_USER: ${METABASE_DB_USER:-metabase}
+  #     MB_DB_PASS: ${METABASE_DB_PASS}
+  #     MB_DB_HOST: metabase-postgres
+  #     # Performance
+  #     JAVA_OPTS: "-Xmx1g -XX:+UseG1GC"
+  #     # Configuration
+  #     MB_SITE_NAME: "EMG Staging Analytics"
+  #     MB_ANON_TRACKING_ENABLED: false
+  #     MB_ENABLE_PUBLIC_SHARING: true
+  #   volumes:
+  #     - metabase_data:/metabase-data
+  #   depends_on:
+  #     metabase-postgres:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 60s
+  #   networks:
+  #     - emg-network
+  #   labels:
+  #     - "coolify.managed=true"
+  #     - "coolify.service=metabase"
+
+  # metabase-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: emg-metabase-postgres-staging
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: metabase_staging
+  #     POSTGRES_USER: ${METABASE_DB_USER:-metabase}
+  #     POSTGRES_PASSWORD: ${METABASE_DB_PASS}
+  #   volumes:
+  #     - metabase_postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${METABASE_DB_USER:-metabase}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - emg-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Self-Hosted Supabase Stack (Alternative to Cloud - Uncomment if needed)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # Note: Only enable if SUPABASE_MODE=selfhosted in .env
+  # See docker-compose.selfhosted.yml for complete configuration
+  
+  # postgres-supabase:
+  #   image: supabase/postgres:15.1.0.117
+  #   # ... (see selfhosted.yml for full config)
+  
+  # postgrest:
+  #   image: postgrest/postgrest:v11.2.0
+  #   # ... (see selfhosted.yml for full config)
+  
+  # gotrue:
+  #   image: supabase/gotrue:v2.132.3
+  #   # ... (see selfhosted.yml for full config)
+  
+  # realtime:
+  #   image: supabase/realtime:v2.25.50
+  #   # ... (see selfhosted.yml for full config)
+
+volumes:
+  backend_data:
+    driver: local
+  backend_logs:
+    driver: local
+  # redis_data:  # Uncomment if using Redis
+  #   driver: local
+  # metabase_data:  # Uncomment if using Metabase
+  #   driver: local
+  # metabase_postgres_data:  # Uncomment if using Metabase
+  #   driver: local
+
+networks:
+  emg-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Environment Variables (.env.staging)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# ENVIRONMENT=staging
+# VERSION=latest
+#
+# # Service Toggles
+# ENABLE_REDIS=false
+# ENABLE_METABASE=false
+# SUPABASE_MODE=cloud  # cloud or selfhosted
+#
+# # Supabase Cloud (default)
+# SUPABASE_URL=https://xxx.supabase.co
+# SUPABASE_ANON_KEY=xxx
+# SUPABASE_SERVICE_KEY=xxx
+#
+# # Frontend
+# VITE_API_URL=https://staging-api.yourdomain.com
+# VITE_SUPABASE_URL=${SUPABASE_URL}
+# VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+#
+# # Security
+# SECRET_KEY=your-staging-secret-key
+# WEBHOOK_SECRET=your-webhook-secret
+#
+# # Optional Services
+# REDIS_MAX_MEMORY=256mb
+# METABASE_DB_USER=metabase
+# METABASE_DB_PASS=secure-password-here
+#
+# ═══════════════════════════════════════════════════════════════════════════

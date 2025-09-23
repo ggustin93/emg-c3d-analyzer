@@ -972,3 +972,45 @@ jobs:
           echo "  - Frontend App (React) - 78 tests passed"
           echo "  - Database Migrations (Supabase)"
           echo "  - Security scans completed"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🚀 STAGING DEPLOYMENT (AUTOMATIC)
+  # ═══════════════════════════════════════════════════════════════════════════
+  deploy-staging:
+    name: 🌤️ Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [pipeline-summary]
+    if: |
+      needs.pipeline-summary.result == 'success' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: 📋 Deployment Info
+        run: |
+          echo "🌤️ Deploying to Staging Environment (Digital Ocean via Coolify Cloud)"
+          echo "📦 Branch: ${{ github.ref_name }}"
+          echo "🔄 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo ""
+          echo "ℹ️ This deployment is automatic after CI success."
+          echo "🎯 Production deployment requires manual trigger after staging validation."
+
+      - name: 🚀 Deploy to Staging via Coolify
+        run: |
+          echo "📡 Triggering staging deployment..."
+          curl -X POST ${{ secrets.COOLIFY_STAGING_WEBHOOK }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "branch": "${{ github.ref_name }}",
+              "commit": "${{ github.sha }}",
+              "source": "github-ci",
+              "actor": "${{ github.actor }}"
+            }'
+          echo "✅ Staging deployment triggered successfully!"
+          echo ""
+          echo "📌 Next Steps:"
+          echo "  1. Wait for staging deployment to complete (~3-5 minutes)"
+          echo "  2. Test the staging environment thoroughly"
+          echo "  3. If satisfied, manually trigger production deployment:"
+          echo "     - Go to Actions → Deploy to Production → Run workflow"
+          echo "     - Or use GitHub CLI: gh workflow run deploy-production.yml"
