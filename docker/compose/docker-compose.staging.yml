@@ -28,7 +28,7 @@ services:
   backend:
     build:
       context: ../../
-      dockerfile: ./docker/backend/Dockerfile
+      dockerfile: docker/backend/Dockerfile
       target: production
       args:
         - BUILDKIT_INLINE_CACHE=1
@@ -88,7 +88,7 @@ services:
   frontend:
     build:
       context: ../../
-      dockerfile: ./docker/frontend/Dockerfile
+      dockerfile: docker/frontend/Dockerfile
       target: production
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
