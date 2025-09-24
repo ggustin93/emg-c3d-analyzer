@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { SideNav } from '../navigation/SideNav'
 import { 
   ArchiveIcon,
@@ -115,11 +115,47 @@ const adminNavItems = [
 export function SidebarLayout({ children, activeTab }: SidebarLayoutProps) {
   const { userRole } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   
-  // Set role-based default activeTab (handle both uppercase and lowercase)
-  const normalizedRole = userRole?.toUpperCase()
-  const defaultActiveTab = normalizedRole === 'THERAPIST' || normalizedRole === 'ADMIN' ? 'overview' : 'sessions'
-  const currentActiveTab = activeTab || defaultActiveTab
+  // Function to determine active tab based on current route
+  const determineActiveTab = (): string => {
+    const pathname = location.pathname
+    const search = location.search
+    
+    // Check for specific routes first
+    if (pathname.startsWith('/patients/') || pathname === '/patients') {
+      return 'patients'
+    }
+    
+    if (pathname.startsWith('/analysis') || pathname === '/analysis' || search.includes('file=')) {
+      return 'sessions'
+    }
+    
+    if (pathname === '/faq') {
+      return 'faq'
+    }
+    
+    if (pathname === '/about') {
+      return 'about'
+    }
+    
+    // If we have an explicit activeTab prop, use it
+    if (activeTab) {
+      return activeTab
+    }
+    
+    // Check location state for activeTab
+    const locationState = location.state as { activeTab?: string } | null
+    if (locationState?.activeTab) {
+      return locationState.activeTab
+    }
+    
+    // Default based on role
+    const normalizedRole = userRole?.toUpperCase()
+    return normalizedRole === 'THERAPIST' || normalizedRole === 'ADMIN' ? 'overview' : 'sessions'
+  }
+  
+  const currentActiveTab = determineActiveTab()
   
   // Handle navigation
   const handleTabChange = (tab: string) => {
@@ -134,6 +170,7 @@ export function SidebarLayout({ children, activeTab }: SidebarLayoutProps) {
   }
   
   // Select navigation items based on role (handle both uppercase and lowercase)
+  const normalizedRole = userRole?.toUpperCase()
   let navItems = researcherNavItems
   if (normalizedRole === 'THERAPIST') {
     navItems = therapistNavItems
