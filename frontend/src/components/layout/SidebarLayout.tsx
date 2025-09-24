@@ -7,6 +7,7 @@ import {
   BarChartIcon,
   InfoCircledIcon,
   PersonIcon,
+  GroupIcon,
   DashboardIcon,
   QuestionMarkCircledIcon,
   GearIcon
@@ -78,36 +79,66 @@ const researcherNavItems = [
   }
 ]
 
+const adminNavItems = [
+  { 
+    id: 'overview', 
+    label: 'Overview', 
+    icon: DashboardIcon,
+    description: 'System dashboard'
+  },
+  { 
+    id: 'users', 
+    label: 'Users', 
+    icon: GroupIcon,
+    description: 'User management'
+  },
+  { 
+    id: 'patients', 
+    label: 'Patients', 
+    icon: PersonIcon,
+    description: 'Patient management'
+  },
+  { 
+    id: 'configuration', 
+    label: 'Configuration', 
+    icon: GearIcon,
+    description: 'Trial settings'
+  },
+  { 
+    id: 'sessions', 
+    label: 'Sessions', 
+    icon: ArchiveIcon,
+    description: 'C3D files & analysis'
+  }
+]
+
 export function SidebarLayout({ children, activeTab }: SidebarLayoutProps) {
   const { userRole } = useAuth()
   const navigate = useNavigate()
   
-  // Set role-based default activeTab
-  const defaultActiveTab = userRole === 'THERAPIST' ? 'overview' : 'sessions'
+  // Set role-based default activeTab (handle both uppercase and lowercase)
+  const normalizedRole = userRole?.toUpperCase()
+  const defaultActiveTab = normalizedRole === 'THERAPIST' || normalizedRole === 'ADMIN' ? 'overview' : 'sessions'
   const currentActiveTab = activeTab || defaultActiveTab
   
   // Handle navigation
   const handleTabChange = (tab: string) => {
-    if (tab === 'sessions') {
-      // Navigate to dashboard Sessions tab
-      navigate('/dashboard', { state: { activeTab: 'sessions' } })
-    } else if (tab === 'faq') {
-      // Navigate to FAQ page
+    if (tab === 'faq') {
+      // Navigate to FAQ page (only for therapists and researchers)
       navigate('/faq')
-    } else if (tab === 'overview' || tab === 'patients' || tab === 'about' || tab === 'analytics') {
+    } else {
       // Navigate to dashboard with specific tab
+      // This includes: overview, patients, about, analytics, users, configuration, sessions
       navigate('/dashboard', { state: { activeTab: tab } })
     }
   }
   
-  // Select navigation items based on role
-  const navItems = userRole === 'THERAPIST' 
-    ? therapistNavItems 
-    : researcherNavItems
-  
-  // For admin role, just show the content without sidebar
-  if (userRole === 'ADMIN') {
-    return <>{children}</>
+  // Select navigation items based on role (handle both uppercase and lowercase)
+  let navItems = researcherNavItems
+  if (normalizedRole === 'THERAPIST') {
+    navItems = therapistNavItems
+  } else if (normalizedRole === 'ADMIN') {
+    navItems = adminNavItems
   }
   
   return (

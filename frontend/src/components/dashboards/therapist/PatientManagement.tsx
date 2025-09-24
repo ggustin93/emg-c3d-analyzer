@@ -186,7 +186,7 @@ async function fetchPatients(therapistId: string | null, isAdmin: boolean): Prom
       age: age,
       // Treatment configuration
       treatment_start_date: patient.treatment_start_date || patient.created_at,
-      total_sessions_planned: patient.total_sessions_planned || 30,
+      total_sessions_planned: patient.total_sessions_planned || 30, // TODO: Move to configuration - default session count
       // Therapist assignment (for admin view)
       therapist_id: patient.therapist_id || null,
       // UI helpers
@@ -222,7 +222,7 @@ function formatLastSession(dateString: string | null): string {
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Yesterday'  
   if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago` // TODO: Move to configuration - time thresholds
   
   // Use European date format (DD/MM/YY)
   return date.toLocaleDateString('en-GB', { 
@@ -318,9 +318,11 @@ interface PatientRowProps {
   visibleColumns: ColumnVisibility
   adherence?: AdherenceData
   therapistName?: string | null
+  userRole: string
+  onReassign: (patient: Patient) => void
 }
 
-function PatientRow({ patient, visibleColumns, adherence, therapistName }: PatientRowProps) {
+function PatientRow({ patient, visibleColumns, adherence, therapistName, userRole, onReassign }: PatientRowProps) {
   const navigate = useNavigate()
   const avatarColor = getAvatarColor(getPatientIdentifier(patient))
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
@@ -405,8 +407,8 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
             </div>
             <Progress 
               value={(patient.session_count / patient.total_sessions_planned) * 100} 
-              className="h-2 w-full max-w-[120px]"
-              indicatorClassName="bg-blue-500"
+              className="h-2 w-full max-w-[120px]" // TODO: Move to configuration - progress bar styling
+              indicatorClassName="bg-blue-500" // TODO: Move to configuration - progress bar colors
             />
           </div>
         </TableCell>
@@ -437,7 +439,7 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
                       'destructive'
                     }
                     className={
-                      adherence.adherence_score >= 85 ? 'bg-green-100 text-green-800 border-green-200 cursor-help' : 
+                      adherence.adherence_score >= 85 ? 'bg-green-100 text-green-800 border-green-200 cursor-help' : // TODO: Move to configuration - adherence thresholds
                       adherence.adherence_score >= 70 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 cursor-help' : 
                       adherence.adherence_score >= 50 ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-help' :
                       'bg-red-100 text-red-800 border-red-200 cursor-help'
@@ -505,7 +507,7 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
                         : `Day ${adherence.protocol_day} of ${adherence.trial_duration || 14}-day trial`}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Expected: {Math.round((adherence.total_sessions_planned || 30) / 14 * Math.min(adherence.protocol_day, adherence.trial_duration || 14))} sessions
+                      Expected: {Math.round((adherence.total_sessions_planned || 30) / 14 * Math.min(adherence.protocol_day, adherence.trial_duration || 14))} sessions // TODO: Move to configuration - trial duration and calculation logic
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Completed: {adherence.sessions_completed} sessions
@@ -520,13 +522,15 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
         </TableCell>
       )}
 
-      {/* Performance Score - Placeholder for Future Implementation */}
+      {/* Performance Trend - Temporary Demo Values */}
+      {/* TODO: Implement real performance trend calculation based on session metrics */}
       {visibleColumns.progress_trend && (
         <TableCell className="hidden lg:table-cell text-center">
           <div className="flex flex-col items-center gap-0.5">
             {(() => {
-              // Force specific examples for demonstration
-              // P001 = Improving, P002 = Declining, others use hash
+              // TODO: Replace with real performance trend calculation based on session data
+              // These are temporary demo values until performance analytics are implemented
+              // Future implementation will analyze patient progress over time using actual session metrics
               if (patient.patient_code === 'P001') {
                 return (
                   <>
@@ -549,13 +553,14 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
                 )
               }
               
-              // Generate fake performance trend based on patient characteristics
+              // Generate temporary demo trend values based on patient code hash
+              // TODO: Replace with real performance trend calculation from session data
               const trendHash = patient.patient_code.charCodeAt(0) + patient.patient_code.charCodeAt(1)
               const trendValue = trendHash % 3
               
-              // Generate fake percentage change based on patient code
+              // Generate temporary percentage change for demo purposes only
               const percentHash = (patient.patient_code.charCodeAt(2) || 0) + trendHash
-              const percentValue = (percentHash % 25) + 5 // Range: 5-29%
+              const percentValue = (percentHash % 25) + 5 // Range: 5-29% - TODO: Replace with real calculation
               
               if (trendValue === 0) {
                 return (
@@ -604,17 +609,35 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName }: Patie
 
       {/* Actions */}
       <TableCell className="text-center">
-        <Button 
-          variant="default" 
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/patients/${patient.patient_code}`)
-          }}
-        >
-          <PersonIcon className="h-4 w-4 mr-1" />
-          View
-        </Button>
+        <div className="flex items-center gap-1 justify-center">
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/patients/${patient.patient_code}`)
+              }}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
+          
+          {/* Reassign button - only for admins */}
+          {userRole === 'ADMIN' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                onReassign(patient)
+              }}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Icons.PersonIcon className="h-4 w-4 mr-1" />
+              Reassign Therapist
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   )
@@ -658,6 +681,12 @@ export function PatientManagement({ className }: PatientManagementProps) {
     therapistId: '',  // Empty by default - mandatory selection
     totalSessions: '30'
   })
+  
+  // Patient reassignment states (admin only)
+  const [showReassignDialog, setShowReassignDialog] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [newTherapistId, setNewTherapistId] = useState('')
+  
   const { toast } = useToast()
   
   // Use the custom hook for patient code generation
@@ -669,6 +698,53 @@ export function PatientManagement({ className }: PatientManagementProps) {
     formatCode,
     cleanup: cleanupCodeGeneration
   } = usePatientCodeGeneration()
+
+  // Handle patient reassignment
+  const handleReassignPatient = async () => {
+    if (!selectedPatient || !newTherapistId) return
+    
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ therapist_id: newTherapistId })
+        .eq('patient_code', selectedPatient.patient_code)
+
+      if (error) throw error
+
+      // Update local state
+      setPatients(prev => prev.map(p => 
+        p.patient_code === selectedPatient.patient_code 
+          ? { ...p, therapist_id: newTherapistId }
+          : p
+      ))
+
+      // Update therapist map
+      const newTherapist = therapistsList.find(t => t.id === newTherapistId)
+      if (newTherapist) {
+        setTherapistMap(prev => new Map(prev.set(selectedPatient.patient_code, {
+          first_name: newTherapist.first_name,
+          last_name: newTherapist.last_name
+        })))
+      }
+
+      toast({
+        title: 'Patient Reassigned Successfully',
+        description: `${selectedPatient.display_name} has been reassigned to ${newTherapist?.first_name?.charAt(0)}. ${newTherapist?.last_name}`,
+        variant: 'success'
+      })
+
+      setShowReassignDialog(false)
+      setSelectedPatient(null)
+      setNewTherapistId('')
+    } catch (error) {
+      console.error('Error reassigning patient:', error)
+      toast({
+        title: 'Reassignment Error',
+        description: 'Failed to reassign patient',
+        variant: 'destructive'
+      })
+    }
+  }
   
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
@@ -684,7 +760,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
       last_session: false,  // Hidden - secondary info
       adherence: true,
       protocol_day: true,
-      progress_trend: true,  // Now visible by default
+      progress_trend: false,  // Hidden by default for all users
       status: false  // Hidden - less critical for daily workflow
     }
   })
@@ -764,11 +840,11 @@ export function PatientManagement({ className }: PatientManagementProps) {
           bValue = bProtocol?.protocol_day ?? -1
           break
         case 'progress_trend':
-          // Handle special demo cases
-          if (a.patient_code === 'P001') aValue = 18 // +18% Improving
-          else if (a.patient_code === 'P002') aValue = -12 // -12% Declining
+          // Handle special demo cases - TODO: Replace with real performance trend calculation
+          if (a.patient_code === 'P001') aValue = 18 // +18% Improving - Temporary demo value
+          else if (a.patient_code === 'P002') aValue = -12 // -12% Declining - Temporary demo value
           else {
-            // Generate fake trends based on patient code (same logic as display)
+            // Generate temporary demo trends based on patient code hash (same logic as display)
             const aTrendHash = a.patient_code.charCodeAt(0) + a.patient_code.charCodeAt(1)
             const aTrendType = aTrendHash % 3
             const aPercentHash = (a.patient_code.charCodeAt(2) || 0) + aTrendHash
@@ -779,8 +855,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
             else aValue = Math.round(aPercent/5) * 0.1 // Steady: small value
           }
           
-          if (b.patient_code === 'P001') bValue = 18 // +18% Improving
-          else if (b.patient_code === 'P002') bValue = -12 // -12% Declining
+          if (b.patient_code === 'P001') bValue = 18 // +18% Improving - Temporary demo value
+          else if (b.patient_code === 'P002') bValue = -12 // -12% Declining - Temporary demo value
           else {
             const bTrendHash = b.patient_code.charCodeAt(0) + b.patient_code.charCodeAt(1)
             const bTrendType = bTrendHash % 3
@@ -818,6 +894,61 @@ export function PatientManagement({ className }: PatientManagementProps) {
       setSortDirection('desc')
     }
   }, [sortField, sortDirection])
+
+  // Load patients data function (extracted for reuse) - defined early to avoid initialization errors
+  const loadPatientsData = useCallback(async () => {
+    if (!user?.id) return
+    
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Check if user is admin
+      const isAdmin = userRole === 'ADMIN'
+      
+      // Fetch patients (all for admin, filtered for therapists)
+      const data = await fetchPatients(user.id, isAdmin)
+      setPatients(data)
+      
+      // If admin, fetch therapist information for display
+      if (isAdmin) {
+        // Fetch all therapists for dropdown (patient creation)
+        const { data: allTherapists } = await supabase
+          .from('user_profiles')
+          .select('id, first_name, last_name')
+          .eq('role', 'therapist')
+          .eq('active', true)
+        
+        if (allTherapists) {
+          setTherapistsList(allTherapists)
+        }
+        
+        // Fetch therapist map for patient display (only assigned therapists)
+        if (data.length > 0) {
+          const uniqueTherapistIds = [...new Set(data.map(p => p.therapist_id).filter(Boolean))]
+          
+          if (uniqueTherapistIds.length > 0) {
+            const { data: therapistData } = await supabase
+              .from('user_profiles')
+              .select('id, first_name, last_name')
+              .in('id', uniqueTherapistIds)
+              .eq('role', 'therapist')
+            
+            if (therapistData) {
+              const therapistMapData = new Map(
+                therapistData.map(t => [t.id, { first_name: t.first_name, last_name: t.last_name }])
+              )
+              setTherapistMap(therapistMapData)
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user?.id, userRole])
 
   // Generate next available patient code (wrapper for hook function)
   const generatePatientCode = useCallback(async () => {
@@ -897,17 +1028,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
         description: `Patient ${createForm.firstName} ${createForm.lastName} (${createForm.patient_code}) created successfully`
       })
 
-      // Reset form and close dialog
-      setCreateForm({
-        patient_code: '',
-        firstName: '',
-        lastName: '',
-        age: '',
-        gender: 'not_specified',
-        therapistId: '',
-        totalSessions: '30'
-      })
-      setCodeValidation(null)
+      // Close dialog (handleDialogChange will reset form)
       setShowCreateDialog(false)
 
       // Reload patients to show the new patient
@@ -929,7 +1050,16 @@ export function PatientManagement({ className }: PatientManagementProps) {
     if (!open) {
       // Cleanup code generation on dialog close
       cleanupCodeGeneration()
-      setCodeValidation(null)
+      // Reset form when closing
+      setCreateForm({
+        patient_code: '',
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: 'not_specified',
+        therapistId: '',
+        totalSessions: '30'
+      })
     }
   }, [cleanupCodeGeneration])
 
@@ -938,66 +1068,12 @@ export function PatientManagement({ className }: PatientManagementProps) {
     if (showCreateDialog && !createForm.patient_code) {
       generatePatientCode()
     }
-  }, [showCreateDialog])
+  }, [showCreateDialog, createForm.patient_code, generatePatientCode])
 
-  // Load patients data function (extracted for reuse)
-  const loadPatientsData = useCallback(async () => {
-    if (!user?.id) return
-    
-    const loadPatients = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Check if user is admin
-        const isAdmin = userRole === 'ADMIN'
-        
-        // Fetch patients (all for admin, filtered for therapists)
-        const data = await fetchPatients(user.id, isAdmin)
-        setPatients(data)
-        
-        // If admin, fetch therapist information for display
-        if (isAdmin) {
-          // Fetch all therapists for dropdown (patient creation)
-          const { data: allTherapists } = await supabase
-            .from('user_profiles')
-            .select('id, first_name, last_name')
-            .eq('role', 'therapist')
-            .eq('active', true)
-          
-          if (allTherapists) {
-            setTherapistsList(allTherapists)
-          }
-          
-          // Fetch therapist map for patient display (only assigned therapists)
-          if (data.length > 0) {
-            const uniqueTherapistIds = [...new Set(data.map(p => p.therapist_id).filter(Boolean))]
-            
-            if (uniqueTherapistIds.length > 0) {
-              const { data: therapistData } = await supabase
-                .from('user_profiles')
-                .select('id, first_name, last_name')
-                .in('id', uniqueTherapistIds)
-                .eq('role', 'therapist')
-              
-              if (therapistData) {
-                const therapistMapData = new Map(
-                  therapistData.map(t => [t.id, { first_name: t.first_name, last_name: t.last_name }])
-                )
-                setTherapistMap(therapistMapData)
-              }
-            }
-          }
-        }
-      } catch (err) {
-        setError(err as Error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadPatients()
-  }, [user?.id, userRole])
+  // Simple useEffect for data fetching (KISS approach)
+  useEffect(() => {
+    loadPatientsData()
+  }, [loadPatientsData])
 
   // Handle loading state
   if (isLoading) {
@@ -1532,7 +1608,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   const patientAdherence = adherenceData.find(a => a.patient_id === patient.patient_code)
                   const therapist = patient.therapist_id ? therapistMap.get(patient.therapist_id) : null
                   const therapistName = therapist 
-                    ? `${therapist.first_name || ''} ${therapist.last_name || ''}`.trim() || 'Unknown'
+                    ? `${therapist.first_name?.charAt(0) || ''}. ${therapist.last_name || ''}`.trim() || 'Unknown'
                     : null
                   return (
                     <PatientRow 
@@ -1541,6 +1617,12 @@ export function PatientManagement({ className }: PatientManagementProps) {
                       visibleColumns={visibleColumns}
                       adherence={patientAdherence}
                       therapistName={therapistName}
+                      userRole={userRole || ''}
+                      onReassign={(patient) => {
+                        setSelectedPatient(patient)
+                        setNewTherapistId(patient.therapist_id || '')
+                        setShowReassignDialog(true)
+                      }}
                     />
                   )
                 })}
@@ -1551,7 +1633,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
       </Card>
 
       {/* Patient Creation Dialog - Admin Only */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={handleDialogChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create New Patient</DialogTitle>
@@ -1568,22 +1650,9 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     id="patientCode"
                     value={createForm.patient_code}
                     onChange={(e) => {
-                      let code = e.target.value.toUpperCase()
-                      
-                      // Enforce P### format as user types
-                      if (code && !code.startsWith('P')) {
-                        code = 'P' + code.replace(/[^0-9]/g, '')
-                      } else if (code.length > 1) {
-                        // Keep P and only digits, max 3 digits
-                        code = 'P' + code.slice(1).replace(/[^0-9]/g, '').slice(0, 3)
-                      }
-                      
+                      const code = formatCode(e.target.value)
                       setCreateForm({ ...createForm, patient_code: code })
-                      if (code) {
-                        validatePatientCode(code)
-                      } else {
-                        setCodeValidation(null)
-                      }
+                      validateCode(code)
                     }}
                     placeholder="P001"
                     className={`flex-1 ${
@@ -1677,7 +1746,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                 <SelectContent>
                   {therapistsList.map((therapist) => (
                     <SelectItem key={therapist.id} value={therapist.id}>
-                      {therapist.first_name} {therapist.last_name}
+                      {therapist.first_name?.charAt(0)}. {therapist.last_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1700,6 +1769,66 @@ export function PatientManagement({ className }: PatientManagementProps) {
               Cancel
             </Button>
             <Button onClick={handleCreatePatient}>Create Patient</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Patient Reassignment Dialog */}
+      <Dialog open={showReassignDialog} onOpenChange={setShowReassignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reassign Patient</DialogTitle>
+            <DialogDescription>
+              Select a new therapist for {selectedPatient?.display_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="current-therapist" className="text-right">Current Therapist</Label>
+              <div className="col-span-3">
+                <Input
+                  id="current-therapist"
+                  value={selectedPatient ? therapistMap.get(selectedPatient.therapist_id || '') ? 
+                    `${therapistMap.get(selectedPatient.therapist_id || '')?.first_name?.charAt(0)}. ${therapistMap.get(selectedPatient.therapist_id || '')?.last_name}`.trim() 
+                    : 'Non assigné' : ''}
+                  disabled
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-therapist" className="text-right">
+                New Therapist <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Select value={newTherapistId} onValueChange={setNewTherapistId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a therapist" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {therapistsList.map((therapist) => (
+                      <SelectItem key={therapist.id} value={therapist.id}>
+                        {therapist.first_name?.charAt(0)}. {therapist.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReassignDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleReassignPatient}
+              disabled={!newTherapistId || newTherapistId === selectedPatient?.therapist_id}
+            >
+              Reassign
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

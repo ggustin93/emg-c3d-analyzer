@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -13,11 +13,14 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { Badge } from '../../ui/badge'
+import { Button } from '../../ui/button'
 import { 
   BarChartIcon,
   InfoCircledIcon,
   ActivityLogIcon,
-  HeartIcon
+  HeartIcon,
+  GridIcon,
+  ViewHorizontalIcon
 } from '@radix-ui/react-icons'
 
 interface SessionData {
@@ -215,6 +218,9 @@ export default function PatientProgressCharts({
   totalSessions, 
   patientCode 
 }: PatientProgressChartsProps) {
+  // View toggle state
+  const [isGridView, setIsGridView] = useState(true)
+  
   // Generate demo data based on completed session count with realistic clinical patterns
   const sessionData = useMemo(() => {
     const completedCount = Math.max(1, completedSessions || 8) // Default to 8 if no sessions
@@ -229,41 +235,47 @@ export default function PatientProgressCharts({
   const chartMargins = { top: 30, right: 40, left: 30, bottom: 90 }
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Header with demo indicator */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
-            <BarChartIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Progress Analytics</h2>
-            <p className="text-sm text-gray-500">Interactive charts with zoom functionality</p>
-          </div>
-        </div>
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 px-3 py-1">
-          <InfoCircledIcon className="mr-2 h-3 w-3" />
-          Demo Data
-        </Badge>
-      </div>
+    <div className="px-6 pt-4 pb-6">
+      <div className={isGridView ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6"}>
 
       {/* Performance Score Chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-              <ActivityLogIcon className="h-5 w-5 text-green-600" />
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                <ActivityLogIcon className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Performance Score Over Time</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Performance trends with {sessionData.length} of {expectedTotal} sessions completed ({completionRate}%)
+                </p>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg">Performance Score Over Time</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                Performance trends with {sessionData.length} of {expectedTotal} sessions completed ({completionRate}%)
-              </p>
-            </div>
+            {/* View Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsGridView(!isGridView)}
+              className="flex items-center gap-2"
+            >
+              {isGridView ? (
+                <>
+                  <ViewHorizontalIcon className="h-4 w-4" />
+                  Full Width
+                </>
+              ) : (
+                <>
+                  <GridIcon className="h-4 w-4" />
+                  Grid View
+                </>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="px-8 pb-8">
-          <div className="h-96">
+          <div className="h-[28rem]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={sessionData} margin={chartMargins}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -349,21 +361,42 @@ export default function PatientProgressCharts({
 
       {/* Fatigue Level Chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
-              <HeartIcon className="h-5 w-5 text-orange-600" />
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                <HeartIcon className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Reported Fatigue Over Time</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Fatigue levels with {sessionData.length} of {expectedTotal} sessions (1=Low, 10=High)
+                </p>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg">Reported Fatigue Over Time</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                Fatigue levels with {sessionData.length} of {expectedTotal} sessions (1=Low, 10=High)
-              </p>
-            </div>
+            {/* View Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsGridView(!isGridView)}
+              className="flex items-center gap-2"
+            >
+              {isGridView ? (
+                <>
+                  <ViewHorizontalIcon className="h-4 w-4" />
+                  Full Width
+                </>
+              ) : (
+                <>
+                  <GridIcon className="h-4 w-4" />
+                  Grid View
+                </>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="px-8 pb-8">
-          <div className="h-96">
+          <div className="h-[28rem]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={sessionData} margin={chartMargins}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -452,21 +485,42 @@ export default function PatientProgressCharts({
 
       {/* Adherence Trend Chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <BarChartIcon className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Adherence Trend Over Time</CardTitle>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                <BarChartIcon className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Adherence Trend Over Time</CardTitle>
               <p className="text-sm text-gray-500 mt-1">
                 Adherence with {sessionData.length} of {expectedTotal} sessions (80% target goal)
               </p>
+              </div>
             </div>
+            {/* View Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsGridView(!isGridView)}
+              className="flex items-center gap-2"
+            >
+              {isGridView ? (
+                <>
+                  <ViewHorizontalIcon className="h-4 w-4" />
+                  Full Width
+                </>
+              ) : (
+                <>
+                  <GridIcon className="h-4 w-4" />
+                  Grid View
+                </>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="px-8 pb-8">
-          <div className="h-96">
+          <div className="h-[28rem]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={sessionData} margin={chartMargins}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -558,6 +612,7 @@ export default function PatientProgressCharts({
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

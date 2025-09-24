@@ -88,11 +88,28 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
   // Lazy-load logger for development logging
   const loggerLib = await getLogger();
   
-  // Log request start in development
+  // Log request start in development - SECURITY: Filter sensitive headers
   if (import.meta.env.DEV && loggerLib) {
+    // Filter out sensitive headers from logs
+    const safeHeaders = { ...init?.headers };
+    if (safeHeaders) {
+      // Mask authorization token if present
+      if (safeHeaders['Authorization']) {
+        safeHeaders['Authorization'] = 'Bearer [REDACTED]';
+      }
+      if (safeHeaders['authorization']) {
+        safeHeaders['authorization'] = 'Bearer [REDACTED]';
+      }
+      // Remove any other potentially sensitive headers
+      delete safeHeaders['Cookie'];
+      delete safeHeaders['cookie'];
+      delete safeHeaders['X-API-Key'];
+      delete safeHeaders['x-api-key'];
+    }
+    
     loggerLib.logger.debug(loggerLib.LogCategory.API, `→ ${method} ${url}`, {
       correlationId,
-      headers: init?.headers,
+      headers: safeHeaders,
     });
   }
   

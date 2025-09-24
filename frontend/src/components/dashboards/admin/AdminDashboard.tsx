@@ -95,7 +95,9 @@ import { OverviewTab } from './tabs/OverviewTab'
 import { UserManagementTab } from './tabs/UserManagementTab'
 import { PatientManagement } from '../therapist/PatientManagement'
 import { TrialConfigurationTab } from './tabs/TrialConfigurationTab'
+import { PasswordVaultTab } from './tabs/PasswordVaultTab'
 import C3DFileBrowser from '../../c3d/C3DFileBrowser'
+import type { AdminLocationState, AdminTabType } from '../../../types/navigation'
 
 /**
  * Admin Dashboard Component
@@ -111,29 +113,32 @@ export function AdminDashboard() {
   const { userRole } = useAuth()
   const location = useLocation()
   
-  // Get initial tab from location state or default to overview
-  const locationTab = (location.state as any)?.activeTab || 'overview'
+  // Type-safe location state handling
+  const locationState = location.state as AdminLocationState | null
+  const locationTab = locationState?.activeTab || 'overview'
   
-  // Map location tab to internal tab names (configuration from sidebar maps to configuration)
-  const mapTabName = (tab: string) => {
+  // Map location tab to internal tab names with type safety
+  const mapTabName = (tab: string): AdminTabType => {
     // The sidebar sends these tab values, map them to our internal tab names
     switch(tab) {
       case 'users': return 'users'
       case 'patients': return 'patients'
       case 'configuration': return 'configuration'
       case 'sessions': return 'sessions'
+      case 'password-vault': return 'password-vault'
       case 'overview': 
       default: return 'overview'
     }
   }
   
   // Default to overview tab for admins after login
-  const [activeTab, setActiveTab] = useState(mapTabName(locationTab))
+  const [activeTab, setActiveTab] = useState<AdminTabType>(mapTabName(locationTab))
   
-  // Update active tab when location state changes
+  // Update active tab when location state changes with type safety
   useEffect(() => {
-    if ((location.state as any)?.activeTab) {
-      setActiveTab(mapTabName((location.state as any).activeTab))
+    const state = location.state as AdminLocationState | null
+    if (state?.activeTab) {
+      setActiveTab(mapTabName(state.activeTab))
     }
   }, [location.state])
   
@@ -184,6 +189,14 @@ export function AdminDashboard() {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <TrialConfigurationTab />
+      </div>
+    )
+  }
+  
+  if (activeTab === 'password-vault') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <PasswordVaultTab />
       </div>
     )
   }

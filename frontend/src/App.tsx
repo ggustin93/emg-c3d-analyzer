@@ -24,6 +24,7 @@ import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { ErrorBoundary } from './components/errors/ErrorBoundary'
 import { RouterErrorBoundary } from './components/errors/RouterErrorBoundary'
 import { NotFoundPage } from './components/NotFoundPage';
+import { Toaster } from './components/ui/sonner';
 
 // Lazy load dashboard components for better performance
 const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
@@ -101,20 +102,7 @@ function DashboardLayout() {
   // SOLID: Single Responsibility - One layout handles all protected routes
   // This eliminates duplicate SideNav rendering by using consistent layout pattern
   
-  // Admin users get traditional layout with header/footer
-  if (userRole === 'admin') {
-    return (
-      <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-        <Header isAuthenticated={true} />
-        <main className="flex-1">
-          <Outlet context={{ ...authData, userRole }} />
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
-  // Therapist and Researcher use SidebarLayout for ALL routes (dashboard + analysis)
+  // All authenticated users use SidebarLayout for consistent navigation
   // This prevents duplicate navigation by having ONE consistent layout
   return (
     <div className="min-h-screen bg-slate-50">
@@ -363,6 +351,7 @@ function App() {
         <ErrorBoundary level="page" name="Application">
           <RouterProvider router={router} />
         </ErrorBoundary>
+        <Toaster />
         {process.env.NODE_ENV === 'development' && (
           <ReactQueryDevtools initialIsOpen={false} />
         )}
