@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import Spinner from '@/components/ui/Spinner';
 import C3DFileList, { ColumnVisibility } from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
+import C3DFileUpload from '@/components/c3d/C3DFileUpload';
 
 // Icons
 import { 
@@ -40,11 +41,17 @@ type SortDirection = 'asc' | 'desc';
 interface PatientSessionBrowserProps {
   patientCode: string;
   onFileSelect?: (filename: string, uploadDate?: string) => void;
+  showUpload?: boolean;
+  onUploadComplete?: () => void;
+  onUploadError?: (message: string) => void;
 }
 
 const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
   patientCode,
-  onFileSelect
+  onFileSelect,
+  showUpload,
+  onUploadComplete = () => {},
+  onUploadError = () => {}
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -330,6 +337,14 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
                   <span className="text-muted-foreground">processed</span>
                 </div>
               </div>
+              
+              {/* Upload Button - Only show for admin users */}
+              {showUpload && (
+                <C3DFileUpload
+                  onUploadComplete={onUploadComplete}
+                  onError={onUploadError}
+                />
+              )}
             </div>
           </div>
         </CardHeader>

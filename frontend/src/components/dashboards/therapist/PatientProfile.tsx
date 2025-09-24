@@ -9,6 +9,9 @@ import { getMuscleConfiguration, type MuscleConfiguration } from '../../../servi
 import PatientSessionBrowser from './PatientSessionBrowser'
 import PatientProgressCharts from './PatientProgressCharts'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../../../lib/avatarColors'
+import { useAuth } from '../../../contexts/AuthContext'
+import C3DFileUpload from '../../c3d/C3DFileUpload'
+import SupabaseStorageService from '../../../services/supabaseStorage'
 import { 
   Card, 
   CardContent, 
@@ -23,6 +26,7 @@ import { Input } from '../../ui/input'
 import { Label } from '../../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import { useToast } from '../../../hooks/use-toast'
 import { API_CONFIG } from '../../../config/apiConfig'
 import Spinner from '../../ui/Spinner'
@@ -43,7 +47,8 @@ import {
   TrashIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  DashIcon
+  DashIcon,
+  UploadIcon
 } from '@radix-ui/react-icons'
 
 interface PatientProfileData {
@@ -77,6 +82,7 @@ interface PatientProfileData {
   adherence_percentage?: number
   clinical_threshold?: string
   average_performance?: number
+  treatment_start_date: string | null  // When EMG therapy protocol started
 }
 
 // Avatar functions are now imported from centralized lib/avatarColors.ts
@@ -156,6 +162,7 @@ export function PatientProfile() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user, userRole } = useAuth()
   const [session, setSession] = useState<any>(null)
   const [patient, setPatient] = useState<PatientProfileData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -174,6 +181,7 @@ export function PatientProfile() {
   const [showEditDemographics, setShowEditDemographics] = useState(false)
   const [showEditMedicalInfo, setShowEditMedicalInfo] = useState(false)
   const [showEditTreatmentTargets, setShowEditTreatmentTargets] = useState(false)
+  const [showEditTreatmentStart, setShowEditTreatmentStart] = useState(false)
   const [editingDemographics, setEditingDemographics] = useState({
     first_name: '',
     last_name: '',
@@ -199,6 +207,9 @@ export function PatientProfile() {
     current_target_ch2_ms: '',
     bfr_target_lop_percentage_ch1: '',
     bfr_target_lop_percentage_ch2: ''
+  })
+  const [editingTreatmentStart, setEditingTreatmentStart] = useState({
+    treatment_start_date: ''
   })
   const [saving, setSaving] = useState(false)
   const [muscleConfig, setMuscleConfig] = useState<MuscleConfiguration>({
@@ -320,6 +331,7 @@ export function PatientProfile() {
           total_sessions: patientData.total_sessions_planned || 0,
           completed_sessions: sessionData.session_count,  // Use C3D session count (same as PatientManagement)
           last_session_date: sessionData.last_session,
+          treatment_start_date: patientData.treatment_start_date || patientData.created_at,  // Same logic as PatientManagement
           adherence_percentage: 0,  // Will be calculated in render using adherence lookup
           clinical_threshold: 'Unknown'  // Will be calculated in render using adherence lookup
         }
@@ -602,6 +614,15 @@ export function PatientProfile() {
     }
   }
 
+  const handleEditTreatmentStart = () => {
+    if (patient) {
+      setEditingTreatmentStart({
+        treatment_start_date: patient.treatment_start_date || ''
+      })
+      setShowEditTreatmentStart(true)
+    }
+  }
+
   const handleSaveTreatmentTargets = async () => {
     if (!patient?.patient_code) return
     
@@ -647,6 +668,59 @@ export function PatientProfile() {
       setSaving(false)
     }
   }
+
+  const handleSaveTreatmentStart = async () => {
+    if (!patient?.patient_code || !supabase) return
+    
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ 
+          treatment_start_date: editingTreatmentStart.treatment_start_date || null 
+        })
+        .eq('patient_code', patient.patient_code)
+
+      if (error) {
+        throw new Error(`Failed to update treatment start date: ${error.message}`)
+      }
+
+      toast({
+        title: 'Treatment Start Date Updated',
+        description: 'Patient treatment start date has been updated successfully.',
+        variant: 'success'
+      })
+
+      setShowEditTreatmentStart(false)
+      // Refresh patient data by re-running the useEffect
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating treatment start date:', error)
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update treatment start date. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Upload handlers for C3D files
+  const handleUploadComplete = () => {
+    // Refresh the session browser when upload completes
+    // The PatientSessionBrowser will handle its own refresh
+    console.log('Upload completed for patient:', patient?.patient_code);
+  };
+
+  const handleUploadError = (message: string) => {
+    console.error('Upload error for patient:', patient?.patient_code, message);
+    toast({
+      title: 'Upload Failed',
+      description: message,
+      variant: 'destructive'
+    });
+  };
 
   if (isLoading) {
     return (
@@ -931,10 +1005,12 @@ export function PatientProfile() {
                 <Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
               <CardHeader className="pb-3 pr-12">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <BarChartIcon className="h-5 w-5 text-blue-600" />
-                  Treatment Targets
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                    <BarChartIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Treatment Targets</CardTitle>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -995,8 +1071,16 @@ export function PatientProfile() {
             </Card>
 
             {/* Treatment Summary Card */}
-            <Card className="overflow-hidden h-full flex flex-col">
-              <CardHeader className="pb-3">
+            <Card className="overflow-hidden h-full flex flex-col relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-3 right-3 h-8 w-8 opacity-60 hover:opacity-100 z-10"
+                onClick={() => setShowEditTreatmentStart(true)}
+              >
+                <Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+              <CardHeader className="pb-3 pr-12">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
                     <ActivityLogIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -1006,6 +1090,12 @@ export function PatientProfile() {
               </CardHeader>
               <CardContent className="pt-0 flex-1">
                 <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Treatment Start</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {patient.treatment_start_date ? formatDate(patient.treatment_start_date) : 'Not set'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Sessions</span>
                     <span className="text-sm font-semibold text-gray-900">
@@ -1040,14 +1130,14 @@ export function PatientProfile() {
 
         {/* Sessions Tab */}
         <TabsContent value="sessions">
-          <Card>
-            <CardContent className="p-6">
-              <PatientSessionBrowser 
-                patientCode={patient.patient_code}
-                // No onFileSelect prop - component will handle analysis internally
-              />
-            </CardContent>
-          </Card>
+          <PatientSessionBrowser 
+            patientCode={patient.patient_code}
+            // Pass admin upload capability to PatientSessionBrowser
+            showUpload={SupabaseStorageService.isConfigured() && userRole === 'ADMIN'}
+            onUploadComplete={handleUploadComplete}
+            onUploadError={handleUploadError}
+            // No onFileSelect prop - component will handle analysis internally
+          />
         </TabsContent>
 
         {/* Progress Tracking Tab */}
@@ -1436,116 +1526,224 @@ export function PatientProfile() {
 
       {/* Edit Treatment Targets Dialog */}
       <Dialog open={showEditTreatmentTargets} onOpenChange={setShowEditTreatmentTargets}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl w-full">
           <DialogHeader>
             <DialogTitle>Edit Treatment Targets</DialogTitle>
             <DialogDescription>
-              Update patient treatment targets for EMG therapy
+              Update patient treatment targets for EMG therapy. All values are stored in the database with proper units.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
             {/* MVC Targets */}
             <div className="space-y-4">
-              <h4 className="font-medium text-sm text-gray-700 border-b pb-2">MVC 75% Targets</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="mvc_left" className="text-right">{muscleConfig.channel_1_muscle_name}</Label>
-                  <Input
-                    id="mvc_left"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={editingTreatmentTargets.current_mvc75_ch1}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_mvc75_ch1: e.target.value }))}
-                    className="col-span-3"
-                    placeholder="e.g., 75.0"
-                  />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-base text-gray-800">MVC 75% Targets</h4>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoCircledIcon className="h-4 w-4 text-blue-500 cursor-help hover:text-blue-700 transition-colors" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="space-y-2">
+                          <p className="font-semibold text-sm">MVC 75% Threshold</p>
+                          <p className="text-xs text-gray-600">
+                            Maximum Voluntary Contraction at 75% intensity. This represents the baseline strength 
+                            level for therapeutic exercises. Values are stored as percentages (0-100%).
+                          </p>
+                          <p className="text-xs text-blue-600 font-medium">
+                            💡 Clinical Note: Higher values indicate stronger baseline, lower values may require 
+                            more gradual progression.
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="mvc_right" className="text-right">{muscleConfig.channel_2_muscle_name}</Label>
-                  <Input
-                    id="mvc_right"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={editingTreatmentTargets.current_mvc75_ch2}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_mvc75_ch2: e.target.value }))}
-                    className="col-span-3"
-                    placeholder="e.g., 75.0"
-                  />
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Percentage (0-100%)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="mvc_left" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_1_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="mvc_left"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={editingTreatmentTargets.current_mvc75_ch1}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_mvc75_ch1: e.target.value }))}
+                      className="pr-8"
+                      placeholder="e.g., 75.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">%</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mvc_right" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_2_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="mvc_right"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={editingTreatmentTargets.current_mvc75_ch2}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_mvc75_ch2: e.target.value }))}
+                      className="pr-8"
+                      placeholder="e.g., 75.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">%</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* BFR Targets */}
             <div className="space-y-4">
-              <h4 className="font-medium text-sm text-gray-700 border-b pb-2">BFR LOP Targets</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="bfr_left" className="text-right">{muscleConfig.channel_1_muscle_name}</Label>
-                  <Input
-                    id="bfr_left"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={editingTreatmentTargets.bfr_target_lop_percentage_ch1}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, bfr_target_lop_percentage_ch1: e.target.value }))}
-                    className="col-span-3"
-                    placeholder="e.g., 50.0"
-                  />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-base text-gray-800">BFR LOP Targets</h4>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoCircledIcon className="h-4 w-4 text-blue-500 cursor-help hover:text-blue-700 transition-colors" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="space-y-2">
+                          <p className="font-semibold text-sm">Blood Flow Restriction (BFR) LOP</p>
+                          <p className="text-xs text-gray-600">
+                            Limb Occlusion Pressure percentage for Blood Flow Restriction therapy. 
+                            Controls the pressure applied to restrict blood flow during exercises.
+                          </p>
+                          <p className="text-xs text-red-600 font-medium">
+                            ⚠️ Safety Note: Higher percentages increase restriction. Monitor patient comfort 
+                            and adjust based on individual tolerance and clinical guidelines.
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="bfr_right" className="text-right">{muscleConfig.channel_2_muscle_name}</Label>
-                  <Input
-                    id="bfr_right"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={editingTreatmentTargets.bfr_target_lop_percentage_ch2}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, bfr_target_lop_percentage_ch2: e.target.value }))}
-                    className="col-span-3"
-                    placeholder="e.g., 50.0"
-                  />
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Percentage (0-100%)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="bfr_left" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_1_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="bfr_left"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={editingTreatmentTargets.bfr_target_lop_percentage_ch1}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, bfr_target_lop_percentage_ch1: e.target.value }))}
+                      className="pr-8"
+                      placeholder="e.g., 50.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">%</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bfr_right" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_2_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="bfr_right"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={editingTreatmentTargets.bfr_target_lop_percentage_ch2}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, bfr_target_lop_percentage_ch2: e.target.value }))}
+                      className="pr-8"
+                      placeholder="e.g., 50.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">%</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Duration Targets */}
             <div className="space-y-4">
-              <h4 className="font-medium text-sm text-gray-700 border-b pb-2">Duration Targets (seconds)</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="duration_left" className="text-right">{muscleConfig.channel_1_muscle_name}</Label>
-                  <Input
-                    id="duration_left"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="60"
-                    value={editingTreatmentTargets.current_target_ch1_ms ? (parseFloat(editingTreatmentTargets.current_target_ch1_ms) / 1000).toString() : ''}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_target_ch1_ms: (parseFloat(e.target.value) * 1000).toString() }))}
-                    className="col-span-3"
-                    placeholder="e.g., 5.0"
-                  />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-base text-gray-800">Duration Targets</h4>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoCircledIcon className="h-4 w-4 text-blue-500 cursor-help hover:text-blue-700 transition-colors" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="space-y-2">
+                          <p className="font-semibold text-sm">Contraction Duration Targets</p>
+                          <p className="text-xs text-gray-600">
+                            Target duration for muscle contractions during therapeutic exercises. 
+                            Enter values in seconds (0-60s), automatically converted to milliseconds for storage.
+                          </p>
+                          <p className="text-xs text-green-600 font-medium">
+                            🎯 Therapeutic Range: 2-10 seconds is typical for strength training. 
+                            Longer durations may be used for endurance training.
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="duration_right" className="text-right">{muscleConfig.channel_2_muscle_name}</Label>
-                  <Input
-                    id="duration_right"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="60"
-                    value={editingTreatmentTargets.current_target_ch2_ms ? (parseFloat(editingTreatmentTargets.current_target_ch2_ms) / 1000).toString() : ''}
-                    onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_target_ch2_ms: (parseFloat(e.target.value) * 1000).toString() }))}
-                    className="col-span-3"
-                    placeholder="e.g., 5.0"
-                  />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Seconds (0-60s)</span>
+                  <span className="text-xs text-gray-400">Stored as milliseconds in DB</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="duration_left" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_1_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="duration_left"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="60"
+                      value={editingTreatmentTargets.current_target_ch1_ms ? (parseFloat(editingTreatmentTargets.current_target_ch1_ms) / 1000).toString() : ''}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_target_ch1_ms: (parseFloat(e.target.value) * 1000).toString() }))}
+                      className="pr-8"
+                      placeholder="e.g., 5.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">s</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration_right" className="text-sm font-medium text-gray-700">
+                    {muscleConfig.channel_2_muscle_name}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="duration_right"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="60"
+                      value={editingTreatmentTargets.current_target_ch2_ms ? (parseFloat(editingTreatmentTargets.current_target_ch2_ms) / 1000).toString() : ''}
+                      onChange={(e) => setEditingTreatmentTargets(prev => ({ ...prev, current_target_ch2_ms: (parseFloat(e.target.value) * 1000).toString() }))}
+                      className="pr-8"
+                      placeholder="e.g., 5.0"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">s</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1556,6 +1754,45 @@ export function PatientProfile() {
               Cancel
             </Button>
             <Button onClick={handleSaveTreatmentTargets} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Treatment Start Date Dialog */}
+      <Dialog open={showEditTreatmentStart} onOpenChange={setShowEditTreatmentStart}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Treatment Start Date</DialogTitle>
+            <DialogDescription>
+              Update when the patient started the rehabilitation therapy with BFR (Blood Flow Restriction). This date is used to calculate protocol days and trial progression.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="treatment_start_date" className="text-sm font-medium text-gray-700">
+                Treatment Start Date
+              </Label>
+              <Input
+                id="treatment_start_date"
+                type="date"
+                value={editingTreatmentStart.treatment_start_date}
+                onChange={(e) => setEditingTreatmentStart(prev => ({ ...prev, treatment_start_date: e.target.value }))}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                This is when the patient began the EMG therapy protocol, not their hospital admission date.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditTreatmentStart(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTreatmentStart} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>

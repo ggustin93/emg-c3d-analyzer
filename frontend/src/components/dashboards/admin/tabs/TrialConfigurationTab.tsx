@@ -305,12 +305,12 @@ export function TrialConfigurationTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200/80 shadow-sm">
-                <Icons.GearIcon className="h-5 w-5 text-orange-600" />
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200/80 shadow-sm">
+                <Icons.GearIcon className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <CardTitle className="text-xl font-semibold text-gray-900">{config?.configuration_name || 'GHOSTLY-TRIAL-DEFAULT Configuration'}</CardTitle>
-                <CardDescription className="mt-1">{config?.description || 'System-wide scoring and parameter settings for the clinical trial'}</CardDescription>
+                <CardTitle className="text-xl font-semibold text-gray-900">Trial Configuration</CardTitle>
+                <CardDescription className="mt-1">System-wide scoring and parameter settings for the clinical trial</CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">
