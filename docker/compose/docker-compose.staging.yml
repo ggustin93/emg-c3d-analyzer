@@ -11,11 +11,13 @@
 #   - Automatic SSL certificates via Let's Encrypt
 #   - Built-in monitoring and logging
 #   - Zero-downtime deployments
-#   - Optional Redis caching and Metabase analytics
+#   - Optional Redis caching using Docker Compose profiles
+#   - Optional Metabase analytics
+#   - No circular dependencies (fixed backend -> backend issue)
 #
 # ══════════════════════════════════════════════════════════════════════════════
 
-version: '3.8'
+# version field is obsolete in Docker Compose v2+ and can cause warnings
 
 services:
   # ═══════════════════════════════════════════════════════════════════════════
@@ -79,9 +81,8 @@ services:
       - "coolify.managed=true"
       - "coolify.service=backend"
       - "coolify.port=8080"
-    # Conditional dependency on Redis (if enabled)
-    depends_on:
-      - ${REDIS_DEPENDS_ON:-backend}  # Self-reference if Redis disabled
+    # No dependencies for backend - it should start independently
+    # If Redis is enabled, backend will connect to it when available
 
   # Frontend Web Application  
   frontend:
@@ -128,28 +129,30 @@ services:
   # Optional Services (Uncomment to Enable)
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Redis Cache Service (Uncomment to enable caching)
-  # redis:
-  #   image: redis:7.2-alpine
-  #   container_name: emg-redis-staging
-  #   restart: unless-stopped
-  #   command: >
-  #     redis-server
-  #     --appendonly yes
-  #     --maxmemory ${REDIS_MAX_MEMORY:-256mb}
-  #     --maxmemory-policy allkeys-lru
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #   networks:
-  #     - emg-network
-  #   labels:
-  #     - "coolify.managed=true"
-  #     - "coolify.service=redis"
+  # Redis Cache Service (Enabled when ENABLE_REDIS=true)
+  redis:
+    image: redis:7.2-alpine
+    container_name: emg-redis-staging
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - emg-network
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=redis"
+    profiles:
+      - redis  # Only start when --profile redis is used
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Metabase Analytics Platform (Uncomment to enable analytics)
@@ -238,8 +241,8 @@ volumes:
     driver: local
   backend_logs:
     driver: local
-  # redis_data:  # Uncomment if using Redis
-  #   driver: local
+  redis_data:  # Redis data volume (used when Redis profile is active)
+    driver: local
   # metabase_data:  # Uncomment if using Metabase
   #   driver: local
   # metabase_postgres_data:  # Uncomment if using Metabase
@@ -259,10 +262,13 @@ networks:
 # ENVIRONMENT=staging
 # VERSION=latest
 #
-# # Service Toggles
-# ENABLE_REDIS=false
+# # Service Configuration
+# ENABLE_REDIS=false  # Backend config - enables Redis caching in app
 # ENABLE_METABASE=false
 # SUPABASE_MODE=cloud  # cloud or selfhosted
+#
+# # To enable Redis service: docker-compose --profile redis up
+# # To disable Redis: don't use --profile redis (Redis won't start)
 #
 # # Supabase Cloud (default)
 # SUPABASE_URL=https://xxx.supabase.co
@@ -282,5 +288,27 @@ networks:
 # REDIS_MAX_MEMORY=256mb
 # METABASE_DB_USER=metabase
 # METABASE_DB_PASS=secure-password-here
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# Coolify Deployment Notes
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 1. Basic deployment (backend + frontend only):
+#    - Upload this file to Coolify
+#    - Set environment variables in Coolify dashboard
+#    - Deploy normally
+#
+# 2. With Redis caching:
+#    - In Coolify, set Docker Compose profiles to "redis"
+#    - Or use command: docker-compose --profile redis up -d
+#    - Set ENABLE_REDIS=true in backend environment
+#
+# 3. With Metabase (uncomment metabase services above):
+#    - Uncomment metabase and metabase-postgres services
+#    - Set METABASE_DB_PASS in environment variables
+#    - Deploy with profiles: "redis,metabase" (if using both)
+#
+# 4. Frontend will be publicly accessible (coolify.public=true)
+#    Backend API will be internal-only (no public label)
 #
 # ═══════════════════════════════════════════════════════════════════════════
