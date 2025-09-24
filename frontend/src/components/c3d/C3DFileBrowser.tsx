@@ -196,11 +196,20 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   // Helper function to get therapist display using centralized service
   const getTherapistDisplay = useCallback((file: C3DFile): string => {
+    // If therapist data is still loading, return a loading indicator
+    if (loadingStates.therapists) {
+      return 'Loading...';
+    }
     return therapistService.getDisplayFromFileCache(file.name, therapistCache);
-  }, [therapistCache]);
+  }, [therapistCache, loadingStates.therapists]);
 
   // Helper function to get patient name
   const getPatientName = useCallback((file: C3DFile): string => {
+    // If patient data is still loading, return a loading indicator
+    if (loadingStates.patients) {
+      return 'Loading...';
+    }
+    
     const patientCode = resolvePatientId(file);
     const patientInfo = patientCache[patientCode];
     
@@ -209,7 +218,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     }
     
     return '';
-  }, [patientCache]);
+  }, [patientCache, loadingStates.patients]);
 
   // Wrapper function to handle file selection with metadata
   const handleFileSelectWithMetadata = useCallback((filename: string, uploadDate?: string, fileData?: C3DFile) => {
@@ -452,7 +461,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   };
 
 
-  if (isLoadingFiles) {
+  // Show loading until all critical data is ready
+  if (isLoadingFiles || loadingStates.therapists || loadingStates.patients || loadingStates.sessions) {
     return (
       <Card className="w-full">
         <CardContent className="flex items-center justify-center py-12">

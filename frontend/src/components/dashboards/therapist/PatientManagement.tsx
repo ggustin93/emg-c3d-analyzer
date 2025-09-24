@@ -473,7 +473,15 @@ export function PatientManagement({ className }: PatientManagementProps) {
       // Fetch patients (all for admin, filtered for therapists)
       const data = await fetchPatients(user.id, isAdmin)
       setPatients(data)
-      setPatientsLoading(false) // Enable progressive rendering - show patients immediately
+      
+      // Only set patientsLoading to false after we have the data
+      if (data && data.length > 0) {
+        setPatientsLoading(false)
+      } else {
+        // For empty results, still set loading to false but keep the loading state
+        // until we're sure everything is ready
+        setPatientsLoading(false)
+      }
       
       // If admin, fetch therapist information for display
       if (isAdmin) {
@@ -524,8 +532,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
     loadPatientsData()
   }, [loadPatientsData])
 
-  // Handle loading state - Progressive loading: show patients when available, even if therapists still loading
-  if (patientsLoading || !visibleColumns) {
+  // Handle loading state - Show loading until everything is ready
+  if (patientsLoading || !visibleColumns || (userRole === 'ADMIN' && therapistsLoading)) {
     return <PatientTableLoading />
   }
 
@@ -534,7 +542,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
     return <ErrorPatientState error={error as Error} />
   }
 
-  // Handle empty state
+  // Handle empty state - Only show after loading is complete and we're sure there are no patients
   if (!patients || patients.length === 0) {
     return <EmptyPatientState />
   }
