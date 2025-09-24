@@ -795,24 +795,39 @@ export function TrialConfigurationTab() {
         <TabsContent value="rpe-mapping">
           <div className="space-y-6">
             {/* RPE Overview */}
-            <Card className="border border-emerald-200/70 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+            <Card className="border border-gray-200/70 shadow-lg">
+              <CardHeader className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-3 right-3 h-8 w-8 opacity-60 hover:opacity-100 z-10"
+                  onClick={() => setEditMode(!editMode)}
+                >
+                  <Icons.Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                </Button>
+                <CardTitle className="text-lg flex items-center gap-2 pr-12">
                   <Icons.PersonIcon className="h-5 w-5 text-emerald-600" />
                   RPE Mapping Configuration
+                  <ClinicalTooltip
+                    title="Rating of Perceived Exertion (RPE) Mapping"
+                    description="Configure how patient-reported effort levels translate to numerical scores"
+                    sections={[
+                      {
+                        title: "How RPE Mapping Works:",
+                        type: "list",
+                        items: [
+                          { label: "RPE Scale", description: "Patients rate perceived exertion from 0 (no effort) to 10 (maximum effort)" },
+                          { label: "Score Mapping", description: "Each RPE value maps to a numerical score (0-100) for S_effort calculation" },
+                          { label: "Clinical Categories", description: "Define therapeutic intensity ranges (optimal, acceptable, concerning)" },
+                          { label: "Impact", description: `RPE scores contribute ${((formData?.weight_effort || 0.25) * 100).toFixed(0)}% to overall performance score` }
+                        ]
+                      }
+                    ]}
+                  />
                 </CardTitle>
                 <CardDescription>Configure Rating of Perceived Exertion (RPE) scoring ranges for subjective effort assessment</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg mb-4">
-                  <h4 className="text-sm font-semibold text-emerald-900 mb-2">How RPE Mapping Works</h4>
-                  <div className="text-sm text-emerald-800 space-y-1">
-                    <p>• <strong>RPE Scale:</strong> Patients rate perceived exertion from 0 (no effort) to 10 (maximum effort)</p>
-                    <p>• <strong>Score Mapping:</strong> Each RPE value maps to a numerical score (0-100) for S<sub>effort</sub> calculation</p>
-                    <p>• <strong>Clinical Categories:</strong> Define therapeutic intensity ranges (optimal, acceptable, concerning)</p>
-                    <p>• <strong>Impact:</strong> RPE scores contribute {((formData?.weight_effort || 0.25) * 100).toFixed(0)}% to overall performance score</p>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   {formData?.rpe_mapping && Object.entries(formData.rpe_mapping)
