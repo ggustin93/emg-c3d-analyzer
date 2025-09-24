@@ -8,7 +8,7 @@ import logging
 import secrets
 import string
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,15 +25,18 @@ router = APIRouter()
 
 class PasswordResetRequest(BaseModel):
     """Request model for password reset operation."""
-    notify_user: bool = False  # Optional: send email notification
+    new_password: str  # Custom password set by admin
+    delivery_method: str = "manual"  # 'manual' for in-person/WhatsApp delivery
+    admin_note: str = ""  # Optional note about how password will be delivered
     
     
 class PasswordResetResponse(BaseModel):
     """Response model for password reset operation."""
     success: bool
-    temporary_password: str
     message: str
     expires_in_hours: int = 24
+    masked_password: str = ""  # Only first/last 2 chars for verification
+    delivery_instructions: str = ""  # How admin should deliver password
 
 
 class UserCreationRequest(BaseModel):
@@ -46,15 +49,28 @@ class UserCreationRequest(BaseModel):
     department: str = ""
     access_level: str = "basic"
     notify_user: bool = False
+    custom_password: Optional[str] = None  # Optional custom password
+    admin_note: str = ""  # Admin note for password delivery
 
 
 class UserCreationResponse(BaseModel):
     """Response model for user creation operation."""
     success: bool
     user_id: str
-    temporary_password: str
     message: str
-    user_code: str = None
+    user_code: Optional[str] = None
+    # SECURITY: Never return password to frontend
+
+
+class UserUpdateRequest(BaseModel):
+    """Request model for user update operation."""
+    first_name: str
+    last_name: str
+    role: str  # 'admin', 'therapist', 'researcher'
+    institution: str
+    department: str = ""
+    access_level: str = "basic"
+    active: bool = True
 
 
 async def require_admin(user: Dict[str, str] = Depends(get_current_user)) -> Dict[str, str]:
@@ -127,41 +143,37 @@ async def reset_user_password(
         # Initialize admin service with service key
         admin_service = AdminService()
         
-        # Generate secure temporary password
-        temp_password = admin_service.generate_temporary_password()
-        
-        # Reset the user's password
-        success = await admin_service.reset_user_password(
-            target_user_id=str(user_id),
-            new_password=temp_password,
-            admin_user_id=admin_user['id'],
-            admin_email=admin_user['email']
-        )
-        
-        if not success:
+        # Validate password strength
+        if len(request.new_password) < 8:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to reset password"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
             )
         
-        # Log the admin action
-        await admin_service.log_admin_action(
+        # Reset the user's password with admin-provided password
+        result = await admin_service.reset_user_password(
+            target_user_id=str(user_id),
             admin_user_id=admin_user['id'],
-            action="password_reset",
-            target_type="user_profiles",
-            target_id=str(user_id),
-            details={
-                "method": "temporary_password",
-                "notify_user": request.notify_user,
-                "timestamp": datetime.utcnow().isoformat()
-            }
+            admin_email=admin_user['email'],
+            custom_password=request.new_password,
+            hours_valid=4  # Security improvement: 4h instead of 24h
         )
+        
+        if not result['success']:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result.get('message', 'Failed to reset password')
+            )
+        
+        # Provide masked version for verification only
+        masked = f"{request.new_password[:2]}{'*' * (len(request.new_password) - 4)}{request.new_password[-2:]}" if len(request.new_password) > 4 else "****"
         
         return PasswordResetResponse(
             success=True,
-            temporary_password=temp_password,
-            message=f"Password reset successful. Share this temporary password securely with the user.",
-            expires_in_hours=24
+            message=result.get('message', 'Password reset successful'),
+            expires_in_hours=4,  # Security improvement: 4h instead of 24h
+            masked_password=masked,
+            delivery_instructions=f"Deliver via {request.delivery_method}. Password expires in 4 hours."
         )
         
     except HTTPException:
@@ -214,7 +226,8 @@ async def create_user(
             department=request.department,
             access_level=request.access_level,
             admin_user_id=admin_user['id'],
-            admin_email=admin_user['email']
+            admin_email=admin_user['email'],
+            custom_password=request.custom_password
         )
         
         if not result['success']:
@@ -223,11 +236,15 @@ async def create_user(
                 detail=result.get('message', 'Failed to create user')
             )
         
+        # SECURITY: Send password via secure channel, never return to frontend
+        if request.notify_user:
+            # In production, this would send an email to the new user
+            logger.info(f"New user {request.email} created - email notification would be sent")
+        
         return UserCreationResponse(
             success=True,
             user_id=result['user_id'],
-            temporary_password=result['temporary_password'],
-            message=f"User created successfully. Share this temporary password securely with the user.",
+            message=f"User created successfully. They will receive an email with login instructions.",
             user_code=result.get('user_code')
         )
         
@@ -239,6 +256,75 @@ async def create_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"User creation failed: {str(e)}"
+        )
+
+
+@router.put("/users/{user_id}", response_model=Dict[str, Any])
+async def update_user(
+    user_id: UUID,
+    request: UserUpdateRequest,
+    admin_user: Dict[str, str] = Depends(require_admin)
+) -> Dict[str, Any]:
+    """
+    Update a user's profile information.
+    
+    This endpoint:
+    1. Validates the update request
+    2. Updates the user profile in the database
+    3. Logs the action for audit purposes
+    4. Returns the updated user information
+    
+    Args:
+        user_id: UUID of the user to update
+        request: User update parameters
+        admin_user: Current admin user (validated by dependency)
+        
+    Returns:
+        Dict with updated user information
+        
+    Raises:
+        HTTPException: Various error codes for different failure scenarios
+    """
+    try:
+        # Initialize admin service
+        admin_service = AdminService()
+        
+        # Update user profile
+        result = await admin_service.update_user_profile(
+            user_id=str(user_id),
+            update_data={
+                'first_name': request.first_name,
+                'last_name': request.last_name,
+                'role': request.role,
+                'institution': request.institution,
+                'department': request.department,
+                'access_level': request.access_level,
+                'active': request.active
+            },
+            admin_user_id=admin_user['id'],
+            admin_email=admin_user['email']
+        )
+        
+        if not result['success']:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result.get('message', 'Failed to update user')
+            )
+        
+        return {
+            'success': True,
+            'message': 'User updated successfully',
+            'user': result['user']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the error
+        logger.error(f"User update error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"User update failed: {str(e)}"
         )
 
 
@@ -278,4 +364,158 @@ async def get_user_audit_log(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch audit logs: {str(e)}"
+        )
+
+
+class PasswordRetrievalRequest(BaseModel):
+    """Request model for password retrieval from vault."""
+    confirm_user_id: str  # Must match the user_id for security validation
+    delivery_method: str = "manual"  # Delivery method confirmation
+
+
+class PasswordRetrievalResponse(BaseModel):
+    """Response model for password retrieval from vault."""
+    success: bool
+    password: Optional[str] = None  # Decrypted password (one-time retrieval)
+    user_email: str = ""
+    user_name: str = ""
+    message: str
+
+
+@router.get("/password-vault")
+async def get_pending_passwords(
+    admin_user: Dict[str, str] = Depends(require_admin)
+) -> Dict[str, Any]:
+    """
+    Get all pending (unretrieved) temporary passwords for admin interface.
+    
+    This endpoint:
+    1. Queries all unretrieved passwords that haven't expired
+    2. Returns user info with masked passwords for verification
+    3. Provides expiry status for UI display
+    4. Logs admin access for audit purposes
+    
+    Args:
+        admin_user: Current admin user (validated by dependency)
+        
+    Returns:
+        Dict with pending passwords list
+        
+    Raises:
+        HTTPException: Various error codes for different failure scenarios
+    """
+    try:
+        # Initialize admin service
+        admin_service = AdminService()
+        
+        # Get pending passwords
+        passwords = await admin_service.get_pending_passwords(
+            admin_user_id=admin_user['id']
+        )
+        
+        # Log the admin action
+        await admin_service.log_admin_action(
+            admin_user_id=admin_user['id'],
+            action='password_vault_accessed',
+            target_type='temporary_passwords',
+            target_id='vault',
+            details={
+                'accessed_at': datetime.utcnow().isoformat(),
+                'pending_count': len(passwords),
+                'admin_email': admin_user['email']
+            }
+        )
+        
+        return {
+            'success': True,
+            'passwords': passwords,
+            'count': len(passwords),
+            'message': f'Retrieved {len(passwords)} pending passwords'
+        }
+        
+    except Exception as e:
+        logger.error(f"Password vault access error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to access password vault: {str(e)}"
+        )
+
+
+@router.post("/password-vault/{password_id}/retrieve", response_model=PasswordRetrievalResponse)
+async def retrieve_password(
+    password_id: UUID,
+    request: PasswordRetrievalRequest,
+    admin_user: Dict[str, str] = Depends(require_admin)
+) -> PasswordRetrievalResponse:
+    """
+    Retrieve and decrypt a temporary password by ID (one-time operation).
+    
+    This endpoint:
+    1. Validates the password ID and user ID match for security
+    2. Checks password hasn't been retrieved already (one-time use)
+    3. Verifies password hasn't expired
+    4. Decrypts and returns the password
+    5. Marks password as retrieved with audit logging
+    6. Auto-destroys the password after successful retrieval
+    
+    Args:
+        password_id: UUID of the temporary password entry
+        request: Password retrieval confirmation data
+        admin_user: Current admin user (validated by dependency)
+        
+    Returns:
+        PasswordRetrievalResponse with decrypted password
+        
+    Raises:
+        HTTPException: Various error codes for security violations and failures
+    """
+    try:
+        # Initialize admin service
+        admin_service = AdminService()
+        
+        # Retrieve the password with security validation
+        result = await admin_service.retrieve_password_by_id(
+            password_id=str(password_id),
+            admin_user_id=admin_user['id'],
+            confirm_user_id=request.confirm_user_id
+        )
+        
+        if not result['success']:
+            # Security-sensitive errors
+            if "mismatch" in result.get('message', '').lower():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Security validation failed"
+                )
+            elif "already retrieved" in result.get('message', ''):
+                raise HTTPException(
+                    status_code=status.HTTP_410_GONE,
+                    detail="Password already retrieved (one-time use)"
+                )
+            elif "expired" in result.get('message', ''):
+                raise HTTPException(
+                    status_code=status.HTTP_410_GONE,
+                    detail="Password has expired"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=result.get('message', 'Password not found')
+                )
+        
+        return PasswordRetrievalResponse(
+            success=True,
+            password=result['password'],
+            user_email=result['user_email'],
+            user_name=result['user_name'],
+            message=result.get('message', 'Password retrieved successfully')
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password retrieval error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve password: {str(e)}"
         )

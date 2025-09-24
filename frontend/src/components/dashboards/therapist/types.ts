@@ -25,6 +25,9 @@ export interface Patient {
   compliance_status?: 'excellent' | 'good' | 'fair' | 'low'
   adherence_level?: 'high' | 'moderate' | 'low' | 'no_data'
   
+  // Therapist assignment (for admin view)
+  therapist_id?: string | null
+  
   // UI helpers
   display_name?: string
   avatar_initials?: string

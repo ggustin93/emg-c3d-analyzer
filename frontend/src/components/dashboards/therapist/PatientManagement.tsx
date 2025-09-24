@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
@@ -29,6 +29,23 @@ import {
 } from '../../ui/tooltip'
 import { Checkbox } from '../../ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../ui/select'
+import { Label } from '../../ui/label'
+import { useToast } from '../../../hooks/use-toast'
 import Spinner from '../../ui/Spinner'
 import { 
   PersonIcon, 
@@ -51,6 +68,7 @@ import { Patient, PatientManagementProps } from './types'
 import { useAdherence } from '../../../hooks/useAdherence'
 import { getAdherenceThreshold, AdherenceData } from '../../../services/adherenceService'
 import { getAvatarColor, getPatientIdentifier, getPatientInitials } from '../../../lib/avatarColors'
+import { usePatientCodeGeneration } from '../../../hooks/usePatientCodeGeneration'
 
 type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend'
 type SortDirection = 'asc' | 'desc'
@@ -64,6 +82,7 @@ interface ColumnVisibility {
   patient_id: boolean
   name: boolean
   age: boolean
+  therapist: boolean
   treatment_start: boolean
   sessions: boolean
   last_session: boolean
@@ -79,12 +98,12 @@ interface ColumnVisibility {
  * Follows KISS principles with inline avatar and simple state management
  */
 
-// Fetch therapist's patients with C3D-based session data and medical info
+// Fetch patients with C3D-based session data and medical info
 // Uses actual C3D files for accurate session counts (matches C3DFileBrowser data)
-async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
+async function fetchPatients(therapistId: string | null, isAdmin: boolean): Promise<Patient[]> {
   
-  // Get basic patient info from database
-  const { data, error } = await supabase
+  // Build query - admins see all patients, therapists see only their own
+  let query = supabase
     .from('patients')
     .select(`
       patient_code,
@@ -92,13 +111,20 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
       treatment_start_date,
       total_sessions_planned,
       active,
+      therapist_id,
       patient_medical_info (
         first_name,
         last_name,
         date_of_birth
       )
     `)
-    .eq('therapist_id', therapistId)
+  
+  // Only filter by therapist_id if not admin
+  if (!isAdmin && therapistId) {
+    query = query.eq('therapist_id', therapistId)
+  }
+  
+  const { data, error } = await query
 
   if (error) {
     console.error('Error fetching patients:', error)
@@ -161,6 +187,8 @@ async function fetchTherapistPatients(therapistId: string): Promise<Patient[]> {
       // Treatment configuration
       treatment_start_date: patient.treatment_start_date || patient.created_at,
       total_sessions_planned: patient.total_sessions_planned || 30,
+      // Therapist assignment (for admin view)
+      therapist_id: patient.therapist_id || null,
       // UI helpers
       display_name: medical?.first_name && medical?.last_name 
         ? `${medical.first_name} ${medical.last_name}`
@@ -289,9 +317,10 @@ interface PatientRowProps {
   patient: Patient
   visibleColumns: ColumnVisibility
   adherence?: AdherenceData
+  therapistName?: string | null
 }
 
-function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
+function PatientRow({ patient, visibleColumns, adherence, therapistName }: PatientRowProps) {
   const navigate = useNavigate()
   const avatarColor = getAvatarColor(getPatientIdentifier(patient))
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
@@ -339,6 +368,15 @@ function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
       {visibleColumns.age && (
         <TableCell className="text-center">
           {patient.age ? patient.age : '-'}
+        </TableCell>
+      )}
+
+      {/* Therapist (for admin view) */}
+      {visibleColumns.therapist && (
+        <TableCell>
+          <div className="text-sm">
+            {therapistName || '-'}
+          </div>
         </TableCell>
       )}
 
@@ -584,10 +622,12 @@ function PatientRow({ patient, visibleColumns, adherence }: PatientRowProps) {
 
 // Main PatientManagement component
 export function PatientManagement({ className }: PatientManagementProps) {
-  const { user } = useAuth()
+  const { user, userRole } = useAuth()
   const [patients, setPatients] = useState<Patient[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [therapistMap, setTherapistMap] = useState<Map<string, { first_name: string; last_name: string }>>(new Map())
+  const [therapistsList, setTherapistsList] = useState<Array<{ id: string; first_name: string; last_name: string }>>([])  // For create dialog dropdown
   
   // Get patient IDs and session counts for optimized adherence fetching
   const patientCodes = patients.map(p => p.patient_code)
@@ -607,13 +647,38 @@ export function PatientManagement({ className }: PatientManagementProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [showFilters, setShowFilters] = useState(false)
   
+  // Patient creation states (admin only)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    patient_code: '',
+    firstName: '',
+    lastName: '',
+    age: '',
+    gender: 'not_specified' as 'male' | 'female' | 'non_binary' | 'not_specified',
+    therapistId: '',  // Empty by default - mandatory selection
+    totalSessions: '30'
+  })
+  const { toast } = useToast()
+  
+  // Use the custom hook for patient code generation
+  const {
+    isGenerating: isGeneratingCode,
+    validation: codeValidation,
+    generateCode,
+    validateCode,
+    formatCode,
+    cleanup: cleanupCodeGeneration
+  } = usePatientCodeGeneration()
+  
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
     const saved = localStorage.getItem('patient-management-visible-columns')
+    const isAdmin = userRole === 'ADMIN'
     return saved ? JSON.parse(saved) : {
       patient_id: false,  // Hidden - technical ID
       name: true,
       age: true,
+      therapist: isAdmin,  // Show for admin only
       treatment_start: false,  // Hidden - not needed daily
       sessions: true,
       last_session: false,  // Hidden - secondary info
@@ -744,26 +809,186 @@ export function PatientManagement({ className }: PatientManagementProps) {
     return filtered
   }, [patients, filters, sortField, sortDirection, adherenceData])
 
-  // Sort handler
-  const handleSort = (field: SortField) => {
+  // Sort handler with useCallback for optimization
+  const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortField(field)
       setSortDirection('desc')
     }
-  }
+  }, [sortField, sortDirection])
 
-  // Simple useEffect for data fetching (KISS approach)
+  // Generate next available patient code (wrapper for hook function)
+  const generatePatientCode = useCallback(async () => {
+    try {
+      const newCode = await generateCode()
+      setCreateForm(prev => ({ ...prev, patient_code: newCode }))
+      
+    } catch (error: any) {
+      console.error('Failed to generate patient code:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to generate patient code. Please enter manually.',
+        variant: 'destructive'
+      })
+    }
+  }, [generateCode, setCreateForm, toast])
+
+  // Patient creation handler with useCallback (admin only)
+  const handleCreatePatient = useCallback(async () => {
+    if (!createForm.patient_code || !createForm.firstName || !createForm.lastName || !createForm.therapistId) {
+      toast({
+        title: 'Error',
+        description: 'Patient code, first name, last name, and therapist assignment are required',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    // Check code validation
+    if (!codeValidation?.isValid) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid and unique patient code',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      // First, create the patient record
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .insert({
+          patient_code: createForm.patient_code,
+          therapist_id: createForm.therapistId,  // Now mandatory
+          total_sessions_planned: parseInt(createForm.totalSessions) || 30,
+          treatment_start_date: new Date().toISOString(),
+          active: true
+        })
+        .select()
+        .single()
+
+      if (patientError) throw patientError
+
+      // Then, create the medical info record
+      const age = parseInt(createForm.age)
+      const dateOfBirth = age ? new Date(new Date().getFullYear() - age, 0, 1).toISOString().split('T')[0] : null
+
+      const { error: medicalError } = await supabase
+        .from('patient_medical_info')
+        .insert({
+          patient_code: createForm.patient_code,
+          first_name: createForm.firstName,
+          last_name: createForm.lastName,
+          date_of_birth: dateOfBirth,
+          gender: createForm.gender
+        })
+
+      if (medicalError) {
+        // If medical info creation fails, try to clean up the patient record
+        await supabase.from('patients').delete().eq('patient_code', createForm.patient_code)
+        throw medicalError
+      }
+
+      toast({
+        title: 'Success',
+        description: `Patient ${createForm.firstName} ${createForm.lastName} (${createForm.patient_code}) created successfully`
+      })
+
+      // Reset form and close dialog
+      setCreateForm({
+        patient_code: '',
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: 'not_specified',
+        therapistId: '',
+        totalSessions: '30'
+      })
+      setCodeValidation(null)
+      setShowCreateDialog(false)
+
+      // Reload patients to show the new patient
+      await loadPatientsData()
+
+    } catch (error: any) {
+      console.error('Failed to create patient:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to create patient: ${error.message}`,
+        variant: 'destructive'
+      })
+    }
+  }, [createForm, codeValidation, toast, loadPatientsData])
+
+  // Handle dialog open/close with cleanup
+  const handleDialogChange = useCallback((open: boolean) => {
+    setShowCreateDialog(open)
+    if (!open) {
+      // Cleanup code generation on dialog close
+      cleanupCodeGeneration()
+      setCodeValidation(null)
+    }
+  }, [cleanupCodeGeneration])
+
+  // Auto-generate patient code when dialog opens
   useEffect(() => {
-    if (!user?.id) return
+    if (showCreateDialog && !createForm.patient_code) {
+      generatePatientCode()
+    }
+  }, [showCreateDialog])
 
+  // Load patients data function (extracted for reuse)
+  const loadPatientsData = useCallback(async () => {
+    if (!user?.id) return
+    
     const loadPatients = async () => {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await fetchTherapistPatients(user.id)
+        
+        // Check if user is admin
+        const isAdmin = userRole === 'ADMIN'
+        
+        // Fetch patients (all for admin, filtered for therapists)
+        const data = await fetchPatients(user.id, isAdmin)
         setPatients(data)
+        
+        // If admin, fetch therapist information for display
+        if (isAdmin) {
+          // Fetch all therapists for dropdown (patient creation)
+          const { data: allTherapists } = await supabase
+            .from('user_profiles')
+            .select('id, first_name, last_name')
+            .eq('role', 'therapist')
+            .eq('active', true)
+          
+          if (allTherapists) {
+            setTherapistsList(allTherapists)
+          }
+          
+          // Fetch therapist map for patient display (only assigned therapists)
+          if (data.length > 0) {
+            const uniqueTherapistIds = [...new Set(data.map(p => p.therapist_id).filter(Boolean))]
+            
+            if (uniqueTherapistIds.length > 0) {
+              const { data: therapistData } = await supabase
+                .from('user_profiles')
+                .select('id, first_name, last_name')
+                .in('id', uniqueTherapistIds)
+                .eq('role', 'therapist')
+              
+              if (therapistData) {
+                const therapistMapData = new Map(
+                  therapistData.map(t => [t.id, { first_name: t.first_name, last_name: t.last_name }])
+                )
+                setTherapistMap(therapistMapData)
+              }
+            }
+          }
+        }
       } catch (err) {
         setError(err as Error)
       } finally {
@@ -772,7 +997,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
     }
 
     loadPatients()
-  }, [user?.id])
+  }, [user?.id, userRole])
 
   // Handle loading state
   if (isLoading) {
@@ -832,6 +1057,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                           patient_id: 'Patient ID',
                           name: 'Name',
                           age: 'Age',
+                          ...(userRole === 'ADMIN' ? { therapist: 'Therapist' } : {}),
                           sessions: 'Sessions', 
                           last_session: 'Last Session',
                           adherence: 'Adherence',
@@ -889,6 +1115,14 @@ export function PatientManagement({ className }: PatientManagementProps) {
                     </div>
                   </PopoverContent>
                 </Popover>
+                
+                {/* Add Patient Button - Admin Only */}
+                {userRole === 'ADMIN' && (
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Icons.PlusIcon className="mr-2 h-4 w-4" />
+                    Add Patient
+                  </Button>
+                )}
               </div>
             </div>
             <div className="text-center py-12">
@@ -919,7 +1153,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PersonIcon className="h-5 w-5 text-blue-500" />
-            Patient Management
+            {userRole === 'ADMIN' ? 'All Patients' : 'Patient Management'}
             <Badge variant="secondary" className="ml-auto">
               {filteredAndSortedPatients.length} of {patients.length} patients
             </Badge>
@@ -954,6 +1188,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
                         patient_id: 'Patient ID',
                         name: 'Name',
                         age: 'Age',
+                        ...(userRole === 'ADMIN' ? { therapist: 'Therapist' } : {}),
                         treatment_start: 'Treatment Start',
                         sessions: 'Sessions Completed', 
                         last_session: 'Last Activity',
@@ -1012,6 +1247,14 @@ export function PatientManagement({ className }: PatientManagementProps) {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Add Patient Button - Admin Only */}
+              {userRole === 'ADMIN' && (
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Icons.PlusIcon className="mr-2 h-4 w-4" />
+                  Add Patient
+                </Button>
+              )}
             </div>
           </div>
           
@@ -1065,6 +1308,18 @@ export function PatientManagement({ className }: PatientManagementProps) {
                         {sortField === 'age' && (
                           sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
                         )}
+                      </Button>
+                    </TableHead>
+                  )}
+                  
+                  {visibleColumns.therapist && (
+                    <TableHead className="min-w-[120px]">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 data-[state=open]:bg-accent"
+                      >
+                        Therapist
                       </Button>
                     </TableHead>
                   )}
@@ -1275,12 +1530,17 @@ export function PatientManagement({ className }: PatientManagementProps) {
               <TableBody>
                 {filteredAndSortedPatients.map((patient) => {
                   const patientAdherence = adherenceData.find(a => a.patient_id === patient.patient_code)
+                  const therapist = patient.therapist_id ? therapistMap.get(patient.therapist_id) : null
+                  const therapistName = therapist 
+                    ? `${therapist.first_name || ''} ${therapist.last_name || ''}`.trim() || 'Unknown'
+                    : null
                   return (
                     <PatientRow 
                       key={patient.patient_code} 
                       patient={patient} 
                       visibleColumns={visibleColumns}
                       adherence={patientAdherence}
+                      therapistName={therapistName}
                     />
                   )
                 })}
@@ -1289,6 +1549,160 @@ export function PatientManagement({ className }: PatientManagementProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Patient Creation Dialog - Admin Only */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Patient</DialogTitle>
+            <DialogDescription>
+              Add a new patient to the system. Patient code must be unique and therapist assignment is required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="patientCode" className="text-right">Patient Code</Label>
+              <div className="col-span-3 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    id="patientCode"
+                    value={createForm.patient_code}
+                    onChange={(e) => {
+                      let code = e.target.value.toUpperCase()
+                      
+                      // Enforce P### format as user types
+                      if (code && !code.startsWith('P')) {
+                        code = 'P' + code.replace(/[^0-9]/g, '')
+                      } else if (code.length > 1) {
+                        // Keep P and only digits, max 3 digits
+                        code = 'P' + code.slice(1).replace(/[^0-9]/g, '').slice(0, 3)
+                      }
+                      
+                      setCreateForm({ ...createForm, patient_code: code })
+                      if (code) {
+                        validatePatientCode(code)
+                      } else {
+                        setCodeValidation(null)
+                      }
+                    }}
+                    placeholder="P001"
+                    className={`flex-1 ${
+                      codeValidation 
+                        ? codeValidation.isValid 
+                          ? 'border-green-500 focus:border-green-500' 
+                          : 'border-red-500 focus:border-red-500'
+                        : ''
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generatePatientCode}
+                    disabled={isGeneratingCode}
+                    className="shrink-0"
+                  >
+                    {isGeneratingCode ? (
+                      <Icons.UpdateIcon className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Icons.MagicWandIcon className="h-4 w-4" />
+                    )}
+                    Generate
+                  </Button>
+                </div>
+                {codeValidation && (
+                  <p className={`text-xs ${
+                    codeValidation.isValid ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {codeValidation.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="firstName" className="text-right">First Name</Label>
+              <Input
+                id="firstName"
+                value={createForm.firstName}
+                onChange={(e) => setCreateForm({ ...createForm, firstName: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="lastName" className="text-right">Last Name</Label>
+              <Input
+                id="lastName"
+                value={createForm.lastName}
+                onChange={(e) => setCreateForm({ ...createForm, lastName: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="age" className="text-right">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={createForm.age}
+                onChange={(e) => setCreateForm({ ...createForm, age: e.target.value })}
+                placeholder="25"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Gender</Label>
+              <Select 
+                value={createForm.gender} 
+                onValueChange={(value) => setCreateForm({ ...createForm, gender: value as any })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="non_binary">Non-binary</SelectItem>
+                  <SelectItem value="not_specified">Prefer not to say</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Therapist *</Label>
+              <Select 
+                value={createForm.therapistId} 
+                onValueChange={(value) => setCreateForm({ ...createForm, therapistId: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select therapist (required)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {therapistsList.map((therapist) => (
+                    <SelectItem key={therapist.id} value={therapist.id}>
+                      {therapist.first_name} {therapist.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="totalSessions" className="text-right">Total Sessions</Label>
+              <Input
+                id="totalSessions"
+                type="number"
+                value={createForm.totalSessions}
+                onChange={(e) => setCreateForm({ ...createForm, totalSessions: e.target.value })}
+                placeholder="30"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreatePatient}>Create Patient</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
