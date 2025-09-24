@@ -31,18 +31,14 @@ export function useEnhancedExportData(
     
     if (!baseExportData) return null;
 
-    // T016: Enhance export data with patient code information
+    // T016: Enhance export data with patient code information (only useful info)
     const enhancedExportData: ExportData = {
       ...baseExportData,
       metadata: {
         ...baseExportData.metadata,
-        // Add patient code metadata
-        patientCode: patientCodeHook.patientCode,
-        patientCodeSource: patientCodeHook.source,
-        patientCodeConfidence: patientCodeHook.confidence,
-        // Add enhanced filename if available
-        ...(patientCodeHook.enhancedFileName && {
-          enhancedFileName: patientCodeHook.enhancedFileName
+        // Add only useful patient code metadata (no technical details)
+        ...(patientCodeHook.patientCode && {
+          patientCode: patientCodeHook.patientCode
         })
       }
     };

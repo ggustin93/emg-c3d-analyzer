@@ -9,7 +9,7 @@ export const DEFAULT_EXPORT_OPTIONS = {
   includeSessionParams: true,
   includePerformanceAnalysis: true,
   includeC3dMetadata: true,
-  format: 'json' as 'json' | 'csv',
+  format: 'csv' as 'json' | 'csv',
 } as const;
 
 // Downsampling Configuration

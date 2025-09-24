@@ -124,14 +124,26 @@ export const useAuth = (): AuthState & AuthActions => {
         startAuthTransition(() => {
           setUserProfile(profile)
           
-          // Streamlined role normalization using profile data
+          // Enhanced role normalization with debugging
           if (profile?.role) {
-            const role = profile.role.toLowerCase()
-            if (role === 'admin') setUserRole('ADMIN')
-            else if (role === 'therapist') setUserRole('THERAPIST')
-            else if (role === 'researcher') setUserRole('RESEARCHER')
-            else setUserRole(null)
+            const rawRole = profile.role
+            const normalizedRole = rawRole.toLowerCase().trim()
+            
+            console.log('🔍 DEBUG: Role normalization', {
+              rawRole,
+              normalizedRole,
+              type: typeof rawRole
+            })
+            
+            if (normalizedRole === 'admin') setUserRole('ADMIN')
+            else if (normalizedRole === 'therapist') setUserRole('THERAPIST') 
+            else if (normalizedRole === 'researcher') setUserRole('RESEARCHER')
+            else {
+              console.warn('🚨 Unknown role detected:', rawRole)
+              setUserRole(null)
+            }
           } else {
+            console.warn('🚨 No role found in profile:', profile)
             setUserRole(null)
           }
           

@@ -91,7 +91,7 @@ export const enhancedFetch: typeof fetch = async (input, init) => {
   // Log request start in development - SECURITY: Filter sensitive headers
   if (import.meta.env.DEV && loggerLib) {
     // Filter out sensitive headers from logs
-    const safeHeaders = { ...init?.headers };
+    const safeHeaders: Record<string, any> = { ...init?.headers };
     if (safeHeaders) {
       // Mask authorization token if present
       if (safeHeaders['Authorization']) {

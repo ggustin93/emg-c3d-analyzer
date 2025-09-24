@@ -34,6 +34,7 @@ describe('ExportActions Component', () => {
     exportData: mockExportData,
     originalFilename: 'test_file.c3d',
     hasSelectedData: true,
+    hasSelectedChannels: false,
     exportFormat: 'json' as 'json' | 'csv',
     onDownloadOriginal: mockOnDownloadOriginal,
     onDownloadExport: mockOnDownloadExport

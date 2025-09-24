@@ -257,7 +257,15 @@ function ErrorPatientState({ error }: { error: Error }) {
 
 // Main PatientManagement component
 export function PatientManagement({ className }: PatientManagementProps) {
-  const { user, userRole } = useAuth()
+  const { user, userRole, userProfile, loading: authLoading } = useAuth()
+  
+  // Debug auth state
+  console.log('🔍 DEBUG: Auth state in PatientManagement', {
+    user: user?.email,
+    userRole,
+    userProfile,
+    authLoading
+  })
   const [patients, setPatients] = useState<Patient[]>([])
   const [patientsLoading, setPatientsLoading] = useState(true)
   const [therapistsLoading, setTherapistsLoading] = useState(true)
@@ -308,19 +316,19 @@ export function PatientManagement({ className }: PatientManagementProps) {
         }
       
       case 'ADMIN':
-        // Focus: System Management - comprehensive oversight and assignment management
+        // Focus: System Management - streamlined oversight and assignment management
         return {
-          patient_id: false,      // Hidden - still technical
+          patient_id: false,      // Hidden - technical detail
           name: true,            // ✅ Essential - patient identification
-          age: true,             // ✅ Important - demographic insights
+          age: false,            // Hidden - not needed for admin management
           therapist: true,       // ✅ Critical - assignment management
           treatment_start: true, // ✅ Important - timeline tracking
           sessions: true,        // ✅ Essential - system utilization
           last_session: false,   // Hidden - less critical for admin view
           adherence: true,       // ✅ Important - system-wide metrics
           protocol_day: true,    // ✅ Important - treatment monitoring
-          progress_trend: true,  // ✅ Important - system performance
-          status: true           // ✅ Essential - patient lifecycle management
+          progress_trend: false, // Hidden - clinical analysis, not admin management focus
+          status: false          // Hidden - not needed by default for admin view
         }
       
       case 'RESEARCHER':
@@ -358,15 +366,70 @@ export function PatientManagement({ className }: PatientManagementProps) {
   }
 
   // Column visibility state with role-based defaults and localStorage persistence
-  const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
-    const saved = localStorage.getItem('patient-management-visible-columns')
-    return saved ? JSON.parse(saved) : getRoleBasedColumnDefaults(userRole || 'RESEARCHER')
-  })
+  // TIMING FIX: Initialize with null, set proper state when userRole is available
+  const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility | null>(null)
 
-  // Save column visibility to localStorage
+  // Initialize column visibility once userRole is available
   useEffect(() => {
-    localStorage.setItem('patient-management-visible-columns', JSON.stringify(visibleColumns))
-  }, [visibleColumns])
+    if (userRole && !visibleColumns) {
+      const roleDefaults = getRoleBasedColumnDefaults(userRole)
+      const saved = localStorage.getItem('patient-management-visible-columns')
+      
+      console.log('🚀 DEBUG: Initializing columns with proper userRole', {
+        userRole,
+        roleDefaults,
+        hasSaved: !!saved
+      })
+      
+      if (saved) {
+        try {
+          const savedColumns = JSON.parse(saved)
+          
+          // CRITICAL: Role-based security settings override user preferences
+          const mergedColumns = {
+            ...savedColumns,      // Start with user preferences
+            ...roleDefaults       // Override with role-based security rules
+          }
+          
+          console.log('🔍 DEBUG: Final merged columns', mergedColumns)
+          setVisibleColumns(mergedColumns)
+        } catch (error) {
+          console.warn('Failed to parse saved column visibility, using role defaults:', error)
+          setVisibleColumns(roleDefaults)
+        }
+      } else {
+        setVisibleColumns(roleDefaults)
+      }
+    }
+  }, [userRole, visibleColumns])
+
+  // Save column visibility to localStorage (only when visibleColumns is initialized)
+  useEffect(() => {
+    if (visibleColumns) {
+      console.log('💾 DEBUG: Saving column visibility', {
+        userRole,
+        visibleColumns,
+        progress_trend: visibleColumns?.progress_trend
+      })
+      localStorage.setItem('patient-management-visible-columns', JSON.stringify(visibleColumns))
+    }
+  }, [visibleColumns, userRole])
+
+  // Reset to role-based defaults when user role changes (handles role switching)
+  useEffect(() => {
+    if (userRole && visibleColumns) {
+      const roleDefaults = getRoleBasedColumnDefaults(userRole)
+      console.log('🔄 DEBUG: Role changed - updating column visibility', {
+        userRole,
+        roleDefaults,
+        progress_trend: roleDefaults.progress_trend
+      })
+      setVisibleColumns(prevColumns => ({
+        ...prevColumns,   // Keep user customizations
+        ...roleDefaults   // Apply new role defaults (override security settings)
+      }))
+    }
+  }, [userRole])
 
   // State for modal controls
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -462,7 +525,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
   }, [loadPatientsData])
 
   // Handle loading state - Progressive loading: show patients when available, even if therapists still loading
-  if (patientsLoading) {
+  if (patientsLoading || !visibleColumns) {
     return <PatientTableLoading />
   }
 
@@ -492,7 +555,7 @@ export function PatientManagement({ className }: PatientManagementProps) {
         setSortDirection={setSortDirection}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
-        visibleColumns={visibleColumns}
+        visibleColumns={visibleColumns!}
         setVisibleColumns={setVisibleColumns}
         onCreatePatient={() => setShowCreateDialog(true)}
         onReassignPatient={(patient) => {

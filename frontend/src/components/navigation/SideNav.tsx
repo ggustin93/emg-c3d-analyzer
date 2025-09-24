@@ -10,7 +10,9 @@ import {
   GearIcon,
   ArchiveIcon,
   ExitIcon,
-  InfoCircledIcon
+  InfoCircledIcon,
+  LockClosedIcon,
+  MagnifyingGlassIcon
 } from '@radix-ui/react-icons'
 import { 
   Dialog, 
@@ -199,9 +201,9 @@ export function SideNav({
 
       {/* User Profile Section - Balanced and readable */}
       <div className="border-t border-gray-200/50 p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-9 h-9 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center">
-            <PersonIcon className="w-4 h-4 text-gray-600" />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center flex-shrink-0">
+            <PersonIcon className="w-5 h-5 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-800 truncate">
@@ -213,17 +215,20 @@ export function SideNav({
           </div>
         </div>
         
-        {/* Role badge centered below name with smaller font */}
+        {/* Role badge centered below name with enhanced styling */}
         <div className="mb-3 text-center">
           <span className={cn(
-            "inline-flex text-[11px] px-2.5 py-1 rounded-md font-medium capitalize",
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border shadow-sm",
             displayProfile.role === 'therapist' 
-              ? "bg-green-100 text-green-700" 
+              ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100" 
               : displayProfile.role === 'admin'
-              ? "bg-red-100 text-red-700"
-              : "bg-blue-100 text-blue-700"
+              ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+              : "border-green-200 bg-green-50 text-green-800 hover:bg-green-100"
           )}>
-            {displayProfile.role.charAt(0).toUpperCase() + displayProfile.role.slice(1)}
+            {displayProfile.role === 'admin' && <LockClosedIcon className="h-3 w-3" />}
+            {displayProfile.role === 'therapist' && <PersonIcon className="h-3 w-3" />}
+            {displayProfile.role === 'researcher' && <MagnifyingGlassIcon className="h-3 w-3" />}
+            <span className="capitalize">{displayProfile.role}</span>
           </span>
         </div>
         
@@ -232,9 +237,9 @@ export function SideNav({
             variant="ghost"
             size="sm"
             onClick={() => setShowLogoutDialog(true)}
-            className="text-xs h-8 px-4 text-gray-500 hover:text-red-600 hover:bg-red-50/70 transition-colors"
+            className="text-xs h-8 px-4 text-gray-500 hover:text-red-600 hover:bg-red-50/70 transition-colors flex items-center gap-2"
           >
-            <ExitIcon className="w-3.5 h-3.5 mr-1.5" />
+            <ExitIcon className="w-3.5 h-3.5" />
             Sign Out
           </Button>
         </div>

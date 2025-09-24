@@ -8,23 +8,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileTextIcon, 
   CopyIcon, 
   CheckIcon,
   CodeIcon,
-  PersonIcon
+  PersonIcon,
+  InfoCircledIcon
 } from '@radix-ui/react-icons';
 import { EMGAnalysisResult } from '@/types/emg';
 import { useSessionStore } from '@/store/sessionStore';
+import { useAuth } from '@/contexts/AuthContext';
 import SupabaseStorageService from '@/services/supabaseStorage';
 import { logger, LogCategory } from '@/services/logger';
 
 // Import modular components
-import { ChannelSelector } from './ChannelSelector';
-import { DownsamplingControl } from './DownsamplingControl';
 import { ExportOptionsPanel } from './ExportOptionsPanel';
 import { ExportActions } from './ExportActions';
 import { useExportData } from './hooks';
@@ -38,6 +38,7 @@ interface ExportTabProps {
 
 const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName }) => {
   const { sessionParams } = useSessionStore();
+  const { userRole } = useAuth();
   
   // T019: Use enhanced export data hook with patient code integration
   const {
@@ -157,44 +158,35 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-        {/* Left Column - Configuration */}
+        {/* Left Column - Configuration & Downloads */}
         <div className="space-y-6">
-          {/* Export Options */}
+          {/* Export Options (includes EMG Channels in Advanced) */}
           <ExportOptionsPanel
             options={exportOptions}
             onChange={setExportOptions}
+            availableChannels={availableChannels}
+            channelSelection={channelSelection}
+            onChannelSelectionChange={handleChannelSelectionChange}
+            hasSelectedChannels={hasSelectedChannels}
+            downsamplingOptions={downsamplingOptions}
+            onDownsamplingChange={setDownsamplingOptions}
           />
 
-          {/* EMG Channels Section */}
-          <div className="space-y-4">
-            <ChannelSelector
-              availableChannels={availableChannels}
-              channelSelection={channelSelection}
-              onChannelSelectionChange={handleChannelSelectionChange}
-            />
-            
-            {/* Downsampling Control - Only shown when channels are selected */}
-            <DownsamplingControl
-              options={downsamplingOptions}
-              onChange={setDownsamplingOptions}
-              hasSelectedChannels={hasSelectedChannels}
-            />
-          </div>
-        </div>
-
-        {/* Right Column - Preview & Actions */}
-        <div className="space-y-6">
-          {/* Export Actions */}
+          {/* Export Actions - Moved to left */}
           <ExportActions
             exportData={fullExportData} 
             originalFilename={originalFilename}
             hasSelectedData={hasSelectedData}
+            hasSelectedChannels={hasSelectedChannels}
             exportFormat={exportOptions.format}
             sessionId={analysisResult?.session_id || undefined}
             onDownloadOriginal={downloadOriginalFile}
             onDownloadExport={downloadExportData}
           />
+        </div>
 
+        {/* Right Column - Preview */}
+        <div className="space-y-6">
           {/* JSON Preview */}
           <Card>
             <CardHeader>
@@ -210,7 +202,28 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
                 )}
               </CardTitle>
               <CardDescription>
-                🔍 <strong>Preview Sample</strong> - Showing limited data (5 points per array). Full dataset available in the downloaded file.
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Live Preview</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      Preview shows 5 sample points per signal. Complete data available for download.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoCircledIcon className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          <strong>JSON:</strong> Includes {hasSelectedChannels ? 'full signals + ' : ''}all selected data<br />
+                          <strong>CSV:</strong> Exports {hasSelectedChannels ? 'analytics & metadata only' : 'all selected data'}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -237,7 +250,7 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
                 </Button>
               </div>
 
-              {/* JSON Content */}
+              {/* Preview Content */}
               {hasSelectedData ? (
                 <div className="border rounded-lg overflow-hidden">
                   <ScrollArea className="h-96">
@@ -260,6 +273,29 @@ const ExportTab: React.FC<ExportTabProps> = ({ analysisResult, uploadedFileName 
               )}
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Export Options Note - Role-based */}
+        <div className="col-span-full">
+          <div className="text-center">
+            <div className="bg-blue-50 rounded-lg p-4 max-w-lg mx-auto">
+              <p className="text-sm text-blue-700">
+                <strong>Need more export options?</strong> For advanced data workflows, 
+                {userRole === 'RESEARCHER' || userRole === 'ADMIN' ? (
+                  <>
+                    consider <strong>Supabase Studio</strong> for direct database access, 
+                    <strong> NocoDB</strong> for spreadsheet-style editing, or 
+                    <strong> Metabase</strong> for custom analytics dashboards.
+                  </>
+                ) : (
+                  <>
+                    contact your technical team about <strong>Supabase Studio</strong>, 
+                    <strong> NocoDB</strong>, or <strong> Metabase</strong> for advanced data tools.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </TooltipProvider>

@@ -510,11 +510,11 @@ export function TrialConfigurationTab() {
             <CardContent>
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Channel 1 Configuration</h4>
-                    
+                  <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="channel_1_muscle">Channel 1 Muscle Name</Label>
+                      <Label htmlFor="channel_1_muscle" className="text-sm font-medium text-gray-700">
+                        Channel 1 Muscle Name
+                      </Label>
                       <Input
                         id="channel_1_muscle"
                         type="text"
@@ -522,18 +522,16 @@ export function TrialConfigurationTab() {
                         onChange={(e) => handleTargetDefaultChange('channel_1_muscle_name', e.target.value)}
                         disabled={!editMode}
                         placeholder="e.g., Left Quadriceps"
+                        className="w-full"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        This will be displayed instead of "Channel 1" throughout the system
-                      </p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Channel 2 Configuration</h4>
-                    
+                  <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="channel_2_muscle">Channel 2 Muscle Name</Label>
+                      <Label htmlFor="channel_2_muscle" className="text-sm font-medium text-gray-700">
+                        Channel 2 Muscle Name
+                      </Label>
                       <Input
                         id="channel_2_muscle"
                         type="text"
@@ -541,34 +539,18 @@ export function TrialConfigurationTab() {
                         onChange={(e) => handleTargetDefaultChange('channel_2_muscle_name', e.target.value)}
                         disabled={!editMode}
                         placeholder="e.g., Right Quadriceps"
+                        className="w-full"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        This will be displayed instead of "Channel 2" throughout the system
-                      </p>
                     </div>
                   </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs text-gray-600">
+                    <strong>Impact:</strong> These muscle names will replace "Channel 1" and "Channel 2" throughout the system in patient targets, progress charts, and clinical reports.
+                  </p>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Icons.InfoCircledIcon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h5 className="text-sm font-medium text-blue-900 mb-1">Muscle Configuration Impact</h5>
-                        <div className="text-sm text-blue-800 space-y-1">
-                          <p>• These muscle names will appear in:</p>
-                          <ul className="list-disc list-inside ml-4 space-y-1">
-                            <li>Patient Treatment Targets (MVC, BFR, Duration)</li>
-                            <li>Progress Charts and Analytics</li>
-                            <li>Session Analysis Reports</li>
-                            <li>Clinical Notes and Documentation</li>
-                          </ul>
-                          <p className="mt-2"><strong>Common Examples:</strong> Left/Right Quadriceps, Biceps, Triceps, Hamstrings, etc.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -596,30 +578,265 @@ export function TrialConfigurationTab() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {/* Compact Performance Formula */}
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-sm font-mono text-blue-800">
-                      <span className="text-green-600 font-bold">S<sub>overall</sub></span> = 
-                      <span className="text-green-600">{((formData?.weight_compliance || 0.5) * 100).toFixed(0)}%</span> × <span className="text-green-600">S<sub>compliance</sub></span> + 
-                      <span className="text-purple-600">{((formData?.weight_symmetry || 0.25) * 100).toFixed(0)}%</span> × <span className="text-purple-600">S<sub>symmetry</sub></span> + 
-                      <span className="text-orange-600">{((formData?.weight_effort || 0.25) * 100).toFixed(0)}%</span> × <span className="text-orange-600">S<sub>effort</sub></span> + 
-                      <span className="text-gray-600">{((formData?.weight_game || 0.0) * 100).toFixed(0)}%</span> × <span className="text-gray-600">S<sub>game</sub></span>
+                  {/* Overall Performance Formula - LaTeX Style */}
+                  <div className="p-4 border border-gray-200 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Overall Performance Formula</h4>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <span className="font-bold text-slate-900 text-xl font-serif italic tracking-wide">
+                        S<sub className="text-lg">overall</sub> <span className="mx-2 text-amber-600">=</span>
+                      </span>
+                      
+                      {/* Therapeutic Compliance Term */}
+                      <ClinicalTooltip
+                        title="Therapeutic Compliance Score"
+                        description="Measures whether prescribed exercise intensity and duration achieve therapeutic effect"
+                        sections={[
+                          {
+                            title: "Formula:",
+                            type: "formula",
+                            items: [
+                              { 
+                                label: "S<sub>compliance</sub>", 
+                                value: " = (S<sub>left</sub> + S<sub>right</sub>) / 2" 
+                              }
+                            ]
+                          },
+                          {
+                            title: "Components:",
+                            type: "list",
+                            items: [
+                              { label: "Completion Rate", description: "Contractions performed (12/12 target)" },
+                              { label: "Intensity Rate", description: "Force relative to MVC (≥75% target)" },
+                              { label: "Duration Rate", description: "Contraction hold time (≥patient-specific threshold)" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Purpose:",
+                            items: [
+                              { label: "Primary indicator", description: "Therapeutic dose for muscle adaptation" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-purple-100 border border-purple-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-purple-700">
+                            {((formData?.weight_compliance || 0.5) * 100).toFixed(0)}% × S<sub className="text-sm">compliance</sub>
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
+                      
+                      <span className="text-amber-600 font-serif text-lg mx-1">+</span>
+                      
+                      {/* Muscle Symmetry Term */}
+                      <ClinicalTooltip
+                        title="Muscle Symmetry Score"
+                        description="Quantifies performance balance between legs"
+                        sections={[
+                          {
+                            title: "Formula:",
+                            type: "formula",
+                            items: [
+                              { 
+                                label: "S<sub>symmetry</sub>", 
+                                value: " = (1 - |S<sub>left</sub> - S<sub>right</sub>| / (S<sub>left</sub> + S<sub>right</sub>)) × 100" 
+                              }
+                            ]
+                          },
+                          {
+                            title: "Score Ranges:",
+                            items: [
+                              { label: ">90%", description: "Within normal limits - progress difficulty" },
+                              { label: "80-90%", description: "Acceptable asymmetry - continue protocol" },
+                              { label: "70-80%", description: "Moderate asymmetry - focus on weaker side" },
+                              { label: "<70%", description: "Significant asymmetry - clinical review required" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Purpose:",
+                            items: [
+                              { label: "Bilateral assessment", description: "Detects weakness, pain, or compensatory patterns" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-teal-100 border border-teal-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-teal-700">
+                            {((formData?.weight_symmetry || 0.25) * 100).toFixed(0)}% × S<sub className="text-sm">symmetry</sub>
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
+                      
+                      <span className="text-amber-600 font-serif text-lg mx-1">+</span>
+                      
+                      {/* Subjective Effort Term */}
+                      <ClinicalTooltip
+                        title="Subjective Effort Score (RPE)"
+                        description="Based on Borg CR-10 Scale (0-10 rating of perceived exertion)"
+                        sections={[
+                          {
+                            title: "RPE Mapping:",
+                            items: [
+                              { label: "RPE 4-6", description: "100% - Target range for elderly rehabilitation" },
+                              { label: "RPE 3, 7", description: "80% - Acceptable, monitor for adjustment" },
+                              { label: "RPE 2, 8", description: "60% - Outside target, consider modification" },
+                              { label: "RPE 0-1, 9-10", description: "20% - Requires immediate adjustment" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Purpose:",
+                            items: [
+                              { label: "Safety validation", description: "RPE 4-6 represents optimal balance between therapeutic stimulus and safety for elderly patients" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-amber-100 border border-amber-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-amber-700">
+                            {((formData?.weight_effort || 0.25) * 100).toFixed(0)}% × S<sub className="text-sm">effort</sub>
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
+                      
+                      <span className="text-amber-600 font-serif text-lg mx-1">+</span>
+                      
+                      {/* Game Score Term */}
+                      <ClinicalTooltip
+                        title="Game Performance Score"
+                        description="Optional metric for patient engagement assessment"
+                        sections={[
+                          {
+                            title: "Formula:",
+                            type: "formula",
+                            items: [
+                              { 
+                                label: "S<sub>game</sub>", 
+                                value: " = (points<sub>achieved</sub> / points<sub>max</sub>) × 100" 
+                              }
+                            ]
+                          },
+                          {
+                            title: "Clinical Note:",
+                            items: [
+                              { label: "Engagement metric", description: "Game performance does not correlate directly with therapeutic benefit" },
+                              { label: "Weighted at 0%", description: "By default, game performance is not included in overall score calculation" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-slate-100 border border-slate-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-slate-700">
+                            {((formData?.weight_game || 0.0) * 100).toFixed(0)}% × S<sub className="text-sm">game</sub>
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
                     </div>
                   </div>
 
-                  {/* S_compliance Formula */}
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="text-sm font-semibold text-green-900 mb-2">S<sub>compliance</sub> Formula</h4>
-                    <div className="text-sm font-mono text-green-800">
-                      <span className="text-green-600 font-bold">S<sub>compliance</sub></span> = 
-                      <span className="text-green-600">{((formData?.weight_completion || 0.333) * 100).toFixed(1)}%</span> × <span className="text-green-600">Completion</span> + 
-                      <span className="text-green-600">{((formData?.weight_intensity || 0.333) * 100).toFixed(1)}%</span> × <span className="text-green-600">Intensity</span> + 
-                      <span className="text-green-600">{((formData?.weight_duration || 0.334) * 100).toFixed(1)}%</span> × <span className="text-green-600">Duration</span>
+                  {/* S_compliance Formula - LaTeX Style */}
+                  <div className="p-4 border border-gray-200 rounded-lg">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">S<sub>compliance</sub> Formula</h4>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <span className="font-bold text-slate-900 text-xl font-serif italic tracking-wide">
+                        S<sub className="text-lg">compliance</sub> <span className="mx-2 text-amber-600">=</span>
+                      </span>
+                      
+                      {/* Completion Term */}
+                      <ClinicalTooltip
+                        title="Completion Rate"
+                        description="Percentage of planned contractions completed"
+                        sections={[
+                          {
+                            title: "Target:",
+                            items: [
+                              { label: "Goal", description: "12/12 contractions (100% completion rate)" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Significance:",
+                            items: [
+                              { label: "Volume assessment", description: "Ensures adequate exercise volume for therapeutic benefit" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-blue-100 border border-blue-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-blue-700">
+                            {((formData?.weight_completion || 0.333) * 100).toFixed(1)}% × Completion
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
+                      
+                      <span className="text-amber-600 font-serif text-lg mx-1">+</span>
+                      
+                      {/* Intensity Term */}
+                      <ClinicalTooltip
+                        title="Intensity Rate"
+                        description="Percentage of contractions meeting force threshold"
+                        sections={[
+                          {
+                            title: "Target:",
+                            items: [
+                              { label: "Goal", description: "≥75% MVC threshold for therapeutic effect" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Significance:",
+                            items: [
+                              { label: "Force assessment", description: "Ensures sufficient muscle activation for adaptation" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-green-100 border border-green-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-green-700">
+                            {((formData?.weight_intensity || 0.333) * 100).toFixed(1)}% × Intensity
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
+                      
+                      <span className="text-amber-600 font-serif text-lg mx-1">+</span>
+                      
+                      {/* Duration Term */}
+                      <ClinicalTooltip
+                        title="Duration Rate"
+                        description="Percentage of contractions meeting duration threshold"
+                        sections={[
+                          {
+                            title: "Target:",
+                            items: [
+                              { label: "Goal", description: "≥patient-specific duration threshold (adaptive)" }
+                            ]
+                          },
+                          {
+                            title: "Clinical Significance:",
+                            items: [
+                              { label: "Time under tension", description: "Ensures adequate muscle loading time for adaptation" }
+                            ]
+                          }
+                        ]}
+                      >
+                        <div className="px-3 py-2 rounded-lg bg-orange-100 border border-orange-300 cursor-help">
+                          <span className="font-serif italic text-lg font-medium text-orange-700">
+                            {((formData?.weight_duration || 0.334) * 100).toFixed(1)}% × Duration
+                          </span>
+                        </div>
+                      </ClinicalTooltip>
                     </div>
-                    <div className="text-xs text-green-700 mt-2">
-                      <p><strong>Completion:</strong> % of planned contractions completed</p>
-                      <p><strong>Intensity:</strong> % of contractions ≥75% MVC threshold</p>
-                      <p><strong>Duration:</strong> % of contractions ≥patient-specific duration threshold (adaptive)</p>
+                    
+                    {/* Component Descriptions */}
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-blue-500"></div>
+                        <span><strong>Completion:</strong> % of planned contractions completed</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-green-500"></div>
+                        <span><strong>Intensity:</strong> % of contractions ≥75% MVC threshold</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-orange-500"></div>
+                        <span><strong>Duration:</strong> % of contractions ≥patient-specific duration threshold (adaptive)</span>
+                      </div>
                     </div>
                   </div>
 
@@ -629,7 +846,7 @@ export function TrialConfigurationTab() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-2 text-sm">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                           Compliance
                         </Label>
                         <span className="text-xs text-muted-foreground">
@@ -651,7 +868,7 @@ export function TrialConfigurationTab() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-2 text-sm">
-                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
                           Symmetry
                         </Label>
                         <span className="text-xs text-muted-foreground">
@@ -673,7 +890,7 @@ export function TrialConfigurationTab() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-2 text-sm">
-                          <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                           Effort (RPE)
                         </Label>
                         <span className="text-xs text-muted-foreground">
@@ -695,7 +912,7 @@ export function TrialConfigurationTab() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-2 text-sm">
-                          <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-slate-500 rounded-full"></span>
                           Game
                           <Badge variant="outline" className="text-xs">Exp</Badge>
                         </Label>
@@ -825,11 +1042,11 @@ export function TrialConfigurationTab() {
                     ]}
                   />
                 </CardTitle>
-                <CardDescription>Configure Rating of Perceived Exertion (RPE) scoring ranges for subjective effort assessment</CardDescription>
+                <CardDescription>Configure Rating of Perceived Exertion (RPE) scoring ranges. RPE scores contribute {((formData?.weight_effort || 0.25) * 100).toFixed(0)}% to the Overall Performance Score</CardDescription>
               </CardHeader>
               <CardContent>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   {formData?.rpe_mapping && Object.entries(formData.rpe_mapping)
                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                     .map(([rpeValue, mapping]) => {
@@ -844,13 +1061,31 @@ export function TrialConfigurationTab() {
                       if (rpe <= 7) return 'border-orange-200 bg-orange-50'
                       return 'border-red-300 bg-red-100'
                     }
+
+                    // User-friendly descriptions
+                    const getRpeDescription = (rpe: number) => {
+                      if (rpe === 0) return "No effort - Patient feels no effort at all"
+                      if (rpe === 1) return "Very light - Minimal effort, barely noticeable"
+                      if (rpe === 2) return "Light - Easy effort, comfortable to maintain"
+                      if (rpe === 3) return "Moderate light - Noticeable effort, still comfortable"
+                      if (rpe === 4) return "Moderate - Clear effort, optimal therapeutic range"
+                      if (rpe === 5) return "Moderate hard - Strong effort, peak therapeutic intensity"
+                      if (rpe === 6) return "Somewhat hard - Challenging effort, approaching limit"
+                      if (rpe === 7) return "Hard - Difficult effort, requires focus"
+                      if (rpe === 8) return "Very hard - Very difficult, near maximum capacity"
+                      if (rpe === 9) return "Extremely hard - Maximum effort, very challenging"
+                      if (rpe === 10) return "Maximum - Absolute maximum effort possible"
+                      return "Unknown effort level"
+                    }
                     
                     return (
                       <div key={rpeValue} className={`p-3 border rounded-lg ${getColorClass(rpeNum)}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-lg">RPE {rpeValue}</span>
-                            <span className="text-xs text-muted-foreground">({rpeData.category})</span>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {getRpeDescription(rpeNum).split(' - ')[0]}
+                            </span>
                           </div>
                           <Input
                             type="number"
@@ -872,12 +1107,12 @@ export function TrialConfigurationTab() {
                             disabled={!editMode}
                             min={0}
                             max={100}
-                            className="h-8 w-16 text-sm text-center"
+                            className="h-8 w-16 text-sm text-center font-semibold"
                             placeholder="0"
                           />
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {rpeData.clinical}
+                          {getRpeDescription(rpeNum).split(' - ')[1]}
                         </div>
                       </div>
                     )
@@ -886,45 +1121,6 @@ export function TrialConfigurationTab() {
               </CardContent>
             </Card>
 
-            {/* RPE Scale Reference */}
-            <Card className="border border-gray-200/70 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">RPE Scale Reference Guide</CardTitle>
-                <CardDescription>Standard Rating of Perceived Exertion scale interpretation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <h4 className="text-sm font-semibold text-red-800">0-1: No/Very Light Exertion</h4>
-                      <p className="text-xs text-red-700">Patient feels no effort or very minimal effort</p>
-                    </div>
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <h4 className="text-sm font-semibold text-yellow-800">2-3: Light Exertion</h4>
-                      <p className="text-xs text-yellow-700">Patient feels light effort, easy to maintain</p>
-                    </div>
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="text-sm font-semibold text-green-800">4-5: Moderate Exertion</h4>
-                      <p className="text-xs text-green-700">Optimal therapeutic intensity range</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <h4 className="text-sm font-semibold text-orange-800">6-7: Hard Exertion</h4>
-                      <p className="text-xs text-orange-700">Patient feels hard effort, challenging</p>
-                    </div>
-                    <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
-                      <h4 className="text-sm font-semibold text-red-900">8-9: Very Hard Exertion</h4>
-                      <p className="text-xs text-red-800">Very hard effort, approaching maximum</p>
-                    </div>
-                    <div className="p-3 bg-red-200 border border-red-400 rounded-lg">
-                      <h4 className="text-sm font-semibold text-red-900">10: Maximum Exertion</h4>
-                      <p className="text-xs text-red-800">Maximum possible effort</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 

@@ -24,6 +24,7 @@ interface ExportActionsProps {
   exportData: ExportData | null;
   originalFilename: string;
   hasSelectedData: boolean;
+  hasSelectedChannels: boolean;
   exportFormat: 'json' | 'csv';
   sessionId?: string;
   onDownloadOriginal: () => Promise<void>;
@@ -34,6 +35,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
   exportData,
   originalFilename,
   hasSelectedData,
+  hasSelectedChannels,
   exportFormat,
   sessionId,
   onDownloadOriginal,
@@ -57,30 +59,13 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
 
   // T018: Helper function to get confidence description
   const getConfidenceDescription = (source: string, confidence: string) => {
-    const descriptions = {
-      'patient_id': {
-        'high': 'Patient code extracted from patient_id with high reliability',
-        'medium': 'Patient code extracted from patient_id but format validation failed', 
-        'low': 'Patient code extraction from patient_id failed'
-      },
-      'filename': {
-        'high': 'Patient code extracted from filename pattern with high confidence',
-        'medium': 'Patient code found in filename but with lower pattern confidence',
-        'low': 'Patient code extraction from filename failed'
-      },
-      'session_metadata': {
-        'high': 'Patient code found in session metadata with high confidence',
-        'medium': 'Patient code found in session metadata with moderate confidence', 
-        'low': 'Patient code extraction from session metadata failed'
-      },
-      'unknown': {
-        'high': 'Patient code source unknown but high confidence',
-        'medium': 'Patient code source unknown with moderate confidence',
-        'low': 'Patient code unavailable - no valid extraction method found'
-      }
-    };
-    return descriptions[source as keyof typeof descriptions]?.[confidence as keyof typeof descriptions['patient_id']] || 
-           'Patient code confidence assessment unavailable';
+    if (confidence === 'high') {
+      return 'Patient code detected';
+    } else if (confidence === 'medium') {
+      return 'Patient code detected (estimated)';
+    } else {
+      return 'Patient code not found';
+    }
   };
   const [downloadStates, setDownloadStates] = useState<{
     original: 'idle' | 'downloading' | 'success';
@@ -201,7 +186,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
           <div className="space-y-2">
             <Button
               onClick={handleDownloadExport}
-              disabled={!hasSelectedData || downloadStates.export === 'downloading' || (exportFormat === 'csv' && !canGenerateCsv(exportData))}
+              disabled={!hasSelectedData || downloadStates.export === 'downloading' || (exportFormat === 'csv' && !canGenerateCsv(exportData)) || (hasSelectedChannels && exportFormat === 'csv')}
               size="sm"
               variant="outline"
               className="w-full justify-start gap-2 border-primary text-primary hover:bg-primary/5"
@@ -213,7 +198,7 @@ export const ExportActions: React.FC<ExportActionsProps> = ({
               )}
               {downloadStates.export === 'downloading' ? 'Exporting...' : 
                downloadStates.export === 'success' ? 'Exported!' : 
-               `Export ${exportFormat.toUpperCase()} Data${patientCode && patientCodeConfidence !== 'low' ? ` (${patientCode})` : ''}`}
+               `Export ${exportFormat.toUpperCase()}`}
             </Button>
             
             {!hasSelectedData ? (

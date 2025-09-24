@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { QuestionMarkCircledIcon, ExclamationTriangleIcon, DownloadIcon } from '@radix-ui/react-icons';
 import { AvailableChannel, ChannelSelectionMap } from './types';
 import { TOGGLE_STYLES } from './constants';
 import { useSessionStore } from '@/store/sessionStore';
@@ -58,7 +59,26 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Clean Recommendation */}
+      <div className="bg-blue-50/60 border border-blue-200/60 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <DownloadIcon className="h-4 w-4 text-blue-600" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-blue-900">
+              💡 For research-grade EMG analysis
+            </p>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Download the original C3D file and use{' '}
+              <code className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs font-mono">ezc3d</code>{' '}
+              Python library for direct access to raw signals with full sampling rates.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-sm font-medium">EMG Channels</h3>
         <Tooltip>

@@ -44,9 +44,11 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { logAdminAction } from '@/services/adminAuditService'
+import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '@/lib/avatarColors'
 import * as Icons from '@radix-ui/react-icons'
 
 interface UserProfile {
@@ -626,10 +628,19 @@ export function UserManagementTab() {
 
   const getRoleBadgeClassName = (role: string) => {
     switch (role) {
-      case 'admin': return 'border-red-500 text-red-700 hover:bg-red-50'
-      case 'therapist': return 'border-blue-500 text-blue-700 hover:bg-blue-50'
-      case 'researcher': return 'border-green-500 text-green-700 hover:bg-green-50'
-      default: return 'border-gray-500 text-gray-700 hover:bg-gray-50'
+      case 'admin': return 'border-red-200 bg-red-50 text-red-800 hover:bg-red-100 shadow-sm'
+      case 'therapist': return 'border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 shadow-sm'
+      case 'researcher': return 'border-green-200 bg-green-50 text-green-800 hover:bg-green-100 shadow-sm'
+      default: return 'border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100 shadow-sm'
+    }
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return <Icons.LockClosedIcon className="h-3 w-3 mr-1" />
+      case 'therapist': return <Icons.PersonIcon className="h-3 w-3 mr-1" />
+      case 'researcher': return <Icons.MagnifyingGlassIcon className="h-3 w-3 mr-1" />
+      default: return <Icons.PersonIcon className="h-3 w-3 mr-1" />
     }
   }
 
@@ -670,42 +681,43 @@ export function UserManagementTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Search and Create Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Icons.MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Badge variant="outline" className="px-3 py-1">
-            {filteredUsers.length} users
-          </Badge>
-        </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Icons.PlusIcon className="mr-2 h-4 w-4" />
-          Add New User
-        </Button>
-      </div>
-
-
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Icons.PersonIcon className="h-5 w-5 text-blue-500" />
+            All Users
+            <Badge variant="secondary" className="ml-auto">
+              {filteredUsers.length} users
+            </Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Search and Add Button Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Icons.MagnifyingGlassIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Icons.PlusIcon className="mr-2 h-4 w-4" />
+                Add New User
+              </Button>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
                 {renderSortableHeader('first_name' as keyof UserProfile, 'Name')}
-                {renderSortableHeader('email' as keyof UserProfile, 'Email')}
                 {renderSortableHeader('role' as keyof UserProfile, 'Role')}
                 {renderSortableHeader('institution' as keyof UserProfile, 'Institution')}
+                {renderSortableHeader('email' as keyof UserProfile, 'Email')}
                 {renderSortableHeader('department' as keyof UserProfile, 'Department')}
                 {renderSortableHeader('created_at' as keyof UserProfile, 'Created')}
                 {renderSortableHeader('last_sign_in_at' as keyof UserProfile, 'Last Login')}
@@ -716,15 +728,40 @@ export function UserManagementTab() {
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    <div className="font-medium">
-                      {user.first_name || user.last_name 
-                        ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                        : 'No name'}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm flex-shrink-0">
+                        <AvatarFallback className={`${getAvatarColor(getPatientIdentifier({
+                          patient_code: user.email?.split('@')[0] || 'unknown',
+                          first_name: user.first_name,
+                          last_name: user.last_name,
+                          display_name: user.first_name && user.last_name 
+                            ? `${user.first_name} ${user.last_name}` 
+                            : user.email?.split('@')[0] || 'Unknown'
+                        }))} text-white font-semibold text-xs`}>
+                          {getPatientAvatarInitials(user.first_name, user.last_name, user.email?.split('@')[0])}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">
+                          {user.first_name || user.last_name 
+                            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                            : 'No name'}
+                        </div>
+                        {user.user_code && (
+                          <div className="text-xs text-muted-foreground truncate">{user.user_code}</div>
+                        )}
+                      </div>
                     </div>
-                    {user.user_code && (
-                      <div className="text-xs text-muted-foreground">{user.user_code}</div>
-                    )}
                   </TableCell>
+                  <TableCell>
+                    <div className="flex justify-start">
+                      <Badge variant="outline" className={`${getRoleBadgeClassName(user.role)} inline-flex items-center`}>
+                        {getRoleIcon(user.role)}
+                        <span className="capitalize">{user.role}</span>
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>{user.institution || '-'}</TableCell>
                   <TableCell>
                     <a 
                       href={`mailto:${user.email}`}
@@ -733,18 +770,12 @@ export function UserManagementTab() {
                       {user.email}
                     </a>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getRoleBadgeClassName(user.role)}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.institution || '-'}</TableCell>
                   <TableCell>{user.department || '-'}</TableCell>
                   <TableCell>{formatDate(user.created_at)}</TableCell>
                   <TableCell>{formatDate(user.last_sign_in_at)}</TableCell>
                   <TableCell>
                     <TooltipProvider>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-start gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -763,6 +794,7 @@ export function UserManagementTab() {
                                 })
                                 setShowEditDialog(true)
                               }}
+                              className="h-8 w-8 p-0"
                             >
                               <Icons.Pencil1Icon className="h-4 w-4" />
                             </Button>
@@ -781,6 +813,7 @@ export function UserManagementTab() {
                                 setSelectedUser(user)
                                 handlePasswordDialogOpen()
                               }}
+                              className="h-8 w-8 p-0"
                             >
                               <Icons.LockClosedIcon className="h-4 w-4" />
                             </Button>
@@ -802,7 +835,7 @@ export function UserManagementTab() {
                                   loadAssignedPatients(user.id)
                                 }}
                                 disabled={loadingPatients}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                               >
                                 <Icons.PersonIcon className="h-4 w-4" />
                               </Button>
@@ -822,7 +855,7 @@ export function UserManagementTab() {
                                 setSelectedUser(user)
                                 setShowDeleteInfoDialog(true)
                               }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <Icons.TrashIcon className="h-4 w-4" />
                             </Button>
@@ -849,6 +882,31 @@ export function UserManagementTab() {
             <DialogDescription>
               Add a new user to the system. They will receive a temporary password.
             </DialogDescription>
+            {/* Avatar Preview */}
+            {(createForm.firstName || createForm.lastName || createForm.email) && (
+              <div className="flex items-center gap-3 mt-4 p-3 bg-gray-50 rounded-lg">
+                <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm">
+                  <AvatarFallback className={`${getAvatarColor(getPatientIdentifier({
+                    patient_code: createForm.email?.split('@')[0] || 'unknown',
+                    first_name: createForm.firstName,
+                    last_name: createForm.lastName,
+                    display_name: createForm.firstName && createForm.lastName 
+                      ? `${createForm.firstName} ${createForm.lastName}` 
+                      : createForm.email?.split('@')[0] || 'New User'
+                  }))} text-white font-semibold text-sm`}>
+                    {getPatientAvatarInitials(createForm.firstName, createForm.lastName, createForm.email?.split('@')[0])}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {createForm.firstName || createForm.lastName 
+                      ? `${createForm.firstName || ''} ${createForm.lastName || ''}`.trim()
+                      : createForm.email?.split('@')[0] || 'New User'}
+                  </div>
+                  <div className="text-sm text-gray-500">{createForm.email || 'email@example.com'}</div>
+                </div>
+              </div>
+            )}
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -894,9 +952,18 @@ export function UserManagementTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="therapist">Therapist</SelectItem>
-                  <SelectItem value="researcher">Researcher</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="therapist" className="flex items-center">
+                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Therapist
+                  </SelectItem>
+                  <SelectItem value="researcher" className="flex items-center">
+                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600" />
+                    Researcher
+                  </SelectItem>
+                  <SelectItem value="admin" className="flex items-center">
+                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600" />
+                    Admin
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1040,6 +1107,31 @@ export function UserManagementTab() {
             <DialogDescription>
               Update profile information for {selectedUser?.email}
             </DialogDescription>
+            {/* Avatar Preview */}
+            {selectedUser && (
+              <div className="flex items-center gap-3 mt-4 p-3 bg-gray-50 rounded-lg">
+                <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm">
+                  <AvatarFallback className={`${getAvatarColor(getPatientIdentifier({
+                    patient_code: selectedUser.email?.split('@')[0] || 'unknown',
+                    first_name: editForm.firstName,
+                    last_name: editForm.lastName,
+                    display_name: editForm.firstName && editForm.lastName 
+                      ? `${editForm.firstName} ${editForm.lastName}` 
+                      : selectedUser.email?.split('@')[0] || 'User'
+                  }))} text-white font-semibold text-sm`}>
+                    {getPatientAvatarInitials(editForm.firstName, editForm.lastName, selectedUser.email?.split('@')[0])}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {editForm.firstName || editForm.lastName 
+                      ? `${editForm.firstName || ''} ${editForm.lastName || ''}`.trim()
+                      : selectedUser.email?.split('@')[0] || 'User'}
+                  </div>
+                  <div className="text-sm text-gray-500">{selectedUser.email}</div>
+                </div>
+              </div>
+            )}
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
@@ -1071,9 +1163,18 @@ export function UserManagementTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="therapist">Therapist</SelectItem>
-                  <SelectItem value="researcher">Researcher</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="therapist" className="flex items-center">
+                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Therapist
+                  </SelectItem>
+                  <SelectItem value="researcher" className="flex items-center">
+                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600" />
+                    Researcher
+                  </SelectItem>
+                  <SelectItem value="admin" className="flex items-center">
+                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600" />
+                    Admin
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

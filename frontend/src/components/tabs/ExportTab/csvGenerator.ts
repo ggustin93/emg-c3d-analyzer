@@ -101,19 +101,13 @@ export function generateCsvFromExportData(exportData: ExportData, originalFilena
           .replace(/^./, str => str.toUpperCase())
           .replace(/([a-z])([A-Z])/g, '$1 $2');
         
-        // Special formatting for patient code fields
+        // Special formatting for patient code fields (only useful info)
         if (key === 'patientCode') {
           formattedKey = 'Patient Code';
           csvRows.push(`"${formattedKey}","${value || 'N/A'}"`);
-        } else if (key === 'patientCodeSource') {
-          formattedKey = 'Patient Code Source';
-          csvRows.push(`"${formattedKey}","${value || 'unknown'}"`);
-        } else if (key === 'patientCodeConfidence') {
-          formattedKey = 'Patient Code Confidence';
-          csvRows.push(`"${formattedKey}","${value || 'low'}"`);
-        } else if (key === 'enhancedFileName') {
-          formattedKey = 'Enhanced File Name';
-          csvRows.push(`"${formattedKey}","${value || 'N/A'}"`);
+        } else if (key === 'patientCodeSource' || key === 'patientCodeConfidence' || key === 'enhancedFileName') {
+          // Skip technical metadata - not useful for users
+          return;
         } else {
           csvRows.push(`"${formattedKey}","${value ?? ''}"`);
         }

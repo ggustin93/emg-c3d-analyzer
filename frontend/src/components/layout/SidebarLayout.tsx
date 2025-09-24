@@ -7,10 +7,11 @@ import {
   BarChartIcon,
   InfoCircledIcon,
   PersonIcon,
-  GroupIcon,
+  AvatarIcon,
   DashboardIcon,
   QuestionMarkCircledIcon,
-  GearIcon
+  GearIcon,
+  MagnifyingGlassIcon
 } from '@radix-ui/react-icons'
 
 interface SidebarLayoutProps {
@@ -89,7 +90,7 @@ const adminNavItems = [
   { 
     id: 'users', 
     label: 'Users', 
-    icon: GroupIcon,
+    icon: AvatarIcon,
     description: 'User management'
   },
   { 

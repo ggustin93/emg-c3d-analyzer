@@ -3,19 +3,30 @@
  * Handles export configuration options
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { QuestionMarkCircledIcon, FileTextIcon, TableIcon } from '@radix-ui/react-icons';
-import { ExportOptions } from './types';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { QuestionMarkCircledIcon, FileTextIcon, TableIcon, ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { ExportOptions, AvailableChannel, ChannelSelectionMap, DownsamplingOptions } from './types';
 import { FILE_SIZE_INFO } from './constants';
+import { ChannelSelector } from './ChannelSelector';
+import { DownsamplingControl } from './DownsamplingControl';
 
 interface ExportOptionsPanelProps {
   options: ExportOptions;
   onChange: (options: ExportOptions) => void;
+  // EMG Channel props
+  availableChannels: AvailableChannel[];
+  channelSelection: ChannelSelectionMap;
+  onChannelSelectionChange: (channelName: string, field: 'includeRaw' | 'includeActivated' | 'includeProcessedRms', value: boolean) => void;
+  hasSelectedChannels: boolean;
+  // Downsampling props
+  downsamplingOptions: DownsamplingOptions;
+  onDownsamplingChange: (options: DownsamplingOptions) => void;
 }
 
 type BooleanExportKeys = {
@@ -25,12 +36,24 @@ type BooleanExportKeys = {
 export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
   options,
   onChange,
+  availableChannels,
+  channelSelection,
+  onChannelSelectionChange,
+  hasSelectedChannels,
+  downsamplingOptions,
+  onDownsamplingChange,
 }) => {
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  
   const handleOptionChange = (key: BooleanExportKeys, value: boolean) => {
     onChange({ ...options, [key]: value });
   };
 
   const handleFormatChange = (format: 'json' | 'csv') => {
+    // Force JSON if signals are selected
+    if (hasSelectedChannels && format === 'csv') {
+      return; // Don't change format if CSV is disabled
+    }
     onChange({ ...options, format });
   };
 
@@ -66,11 +89,11 @@ export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
       <CardHeader>
         <CardTitle className="text-base">Export Options</CardTitle>
         <CardDescription>
-          Choose what data to include in your export
+          All data included by default. Customize format and content below.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Format Selection */}
+        {/* Format Selection - Always Visible */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Export Format</Label>
           <div className="grid grid-cols-2 gap-2">
@@ -90,61 +113,107 @@ export const ExportOptionsPanel: React.FC<ExportOptionsPanelProps> = ({
             <Button
               variant={options.format === 'csv' ? 'secondary' : 'outline'}
               onClick={() => handleFormatChange('csv')}
-              className="flex items-center justify-start space-x-2 h-auto p-3"
+              disabled={hasSelectedChannels}
+              className={`flex items-center justify-start space-x-2 h-auto p-3 ${
+                hasSelectedChannels ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <TableIcon className="h-4 w-4 text-green-600" />
               <div className="flex-1 text-left">
                 <div className="font-medium">CSV</div>
                 <div className="text-xs opacity-70">
-                  Research-ready format
+                  {hasSelectedChannels ? 'Not available with signals' : 'Research-ready format'}
                 </div>
               </div>
             </Button>
           </div>
           <div className="text-xs text-muted-foreground pl-1">
-            {options.format === 'json' 
-              ? 'Ideal for analysis tools and complete data structure'
-              : 'Opens directly in Excel/Python, perfect for research workflows'
-            }
+            {hasSelectedChannels ? (
+              'Signal data requires JSON format. CSV only supports analytics and metadata.'
+            ) : options.format === 'json' ? (
+              'Ideal for analysis tools and complete data structure'
+            ) : (
+              'Opens directly in Excel/Python, perfect for research workflows'
+            )}
           </div>
         </div>
 
-        {/* Data Options */}
-        <div className="space-y-4">
-          <Label className="text-sm font-medium">Data to Include</Label>
-          {exportOptionItems.map((item) => (
-          <div key={item.key} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id={`export-${item.key}`}
-                  checked={options[item.key]}
-                  onCheckedChange={(checked) => handleOptionChange(item.key, checked)}
-                />
-                <Label 
-                  htmlFor={`export-${item.key}`} 
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  {item.label}
-                  {item.tooltip && (
-                    <Tooltip>
-                      <TooltipTrigger className="ml-1">
-                        <QuestionMarkCircledIcon className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{item.tooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </Label>
+        {/* Advanced Options - Collapsible */}
+        <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-between p-2 h-auto"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Advanced Options</span>
+                <span className="text-xs text-muted-foreground">
+                  Customize data content
+                </span>
               </div>
+              {isAdvancedOpen ? (
+                <ChevronDownIcon className="h-4 w-4" />
+              ) : (
+                <ChevronRightIcon className="h-4 w-4" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="space-y-6 pt-2">
+            {/* Data Options */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium">Data to Include</Label>
+              {exportOptionItems.map((item) => (
+              <div key={item.key} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`export-${item.key}`}
+                      checked={options[item.key]}
+                      onCheckedChange={(checked) => handleOptionChange(item.key, checked)}
+                    />
+                    <Label 
+                      htmlFor={`export-${item.key}`} 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      {item.label}
+                      {item.tooltip && (
+                        <Tooltip>
+                          <TooltipTrigger className="ml-1">
+                            <QuestionMarkCircledIcon className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{item.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground pl-6">
+                  {item.description}
+                </p>
+              </div>
+              ))}
             </div>
-            <p className="text-xs text-muted-foreground pl-6">
-              {item.description}
-            </p>
-          </div>
-          ))}
-        </div>
+
+            {/* EMG Channels Section */}
+            <div className="space-y-4">
+              <ChannelSelector
+                availableChannels={availableChannels}
+                channelSelection={channelSelection}
+                onChannelSelectionChange={onChannelSelectionChange}
+              />
+              
+              {/* Downsampling Control */}
+              <DownsamplingControl
+                options={downsamplingOptions}
+                onChange={onDownsamplingChange}
+                hasSelectedChannels={hasSelectedChannels}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );

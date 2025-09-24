@@ -80,11 +80,13 @@ export interface ExportData {
     fileName: string;
     exportVersion: string;
     exportOptions: ExportOptions;
-    // NEW: Patient code information
+    // Patient code (only useful info, no technical metadata)
     patientCode?: string | null;
+    // Patient code tracking information
     patientCodeSource?: 'patient_id' | 'filename' | 'session_metadata' | 'unknown';
     patientCodeConfidence?: 'high' | 'medium' | 'low';
-    enhancedFileName?: string;
+    // File naming enhancement
+    enhancedFileName?: string; // With patient code prefix
     // Preview mode indicators
     preview_mode?: boolean;
     preview_note?: string;
