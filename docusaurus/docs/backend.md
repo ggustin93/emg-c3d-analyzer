@@ -74,40 +74,117 @@ The most critical code lives in `services/c3d/processor.py` (1,505 lines) which 
 
 ## API Design
 
-### When to Use FastAPI vs Direct Supabase
+### Three API Integration Approaches
 
-The system provides two API surfaces, and choosing the right one follows a simple decision tree:
+The system offers three complementary approaches for accessing data and functionality. Each approach works well for different scenarios:
 
+```mermaid
+graph TB
+    A1["🎯 Approach 1: Frontend → Direct Supabase"]
+    A1 --> F1[React App]
+    F1 -->|User JWT| S1[Supabase REST API]
+    S1 -->|Auto-generated endpoints| DB1[(PostgreSQL + RLS)]
+    
+    A2["🔧 Approach 2: Backend → Direct Supabase"]
+    A2 --> B2[Python Service]
+    B2 -->|Service Key/User Token| S2[Supabase Client]
+    S2 --> DB2[(PostgreSQL)]
+    
+    A3["⚙️ Approach 3: Frontend → FastAPI → Supabase"]
+    A3 --> F3[React App]
+    F3 --> API3[Custom FastAPI Route]
+    API3 -->|Business Logic| S3[Supabase Client]
+    S3 --> DB3[(PostgreSQL)]
+    
+    style A1 fill:#e8f5e9
+    style A2 fill:#fff3e0
+    style A3 fill:#fce4ec
+    style F1 fill:#e3f2fd
+    style S1 fill:#c8e6c9
+    style DB1 fill:#fff3e0
+    style B2 fill:#fce4ec
+    style S2 fill:#c8e6c9
+    style DB2 fill:#fff3e0
+    style F3 fill:#e3f2fd
+    style API3 fill:#ffebee
+    style S3 fill:#c8e6c9
+    style DB3 fill:#fff3e0
 ```
-Is it computational? ──Yes──► FastAPI
-       │                     (EMG processing, C3D parsing, complex algorithms)
-       No
-       ▼
-Is it simple CRUD?  ──Yes──► Direct Supabase
-       │                     (User profiles, clinical notes, settings)
-       No
-       ▼
-Does it need auth?  ──Yes──► Direct Supabase
-       │                     (Row Level Security handles permissions)
-       No
-       ▼
-    FastAPI
-    (External APIs, webhooks, custom logic)
+
+### Auto-Generated REST API
+
+Supabase automatically creates REST endpoints for all public tables. You can explore these at:
+**[Supabase API Dashboard](https://supabase.com/dashboard/project/YOUR-PROJECT-ID/api)**
+
+This means many operations can use Supabase's built-in API directly, without custom backend code.
+
+### When Each Approach Works Well
+
+#### 🎯 **Approach 1: Frontend → Direct Supabase**
+*Simple CRUD operations, authentication, real-time updates*
+
+```typescript
+// Loading patient data directly in React
+const { data: patients } = await supabase
+  .from('patients')
+  .select('*')
+  .eq('therapist_id', user.id)
 ```
 
-### Core API Endpoints
+**Works well for:** Patient lists, clinical notes, profile updates, file uploads
 
-The FastAPI backend exposes these primary endpoints:
+#### 🔧 **Approach 2: Backend → Direct Supabase**  
+*Administrative operations, background tasks*
 
-| Endpoint | Purpose | Method |
-|----------|---------|--------|
-| `/upload` | Process C3D file directly | POST |
-| `/webhooks/storage` | Handle Supabase storage events | POST |
-| `/analysis/recalc` | Recalculate EMG metrics | POST |
-| `/signals` | Get processed EMG signals | GET |
-| `/mvc/calculate` | Calculate MVC thresholds | POST |
-| `/scoring/configurations` | Manage scoring settings | GET/POST |
-| `/health` | System health check | GET |
+```python
+from database.supabase_client import get_supabase_client
+
+# Admin service using service key (bypasses RLS)
+supabase = get_supabase_client(use_service_key=True)
+response = supabase.from('user_profiles').insert({
+    'email': new_user_email,
+    'role': 'therapist'
+}).execute()
+```
+
+**Works well for:** User management, admin operations, system tasks
+
+#### ⚙️ **Approach 3: Frontend → FastAPI → Supabase**
+*Complex business logic, multi-step operations*
+
+```python
+@router.post("/upload")
+async def process_c3d_file(file: UploadFile):
+    # Complex EMG processing
+    results = c3d_processor.analyze(file.file)
+    
+    # Store results using Supabase client
+    supabase = get_supabase_client()
+    session = supabase.from('therapy_sessions').insert({
+        'filename': file.filename,
+        'processing_status': 'completed'
+    }).execute()
+    
+    return {"session_id": session.data[0]['id']}
+```
+
+**Works well for:** EMG processing, file analysis, complex workflows
+
+### FastAPI Endpoints
+
+The custom FastAPI backend provides these specialized endpoints:
+
+| Endpoint | Purpose | Method | When to Use |
+|----------|---------|--------|-------------|
+| `/upload` | Process C3D file directly | POST | Complex EMG analysis |
+| `/webhooks/storage` | Handle Supabase storage events | POST | File upload processing |
+| `/analysis/recalc` | Recalculate EMG metrics | POST | Recompute clinical metrics |
+| `/signals` | Get processed EMG signals | GET | Signal visualization |
+| `/mvc/calculate` | Calculate MVC thresholds | POST | Complex calculations |
+| `/scoring/configurations` | Manage scoring settings | GET/POST | Configuration management |
+| `/admin/password-vault` | Retrieve pending passwords | GET | Admin operations |
+| `/admin/password-vault/{id}/retrieve` | One-time password retrieval | POST | Secure password delivery |
+| `/health` | System health check | GET | Monitoring |
 
 ### Common Usage Patterns
 
