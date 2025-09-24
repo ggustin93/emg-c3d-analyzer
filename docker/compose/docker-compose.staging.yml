@@ -17,7 +17,7 @@
 #
 # ══════════════════════════════════════════════════════════════════════════════
 
-# version field is obsolete in Docker Compose v2+ and can cause warnings
+# version field is obsolete in Docker Compose v2+ and can cause warnings .
 
 services:
   # ═══════════════════════════════════════════════════════════════════════════
@@ -27,7 +27,7 @@ services:
   # Backend API Service
   backend:
     build:
-      context: ../../
+      context: .
       dockerfile: docker/backend/Dockerfile
       target: production
       args:
@@ -81,13 +81,13 @@ services:
       - "coolify.managed=true"
       - "coolify.service=backend"
       - "coolify.port=8080"
-    # No dependencies for backend - it should start independently
-    # If Redis is enabled, backend will connect to it when available
+    # No dependencies for backend - it should start independently .
+    # If Redis is enabled, backend will connect to it when available .
 
   # Frontend Web Application  
   frontend:
     build:
-      context: ../../
+      context: .
       dockerfile: docker/frontend/Dockerfile
       target: production
       args:
@@ -123,7 +123,7 @@ services:
       - "coolify.managed=true"
       - "coolify.service=frontend"
       - "coolify.port=8080"
-      - "coolify.public=true"  # Public entry point
+      - "coolify.public=true"  # Public entry point .
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Optional Services (Uncomment to Enable)
@@ -152,7 +152,7 @@ services:
       - "coolify.managed=true"
       - "coolify.service=redis"
     profiles:
-      - redis  # Only start when --profile redis is used
+      - redis  # Only start when --profile redis is used .
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Metabase Analytics Platform (Uncomment to enable analytics)
@@ -217,8 +217,8 @@ services:
   # Self-Hosted Supabase Stack (Alternative to Cloud - Uncomment if needed)
   # ═══════════════════════════════════════════════════════════════════════════
   
-  # Note: Only enable if SUPABASE_MODE=selfhosted in .env
-  # See docker-compose.selfhosted.yml for complete configuration
+  # Note: Only enable if SUPABASE_MODE=selfhosted in .env .
+  # See docker-compose.selfhosted.yml for complete configuration .
   
   # postgres-supabase:
   #   image: supabase/postgres:15.1.0.117
@@ -241,7 +241,7 @@ volumes:
     driver: local
   backend_logs:
     driver: local
-  redis_data:  # Redis data volume (used when Redis profile is active)
+  redis_data:  # Redis data volume (used when Redis profile is active) .
     driver: local
   # metabase_data:  # Uncomment if using Metabase
   #   driver: local

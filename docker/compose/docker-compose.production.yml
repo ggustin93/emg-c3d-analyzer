@@ -24,8 +24,8 @@ services:
   # Backend API Service - Production Optimized
   backend:
     build:
-      context: ../../
-      dockerfile: ./docker/backend/Dockerfile
+      context: .
+      dockerfile: docker/backend/Dockerfile
       target: production
       args:
         - BUILDKIT_INLINE_CACHE=1
@@ -100,8 +100,8 @@ services:
   # Frontend Web Application - Production Optimized
   frontend:
     build:
-      context: ../../
-      dockerfile: ./docker/frontend/Dockerfile
+      context: .
+      dockerfile: docker/frontend/Dockerfile
       target: production
       platforms:
         - linux/amd64
