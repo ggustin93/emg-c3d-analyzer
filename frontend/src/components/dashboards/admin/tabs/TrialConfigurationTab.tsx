@@ -346,9 +346,21 @@ export function TrialConfigurationTab() {
       </Card>
 
       {/* Configuration Tabs */}
-      <Tabs defaultValue="target-defaults" className="border-l border-r border-b border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
+      <Tabs defaultValue="scoring-params" className="border-l border-r border-b border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
         <div className="border-b mb-4 relative">
           <TabsList className="w-full flex justify-between border border-gray-200">
+            <TabsTrigger value="scoring-params" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <Icons.BarChartIcon className="h-4 w-4" />
+                <span>Performance Scoring</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="rpe-mapping" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <Icons.ActivityLogIcon className="h-4 w-4" />
+                <span>RPE Mapping</span>
+              </div>
+            </TabsTrigger>
             <TabsTrigger value="target-defaults" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <div className="flex items-center gap-2">
                 <Icons.TargetIcon className="h-4 w-4" />
@@ -359,18 +371,6 @@ export function TrialConfigurationTab() {
               <div className="flex items-center gap-2">
                 <Icons.PersonIcon className="h-4 w-4" />
                 <span>Muscle Config</span>
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="scoring-params" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <div className="flex items-center gap-2">
-                <Icons.BarChartIcon className="h-4 w-4" />
-                <span>Scoring</span>
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="rpe-mapping" className="flex-1 flex-shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <div className="flex items-center gap-2">
-                <Icons.ActivityLogIcon className="h-4 w-4" />
-                <span>RPE Mapping</span>
               </div>
             </TabsTrigger>
           </TabsList>
