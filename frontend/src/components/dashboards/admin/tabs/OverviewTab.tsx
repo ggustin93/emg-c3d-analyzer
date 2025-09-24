@@ -6,7 +6,7 @@
  * Inspired by TherapistOverview.tsx patterns
  */
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,13 @@ interface SystemMetrics {
   sessionsToday: number
   sessionsThisWeek: number
   trialConfigStatus: string
+}
+
+interface AuditStats {
+  todayCount: number
+  weekCount: number
+  monthCount?: number
+  topActions?: string[]
 }
 
 interface MetricCardProps {
@@ -116,91 +123,141 @@ export function OverviewTab() {
     trialConfigStatus: 'Active'
   })
   const [recentActivity, setRecentActivity] = useState<AuditLogEntry[]>([])
-  const [auditStats, setAuditStats] = useState<any>({})
-  const [loading, setLoading] = useState(true)
+  const [auditStats, setAuditStats] = useState<AuditStats | null>(null)
+  const [metricsLoading, setMetricsLoading] = useState(true)
+  const [auditLoading, setAuditLoading] = useState(true)
 
   useEffect(() => {
-    loadMetrics()
-    loadRecentActivity()
+    loadMetricsData()
+    loadAuditData()
   }, [])
 
-  const loadMetrics = async () => {
+  // Optimized date calculations (computed once per component mount)
+  const dateRanges = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const weekAgo = new Date(today)
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    return {
+      today: today.toISOString(),
+      weekAgo: weekAgo.toISOString()
+    }
+  }, [])
+
+  const loadMetricsData = async () => {
     try {
-      // Load user metrics
-      const { data: users } = await supabase
-        .from('user_profiles')
-        .select('role')
-      
-      if (users) {
-        const usersByRole = users.reduce((acc, user) => {
-          acc[user.role as keyof typeof acc] = (acc[user.role as keyof typeof acc] || 0) + 1
-          return acc
-        }, { admin: 0, therapist: 0, researcher: 0 })
+
+      // Execute metric queries in parallel (cards data only)
+      const [
+        usersResult,
+        patientsResult,
+        todaySessionsResult,
+        weekSessionsResult,
+        trialConfigResult
+      ] = await Promise.all([
+        // User metrics
+        supabase
+          .from('user_profiles')
+          .select('role'),
         
-        // Load patient metrics
-        const { data: patients } = await supabase
+        // Patient metrics
+        supabase
           .from('patients')
-          .select('active')
+          .select('active'),
         
-        const activePatients = patients?.filter(p => p.active).length || 0
-        
-        // Load session metrics
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const weekAgo = new Date(today)
-        weekAgo.setDate(weekAgo.getDate() - 7)
-        
-        const { count: todayCount } = await supabase
+        // Today's sessions
+        supabase
           .from('therapy_sessions')
           .select('id', { count: 'exact', head: true })
-          .gte('created_at', today.toISOString())
+          .gte('created_at', dateRanges.today),
         
-        const { count: weekCount } = await supabase
+        // This week's sessions
+        supabase
           .from('therapy_sessions')
           .select('id', { count: 'exact', head: true })
-          .gte('created_at', weekAgo.toISOString())
+          .gte('created_at', dateRanges.weekAgo),
         
-        // Check trial config status
-        const { data: trialConfig } = await supabase
+        // Trial config status
+        supabase
           .from('scoring_configuration')
           .select('active')
           .eq('id', 'a0000000-0000-0000-0000-000000000001')
           .single()
-        
-        setMetrics({
-          totalUsers: users.length,
-          usersByRole,
-          totalPatients: patients?.length || 0,
-          activePatients,
-          sessionsToday: todayCount || 0,
-          sessionsThisWeek: weekCount || 0,
-          trialConfigStatus: trialConfig?.active ? 'Active' : 'Inactive'
-        })
-      }
-      
-      // Load audit stats
-      const stats = await getAuditLogStats()
-      setAuditStats(stats)
+      ])
+
+      // Process user metrics
+      const users = usersResult.data || []
+      const usersByRole = users.reduce((acc, user) => {
+        acc[user.role as keyof typeof acc] = (acc[user.role as keyof typeof acc] || 0) + 1
+        return acc
+      }, { admin: 0, therapist: 0, researcher: 0 })
+
+      // Process patient metrics
+      const patients = patientsResult.data || []
+      const activePatients = patients.filter(p => p.active).length
+
+      // Update state with metrics (cards can render immediately)
+      setMetrics({
+        totalUsers: users.length,
+        usersByRole,
+        totalPatients: patients.length,
+        activePatients,
+        sessionsToday: todaySessionsResult.count || 0,
+        sessionsThisWeek: weekSessionsResult.count || 0,
+        trialConfigStatus: trialConfigResult.data?.active ? 'Active' : 'Inactive'
+      })
       
     } catch (error) {
       console.error('Failed to load metrics:', error)
     } finally {
-      setLoading(false)
+      setMetricsLoading(false)
     }
   }
 
-  const loadRecentActivity = async () => {
-    const { data } = await getRecentAuditLogs(10)
-    if (data) {
-      setRecentActivity(data)
+  const loadAuditData = async () => {
+    try {
+      // Execute audit queries in parallel (independent of metrics)
+      const [auditStatsResult, recentLogsResult] = await Promise.all([
+        getAuditLogStats(),
+        getRecentAuditLogs(10)
+      ])
+
+      // Update audit stats and recent activity
+      setAuditStats(auditStatsResult)
+      if (recentLogsResult.data) {
+        setRecentActivity(recentLogsResult.data)
+      }
+      
+    } catch (error) {
+      console.error('Failed to load audit data:', error)
+    } finally {
+      setAuditLoading(false)
     }
   }
 
-  const formatAction = (action: string) => {
+
+  // Memoized computed values to prevent unnecessary re-renders
+  const userSubtitle = useMemo(() => 
+    `${metrics.usersByRole.therapist} therapists, ${metrics.usersByRole.admin} admins`,
+    [metrics.usersByRole.therapist, metrics.usersByRole.admin]
+  )
+
+  const patientSubtitle = useMemo(() => 
+    `${metrics.activePatients} active`,
+    [metrics.activePatients]
+  )
+
+  const sessionSubtitle = useMemo(() => 
+    `${metrics.sessionsThisWeek} this week`,
+    [metrics.sessionsThisWeek]
+  )
+
+  // Optimized formatters with useCallback to prevent recreation
+  const formatAction = useCallback((action: string) => {
     return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+  }, [])
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
@@ -212,7 +269,7 @@ export function OverviewTab() {
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
     return `${days}d ago`
-  }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -222,9 +279,9 @@ export function OverviewTab() {
           title="Total Users"
           value={metrics.totalUsers}
           icon={Icons.PersonIcon}
-          subtitle={`${metrics.usersByRole.therapist} therapists, ${metrics.usersByRole.admin} admins`}
+          subtitle={userSubtitle}
           iconColor="text-blue-600"
-          loading={loading}
+          loading={metricsLoading}
           tooltip={{
             content: "Total registered users in the system",
             subtext: "Includes therapists, researchers, and administrators"
@@ -235,9 +292,9 @@ export function OverviewTab() {
           title="Patients"
           value={metrics.totalPatients}
           icon={Icons.PersonIcon}
-          subtitle={`${metrics.activePatients} active`}
+          subtitle={patientSubtitle}
           iconColor="text-green-600"
-          loading={loading}
+          loading={metricsLoading}
           tooltip={{
             content: "Total patients enrolled in the trial",
             subtext: "Active patients are currently receiving treatment"
@@ -248,9 +305,9 @@ export function OverviewTab() {
           title="Sessions Today"
           value={metrics.sessionsToday}
           icon={Icons.ActivityLogIcon}
-          subtitle={`${metrics.sessionsThisWeek} this week`}
+          subtitle={sessionSubtitle}
           iconColor="text-purple-600"
-          loading={loading}
+          loading={metricsLoading}
           tooltip={{
             content: "Therapy sessions completed today",
             subtext: "Includes all processed C3D files"
@@ -263,7 +320,7 @@ export function OverviewTab() {
           icon={Icons.GearIcon}
           subtitle="GHOSTLY-TRIAL-DEFAULT"
           iconColor="text-orange-600"
-          loading={loading}
+          loading={metricsLoading}
           tooltip={{
             content: "Clinical trial configuration status",
             subtext: "System-wide scoring and parameter settings"
@@ -354,7 +411,7 @@ export function OverviewTab() {
           </div>
           
           {/* Audit Stats Summary */}
-          {auditStats.todayCount !== undefined && (
+          {auditStats && auditStats.todayCount !== undefined && (
             <div className="mt-4 pt-4 border-t">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center justify-between">
