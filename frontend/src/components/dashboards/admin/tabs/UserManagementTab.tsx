@@ -1156,7 +1156,7 @@ export function UserManagementTab() {
                   onValueChange={(value) => setEditForm({ ...editForm, role: value as any })}
                 >
                   <SelectTrigger>
-                    <SelectValuew />
+                    <SelectValue />
                   </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="therapist" className="text-blue-600">
