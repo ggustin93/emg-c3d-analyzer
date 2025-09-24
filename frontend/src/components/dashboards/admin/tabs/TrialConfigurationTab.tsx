@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { logAdminAction } from '@/services/adminAuditService'
+import { ClinicalTooltip } from '@/components/ui/clinical-tooltip'
 import * as Icons from '@radix-ui/react-icons'
 
 interface TargetDefaults {
@@ -578,8 +579,16 @@ export function TrialConfigurationTab() {
           <div className="space-y-6">
             {/* Overall Performance Scoring */}
             <Card className="border border-gray-200/70 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+              <CardHeader className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-3 right-3 h-8 w-8 opacity-60 hover:opacity-100 z-10"
+                  onClick={() => setEditMode(!editMode)}
+                >
+                  <Icons.Pencil1Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                </Button>
+                <CardTitle className="text-lg flex items-center gap-2 pr-12">
                   <Icons.TargetIcon className="h-5 w-5 text-blue-600" />
                   Overall Performance Scoring
                 </CardTitle>
