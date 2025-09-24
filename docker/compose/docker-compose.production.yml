@@ -25,7 +25,7 @@ services:
   backend:
     build:
       context: ../../
-      dockerfile: docker/backend/Dockerfile
+      dockerfile: ./docker/backend/Dockerfile
       target: production
       args:
         - BUILDKIT_INLINE_CACHE=1
@@ -101,7 +101,7 @@ services:
   frontend:
     build:
       context: ../../
-      dockerfile: docker/frontend/Dockerfile
+      dockerfile: ./docker/frontend/Dockerfile
       target: production
       platforms:
         - linux/amd64
@@ -122,6 +122,8 @@ services:
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - VITE_ENVIRONMENT=production
       - VITE_SENTRY_DSN=${SENTRY_DSN:-}
+    ports:
+      - "3000:8080"
     depends_on:
       backend:
         condition: service_healthy
@@ -146,51 +148,13 @@ services:
       - "coolify.managed=true"
       - "coolify.service=frontend"
       - "coolify.port=8080"
+      - "coolify.public=true"  # Public entry point
     logging:
       driver: "json-file"
       options:
         max-size: "5m"
         max-file: "3"
 
-  # Nginx Reverse Proxy with SSL termination
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: emg-nginx-prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      - frontend
-      - backend
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
-        reservations:
-          memory: 128M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - emg-network
-    labels:
-      - "coolify.managed=true"
-      - "coolify.service=nginx"
-      - "coolify.public=true"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Optional Services (Uncomment to Enable)
@@ -380,8 +344,6 @@ volumes:
   backend_data:
     driver: local
   backend_logs:
-    driver: local
-  nginx_logs:
     driver: local
   redis_data:  # Available when Redis profile is enabled
     driver: local

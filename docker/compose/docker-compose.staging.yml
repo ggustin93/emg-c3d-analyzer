@@ -28,7 +28,7 @@ services:
   backend:
     build:
       context: ../../
-      dockerfile: docker/backend/Dockerfile
+      dockerfile: ./docker/backend/Dockerfile
       target: production
       args:
         - BUILDKIT_INLINE_CACHE=1
