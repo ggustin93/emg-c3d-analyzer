@@ -951,15 +951,15 @@ export function UserManagementTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="therapist" className="flex items-center">
-                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
                     Therapist
                   </SelectItem>
                   <SelectItem value="researcher" className="flex items-center">
-                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600" />
+                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
                     Researcher
                   </SelectItem>
                   <SelectItem value="admin" className="flex items-center">
-                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600" />
+                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600 flex-shrink-0" />
                     Admin
                   </SelectItem>
                 </SelectContent>
@@ -1162,15 +1162,15 @@ export function UserManagementTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="therapist" className="flex items-center">
-                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
                     Therapist
                   </SelectItem>
                   <SelectItem value="researcher" className="flex items-center">
-                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600" />
+                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
                     Researcher
                   </SelectItem>
                   <SelectItem value="admin" className="flex items-center">
-                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600" />
+                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600 flex-shrink-0" />
                     Admin
                   </SelectItem>
                 </SelectContent>
