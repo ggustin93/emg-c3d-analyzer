@@ -8,7 +8,6 @@
  * 
  * PURPOSE: System administration interface for user management and configuration
  * Current Implementation: 33 lines (minimal implementation with SessionSettings only)
- * Target Implementation: ~800 lines when complete
  * 
  * Architecture Notes:
  * - Strategic component for system administration
@@ -88,24 +87,58 @@
  * - Performance optimization for large datasets
  */
 
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
+import { useState, useEffect } from 'react'
+import { Card, CardContent } from '../../ui/card'
 import { useAuth } from '../../../contexts/AuthContext'
-import { Badge } from '../../ui/badge'
-import { PersonIcon, ActivityLogIcon, GearIcon } from '@radix-ui/react-icons'
-import { SessionSettings } from '../shared/SessionSettings'
+import { useLocation } from 'react-router-dom'
+import { OverviewTab } from './tabs/OverviewTab'
+import { UserManagementTab } from './tabs/UserManagementTab'
+import { PatientManagement } from '../therapist/PatientManagement'
+import { TrialConfigurationTab } from './tabs/TrialConfigurationTab'
+import C3DFileBrowser from '../../c3d/C3DFileBrowser'
 
 /**
  * Admin Dashboard Component
  * Access: ADMIN role only
  * 
- * CURRENT STATE: Minimal implementation with SessionSettings only
- * TODO: Expand to full user management interface (see detailed TODOs above)
+ * Implementation: Full admin interface with tab navigation
+ * - Overview: System metrics and recent activity
+ * - User Management: User CRUD operations and role management
+ * - Patient Management: Patient records and therapist assignments
+ * - Trial Configuration: GHOSTLY-TRIAL-DEFAULT settings
  */
 export function AdminDashboard() {
   const { userRole } = useAuth()
+  const location = useLocation()
   
-  if (userRole !== 'ADMIN') {
+  // Get initial tab from location state or default to overview
+  const locationTab = (location.state as any)?.activeTab || 'overview'
+  
+  // Map location tab to internal tab names (configuration from sidebar maps to configuration)
+  const mapTabName = (tab: string) => {
+    // The sidebar sends these tab values, map them to our internal tab names
+    switch(tab) {
+      case 'users': return 'users'
+      case 'patients': return 'patients'
+      case 'configuration': return 'configuration'
+      case 'sessions': return 'sessions'
+      case 'overview': 
+      default: return 'overview'
+    }
+  }
+  
+  // Default to overview tab for admins after login
+  const [activeTab, setActiveTab] = useState(mapTabName(locationTab))
+  
+  // Update active tab when location state changes
+  useEffect(() => {
+    if ((location.state as any)?.activeTab) {
+      setActiveTab(mapTabName((location.state as any).activeTab))
+    }
+  }, [location.state])
+  
+  // Handle both uppercase (from useAuth) and lowercase (from App.tsx) 
+  if (userRole && userRole.toLowerCase() !== 'admin') {
     return (
       <div className="p-6">
         <Card className="border-destructive">
@@ -118,9 +151,47 @@ export function AdminDashboard() {
     )
   }
 
+  // Render the appropriate component based on activeTab from sidebar navigation
+  // No tabs needed - sidebar handles all navigation
+  
+  if (activeTab === 'sessions') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <C3DFileBrowser onFileSelect={(filename, uploadDate) => {
+          console.log('Admin viewing session:', filename, uploadDate)
+        }} />
+      </div>
+    )
+  }
+
+  if (activeTab === 'users') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <UserManagementTab />
+      </div>
+    )
+  }
+
+  if (activeTab === 'patients') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <PatientManagement />
+      </div>
+    )
+  }
+
+  if (activeTab === 'configuration') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <TrialConfigurationTab />
+      </div>
+    )
+  }
+
+  // Default to overview
   return (
-    <div>
-      <SessionSettings />
+    <div className="container mx-auto p-6 space-y-6">
+      <OverviewTab />
     </div>
   )
 }
