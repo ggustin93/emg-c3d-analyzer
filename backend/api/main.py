@@ -25,6 +25,7 @@ from api.routes import (
     upload,
     webhooks,
 )
+from api.routes.admin import router as admin_router
 from api.routes.config_defaults import router as config_defaults_router
 from api.routes.scoring_config import router as scoring_router
 from api.routes.therapist_resolution import router as therapist_router
@@ -228,8 +229,9 @@ def create_app() -> FastAPI:
     app.include_router(cache_monitoring.router)  # Cache monitoring
     app.include_router(logs.router)  # Frontend log collection
     app.include_router(therapist_router)  # Therapist resolution
+    app.include_router(admin_router, prefix="/admin", tags=["admin"])  # Admin operations
     
-    logger.info("FastAPI application configured", routes=12)
+    logger.info("FastAPI application configured", routes=13)
     return app
 
 

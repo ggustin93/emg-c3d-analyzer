@@ -192,4 +192,8 @@ backup_tasks*
 docs-backup/
 
 .specify/*
-specs/*
+specs/*.dev_state
+KNOWLEDGE_TRANSFER_IDEAS.md 
+EXPORT_FINAL_ENHANCEMENT_MD.md 
+PLAN_SIMPLIFY_SESSION_SETTINGS.md 
+/archive/*
