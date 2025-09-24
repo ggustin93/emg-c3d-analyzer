@@ -79,7 +79,6 @@ interface ColumnVisibility {
   upload_date: boolean;
   clinical_notes: boolean;
 }
-import C3DFileUpload from '@/components/c3d/C3DFileUpload';
 import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
 import C3DFileList from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
@@ -452,14 +451,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     refreshFiles();
   };
 
-  const handleUploadComplete = () => {
-    refreshFiles();
-  };
-
-  const handleUploadError = (message: string) => {
-    // Error handling now managed by TanStack Query
-    logger.error(LogCategory.DATA_PROCESSING, 'Upload error:', message);
-  };
 
   if (isLoadingFiles) {
     return (
@@ -567,13 +558,6 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Upload Button - Only show for admin users */}
-            {SupabaseStorageService.isConfigured() && userRole === 'ADMIN' && (
-              <C3DFileUpload
-                onUploadComplete={handleUploadComplete}
-                onError={handleUploadError}
-              />
-            )}
             <Popover>
               <PopoverTrigger asChild>
                 <Button

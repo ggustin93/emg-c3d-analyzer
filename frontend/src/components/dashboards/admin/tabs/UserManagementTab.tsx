@@ -718,7 +718,6 @@ export function UserManagementTab() {
                 {renderSortableHeader('role' as keyof UserProfile, 'Role')}
                 {renderSortableHeader('institution' as keyof UserProfile, 'Institution')}
                 {renderSortableHeader('email' as keyof UserProfile, 'Email')}
-                {renderSortableHeader('department' as keyof UserProfile, 'Department')}
                 {renderSortableHeader('created_at' as keyof UserProfile, 'Created')}
                 {renderSortableHeader('last_sign_in_at' as keyof UserProfile, 'Last Login')}
                 <TableHead>Actions</TableHead>
@@ -770,7 +769,6 @@ export function UserManagementTab() {
                       {user.email}
                     </a>
                   </TableCell>
-                  <TableCell>{user.department || '-'}</TableCell>
                   <TableCell>{formatDate(user.created_at)}</TableCell>
                   <TableCell>{formatDate(user.last_sign_in_at)}</TableCell>
                   <TableCell>
