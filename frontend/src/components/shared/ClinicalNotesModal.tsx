@@ -707,32 +707,32 @@ const ClinicalNotesEditor: React.FC<EditorProps> = ({
       {/* Title Input Field */}
       <div>
         <label htmlFor="note-title" className="block text-sm font-medium text-slate-700 mb-2">
-          Titre de la note
+          Note Title
         </label>
         <input
           id="note-title"
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Entrez le titre de la note..."
+          placeholder="Enter note title..."
           className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           maxLength={255}
         />
         <div className="text-xs text-slate-500 mt-1">
-          {title.length}/255 caractères
+          {title.length}/255 characters
         </div>
       </div>
 
       {/* Content Editor */}
       <div className="flex-1">
         <label className="block text-sm font-medium text-slate-700 mb-2">
-          Contenu
+          Content
         </label>
         <div className="h-64 border border-slate-200 rounded-lg overflow-hidden">
           <Editor
             value={content}
             onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
-            placeholder="Rédigez votre note clinique ici..."
+            placeholder="Write your clinical note here..."
             containerProps={{ 
               style: { height: '240px' }
             }}
