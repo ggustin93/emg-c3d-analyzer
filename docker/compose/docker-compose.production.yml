@@ -16,8 +16,6 @@
 #
 # ══════════════════════════════════════════════════════════════════════════════
 
-version: '3.8'
-
 services:
   # ═══════════════════════════════════════════════════════════════════════════
   # Core Services (Always Active)
@@ -62,6 +60,10 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - ALLOWED_ORIGINS=${FRONTEND_URL}
+      
+      # Coolify built-in variables
+      - SOURCE_COMMIT=${SOURCE_COMMIT:-unknown}
+      - COOLIFY_BRANCH=${COOLIFY_BRANCH:-main}
       
       # Performance
       - WORKERS=${BACKEND_WORKERS:-4}
@@ -194,47 +196,48 @@ services:
   # Optional Services (Uncomment to Enable)
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Redis Cache Service - Production Configuration (Uncomment to enable)
-  # redis:
-  #   image: redis:7.2-alpine
-  #   container_name: emg-redis-prod
-  #   restart: unless-stopped
-  #   ports:
-  #     - "6379"  # Internal only
-  #   command: >
-  #     redis-server
-  #     --maxmemory ${REDIS_MAX_MEMORY:-512mb}
-  #     --maxmemory-policy allkeys-lru
-  #     --appendonly yes
-  #     --auto-aof-rewrite-percentage 100
-  #     --auto-aof-rewrite-min-size 64mb
-  #     --requirepass ${REDIS_PASSWORD:-}
-  #   volumes:
-  #     - redis_data:/data
-  #     - ./redis/redis.prod.conf:/usr/local/etc/redis/redis.conf:ro
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #   networks:
-  #     - emg-network
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 600M
-  #         cpus: '1.0'
-  #       reservations:
-  #         memory: 400M
-  #         cpus: '0.5'
-  #   labels:
-  #     - "coolify.managed=true"
-  #     - "coolify.service=redis"
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "5m"
-  #       max-file: "3"
+  # Redis Cache Service - Production Configuration (Enable with --profile redis or set profiles in Coolify)
+  redis:
+    profiles: [redis]  # Only starts when profile is enabled
+    image: redis:7.2-alpine
+    container_name: emg-redis-prod
+    restart: unless-stopped
+    ports:
+      - "6379"  # Internal only
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAX_MEMORY:-512mb}
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.prod.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - emg-network
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '1.0'
+        reservations:
+          memory: 400M
+          cpus: '0.5'
+    labels:
+      - "coolify.managed=true"
+      - "coolify.service=redis"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Metabase Analytics Platform - Production (Uncomment to enable)
@@ -380,8 +383,8 @@ volumes:
     driver: local
   nginx_logs:
     driver: local
-  # redis_data:  # Uncomment if using Redis
-  #   driver: local
+  redis_data:  # Available when Redis profile is enabled
+    driver: local
   # metabase_data:  # Uncomment if using Metabase
   #   driver: local
   # metabase_postgres_data:  # Uncomment if using Metabase
