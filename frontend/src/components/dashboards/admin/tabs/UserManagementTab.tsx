@@ -950,16 +950,13 @@ export function UserManagementTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="therapist" className="flex items-center">
-                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
+                  <SelectItem value="therapist" className="text-blue-600">
                     Therapist
                   </SelectItem>
-                  <SelectItem value="researcher" className="flex items-center">
-                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                  <SelectItem value="researcher" className="text-green-600">
                     Researcher
                   </SelectItem>
-                  <SelectItem value="admin" className="flex items-center">
-                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600 flex-shrink-0" />
+                  <SelectItem value="admin" className="text-red-600">
                     Admin
                   </SelectItem>
                 </SelectContent>
@@ -1153,28 +1150,27 @@ export function UserManagementTab() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Role</Label>
-              <Select 
-                value={editForm.role} 
-                onValueChange={(value) => setEditForm({ ...editForm, role: value as any })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
+              <div className="col-span-3">
+                <Select 
+                  value={editForm.role} 
+                  onValueChange={(value) => setEditForm({ ...editForm, role: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="therapist" className="flex items-center">
-                    <Icons.PersonIcon className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
+                  <SelectItem value="therapist" className="text-blue-600">
                     Therapist
                   </SelectItem>
-                  <SelectItem value="researcher" className="flex items-center">
-                    <Icons.MagnifyingGlassIcon className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                  <SelectItem value="researcher" className="text-green-600">
                     Researcher
                   </SelectItem>
-                  <SelectItem value="admin" className="flex items-center">
-                    <Icons.LockClosedIcon className="h-4 w-4 mr-2 text-red-600 flex-shrink-0" />
+                  <SelectItem value="admin" className="text-red-600">
                     Admin
                   </SelectItem>
                 </SelectContent>
-              </Select>
+                </Select>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="editInstitution" className="text-right">Institution</Label>
