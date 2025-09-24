@@ -113,8 +113,13 @@ graph TB
 
 ### Auto-Generated REST API
 
-Supabase automatically creates REST endpoints for all public tables. You can explore these at:
-**[Supabase API Dashboard](https://supabase.com/dashboard/project/YOUR-PROJECT-ID/api)**
+Supabase automatically creates REST endpoints for all public tables. You can explore these in your Supabase Dashboard under:
+**Project Settings → API → REST API Documentation**
+
+For hosted Supabase, this is typically found at:
+**[https://supabase.com/dashboard/project/YOUR-PROJECT-ID/api](https://supabase.com/dashboard/project/YOUR-PROJECT-ID/api)**
+
+*Note: The exact URL path may differ for self-hosted Supabase installations.*
 
 This means many operations can use Supabase's built-in API directly, without custom backend code.
 
