@@ -556,7 +556,13 @@ export function PatientManagement({ className }: PatientManagementProps) {
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         visibleColumns={visibleColumns!}
-        setVisibleColumns={setVisibleColumns}
+        setVisibleColumns={(value) => {
+          if (typeof value === 'function') {
+            setVisibleColumns(prev => prev ? value(prev) : prev);
+          } else {
+            setVisibleColumns(value);
+          }
+        }}
         onCreatePatient={() => setShowCreateDialog(true)}
         onReassignPatient={(patient) => {
           setSelectedPatient(patient)
