@@ -34,29 +34,107 @@ readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m' # No Color
 
-# --- Logging Functions ---
+# --- Debug and Diagnostic Configuration ---
+DEBUG_MODE=${DEBUG_MODE:-false}
+DIAGNOSTIC_LOG_FILE="${LOG_DIR}/diagnostic.log"
+STARTUP_LOG_FILE="${LOG_DIR}/startup.log"
+
+# --- Enhanced Logging Functions ---
 log() {
     local level="$1"
     shift
     local message="$*"
     local timestamp="$(date +"%Y-%m-%d %H:%M:%S")"
     
+    # Create logs directory if it doesn't exist
+    mkdir -p "$LOG_DIR" 2>/dev/null || true
+    
+    # Format message for console
+    local console_msg=""
     case "$level" in
-        ERROR)   echo -e "${RED}[${timestamp}] ERROR:${NC} ${message}" >&2 ;;
-        WARNING) echo -e "${YELLOW}[${timestamp}] WARNING:${NC} ${message}" ;;
-        SUCCESS) echo -e "${GREEN}[${timestamp}] SUCCESS:${NC} ${message}" ;;
-        INFO)    echo -e "${BLUE}[${timestamp}] INFO:${NC} ${message}" ;;
-        HEADER)  echo -e "\n${PURPLE}${BOLD}═══ ${message} ═══${NC}\n" ;;
-        *)       echo "[${timestamp}] ${message}" ;;
+        ERROR)   console_msg="${RED}[${timestamp}] ERROR:${NC} ${message}" ;;
+        WARNING) console_msg="${YELLOW}[${timestamp}] WARNING:${NC} ${message}" ;;
+        SUCCESS) console_msg="${GREEN}[${timestamp}] SUCCESS:${NC} ${message}" ;;
+        INFO)    console_msg="${BLUE}[${timestamp}] INFO:${NC} ${message}" ;;
+        DEBUG)   console_msg="${CYAN}[${timestamp}] DEBUG:${NC} ${message}" ;;
+        HEADER)  console_msg="\n${PURPLE}${BOLD}═══ ${message} ═══${NC}\n" ;;
+        *)       console_msg="[${timestamp}] ${message}" ;;
     esac
+    
+    # Output to console
+    if [[ "$level" == "ERROR" ]]; then
+        echo -e "$console_msg" >&2
+    else
+        echo -e "$console_msg"
+    fi
+    
+    # Write to log file (strip ANSI codes for clean file logging)
+    local clean_msg="[${timestamp}] ${level}: ${message}"
+    echo "$clean_msg" >> "$STARTUP_LOG_FILE" 2>/dev/null || true
+    
+    # Debug messages only go to file unless DEBUG_MODE is enabled
+    if [[ "$level" == "DEBUG" && "$DEBUG_MODE" != "true" ]]; then
+        return
+    fi
 }
 
-# --- Error Handling ---
+# Enhanced diagnostic logging function
+log_diagnostic() {
+    local message="$*"
+    local timestamp="$(date +"%Y-%m-%d %H:%M:%S")"
+    
+    # Always write diagnostic info to both console and diagnostic log
+    echo -e "${CYAN}[${timestamp}] DIAGNOSTIC:${NC} ${message}"
+    echo "[${timestamp}] DIAGNOSTIC: ${message}" >> "$DIAGNOSTIC_LOG_FILE" 2>/dev/null || true
+}
+
+# --- Enhanced Error Handling ---
 error_handler() {
     local line_no=$1
     local exit_code=$2
-    log ERROR "Script failed at line ${line_no} with exit code ${exit_code}"
+    local timestamp="$(date +"%Y-%m-%d %H:%M:%S")"
+    
+    # Create detailed error report
+    log ERROR "════════════════════════════════════════════════════════"
+    log ERROR "SCRIPT FAILURE REPORT - ${timestamp}"
+    log ERROR "════════════════════════════════════════════════════════"
+    log ERROR "Script: ${SCRIPT_NAME}"
+    log ERROR "Failed at line: ${line_no}"
+    log ERROR "Exit code: ${exit_code}"
     log ERROR "Last command: ${BASH_COMMAND}"
+    log ERROR "Working directory: $(pwd)"
+    log ERROR "User: $(whoami 2>/dev/null || echo 'unknown')"
+    log ERROR "Environment: $(uname -a 2>/dev/null || echo 'unknown')"
+    
+    # Log current function stack if available
+    if [[ ${#FUNCNAME[@]} -gt 1 ]]; then
+        log ERROR "Function stack: ${FUNCNAME[*]}"
+    fi
+    
+    # Additional context for common failure points
+    case $line_no in
+        *) 
+            log ERROR "Context: Check diagnostic log at: ${DIAGNOSTIC_LOG_FILE}"
+            log ERROR "Full startup log at: ${STARTUP_LOG_FILE}"
+            ;;
+    esac
+    
+    # Write error details to diagnostic log
+    {
+        echo "FATAL ERROR REPORT - ${timestamp}"
+        echo "Script: ${SCRIPT_NAME} (line ${line_no})"
+        echo "Exit code: ${exit_code}"
+        echo "Command: ${BASH_COMMAND}"
+        echo "PWD: $(pwd)"
+        echo "User: $(whoami 2>/dev/null || echo 'unknown')"
+        echo "System: $(uname -a 2>/dev/null || echo 'unknown')"
+        echo "Docker status: $(docker --version 2>&1 || echo 'Docker not available')"
+        echo "Docker Compose: $(docker compose version 2>&1 || echo 'Docker Compose not available')"
+        echo "WSL info: $([[ -f /proc/version ]] && grep -i microsoft /proc/version 2>/dev/null || echo 'Not WSL')"
+        echo "════════════════════════════════════════════════════════"
+    } >> "$DIAGNOSTIC_LOG_FILE" 2>/dev/null || true
+    
+    log ERROR "════════════════════════════════════════════════════════"
     
     # Cleanup on error
     if [[ "${CLEANUP_ON_ERROR:-true}" == "true" ]]; then
@@ -68,6 +146,117 @@ error_handler() {
 }
 
 trap 'error_handler ${LINENO} $?' ERR
+
+# --- Early System Diagnostics ---
+run_system_diagnostics() {
+    log_diagnostic "════════════════════════════════════════════════════════"
+    log_diagnostic "EMG C3D Analyzer - System Diagnostics Report"
+    log_diagnostic "════════════════════════════════════════════════════════"
+    log_diagnostic "Script: ${SCRIPT_NAME} started at $(date)"
+    log_diagnostic "Script directory: ${SCRIPT_DIR}"
+    log_diagnostic "Working directory: $(pwd)"
+    
+    # Basic system information
+    log_diagnostic "System Architecture: $(uname -m 2>/dev/null || echo 'unknown')"
+    log_diagnostic "Operating System: $(uname -s 2>/dev/null || echo 'unknown')"
+    log_diagnostic "Kernel Version: $(uname -r 2>/dev/null || echo 'unknown')"
+    log_diagnostic "Full System Info: $(uname -a 2>/dev/null || echo 'unknown')"
+    
+    # User and environment context
+    log_diagnostic "Current User: $(whoami 2>/dev/null || echo 'unknown')"
+    log_diagnostic "User ID: $(id 2>/dev/null || echo 'unknown')"
+    log_diagnostic "Shell: ${SHELL:-unknown}"
+    log_diagnostic "PATH: ${PATH:-not set}"
+    
+    # Windows/WSL2 Detection
+    if [[ -f /proc/version ]]; then
+        local wsl_info=$(grep -i microsoft /proc/version 2>/dev/null || echo "")
+        if [[ -n "$wsl_info" ]]; then
+            log_diagnostic "WSL Detected: ${wsl_info}"
+            log_diagnostic "WSL Version: $(wsl.exe --status 2>/dev/null || echo 'WSL command not available')"
+        else
+            log_diagnostic "WSL: Not detected (native Linux)"
+        fi
+    else
+        log_diagnostic "WSL: /proc/version not found (likely Windows or other OS)"
+    fi
+    
+    # Docker availability check (non-fatal)
+    log_diagnostic "Docker Command Test:"
+    if command -v docker &>/dev/null; then
+        log_diagnostic "  ✓ Docker command found at: $(command -v docker)"
+        local docker_version=$(docker --version 2>&1)
+        if [[ $? -eq 0 ]]; then
+            log_diagnostic "  ✓ Docker version: ${docker_version}"
+        else
+            log_diagnostic "  ⚠ Docker command exists but failed: ${docker_version}"
+        fi
+        
+        # Test Docker daemon connectivity (non-fatal)
+        local docker_info=$(docker info 2>&1)
+        if [[ $? -eq 0 ]]; then
+            log_diagnostic "  ✓ Docker daemon is accessible"
+            log_diagnostic "  ✓ Docker context: $(docker context show 2>&1 || echo 'unknown')"
+        else
+            log_diagnostic "  ❌ Docker daemon not accessible: ${docker_info}"
+        fi
+    else
+        log_diagnostic "  ❌ Docker command not found in PATH"
+    fi
+    
+    # Docker Compose availability check (non-fatal)
+    log_diagnostic "Docker Compose Test:"
+    if docker compose version &>/dev/null; then
+        local compose_version=$(docker compose version 2>&1)
+        log_diagnostic "  ✓ Docker Compose v2: ${compose_version}"
+    elif command -v docker-compose &>/dev/null; then
+        local compose_version=$(docker-compose --version 2>&1)
+        log_diagnostic "  ⚠ Docker Compose v1 (legacy): ${compose_version}"
+    else
+        log_diagnostic "  ❌ Docker Compose not available"
+    fi
+    
+    # File system and permissions check
+    log_diagnostic "File System Checks:"
+    log_diagnostic "  Script permissions: $(ls -la "${BASH_SOURCE[0]}" 2>/dev/null || echo 'unknown')"
+    log_diagnostic "  Script directory writable: $(test -w "${SCRIPT_DIR}" && echo 'yes' || echo 'no')"
+    log_diagnostic "  Logs directory: ${LOG_DIR} $(test -d "${LOG_DIR}" && echo '(exists)' || echo '(will be created)')"
+    
+    # Project structure validation
+    log_diagnostic "Project Structure:"
+    local compose_dir="${SCRIPT_DIR}/docker/compose"
+    if [[ -d "$compose_dir" ]]; then
+        log_diagnostic "  ✓ Docker compose directory exists: ${compose_dir}"
+        for compose_file in "docker-compose.dev.yml" "docker-compose.staging.yml" "docker-compose.production.yml"; do
+            if [[ -f "${compose_dir}/${compose_file}" ]]; then
+                log_diagnostic "    ✓ ${compose_file} found"
+            else
+                log_diagnostic "    ❌ ${compose_file} missing"
+            fi
+        done
+    else
+        log_diagnostic "  ❌ Docker compose directory missing: ${compose_dir}"
+    fi
+    
+    # Environment file check
+    if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+        log_diagnostic "  ✓ .env file exists"
+        local env_size=$(wc -l < "${SCRIPT_DIR}/.env" 2>/dev/null || echo 0)
+        log_diagnostic "    ${env_size} lines in .env file"
+    else
+        log_diagnostic "  ⚠ .env file not found"
+        if [[ -f "${SCRIPT_DIR}/.env.example" ]]; then
+            log_diagnostic "    ✓ .env.example available for template"
+        else
+            log_diagnostic "    ❌ .env.example also missing"
+        fi
+    fi
+    
+    log_diagnostic "════════════════════════════════════════════════════════"
+    log_diagnostic "End of diagnostics - script execution will continue"
+    log_diagnostic "Log files: ${STARTUP_LOG_FILE} | ${DIAGNOSTIC_LOG_FILE}"
+    log_diagnostic "════════════════════════════════════════════════════════"
+}
 
 # --- Architecture Detection ---
 
@@ -603,12 +792,16 @@ ${BOLD}Commands:${NC}
   ${GREEN}test${NC}         Run all tests
   ${GREEN}cleanup${NC}      Stop services and remove volumes (basic)
   ${GREEN}clean-docker${NC} Deep clean Docker resources (advanced)
+  ${GREEN}diagnose${NC}     Full system diagnostics and troubleshooting
+  ${GREEN}check-env${NC}    Quick environment validation
   ${GREEN}help${NC}         Show this help message
 
 ${BOLD}Options:${NC}
   ${GREEN}--build${NC}       Rebuild images before starting
   ${GREEN}--staging${NC}    Use staging configuration
   ${GREEN}--production${NC} Use production configuration
+  ${GREEN}--debug${NC}      Enable debug output and detailed logging
+  ${GREEN}--verbose${NC}    Enable bash debug mode for troubleshooting
 
 ${BOLD}Examples:${NC}
   ${SCRIPT_NAME}                    # Start development environment
@@ -620,11 +813,203 @@ ${BOLD}Examples:${NC}
   ${SCRIPT_NAME} clean-docker --aggressive  # Remove all unused images
   ${SCRIPT_NAME} clean-docker --all # Clean everything (including volumes)
 
+${BOLD}Troubleshooting:${NC}
+  ${SCRIPT_NAME} check-env          # Quick environment validation
+  ${SCRIPT_NAME} diagnose           # Full diagnostics report
+  ${SCRIPT_NAME} up --debug         # Start with debug output
+  ${SCRIPT_NAME} up --verbose       # Start with bash debug mode
+
 ${BOLD}Environment:${NC}
   Configure settings in ${CYAN}.env${NC} file
   Docker Compose files in: ${CYAN}${COMPOSE_DIR}/${NC}
 
 EOF
+}
+
+# --- New Diagnostic Commands ---
+
+# Full diagnostic report with all checks
+run_full_diagnostics() {
+    log HEADER "Full System Diagnostics Report"
+    
+    # Run the comprehensive system diagnostics
+    run_system_diagnostics
+    
+    # Additional diagnostics specific to full report
+    log_diagnostic ""
+    log_diagnostic "═══ Additional Docker Environment Analysis ═══"
+    
+    # Docker context and configuration
+    if command -v docker &>/dev/null; then
+        log_diagnostic "Docker Configuration Details:"
+        
+        # Docker contexts
+        local contexts=$(docker context ls 2>&1)
+        if [[ $? -eq 0 ]]; then
+            log_diagnostic "  Docker Contexts:"
+            echo "$contexts" | while IFS= read -r line; do
+                log_diagnostic "    ${line}"
+            done
+        else
+            log_diagnostic "  Docker contexts: ${contexts}"
+        fi
+        
+        # Docker system information (if daemon accessible)
+        local system_info=$(docker system df 2>&1)
+        if [[ $? -eq 0 ]]; then
+            log_diagnostic "  Docker Disk Usage:"
+            echo "$system_info" | while IFS= read -r line; do
+                log_diagnostic "    ${line}"
+            done
+        else
+            log_diagnostic "  Docker system info unavailable: ${system_info}"
+        fi
+        
+        # Network information
+        local networks=$(docker network ls 2>&1)
+        if [[ $? -eq 0 ]]; then
+            log_diagnostic "  Docker Networks:"
+            echo "$networks" | while IFS= read -r line; do
+                log_diagnostic "    ${line}"
+            done
+        else
+            log_diagnostic "  Docker networks unavailable: ${networks}"
+        fi
+    fi
+    
+    # Test compose file validity
+    log_diagnostic ""
+    log_diagnostic "═══ Docker Compose File Validation ═══"
+    for compose_file in "$COMPOSE_FILE" "$COMPOSE_STAGING_FILE" "$COMPOSE_PROD_FILE"; do
+        if [[ -f "$compose_file" ]]; then
+            local file_name=$(basename "$compose_file")
+            log_diagnostic "Testing ${file_name}:"
+            local compose_test=$(docker compose -f "$compose_file" config 2>&1)
+            if [[ $? -eq 0 ]]; then
+                log_diagnostic "  ✓ ${file_name} is valid"
+            else
+                log_diagnostic "  ❌ ${file_name} validation failed:"
+                echo "$compose_test" | head -5 | while IFS= read -r line; do
+                    log_diagnostic "    ${line}"
+                done
+            fi
+        else
+            log_diagnostic "❌ $(basename "$compose_file") not found"
+        fi
+    done
+    
+    log_diagnostic ""
+    log_diagnostic "═══ Troubleshooting Recommendations ═══"
+    
+    # Generate specific recommendations based on findings
+    if ! command -v docker &>/dev/null; then
+        log_diagnostic "🔧 CRITICAL: Install Docker Desktop from https://docker.com/products/docker-desktop"
+    elif ! docker info &>/dev/null; then
+        log_diagnostic "🔧 CRITICAL: Start Docker Desktop and ensure daemon is running"
+        if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+            log_diagnostic "🔧 WSL2: Enable WSL2 integration in Docker Desktop Settings → Resources → WSL Integration"
+        fi
+    else
+        log_diagnostic "✅ Docker environment appears functional"
+    fi
+    
+    if ! docker compose version &>/dev/null && ! command -v docker-compose &>/dev/null; then
+        log_diagnostic "🔧 Install Docker Compose v2 (usually included with Docker Desktop)"
+    fi
+    
+    log_diagnostic ""
+    log_diagnostic "📋 Report complete. Check log files for details:"
+    log_diagnostic "   Diagnostic log: ${DIAGNOSTIC_LOG_FILE}"
+    log_diagnostic "   Startup log: ${STARTUP_LOG_FILE}"
+}
+
+# Environment check only (lightweight validation)
+run_environment_check() {
+    log HEADER "Environment Check"
+    
+    # Temporarily disable strict error handling for checks
+    set +e
+    
+    local all_good=true
+    
+    # Check 1: Docker command
+    log INFO "Checking Docker installation..."
+    if command -v docker &>/dev/null; then
+        log SUCCESS "✓ Docker command found"
+        
+        # Check Docker daemon
+        if docker info &>/dev/null; then
+            log SUCCESS "✓ Docker daemon accessible"
+        else
+            log ERROR "❌ Docker daemon not running"
+            all_good=false
+        fi
+    else
+        log ERROR "❌ Docker command not found"
+        all_good=false
+    fi
+    
+    # Check 2: Docker Compose
+    log INFO "Checking Docker Compose..."
+    if docker compose version &>/dev/null; then
+        log SUCCESS "✓ Docker Compose v2 available"
+    elif command -v docker-compose &>/dev/null; then
+        log WARNING "⚠ Only Docker Compose v1 found (legacy)"
+    else
+        log ERROR "❌ Docker Compose not available"
+        all_good=false
+    fi
+    
+    # Check 3: Project structure
+    log INFO "Checking project structure..."
+    if [[ -d "${SCRIPT_DIR}/docker/compose" ]]; then
+        log SUCCESS "✓ Docker compose directory found"
+        
+        local compose_files=("docker-compose.dev.yml" "docker-compose.staging.yml" "docker-compose.production.yml")
+        for file in "${compose_files[@]}"; do
+            if [[ -f "${SCRIPT_DIR}/docker/compose/${file}" ]]; then
+                log SUCCESS "✓ ${file} found"
+            else
+                log WARNING "⚠ ${file} missing"
+            fi
+        done
+    else
+        log ERROR "❌ Docker compose directory missing"
+        all_good=false
+    fi
+    
+    # Check 4: Environment file
+    log INFO "Checking environment configuration..."
+    if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+        log SUCCESS "✓ .env file found"
+    else
+        log WARNING "⚠ .env file missing"
+        if [[ -f "${SCRIPT_DIR}/.env.example" ]]; then
+            log INFO "ℹ .env.example available as template"
+        fi
+    fi
+    
+    # Check 5: WSL2 (if applicable)
+    if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+        log INFO "WSL2 environment detected"
+        if docker context show | grep -q "default"; then
+            log SUCCESS "✓ Docker context configured for WSL2"
+        else
+            log WARNING "⚠ Docker context may need WSL2 configuration"
+        fi
+    fi
+    
+    # Re-enable strict error handling
+    set -e
+    
+    # Summary
+    echo ""
+    if [[ "$all_good" == "true" ]]; then
+        log SUCCESS "🎉 Environment check passed! You can run: ${SCRIPT_NAME} up"
+    else
+        log ERROR "❌ Environment issues detected. Run '${SCRIPT_NAME} diagnose' for detailed analysis"
+        exit 1
+    fi
 }
 
 # --- Main Execution ---
@@ -649,9 +1034,11 @@ main() {
             --build) BUILD=true ;;
             --staging) CURRENT_COMPOSE_FILE="$COMPOSE_STAGING_FILE" ;;
             --prod|--production) CURRENT_COMPOSE_FILE="$COMPOSE_PROD_FILE" ;;
+            --debug) DEBUG_MODE=true ;;
+            --verbose) set -x ;; # Enable bash debug mode
             --help|-h) usage; exit 0 ;;
             *) 
-                if [[ "$command" == "logs" || "$command" == "shell" || "$command" == "clean-docker" ]]; then
+                if [[ "$command" == "logs" || "$command" == "shell" || "$command" == "clean-docker" || "$command" == "diagnose" || "$command" == "check-env" ]]; then
                     # These commands accept additional arguments
                     break
                 else
@@ -664,10 +1051,18 @@ main() {
         shift
     done
     
-    # Pre-flight checks
-    check_docker
-    detect_architecture
-    setup_environment
+    # Run system diagnostics for non-diagnostic commands (unless they're help/diagnostic commands)
+    if [[ "$command" != "help" && "$command" != "diagnose" && "$command" != "check-env" && "$command" != "--help" && "$command" != "-h" ]]; then
+        log DEBUG "Running system diagnostics..."
+        run_system_diagnostics
+    fi
+    
+    # Pre-flight checks (skip for diagnostic-only commands)
+    if [[ "$command" != "diagnose" && "$command" != "check-env" ]]; then
+        check_docker
+        detect_architecture
+        setup_environment
+    fi
     
     # Check disk space for operations that need it
     if [[ "$command" == "up" || "$command" == "start" || "$command" == "restart" ]]; then
@@ -685,6 +1080,8 @@ main() {
         test)         run_tests ;;
         cleanup|clean) cleanup ;;
         clean-docker) clean_docker "$@" ;;
+        diagnose)     run_full_diagnostics ;;
+        check-env)    run_environment_check ;;
         help|-h)      usage ;;
         *)
             log ERROR "Unknown command: ${command}"
