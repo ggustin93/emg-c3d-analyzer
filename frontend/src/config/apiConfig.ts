@@ -26,13 +26,13 @@ const getApiBaseUrl = (): string => {
   const currentHost = window.location.hostname;
   const currentProtocol = window.location.protocol;
   
-  // If we're on the same server, use the same hostname with backend port
-  if (currentHost === '104.248.143.107' || currentHost !== 'localhost') {
+  // 🧠 SAME-ORIGIN DETECTION: Use same hostname to eliminate CORS
+  if (currentHost === '104.248.143.107' || currentHost === '127.0.0.1' || currentHost === 'localhost') {
     return `${currentProtocol}//${currentHost}:8080`;
   }
   
-  // 4. Fallback to localhost for local development
-  return 'http://localhost:8080';
+  // 4. Fallback: For any other hostname, try same-origin approach
+  return `${currentProtocol}//${currentHost}:8080`;
 };
 
 /**

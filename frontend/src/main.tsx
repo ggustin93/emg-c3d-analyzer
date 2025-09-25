@@ -164,27 +164,21 @@ const rootElement = document.getElementById('root') as HTMLElement;
 const isHydration = rootElement.hasChildNodes();
 
 if (isHydration) {
-  // Hydration mode - React 19 expects a hydration fallback
-  const root = ReactDOM.createRoot(rootElement, {
-    // @ts-ignore - React 19 hydration options
-    hydrationOptions: {
-      onHydrated: () => {
-        console.log('✅ Hydration completed successfully');
-      },
-      onHydrationError: (error: Error) => {
-        console.error('❌ Hydration error:', error);
-      }
-    }
-  });
-
-  root.render(
+  // Hydration mode - React 19 hydrateRoot
+  ReactDOM.hydrateRoot(
+    rootElement,
     <React.StrictMode>
       <React.Suspense fallback={<HydrateFallback />}>
         <TooltipProvider delayDuration={100}>
           <App />
         </TooltipProvider>
       </React.Suspense>
-    </React.StrictMode>
+    </React.StrictMode>,
+    {
+      onRecoverableError: (error: unknown, errorInfo: any) => {
+        console.warn('⚠️ Hydration recoverable error:', error);
+      }
+    }
   );
 } else {
   // Initial render mode
