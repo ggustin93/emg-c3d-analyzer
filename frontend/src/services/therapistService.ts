@@ -12,7 +12,7 @@ import { TherapistInfo, TherapistCache } from '../types/therapist';
 class TherapistService {
   // Dynamic API URL - evaluated at request time, not import time
   private get apiBaseUrl() {
-    return API_CONFIG.baseUrl;
+    return API_CONFIG.getBaseUrl();
   }
 
   /**

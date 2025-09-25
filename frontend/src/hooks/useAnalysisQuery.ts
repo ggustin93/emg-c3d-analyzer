@@ -72,7 +72,7 @@ async function fetchEMGAnalysis(
     
     // Step 3: Send to backend for processing
     logger.info(LogCategory.API, '⚡ Processing file on backend...')
-    const apiUrl = API_CONFIG.baseUrl + '/upload'
+    const apiUrl = API_CONFIG.getBaseUrl() + '/upload'
     
     const uploadResponse = await fetch(apiUrl, {
       method: 'POST',

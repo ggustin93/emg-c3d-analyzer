@@ -56,6 +56,12 @@ export const API_CONFIG = {
   // Production: Auto-detects backend URL on same server or uses VITE_API_URL
   getBaseUrl: () => getApiBaseUrl(),
   
+  // Backward compatibility: Getter property for existing code
+  // This maintains the API while allowing dynamic evaluation
+  get baseUrl() {
+    return getApiBaseUrl();
+  },
+  
   // Request timeout in milliseconds (30 seconds)
   timeout: 30000,
   
