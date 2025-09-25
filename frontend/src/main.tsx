@@ -159,14 +159,44 @@ async function sendErrorMetric(metric: {
 setupGlobalErrorHandlers();
 
 const rootElement = document.getElementById('root') as HTMLElement;
-const root = ReactDOM.createRoot(rootElement);
 
-root.render(
-  <React.StrictMode>
-    <React.Suspense fallback={<HydrateFallback />}>
-      <TooltipProvider delayDuration={100}>
-        <App />
-      </TooltipProvider>
-    </React.Suspense>
-  </React.StrictMode>
-); 
+// Check if this is a hydration scenario (server-side rendered content exists)
+const isHydration = rootElement.hasChildNodes();
+
+if (isHydration) {
+  // Hydration mode - React 19 expects a hydration fallback
+  const root = ReactDOM.createRoot(rootElement, {
+    // @ts-ignore - React 19 hydration options
+    hydrationOptions: {
+      onHydrated: () => {
+        console.log('✅ Hydration completed successfully');
+      },
+      onHydrationError: (error: Error) => {
+        console.error('❌ Hydration error:', error);
+      }
+    }
+  });
+
+  root.render(
+    <React.StrictMode>
+      <React.Suspense fallback={<HydrateFallback />}>
+        <TooltipProvider delayDuration={100}>
+          <App />
+        </TooltipProvider>
+      </React.Suspense>
+    </React.StrictMode>
+  );
+} else {
+  // Initial render mode
+  const root = ReactDOM.createRoot(rootElement);
+
+  root.render(
+    <React.StrictMode>
+      <React.Suspense fallback={<HydrateFallback />}>
+        <TooltipProvider delayDuration={100}>
+          <App />
+        </TooltipProvider>
+      </React.Suspense>
+    </React.StrictMode>
+  );
+} 

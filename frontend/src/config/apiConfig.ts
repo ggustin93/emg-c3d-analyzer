@@ -8,13 +8,41 @@
  */
 
 /**
+ * Get the appropriate API base URL based on environment
+ * Automatically detects backend URL when deployed on same server
+ */
+const getApiBaseUrl = (): string => {
+  // 1. Use explicit environment variable if set
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // 2. Development mode - use Vite proxy
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  
+  // 3. Production mode - auto-detect backend URL on same server
+  const currentHost = window.location.hostname;
+  const currentProtocol = window.location.protocol;
+  
+  // If we're on the same server, use the same hostname with backend port
+  if (currentHost === '104.248.143.107' || currentHost !== 'localhost') {
+    return `${currentProtocol}//${currentHost}:8080`;
+  }
+  
+  // 4. Fallback to localhost for local development
+  return 'http://localhost:8080';
+};
+
+/**
  * API Configuration object with all backend-related settings
  */
 export const API_CONFIG = {
   // Backend API base URL - supports both development and production environments
-  // Development: Uses '/api' for Vite proxy or falls back to localhost
-  // Production: Uses VITE_API_URL environment variable
-  baseUrl: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080'),
+  // Development: Uses '/api' for Vite proxy
+  // Production: Auto-detects backend URL on same server or uses VITE_API_URL
+  baseUrl: getApiBaseUrl(),
   
   // Request timeout in milliseconds (30 seconds)
   timeout: 30000,
@@ -34,12 +62,20 @@ export const API_CONFIG = {
  */
 export const validateApiConfig = (): void => {
   if (!API_CONFIG.baseUrl) {
-    throw new Error('VITE_API_URL is required but not defined in environment variables');
+    throw new Error('API base URL could not be determined');
   }
   
-  // Log configuration status (without exposing sensitive URLs in production)
-  const isDevelopment = API_CONFIG.baseUrl.includes('localhost');
-  console.info(`🔧 API Configuration validated - Mode: ${isDevelopment ? 'Development' : 'Production'}`);
+  // Log configuration status with more details
+  const isDevelopment = import.meta.env.DEV;
+  const isLocalhost = API_CONFIG.baseUrl.includes('localhost');
+  const isProxy = API_CONFIG.baseUrl === '/api';
+  const isAutoDetected = !import.meta.env.VITE_API_URL && !isDevelopment;
+  
+  console.info(`🔧 API Configuration validated:`, {
+    mode: isDevelopment ? 'Development' : 'Production',
+    method: isProxy ? 'Vite Proxy' : isAutoDetected ? 'Auto-detected' : 'Environment Variable',
+    baseUrl: isDevelopment ? '/api' : `${API_CONFIG.baseUrl.split('://')[0]}://[HOST]:[PORT]`
+  });
 };
 
 /**

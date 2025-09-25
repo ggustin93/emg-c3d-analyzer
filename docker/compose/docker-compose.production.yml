@@ -62,7 +62,7 @@ services:
       # Security
       - SECRET_KEY=${SECRET_KEY}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
-      - ALLOWED_ORIGINS=${FRONTEND_URL}
+      - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000}
       
       # Coolify built-in variables
       - SOURCE_COMMIT=${SOURCE_COMMIT:-unknown}
@@ -94,6 +94,7 @@ services:
       - "coolify.managed=true"
       - "coolify.service=backend"
       - "coolify.port=8080"
+      # No coolify.public=true needed - internal communication within same machine
     logging:
       driver: "json-file"
       options:
