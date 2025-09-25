@@ -33,10 +33,11 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
-    image: emg-backend:staging-${VERSION:-latest}
+    image: emg-backend:staging-latest
     container_name: emg-backend-staging
-    env_file:
-      - .env  # Use main .env file. For environment-specific config, change to .env.staging
+    # env_file not needed in Coolify - use Environment Variables in Coolify UI instead
+    # env_file:
+    #   - .env
     environment:
       # Environment
       - ENVIRONMENT=staging
@@ -100,10 +101,11 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
         - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
-    image: emg-frontend:staging-${VERSION:-latest}
+    image: emg-frontend:staging-latest
     container_name: emg-frontend-staging
-    env_file:
-      - .env  # Use main .env file. For environment-specific config, change to .env.staging
+    # env_file not needed in Coolify - use Environment Variables in Coolify UI instead
+    # env_file:
+    #   - .env
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
