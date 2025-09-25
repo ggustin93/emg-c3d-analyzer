@@ -69,7 +69,7 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
       .from('patients')
       .select(`
         patient_code,
-        patient_medical_info!inner (patient_code)
+        patient_medical_info!inner (id)
       `)
       .in('patient_code', patientCodes)
 
