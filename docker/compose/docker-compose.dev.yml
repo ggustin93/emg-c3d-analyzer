@@ -4,13 +4,27 @@
 #
 # Purpose: Local development environment with hot-reload and debugging support
 # Services: Backend API, Frontend UI, Redis Cache
-# Usage: docker compose -f docker-compose.yml up
+# 
+# Usage Options:
+#
+# Option 1 - Using wrapper script (recommended):
+#   ./start_dev_docker.sh up            # Normal start
+#   ./start_dev_docker.sh up --build    # Rebuild images (REQUIRED after .env changes!)
+#
+# Option 2 - Direct docker compose (from project root):
+#   docker compose --env-file .env -f docker/compose/docker-compose.dev.yml up -d
+#   docker compose --env-file .env -f docker/compose/docker-compose.dev.yml up -d --build
+#
+# ⚠️  IMPORTANT: Vite environment variables are embedded at BUILD time!
+# ⚠️  You MUST rebuild images after changing any VITE_* variables in .env
 #
 # Required Environment Variables (from .env):
 #   - SUPABASE_URL: Your Supabase project URL
 #   - SUPABASE_ANON_KEY: Supabase anonymous key
 #   - SUPABASE_SERVICE_KEY: Supabase service key
 #   - VITE_API_URL: Frontend API URL (default: http://localhost:8080)
+#   - VITE_SUPABASE_URL: Same as SUPABASE_URL (for frontend)
+#   - VITE_SUPABASE_ANON_KEY: Same as SUPABASE_ANON_KEY (for frontend)
 #
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -25,8 +39,6 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
     container_name: emg-backend-dev
-    env_file:
-      - ../../.env
     environment:
       # Database configuration (from .env file)
       - SUPABASE_URL=${SUPABASE_URL}
@@ -89,8 +101,6 @@ services:
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
         - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
     container_name: emg-frontend-dev
-    env_file:
-      - ../../.env
     environment:
       # Runtime environment variables from .env
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
@@ -167,5 +177,7 @@ networks:
         - subnet: 172.20.0.0/16
 
 # Usage:
-# Development: docker-compose up -d
-# With Redis GUI: docker-compose --profile redis-gui up -d
+# Development: ./start_dev_docker.sh up
+# With Redis GUI: ./start_dev_docker.sh up --profile redis-gui
+# View logs: ./start_dev_docker.sh logs
+# Stop: ./start_dev_docker.sh down
