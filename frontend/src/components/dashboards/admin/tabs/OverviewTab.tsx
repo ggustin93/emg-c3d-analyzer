@@ -352,10 +352,13 @@ export function OverviewTab() {
         todaySessionsResult,
         weekSessionsResult
       ] = await Promise.all([
-        // User metrics
+        // User metrics - use RPC function to bypass RLS restrictions
         supabase
-          .from('user_profiles')
-          .select('role'),
+          .rpc('get_users_simple')
+          .then(result => ({
+            data: result.data?.map((user: any) => ({ role: user.role })) || [],
+            error: result.error
+          })),
         
         // Patient metrics
         supabase
@@ -377,7 +380,7 @@ export function OverviewTab() {
 
       // Process user metrics
       const users = usersResult.data || []
-      const usersByRole = users.reduce((acc, user) => {
+      const usersByRole = users.reduce((acc: Record<string, number>, user: any) => {
         acc[user.role as keyof typeof acc] = (acc[user.role as keyof typeof acc] || 0) + 1
         return acc
       }, { admin: 0, therapist: 0, researcher: 0 })

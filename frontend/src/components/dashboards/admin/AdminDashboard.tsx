@@ -90,7 +90,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '../../ui/card'
 import { useAuth } from '../../../contexts/AuthContext'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { OverviewTab } from './tabs/OverviewTab'
 import { UserManagementTab } from './tabs/UserManagementTab'
 import { PatientManagement } from '../therapist/PatientManagement'
@@ -112,6 +112,7 @@ import type { AdminLocationState, AdminTabType } from '../../../types/navigation
 export function AdminDashboard() {
   const { userRole } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   
   // Type-safe location state handling
   const locationState = location.state as AdminLocationState | null
@@ -163,7 +164,14 @@ export function AdminDashboard() {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <C3DFileBrowser onFileSelect={(filename, uploadDate) => {
-          console.log('Admin viewing session:', filename, uploadDate)
+          // Navigate to analysis page using the same pattern as other dashboards
+          const searchParams = new URLSearchParams()
+          searchParams.set('file', filename)
+          if (uploadDate) {
+            searchParams.set('date', uploadDate)
+          }
+          // Use React Router navigation for SPA behavior
+          navigate(`/analysis?${searchParams.toString()}`)
         }} />
       </div>
     )
