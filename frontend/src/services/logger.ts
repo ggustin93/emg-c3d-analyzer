@@ -12,6 +12,7 @@
  * - Health monitoring
  */
 import { Logger, ILogObj } from "tslog";
+import { API_CONFIG } from "@/config/apiConfig";
 
 export enum LogCategory {
   API = "api",
@@ -59,7 +60,7 @@ interface LogEntry {
 // Lazy-load API endpoint to avoid circular dependency
 const getApiEndpoint = (): string => {
   // Dynamically construct the API endpoint
-  const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080');
+  const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : API_CONFIG.baseUrl);
   return `${baseUrl}/logs/frontend`;
 };
 

@@ -589,7 +589,7 @@ export function AppContent() {
         if (error instanceof TypeError && error.message.includes('fetch')) {
           userFriendlyMessage = `Network connection failed. Please check:\n• Backend server is running on port 8080\n• No firewall blocking connections\n• API URL: ${API_CONFIG.baseUrl}`;
         } else if (error.message.includes('Failed to fetch')) {
-          userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running on http://localhost:8080';
+          userFriendlyMessage = 'Failed to connect to backend server. Please ensure the server is running and accessible.';
         }
         
         handleError(userFriendlyMessage);
