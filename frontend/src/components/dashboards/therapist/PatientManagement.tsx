@@ -497,39 +497,52 @@ export function PatientManagement({ className }: PatientManagementProps) {
         setPatientsLoading(false)
       }
       
-      // If admin, fetch therapist information for display
+      // If admin, fetch therapist information for display using RPC function
       if (isAdmin) {
-        // Fetch all therapists for dropdown (patient creation)
-        const { data: allTherapists } = await supabase
-          .from('user_profiles')
-          .select('id, first_name, last_name')
-          .eq('role', 'therapist')
-          .eq('active', true)
-        
-        if (allTherapists) {
-          setTherapistsList(allTherapists)
-        }
-        
-        // Fetch therapist map for patient display (only assigned therapists)
-        if (data.length > 0) {
-          const uniqueTherapistIds = [...new Set(data.map(p => p.therapist_id).filter(Boolean))]
-          
-          if (uniqueTherapistIds.length > 0) {
-            const { data: therapistData } = await supabase
-              .from('user_profiles')
-              .select('id, first_name, last_name')
-              .in('id', uniqueTherapistIds)
-              .eq('role', 'therapist')
+        try {
+          // Use RPC function to safely get user data (same as UserManagementTab)
+          const { data: usersData, error: usersError } = await supabase
+            .rpc('get_users_simple')
+
+          if (usersError) {
+            console.error('Error loading therapist data:', usersError)
+            setTherapistsLoading(false)
+            return
+          }
+
+          if (usersData) {
+            // Filter for active therapists only
+            const activeTherapists = usersData
+              .filter((user: any) => user.role === 'therapist' && user.active === true)
+              .map((user: any) => ({
+                id: user.id,
+                first_name: user.first_name,
+                last_name: user.last_name
+              }))
+
+            setTherapistsList(activeTherapists)
             
-            if (therapistData) {
-              const therapistMapData = new Map(
-                therapistData.map(t => [t.id, { first_name: t.first_name, last_name: t.last_name }])
-              )
-              setTherapistMap(therapistMapData)
+            // Create therapist map for patient display (only assigned therapists)
+            if (data.length > 0) {
+              const uniqueTherapistIds = [...new Set(data.map(p => p.therapist_id).filter(Boolean))]
+              
+              if (uniqueTherapistIds.length > 0) {
+                const assignedTherapists = activeTherapists.filter((t: any) => 
+                  uniqueTherapistIds.includes(t.id)
+                )
+                
+                const therapistMapData = new Map<string, { first_name: string; last_name: string }>(
+                  assignedTherapists.map((t: any) => [t.id, { first_name: t.first_name, last_name: t.last_name }])
+                )
+                setTherapistMap(therapistMapData)
+              }
             }
           }
+        } catch (error) {
+          console.error('Failed to load therapist data:', error)
+        } finally {
+          setTherapistsLoading(false) // Mark therapist data as loaded
         }
-        setTherapistsLoading(false) // Mark therapist data as loaded
       } else {
         // For non-admin users, no therapist data needed
         setTherapistsLoading(false)
