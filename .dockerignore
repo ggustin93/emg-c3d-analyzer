@@ -33,7 +33,6 @@
 **/.dockerignore
 
 # Environment files (secrets should be passed as build args)
-**/.env*
 !**/.env.example
 
 # IDE and development tools

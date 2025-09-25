@@ -18,13 +18,15 @@ services:
   # Backend API Service
   backend:
     build:
-      context: ../../
+      context: ../..
       dockerfile: docker/backend/Dockerfile
       target: production
       args:
         - BUILDKIT_INLINE_CACHE=1
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
     container_name: emg-backend-dev
+    env_file:
+      - ../../.env
     environment:
       # Database configuration (from .env file)
       - SUPABASE_URL=${SUPABASE_URL}
@@ -74,7 +76,7 @@ services:
   # Frontend Web Application
   frontend:
     build:
-      context: ../../
+      context: ../..
       dockerfile: docker/frontend/Dockerfile
       target: production
       args:
@@ -87,6 +89,8 @@ services:
         - TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
         - BUILDPLATFORM=${BUILDPLATFORM:-linux/amd64}
     container_name: emg-frontend-dev
+    env_file:
+      - ../../.env
     environment:
       # Runtime environment variables from .env
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}

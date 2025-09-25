@@ -114,34 +114,133 @@ done
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
 
-# Cross-platform virtual environment activation
+# Enhanced cross-platform virtual environment activation
 activate_venv() {
-    # Detect platform and use appropriate activation method
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ -n "$WINDIR" ]]; then
-        # Windows environment (Git Bash, MSYS2, or native Windows)
-        if [[ -f "venv/Scripts/activate" ]]; then
-            source venv/Scripts/activate
-        elif [[ -f "venv\\Scripts\\activate" ]]; then
-            source "venv\\Scripts\\activate"
+    # Enhanced platform detection with comprehensive Windows support
+    local activation_script=""
+    local platform_detected=""
+    
+    # Detect Windows environments with multiple methods
+    if [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]] || [[ -n "$WINDIR" ]] || [[ -n "$SYSTEMROOT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] || [[ "$(uname -s 2>/dev/null)" == CYGWIN* ]]; then
+        # Windows environment (Git Bash, MSYS2, Cygwin, native Windows)
+        platform_detected="Windows"
+        
+        # Try multiple Windows activation script locations with proper path handling
+        local win_scripts=(
+            "venv/Scripts/activate"        # Git Bash standard
+            "./venv/Scripts/activate"      # Explicit relative path
+            ".venv/Scripts/activate"       # Common .venv naming
+            "Scripts/activate"             # Direct Scripts folder
+            "venv/Scripts/Activate.ps1"    # PowerShell (for completeness)
+        )
+        
+        for script in "${win_scripts[@]}"; do
+            if [[ -f "$script" ]]; then
+                activation_script="$script"
+                break
+            fi
+        done
+        
+    # WSL detection (Windows Subsystem for Linux)
+    elif [[ "$(uname -r 2>/dev/null)" == *microsoft* ]] || [[ "$(uname -r 2>/dev/null)" == *WSL* ]] || [[ -n "$WSL_DISTRO_NAME" ]]; then
+        platform_detected="WSL"
+        
+        # WSL uses Unix-style paths but may have Windows venv structure
+        local wsl_scripts=(
+            "venv/bin/activate"
+            "venv/Scripts/activate"
+            "./venv/bin/activate"
+            ".venv/bin/activate"
+        )
+        
+        for script in "${wsl_scripts[@]}"; do
+            if [[ -f "$script" ]]; then
+                activation_script="$script"
+                break
+            fi
+        done
+        
+    else
+        # Unix-like environment (Linux, macOS, BSD, etc.)
+        platform_detected="Unix"
+        
+        local unix_scripts=(
+            "venv/bin/activate"
+            "./venv/bin/activate"
+            ".venv/bin/activate"
+            "bin/activate"
+        )
+        
+        for script in "${unix_scripts[@]}"; do
+            if [[ -f "$script" ]]; then
+                activation_script="$script"
+                break
+            fi
+        done
+    fi
+    
+    # Attempt activation with enhanced error handling
+    if [[ -n "$activation_script" ]]; then
+        if [[ "$VERBOSE" == "true" ]]; then
+            log "INFO" "Activating virtual environment ($platform_detected): $activation_script"
+        fi
+        
+        # Use source with proper path handling
+        if source "$activation_script" 2>/dev/null; then
+            # Verify activation was successful
+            if [[ -n "$VIRTUAL_ENV" ]] || command -v deactivate &> /dev/null; then
+                if [[ "$VERBOSE" == "true" ]]; then
+                    log "SUCCESS" "Virtual environment activated successfully"
+                fi
+                return 0
+            else
+                log "WARNING" "Virtual environment activation may have failed (no VIRTUAL_ENV set)"
+                return 1
+            fi
         else
-            echo -e "${RED}✗ Windows virtual environment activation script not found${NC}"
+            log "ERROR" "Failed to source activation script: $activation_script"
             return 1
         fi
     else
-        # Unix-like environment (Linux, macOS, WSL)
-        if [[ -f "venv/bin/activate" ]]; then
-            source venv/bin/activate
+        log "ERROR" "Virtual environment activation script not found for $platform_detected platform"
+        echo -e "${RED}✗ Virtual environment not found. Searched locations:${NC}"
+        if [[ "$platform_detected" == "Windows" ]]; then
+            echo -e "${YELLOW}  • venv/Scripts/activate (Git Bash standard)${NC}"
+            echo -e "${YELLOW}  • ./venv/Scripts/activate (explicit relative)${NC}"
+            echo -e "${YELLOW}  • .venv/Scripts/activate (common naming)${NC}"
+            echo -e "${YELLOW}  • Scripts/activate (direct folder)${NC}"
+        elif [[ "$platform_detected" == "WSL" ]]; then
+            echo -e "${YELLOW}  • venv/bin/activate (WSL Unix-style)${NC}"
+            echo -e "${YELLOW}  • venv/Scripts/activate (WSL Windows-style)${NC}"
+            echo -e "${YELLOW}  • .venv/bin/activate (common naming)${NC}"
         else
-            echo -e "${RED}✗ Unix virtual environment activation script not found${NC}"
-            return 1
+            echo -e "${YELLOW}  • venv/bin/activate (Unix standard)${NC}"
+            echo -e "${YELLOW}  • ./venv/bin/activate (explicit relative)${NC}"
+            echo -e "${YELLOW}  • .venv/bin/activate (common naming)${NC}"
         fi
+        echo -e "${BLUE}Create virtual environment with: python3 -m venv venv${NC}"
+        return 1
     fi
 }
 
 deactivate_venv() {
-    # Deactivate is the same on all platforms
+    # Enhanced deactivation with verification
     if command -v deactivate &> /dev/null; then
+        if [[ "$VERBOSE" == "true" ]]; then
+            log "INFO" "Deactivating virtual environment"
+        fi
         deactivate
+        
+        # Verify deactivation was successful
+        if [[ -z "$VIRTUAL_ENV" ]]; then
+            if [[ "$VERBOSE" == "true" ]]; then
+                log "SUCCESS" "Virtual environment deactivated successfully"
+            fi
+        else
+            log "WARNING" "Virtual environment may not have deactivated properly"
+        fi
+    elif [[ -n "$VIRTUAL_ENV" ]]; then
+        log "WARNING" "Virtual environment appears active but deactivate command not found"
     fi
 }
 
@@ -165,9 +264,6 @@ acquire_lock() {
     echo $$ > "$LOCK_FILE"
 }
 
-release_lock() {
-    rm -f "$LOCK_FILE"
-}
 
 # Enhanced logging functions
 log() {
