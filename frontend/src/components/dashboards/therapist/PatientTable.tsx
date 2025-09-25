@@ -112,9 +112,11 @@ interface PatientRowProps {
   therapistName?: string | null
   userRole: string
   onReassign: (patient: Patient) => void
+  onSetInactive: (patient: Patient) => void
+  onShowDeleteInfo: (patient: Patient) => void
 }
 
-function PatientRow({ patient, visibleColumns, adherence, therapistName, userRole, onReassign }: PatientRowProps) {
+function PatientRow({ patient, visibleColumns, adherence, therapistName, userRole, onReassign, onSetInactive, onShowDeleteInfo }: PatientRowProps) {
   const navigate = useNavigate()
   const avatarColor = getAvatarColor(getPatientIdentifier(patient))
   const sessionBadgeVariant = getSessionBadgeVariant(patient.session_count)
@@ -464,6 +466,58 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName, userRol
               </Tooltip>
             </TooltipProvider>
           )}
+          
+          {/* Set Inactive/Active - Admin Only */}
+          {userRole === 'ADMIN' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSetInactive(patient)
+                    }}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-orange-600 hover:bg-orange-50"
+                  >
+                    {patient.active ? (
+                      <Icons.PauseIcon className="h-4 w-4" />
+                    ) : (
+                      <Icons.PlayIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{patient.active ? 'Set Inactive' : 'Set Active'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {/* Delete Info - Admin Only */}
+          {userRole === 'ADMIN' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onShowDeleteInfo(patient)
+                    }}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Icons.TrashIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete patient (requires technical team)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -487,6 +541,8 @@ interface PatientTableProps {
   setVisibleColumns: React.Dispatch<React.SetStateAction<ColumnVisibility>>
   onCreatePatient: () => void
   onReassignPatient: (patient: Patient) => void
+  onSetPatientInactive: (patient: Patient) => void
+  onShowPatientDeleteInfo: (patient: Patient) => void
 }
 
 export function PatientTable({
@@ -505,7 +561,9 @@ export function PatientTable({
   visibleColumns,
   setVisibleColumns,
   onCreatePatient,
-  onReassignPatient
+  onReassignPatient,
+  onSetPatientInactive,
+  onShowPatientDeleteInfo
 }: PatientTableProps) {
   
   // Filtered and sorted patients - Memoized for performance
@@ -1164,6 +1222,8 @@ export function PatientTable({
                     therapistName={therapistName}
                     userRole={userRole}
                     onReassign={onReassignPatient}
+                    onSetInactive={onSetPatientInactive}
+                    onShowDeleteInfo={onShowPatientDeleteInfo}
                   />
                 )
               })}

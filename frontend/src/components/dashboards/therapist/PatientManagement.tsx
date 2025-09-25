@@ -31,10 +31,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { Badge } from '../../ui/badge'
 import { Button } from '../../ui/button'
 import Spinner from '../../ui/Spinner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog'
+import { Alert, AlertDescription } from '../../ui/alert'
 import { 
   PersonIcon, 
   FileIcon as File
 } from '@radix-ui/react-icons'
+import * as Icons from '@radix-ui/react-icons'
+import { useToast } from '../../../hooks/use-toast'
 import { Patient, PatientManagementProps } from './types'
 import { useAdherence } from '../../../hooks/useAdherence'
 import { getPatientInitials } from '../../../lib/avatarColors'
@@ -258,6 +269,7 @@ function ErrorPatientState({ error }: { error: Error }) {
 // Main PatientManagement component
 export function PatientManagement({ className }: PatientManagementProps) {
   const { user, userRole, userProfile, loading: authLoading } = useAuth()
+  const { toast } = useToast()
   
   // Debug auth state
   console.log('🔍 DEBUG: Auth state in PatientManagement', {
@@ -434,6 +446,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
   // State for modal controls
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showReassignDialog, setShowReassignDialog] = useState(false)
+  const [showInactiveDialog, setShowInactiveDialog] = useState(false)
+  const [showDeleteInfoDialog, setShowDeleteInfoDialog] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [newTherapistId, setNewTherapistId] = useState('')
   
@@ -532,6 +546,48 @@ export function PatientManagement({ className }: PatientManagementProps) {
     loadPatientsData()
   }, [loadPatientsData])
 
+  // Handle setting patient as inactive/active
+  const handleSetPatientInactive = useCallback(async (patient: Patient) => {
+    setSelectedPatient(patient)
+    setShowInactiveDialog(true)
+  }, [])
+
+  // Handle showing delete info dialog
+  const handleShowPatientDeleteInfo = useCallback((patient: Patient) => {
+    setSelectedPatient(patient)
+    setShowDeleteInfoDialog(true)
+  }, [])
+
+  // Handle confirming inactive/active status change
+  const handleConfirmInactiveChange = useCallback(async () => {
+    if (!selectedPatient) return
+
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ active: !selectedPatient.active })
+        .eq('patient_code', selectedPatient.patient_code)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: `Patient ${selectedPatient.display_name} has been ${!selectedPatient.active ? 'activated' : 'deactivated'} successfully`,
+        variant: 'success'
+      })
+
+      setShowInactiveDialog(false)
+      await loadPatientsData()
+    } catch (error: any) {
+      console.error('Failed to update patient status:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to update patient status: ${error.message}`,
+        variant: 'destructive'
+      })
+    }
+  }, [selectedPatient, toast, loadPatientsData])
+
   // Handle loading state - Show loading until everything is ready
   if (patientsLoading || !visibleColumns || (userRole === 'ADMIN' && therapistsLoading)) {
     return <PatientTableLoading />
@@ -577,6 +633,8 @@ export function PatientManagement({ className }: PatientManagementProps) {
           setNewTherapistId(patient.therapist_id || '')
           setShowReassignDialog(true)
         }}
+        onSetPatientInactive={handleSetPatientInactive}
+        onShowPatientDeleteInfo={handleShowPatientDeleteInfo}
       />
       
       <PatientModals
@@ -599,6 +657,161 @@ export function PatientManagement({ className }: PatientManagementProps) {
         cleanupCodeGeneration={cleanupCodeGeneration}
         loadPatientsData={loadPatientsData}
       />
+
+      {/* Set Patient Inactive/Active Dialog */}
+      <Dialog open={showInactiveDialog} onOpenChange={setShowInactiveDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedPatient?.active ? (
+                <>
+                  <Icons.PauseIcon className="h-5 w-5 text-orange-600" />
+                  Set Patient Inactive
+                </>
+              ) : (
+                <>
+                  <Icons.PlayIcon className="h-5 w-5 text-green-600" />
+                  Set Patient Active
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedPatient?.active 
+                ? `You are about to deactivate ${selectedPatient?.display_name} (${selectedPatient?.patient_code})`
+                : `You are about to activate ${selectedPatient?.display_name} (${selectedPatient?.patient_code})`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Alert className={selectedPatient?.active ? "border-orange-200 bg-orange-50" : "border-green-200 bg-green-50"}>
+              <Icons.ExclamationTriangleIcon className={`h-4 w-4 ${selectedPatient?.active ? 'text-orange-600' : 'text-green-600'}`} />
+              <AlertDescription className={selectedPatient?.active ? 'text-orange-800' : 'text-green-800'}>
+                <strong>
+                  {selectedPatient?.active ? 'Deactivating' : 'Activating'} this patient will:
+                </strong>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-2 text-sm">
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                {selectedPatient?.active ? (
+                  <>
+                    <li>Remove the patient from active treatment lists</li>
+                    <li>Hide the patient from regular therapist views</li>
+                    <li>Preserve all historical data and sessions</li>
+                    <li>Allow reactivation at any time</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Make the patient visible in therapist views</li>
+                    <li>Include the patient in active treatment lists</li>
+                    <li>Allow new session uploads and processing</li>
+                    <li>Restore full patient management capabilities</li>
+                  </>
+                )}
+              </ul>
+              <p className="text-muted-foreground mt-3">
+                This action can be reversed at any time.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInactiveDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmInactiveChange}
+              className={selectedPatient?.active ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}
+            >
+              {selectedPatient?.active ? 'Set Inactive' : 'Set Active'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Patient Information Dialog */}
+      <Dialog open={showDeleteInfoDialog} onOpenChange={setShowDeleteInfoDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600">
+              <Icons.ExclamationTriangleIcon className="h-5 w-5" />
+              Patient Deletion Information
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Icons.ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-yellow-800">
+                    Sensitive Operation Required
+                  </p>
+                  <p className="text-sm text-yellow-700">
+                    Patient deletion is a sensitive operation that requires technical team intervention 
+                    to ensure proper data integrity and audit trail maintenance.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <Icons.PersonIcon className="h-4 w-4 text-slate-600 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Patient to be deleted:</p>
+                  <p className="text-sm text-slate-600">
+                    {selectedPatient ? `${selectedPatient.display_name} (${selectedPatient.patient_code})` : 'Unknown patient'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Icons.LockClosedIcon className="h-4 w-4 text-slate-600 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Alternative Recommendation:</p>
+                  <p className="text-sm text-slate-600">
+                    Consider setting the patient as <strong>inactive</strong> instead. This preserves all data 
+                    while removing them from active workflows.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Icons.TrashIcon className="h-4 w-4 text-slate-600 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">For Complete Deletion:</p>
+                  <p className="text-sm text-slate-600">
+                    Contact your technical team to remove this patient through Supabase Studio interface.
+                    This ensures proper cleanup of all related data and maintains audit trails.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteInfoDialog(false)}>
+              Understood
+            </Button>
+            {selectedPatient && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowDeleteInfoDialog(false)
+                  setSelectedPatient(selectedPatient)
+                  setShowInactiveDialog(true)
+                }}
+                className="border-orange-200 text-orange-700 hover:bg-orange-50"
+              >
+                Set Inactive Instead
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

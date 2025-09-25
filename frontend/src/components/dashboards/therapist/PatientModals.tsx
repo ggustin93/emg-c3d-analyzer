@@ -30,6 +30,7 @@
  */
 import React, { useEffect, useCallback } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { useAuth } from '../../../contexts/AuthContext'
 import {
   Dialog,
   DialogContent,
@@ -109,6 +110,7 @@ export function PatientModals({
   cleanupCodeGeneration,
   loadPatientsData
 }: PatientModalsProps) {
+  const { user } = useAuth()
   const { toast } = useToast()
 
   // Generate next available patient code (wrapper for hook function)
@@ -149,38 +151,74 @@ export function PatientModals({
     }
 
     try {
-      // First, create the patient record
-      const { error: patientError } = await supabase
+      // First, get the default scoring configuration to set proper treatment targets
+      // Use the specific GHOSTLY-TRIAL-DEFAULT configuration ID
+      const { data: defaultConfig, error: configError } = await supabase
+        .from('scoring_configuration')
+        .select('target_defaults')
+        .eq('id', 'a0000000-0000-0000-0000-000000000001')
+        .single()
+
+      if (configError) {
+        console.warn('Could not fetch default scoring configuration:', configError)
+      }
+
+      // Extract default values from configuration with fallbacks
+      const defaults = defaultConfig?.target_defaults || {}
+      const defaultDurationCh1 = defaults.target_duration_ch1_ms || 2000  // 2 seconds
+      const defaultDurationCh2 = defaults.target_duration_ch2_ms || 2000  // 2 seconds
+      const defaultBfrCh1 = defaults.bfr_target_lop_percentage_ch1 || 50.0  // 50% LOP
+      const defaultBfrCh2 = defaults.bfr_target_lop_percentage_ch2 || 50.0  // 50% LOP
+
+      console.log('Setting patient default treatment targets:', {
+        durationCh1: defaultDurationCh1,
+        durationCh2: defaultDurationCh2,
+        bfrCh1: defaultBfrCh1,
+        bfrCh2: defaultBfrCh2
+      })
+
+      // First, create the patient record with default treatment targets
+      const { data: patientData, error: patientError } = await supabase
         .from('patients')
         .insert({
           patient_code: createForm.patient_code,
           therapist_id: createForm.therapistId,  // Now mandatory
           total_sessions_planned: parseInt(createForm.totalSessions) || 30,
           treatment_start_date: new Date().toISOString(),
-          active: true
+          active: true,
+          // Set default treatment targets based on scoring configuration
+          current_target_ch1_ms: defaultDurationCh1,
+          current_target_ch2_ms: defaultDurationCh2,
+          bfr_target_lop_percentage_ch1: defaultBfrCh1,
+          bfr_target_lop_percentage_ch2: defaultBfrCh2
         })
         .select()
         .single()
 
       if (patientError) throw patientError
 
-      // Then, create the medical info record
+      // Extract the patient UUID from the response
+      const patientId = patientData.id
+
+      // Then, create the medical info record using the patient UUID
       const age = parseInt(createForm.age)
       const dateOfBirth = age ? new Date(new Date().getFullYear() - age, 0, 1).toISOString().split('T')[0] : null
 
       const { error: medicalError } = await supabase
         .from('patient_medical_info')
         .insert({
-          patient_code: createForm.patient_code,
+          patient_id: patientId,  // Use UUID instead of patient_code
           first_name: createForm.firstName,
           last_name: createForm.lastName,
           date_of_birth: dateOfBirth,
-          gender: createForm.gender
+          gender: createForm.gender,
+          created_by: user?.id,  // Add required created_by field
+          updated_by: user?.id   // Add required updated_by field
         })
 
       if (medicalError) {
-        // If medical info creation fails, try to clean up the patient record
-        await supabase.from('patients').delete().eq('patient_code', createForm.patient_code)
+        // If medical info creation fails, try to clean up the patient record using UUID
+        await supabase.from('patients').delete().eq('id', patientId)
         throw medicalError
       }
 
