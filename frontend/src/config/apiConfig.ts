@@ -27,24 +27,34 @@ const getApiBaseUrl = (): string => {
   const currentProtocol = window.location.protocol;
   
   // 🧠 SAME-ORIGIN DETECTION: Use same hostname to eliminate CORS
+  let result: string;
   if (currentHost === '104.248.143.107' || currentHost === '127.0.0.1' || currentHost === 'localhost') {
-    return `${currentProtocol}//${currentHost}:8080`;
+    result = `${currentProtocol}//${currentHost}:8080`;
+  } else {
+    // 4. Fallback: For any other hostname, try same-origin approach
+    result = `${currentProtocol}//${currentHost}:8080`;
   }
   
-  // 4. Fallback: For any other hostname, try same-origin approach
-  return `${currentProtocol}//${currentHost}:8080`;
+  // Debug logging for API URL detection
+  console.log('🔍 API URL Detection:', {
+    hostname: currentHost,
+    protocol: currentProtocol,
+    envVar: import.meta.env.VITE_API_URL || 'not set',
+    isDev: import.meta.env.DEV,
+    result: result
+  });
+  
+  return result;
 };
 
 /**
  * API Configuration object with all backend-related settings
  */
 export const API_CONFIG = {
-  // Backend API base URL - dynamically evaluated to support runtime detection
+  // Backend API base URL - use function for reliable runtime evaluation
   // Development: Uses '/api' for Vite proxy
   // Production: Auto-detects backend URL on same server or uses VITE_API_URL
-  get baseUrl() {
-    return getApiBaseUrl();
-  },
+  getBaseUrl: () => getApiBaseUrl(),
   
   // Request timeout in milliseconds (30 seconds)
   timeout: 30000,
@@ -63,20 +73,21 @@ export const API_CONFIG = {
  * Throws an error if required configuration is missing
  */
 export const validateApiConfig = (): void => {
-  if (!API_CONFIG.baseUrl) {
+  const baseUrl = API_CONFIG.getBaseUrl();
+  if (!baseUrl) {
     throw new Error('API base URL could not be determined');
   }
   
   // Log configuration status with more details
   const isDevelopment = import.meta.env.DEV;
-  const isLocalhost = API_CONFIG.baseUrl.includes('localhost');
-  const isProxy = API_CONFIG.baseUrl === '/api';
+  const isLocalhost = baseUrl.includes('localhost');
+  const isProxy = baseUrl === '/api';
   const isAutoDetected = !import.meta.env.VITE_API_URL && !isDevelopment;
   
   console.info(`🔧 API Configuration validated:`, {
     mode: isDevelopment ? 'Development' : 'Production',
     method: isProxy ? 'Vite Proxy' : isAutoDetected ? 'Auto-detected' : 'Environment Variable',
-    baseUrl: isDevelopment ? '/api' : `${API_CONFIG.baseUrl.split('://')[0]}://[HOST]:[PORT]`
+    baseUrl: isDevelopment ? '/api' : `${baseUrl.split('://')[0]}://[HOST]:[PORT]`
   });
 };
 
@@ -88,7 +99,7 @@ export const validateApiConfig = (): void => {
 export const getApiUrl = (endpoint: string): string => {
   // Ensure endpoint starts with '/'
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${API_CONFIG.baseUrl}${normalizedEndpoint}`;
+  return `${API_CONFIG.getBaseUrl()}${normalizedEndpoint}`;
 };
 
 // Type export for TypeScript usage
