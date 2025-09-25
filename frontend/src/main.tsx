@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { TooltipProvider } from './components/ui/tooltip';
+import { HydrateFallback } from './components/ui/HydrateFallback';
 
 // Initialize enhanced logging system with console interception and file logging
 import { logger, LogCategory } from './services/logger';
@@ -157,10 +158,15 @@ async function sendErrorMetric(metric: {
 // Set up error handlers before React renders
 setupGlobalErrorHandlers();
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+const rootElement = document.getElementById('root') as HTMLElement;
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
   <React.StrictMode>
-    <TooltipProvider delayDuration={100}>
-      <App />
-    </TooltipProvider>
+    <React.Suspense fallback={<HydrateFallback />}>
+      <TooltipProvider delayDuration={100}>
+        <App />
+      </TooltipProvider>
+    </React.Suspense>
   </React.StrictMode>
 ); 

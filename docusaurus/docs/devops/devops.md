@@ -137,6 +137,12 @@ Both Coolify environments now use webhook-based deployment:
    - Production: Manual trigger from GitHub Actions
 7. **Verify**: Check `/api/health` endpoint
 
+#### Production Deployment (VUB Self-Hosted)
+
+For detailed production deployment on VUB infrastructure, including server access, Coolify installation, and production-specific configuration:
+
+**📖 [Production Deployment Guide](./production-deployment.md)** - Colleague-friendly step-by-step guide for VUB production environment
+
 #### Database Configuration Note
 
 **Recommended Setup (Production Parity):**
@@ -457,8 +463,12 @@ WHERE pronamespace = 'public'::regnamespace;
 - Docker Setup: `/docker/compose/docker-compose.coolify.yml`
 - Environment Config: Check respective platform dashboards
 
+### Deployment Guides
+- **[Production Deployment](./production-deployment.md)** - VUB self-hosted Coolify setup
+- **[Complete Installation Guide](./coolify-installation-debian13-vubmachine.md)** - Technical implementation details
+
 
 
 ---
 
-*This guide covers the essentials for deploying the EMG C3D Analyzer. For detailed Docker configurations or advanced CI/CD customization, refer to the source files listed above.*
+*This guide covers the essentials for deploying the EMG C3D Analyzer. For detailed production deployment on VUB infrastructure, see the Production Deployment Guide above. For technical implementation details, refer to the Complete Installation Guide.*

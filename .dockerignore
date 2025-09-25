@@ -27,10 +27,18 @@
 **/.git/
 **/.gitignore
 **/README.md
-**/*.md
+**/CONTRIBUTING.md
+**/CHANGELOG.md
+/docs/**/*.md
+/memory-bank/**/*.md
+/docusaurus/**/*.md
 **/Dockerfile*
 **/docker-compose*.yml
 **/.dockerignore
+
+# Keep content files that are needed by the application
+!frontend/public/*.md
+!backend/data/**/*.md
 
 # Environment files (secrets should be passed as build args)
 !**/.env.example
