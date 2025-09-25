@@ -25,6 +25,7 @@ import { ErrorBoundary } from './components/errors/ErrorBoundary'
 import { RouterErrorBoundary } from './components/errors/RouterErrorBoundary'
 import { NotFoundPage } from './components/NotFoundPage';
 import { Toaster } from './components/ui/sonner';
+import { HydrateFallback } from './components/ui/HydrateFallback';
 
 // Lazy load dashboard components for better performance
 const AdminDashboard = React.lazy(() => import('./components/dashboards/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
@@ -349,7 +350,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ErrorBoundary level="page" name="Application">
-          <RouterProvider router={router} />
+          <RouterProvider router={router} HydrateFallback={<HydrateFallback />} />
         </ErrorBoundary>
         <Toaster />
         {process.env.NODE_ENV === 'development' && (

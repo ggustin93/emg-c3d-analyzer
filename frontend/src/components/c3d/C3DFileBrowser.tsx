@@ -66,6 +66,7 @@ import {
 import therapistService, { TherapistCache } from '@/services/therapistService';
 import PatientService, { PatientInfo } from '@/services/patientService';
 import { useSessionStore } from '@/store/sessionStore';
+import { supabase } from '@/lib/supabase';
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
@@ -172,6 +173,17 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   }, [simpleNotes.refreshNotes]);
 
   // Data loading is now handled by TanStack Query in useC3DFileBrowserQuery hook
+  
+  // Debug logging for data flow
+  useEffect(() => {
+    logger.debug(LogCategory.API, 'C3DFileBrowser Data Flow Debug:', {
+      filesCount: files.length,
+      therapistCacheKeys: Object.keys(therapistCache),
+      loadingStates: loadingStates,
+      hasError: !!error,
+      sampleFile: files[0]?.name
+    })
+  }, [files, therapistCache, loadingStates, error])
 
   // Enhanced session date resolver that uses processed session data with time support
   const resolveEnhancedSessionDate = useCallback((file: C3DFile): string | null => {
@@ -196,11 +208,37 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   // Helper function to get therapist display using centralized service
   const getTherapistDisplay = useCallback((file: C3DFile): string => {
-    // If therapist data is still loading, return a loading indicator
     if (loadingStates.therapists) {
       return 'Loading...';
     }
-    return therapistService.getDisplayFromFileCache(file.name, therapistCache);
+    
+    const cacheEntry = therapistCache[file.name];
+    if (cacheEntry) {
+      if (cacheEntry.display_name) {
+        return cacheEntry.display_name;
+      }
+      if (cacheEntry.first_name && cacheEntry.last_name) {
+        return `${cacheEntry.first_name} ${cacheEntry.last_name}`;
+      }
+      if (cacheEntry.user_code) {
+        return cacheEntry.user_code;
+      }
+    }
+    
+    const patientCode = resolvePatientId(file);
+    if (patientCode && patientCode !== 'Unknown') {
+      for (const [fileName, therapistData] of Object.entries(therapistCache)) {
+        if (fileName.includes(patientCode)) {
+          if (therapistData.display_name) return therapistData.display_name;
+          if (therapistData.first_name && therapistData.last_name) {
+            return `${therapistData.first_name} ${therapistData.last_name}`;
+          }
+          if (therapistData.user_code) return therapistData.user_code;
+        }
+      }
+    }
+    
+    return 'Unknown Therapist';
   }, [therapistCache, loadingStates.therapists]);
 
   // Helper function to get patient name
@@ -239,7 +277,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       setSelectedFileData(null);
     }
 
-    // Call the original onFileSelect
+    // Call the original onFileSelect with the filename and uploadDate
+    // Note: uploadDate might be undefined from C3DFileList, but that's expected
     onFileSelect(filename, uploadDate);
   }, [getPatientName, getTherapistDisplay, setSelectedFileData, onFileSelect, simpleNotes.notesCount]);
 
@@ -450,6 +489,55 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     queryClient.refetchQueries({ queryKey: queryKeys.c3dBrowser.files() });
   }, [queryClient]);
 
+  // Clear all cache and force refresh (for debugging)
+  const clearAllCache = useCallback(() => {
+    queryClient.clear();
+    queryClient.invalidateQueries();
+    window.location.reload();
+  }, [queryClient]);
+
+  // Force refresh therapist data specifically
+  const refreshTherapistData = useCallback(() => {
+    console.log('🔍 Force refreshing therapist data...');
+    queryClient.invalidateQueries({ queryKey: queryKeys.c3dBrowser.therapists([]) });
+  }, [queryClient]);
+
+
+  // Fallback therapist display that tries multiple approaches
+  const getTherapistDisplayFallback = useCallback((file: C3DFile): string => {
+    // If therapist data is still loading, return a loading indicator
+    if (loadingStates.therapists) {
+      return 'Loading...';
+    }
+    
+    // Try direct cache lookup first
+    const cacheEntry = therapistCache[file.name];
+    if (cacheEntry) {
+      if (cacheEntry.display_name) return cacheEntry.display_name;
+      if (cacheEntry.first_name && cacheEntry.last_name) {
+        return `${cacheEntry.first_name} ${cacheEntry.last_name}`;
+      }
+      if (cacheEntry.user_code) return cacheEntry.user_code;
+    }
+    
+    // Try to extract patient code and look up therapist directly
+    const patientCode = resolvePatientId(file);
+    if (patientCode && patientCode !== 'Unknown') {
+      // Look for therapist in the cache by patient code
+      for (const [fileName, therapistData] of Object.entries(therapistCache)) {
+        if (fileName.includes(patientCode)) {
+          if (therapistData.display_name) return therapistData.display_name;
+          if (therapistData.first_name && therapistData.last_name) {
+            return `${therapistData.first_name} ${therapistData.last_name}`;
+          }
+          if (therapistData.user_code) return therapistData.user_code;
+        }
+      }
+    }
+    
+    return 'Unknown Therapist';
+  }, [therapistCache, loadingStates.therapists]);
+
   const setupStorage = async () => {
     if (!SupabaseStorageService.isConfigured()) {
       // This error will be handled by the query hook
@@ -523,6 +611,22 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                 onClick={() => window.location.reload()}
               >
                 Refresh Page
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={clearAllCache}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Clear Cache & Reload
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={refreshTherapistData}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Refresh Therapists
               </Button>
               {SupabaseStorageService.isConfigured() && (error.includes('not found') || error.includes('empty')) && (
                 <Button 

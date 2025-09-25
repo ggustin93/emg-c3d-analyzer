@@ -218,33 +218,24 @@ export class SupabaseStorageService {
    * This can be customized based on your folder structure
    */
   private static extractPatientId(filename: string): string {
-    logger.debug(LogCategory.DATA_PROCESSING, `🔍 SupabaseStorageService - Extracting Patient ID from: ${filename}`);
-    
     // Priority 1: If files are organized in folders like "P005/filename.c3d", "P008/filename.c3d"
     const folderMatch = filename.match(/^(P\d{3})\//);
     if (folderMatch) {
-      const patientId = folderMatch[1];
-      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID in folder structure: ${patientId}`);
-      return patientId;
+      return folderMatch[1];
     }
 
     // Priority 2: If patient ID is embedded in filename like "Ghostly_P001_..."
     const filenameMatch = filename.match(/[_-](P\d{3})[_-]/i);
     if (filenameMatch) {
-      const patientId = filenameMatch[1].toUpperCase();
-      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID in filename: ${patientId}`);
-      return patientId;
+      return filenameMatch[1].toUpperCase();
     }
 
     // Priority 3: If patient ID is at the beginning like "P001_Ghostly_..."
     const prefixMatch = filename.match(/^(P\d{3})[_-]/i);
     if (prefixMatch) {
-      const patientId = prefixMatch[1].toUpperCase();
-      logger.debug(LogCategory.DATA_PROCESSING, `✅ Found Patient ID at filename start: ${patientId}`);
-      return patientId;
+      return prefixMatch[1].toUpperCase();
     }
 
-    logger.debug(LogCategory.DATA_PROCESSING, `❌ No Patient ID found in: ${filename}`);
     return 'Unknown';
   }
 

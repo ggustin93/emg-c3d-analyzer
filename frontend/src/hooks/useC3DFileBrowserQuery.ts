@@ -18,6 +18,7 @@ import therapistService from '../services/therapistService'
 import PatientService, { PatientInfo } from '../services/patientService'
 import { C3DFile } from '../services/C3DFileDataResolver'
 import { logger, LogCategory } from '../services/logger'
+import { supabase } from '../lib/supabase'
 
 export interface C3DFileBrowserData {
   files: C3DFile[]
@@ -58,15 +59,100 @@ async function fetchSessionData(filePaths: string[]) {
   }
 }
 
-async function fetchTherapistData(patientCodes: string[]) {
-  if (!patientCodes.length) return {}
+/**
+ * 🔧 THERAPIST DATA RESOLUTION USING RPC FUNCTION
+ * 
+ * This function replaces the complex multi-query approach with a single RPC call
+ * to resolve therapist information for C3D files efficiently.
+ * 
+ * 🎯 PROBLEM SOLVED:
+ * - Previously: Multiple separate queries (patients → therapist_ids → user_profiles)
+ * - Now: Single RPC call that handles all joins and logic in the database
+ * - Result: Faster, more reliable, and eliminates "Unknown Therapist" issues
+ * 
+ * 🔄 DATA FLOW:
+ * 1. Input: Array of C3D file paths (e.g., ["P001/test_session_123.c3d", "P002/file.c3d"])
+ * 2. RPC Call: get_therapists_for_c3d_files(file_paths) 
+ * 3. Database Logic: 
+ *    - Extract patient codes from file paths using get_patient_code_from_storage_path()
+ *    - Join patients table to get therapist_id for each patient_code
+ *    - Join user_profiles table to get therapist details (name, user_code, role)
+ *    - Format display name as "Dr. LastName" or fallback to user_code
+ * 4. Output: Object mapping file_path → therapist_info
+ * 
+ * 📊 EXAMPLE RPC RESULT:
+ * [
+ *   {
+ *     file_path: "P001/test_session_1758833248_ad62e529.c3d",
+ *     patient_code: "P001", 
+ *     therapist_id: "e7b43581-743b-4211-979e-76196575ee99",
+ *     therapist_first_name: "Marie-Claire",
+ *     therapist_last_name: "Tremblay", 
+ *     therapist_user_code: "T001",
+ *     therapist_role: "therapist",
+ *     therapist_display_name: "Dr. Tremblay"
+ *   }
+ * ]
+ * 
+ * 🎨 FRONTEND INTEGRATION:
+ * - Maps database result to component-expected format
+ * - Provides fallback display names for edge cases
+ * - Maintains backward compatibility with existing C3DFileBrowser component
+ */
+async function fetchTherapistData(filePaths: string[]) {
+  if (!filePaths.length) {
+    return {}
+  }
   
   try {
-    const uniquePatientCodes = Array.from(new Set(patientCodes))
-    return await therapistService.resolveTherapistsForPatientCodes(uniquePatientCodes)
+    console.log('🔍 Fetching therapist data for files:', filePaths)
+    
+    // 📡 SINGLE RPC CALL - Replaces complex multi-query approach
+    // This RPC function handles all the database joins and logic in one efficient call
+    const { data, error } = await supabase.rpc('get_therapists_for_c3d_files', {
+      file_paths: filePaths  // Pass array of file paths directly
+    })
+
+    console.log('🔍 RPC function result:', { data, error })
+
+    if (error) {
+      console.error('🔍 RPC function error:', error)
+      return {}
+    }
+
+    if (!data || data.length === 0) {
+      console.log('🔍 No therapist data found')
+      return {}
+    }
+
+    // 🔄 TRANSFORM DATABASE RESULT TO COMPONENT FORMAT
+    // Map the RPC result to the format expected by C3DFileBrowser component
+    const result: Record<string, any> = {}
+    data.forEach((row: any) => {
+      if (row.therapist_id) {
+        result[row.file_path] = {
+          // Core therapist identification
+          id: row.therapist_id,
+          first_name: row.therapist_first_name,
+          last_name: row.therapist_last_name,
+          user_code: row.therapist_user_code,
+          role: row.therapist_role,
+          
+          // 🎨 SMART DISPLAY NAME LOGIC
+          // Priority: Database computed → Full name → User code → Fallback ID
+          display_name: row.therapist_display_name || 
+            (row.therapist_first_name && row.therapist_last_name 
+              ? `${row.therapist_first_name} ${row.therapist_last_name}`
+              : row.therapist_user_code || `Therapist ${row.therapist_id.slice(0, 8)}...`)
+        }
+      }
+    })
+
+    console.log('🔍 Final therapist result:', result)
+    return result
   } catch (error) {
-    logger.warn(LogCategory.API, 'Failed to load therapist data:', error)
-    return {} // Not critical - continue without therapist data
+    console.error('🔍 Error in fetchTherapistData:', error)
+    return {}
   }
 }
 
@@ -87,8 +173,10 @@ export function useC3DFileBrowserQuery(): C3DFileBrowserData {
   const filesQuery = useQuery({
     queryKey: queryKeys.c3dBrowser.files(),
     queryFn: fetchC3DFiles,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000,   // Keep cache for 10 minutes
+    staleTime: 0, // Disable caching for debugging
+    gcTime: 0, // Don't keep in cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   const files = filesQuery.data || []
@@ -99,20 +187,27 @@ export function useC3DFileBrowserQuery(): C3DFileBrowserData {
     queryKey: queryKeys.c3dBrowser.sessions(filePaths),
     queryFn: () => fetchSessionData(filePaths),
     enabled: filePaths.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes for session data
+    staleTime: 0, // Disable caching for debugging
+    gcTime: 0, // Don't keep in cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
-  // Query 3: Therapist data (dependent on files)
-  const patientCodes = files
-    .map(file => therapistService.extractPatientCodeFromPath(file.name))
-    .filter((code): code is string => !!code)
+  // Query 3: Therapist data (dependent on files) - now using file paths directly
+  const therapistFilePaths = files.map(file => file.name)
+
+  console.log('🔍 File paths for therapist query:', therapistFilePaths)
 
   const therapistQuery = useQuery({
-    queryKey: queryKeys.c3dBrowser.therapists(patientCodes),
-    queryFn: () => fetchTherapistData(patientCodes),
-    enabled: patientCodes.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes for therapist data (more stable)
+    queryKey: queryKeys.c3dBrowser.therapists(therapistFilePaths),
+    queryFn: () => fetchTherapistData(therapistFilePaths),
+    enabled: therapistFilePaths.length > 0,
+    staleTime: 0, // Disable caching - always fetch fresh data
+    gcTime: 0, // Don't keep in cache
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
+
 
   // Query 4: Patient data (dependent on files)
   const patientCodesForPatients = files.map(file => {
@@ -126,7 +221,10 @@ export function useC3DFileBrowserQuery(): C3DFileBrowserData {
     queryKey: queryKeys.c3dBrowser.patients(patientCodesForPatients),
     queryFn: () => fetchPatientData(patientCodesForPatients),
     enabled: patientCodesForPatients.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes for patient data (more stable)
+    staleTime: 0, // Disable caching for debugging
+    gcTime: 0, // Don't keep in cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // Smart loading states - show loading only when necessary
@@ -140,11 +238,33 @@ export function useC3DFileBrowserQuery(): C3DFileBrowserData {
   // Process therapist data to match existing component expectations
   const therapistCache: Record<string, any> = {}
   if (therapistQuery.data && files.length > 0) {
+    console.log('🔍 Processing therapist cache with data:', therapistQuery.data)
+    
     files.forEach(file => {
-      const patientCode = therapistService.extractPatientCodeFromPath(file.name)
-      if (patientCode && therapistQuery.data[patientCode.toUpperCase()]) {
-        therapistCache[file.name] = therapistQuery.data[patientCode.toUpperCase()]
+      // Now the data is keyed by file path, so we can access it directly
+      const therapistData = therapistQuery.data[file.name]
+      
+      if (therapistData) {
+        // Map therapist data by filename for the component to use
+        therapistCache[file.name] = therapistData
+        console.log('🔍 Added to therapist cache:', {
+          fileName: file.name,
+          therapistData: therapistCache[file.name]
+        })
+      } else {
+        console.log('🔍 No therapist data found for file:', {
+          fileName: file.name,
+          availableKeys: Object.keys(therapistQuery.data)
+        })
       }
+    })
+    
+    console.log('🔍 Final therapist cache:', therapistCache)
+  } else {
+    console.log('🔍 No therapist data to process:', {
+      hasTherapistQueryData: !!therapistQuery.data,
+      filesLength: files.length,
+      therapistQueryError: therapistQuery.error
     })
   }
 

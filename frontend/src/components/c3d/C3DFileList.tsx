@@ -168,11 +168,16 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     // Find the file to pass metadata
     const selectedFile = files.find(file => file.id === fileId);
     
-    if (selectedFile) {
-      // Pass file data for metadata, but no date (session timestamp is in filename)
-      onFileSelect(fileName, undefined, selectedFile);
-    } else {
-      onFileSelect(fileName);
+    try {
+      if (selectedFile) {
+        // Pass file data for metadata, but no date (session timestamp is in filename)
+        onFileSelect(fileName, undefined, selectedFile);
+      } else {
+        onFileSelect(fileName);
+      }
+    } finally {
+      // Always reset loading state after handling the selection
+      setLoadingFileId(null);
     }
   };
 
