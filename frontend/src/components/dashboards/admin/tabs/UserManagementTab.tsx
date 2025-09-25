@@ -110,11 +110,13 @@ export function UserManagementTab() {
     department: ''
   })
   const [createPasswordForm, setCreatePasswordForm] = useState({
-    useCustomPassword: false,
+    useCustomPassword: true,  // Always require custom password
     customPassword: '',
     confirmPassword: '',
     adminNote: ''
   })
+  const [isCreating, setIsCreating] = useState(false)
+  const [creationStep, setCreationStep] = useState<'idle' | 'validating' | 'creating' | 'complete'>('idle')
 
   // Sorting state
   const [sortField, setSortField] = useState<keyof UserProfile | null>(null)
@@ -169,8 +171,30 @@ export function UserManagementTab() {
     }
   }
 
+  const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+    if (!password) return { score: 0, label: 'No password', color: 'text-gray-400' }
+    
+    let score = 0
+    if (password.length >= 8) score++
+    if (password.length >= 12) score++
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++
+    if (/\d/.test(password)) score++
+    if (/[!@#$%^&*]/.test(password)) score++
+    
+    const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong']
+    const colors = ['text-red-600', 'text-orange-600', 'text-yellow-600', 'text-blue-600', 'text-green-600']
+    
+    return {
+      score: Math.min(score, 5),
+      label: labels[Math.min(score, 4)],
+      color: colors[Math.min(score, 4)]
+    }
+  }
+
   const handleCreateUser = async () => {
     try {
+      setIsCreating(true)
+      setCreationStep('validating')
       // Check if email already exists in the current user list
       const emailExists = users.some(user => user.email.toLowerCase() === createForm.email.toLowerCase())
       if (emailExists) {
@@ -179,32 +203,65 @@ export function UserManagementTab() {
           description: 'A user with this email address already exists. Please use a different email.',
           variant: 'destructive'
         })
+        setIsCreating(false)
+        setCreationStep('idle')
         return
       }
 
-      // Validate custom password if enabled
-      if (createPasswordForm.useCustomPassword) {
-        if (createPasswordForm.customPassword !== createPasswordForm.confirmPassword) {
-          toast({
-            title: 'Password Mismatch',
-            description: 'Passwords do not match',
-            variant: 'destructive'
-          })
-          return
-        }
-
-        if (createPasswordForm.customPassword.length < 8) {
-          toast({
-            title: 'Password Too Short',
-            description: 'Password must be at least 8 characters long',
-            variant: 'destructive'
-          })
-          return
-        }
+      // Validate custom password (always required)
+      if (!createPasswordForm.customPassword) {
+        toast({
+          title: 'Password Required',
+          description: 'You must set an initial password for the new user',
+          variant: 'destructive'
+        })
+        setIsCreating(false)
+        setCreationStep('idle')
+        return
       }
+
+      if (createPasswordForm.customPassword !== createPasswordForm.confirmPassword) {
+        toast({
+          title: 'Password Mismatch',
+          description: 'Passwords do not match. Please ensure both password fields are identical.',
+          variant: 'destructive'
+        })
+        setIsCreating(false)
+        setCreationStep('idle')
+        return
+      }
+
+      if (createPasswordForm.customPassword.length < 8) {
+        toast({
+          title: 'Password Too Short',
+          description: 'Password must be at least 8 characters long for security',
+          variant: 'destructive'
+        })
+        setIsCreating(false)
+        setCreationStep('idle')
+        return
+      }
+
+      const passwordStrength = getPasswordStrength(createPasswordForm.customPassword)
+      if (passwordStrength.score < 2) {
+        toast({
+          title: 'Weak Password',
+          description: 'Please use a stronger password with a mix of uppercase, lowercase, numbers, and symbols',
+          variant: 'destructive'
+        })
+        setIsCreating(false)
+        setCreationStep('idle')
+        return
+      }
+
+      setCreationStep('creating')
 
       // Get valid session (with refresh handling)
       const activeSession = await getValidSession()
+      
+      if (!activeSession) {
+        throw new Error('Unable to establish valid session. Please refresh and try again.')
+      }
 
       console.log('Creating user with session:', {
         hasToken: !!activeSession.access_token,
@@ -221,7 +278,7 @@ export function UserManagementTab() {
       }
 
       // Call backend API to create user with service key
-      const response = await fetch(`${API_CONFIG.baseUrl}/admin/users`, {
+      const response = await fetch(`${API_CONFIG.getBaseUrl()}/admin/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${activeSession.access_token}`,
@@ -235,8 +292,8 @@ export function UserManagementTab() {
           institution: createForm.institution,
           department: createForm.department,
           notify_user: false,
-          custom_password: createPasswordForm.useCustomPassword ? createPasswordForm.customPassword : null,
-          admin_note: createPasswordForm.adminNote
+          custom_password: createPasswordForm.customPassword,  // Always provide password
+          admin_note: createPasswordForm.adminNote || `Password set by admin on ${new Date().toLocaleDateString()}`
         })
       })
 
@@ -262,36 +319,31 @@ export function UserManagementTab() {
 
       const result = await response.json()
 
-      // Show success message with kPaste recommendation
-      const passwordMessage = createPasswordForm.useCustomPassword 
-        ? `Custom password set. Use kPaste (https://kpaste.infomaniak.com/) to securely share the password with the user.`
-        : `User ${createForm.email} created. Check the Password Vault to retrieve their temporary password for manual delivery. Use kPaste (https://kpaste.infomaniak.com/) for secure password sharing. User code: ${result.user_code || 'N/A'}`
+      setCreationStep('complete')
       
-        toast({
-          title: 'User Created Successfully',
-          description: `${createForm.firstName} ${createForm.lastName} (${createForm.email}) has been created as a ${createForm.role}. ${passwordMessage}`,
-          variant: 'success'
-        })
+      // Show enhanced success message with user code prominent
+      const userCode = result.user_code || 'N/A'
+      
+      toast({
+        title: '✅ User Created Successfully',
+        description: `${createForm.firstName} ${createForm.lastName} (${createForm.email}) created as ${createForm.role}. User Code: ${userCode}. Use kPaste for secure password sharing.`,
+        variant: 'success'
+      })
 
-      // Reset form and reload users
-      setShowCreateDialog(false)
-      setCreateForm({
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: 'therapist',
-        institution: '',
-        department: ''
-      })
-      setCreatePasswordForm({
-        useCustomPassword: false,
-        customPassword: '',
-        confirmPassword: '',
-        adminNote: ''
-      })
+      // Delay before closing dialog to show success state
+      setTimeout(() => {
+        setShowCreateDialog(false)
+        setIsCreating(false)
+        setCreationStep('idle')
+        // Form reset handled by dialog onOpenChange
+      }, 1500)
+      
+      // Reload users to show the new entry
       await loadUsers()
     } catch (error: any) {
       console.error('Failed to create user:', error)
+      setIsCreating(false)
+      setCreationStep('idle')
       
       // Handle specific error types
       if (error.message.includes('Session expired') || error.message.includes('Please log in again')) {
@@ -323,7 +375,7 @@ export function UserManagementTab() {
       // Get valid session (with refresh handling)
       const activeSession = await getValidSession()
 
-      const response = await fetch(`${API_CONFIG.baseUrl}/admin/users/${selectedUser.id}`, {
+      const response = await fetch(`${API_CONFIG.getBaseUrl()}/admin/users/${selectedUser.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${activeSession.access_token}`,
@@ -403,7 +455,7 @@ export function UserManagementTab() {
       const activeSession = await getValidSession()
 
       // Call the backend admin API to reset password
-      const response = await fetch(`${API_CONFIG.baseUrl}/admin/users/${selectedUser.id}/reset-password`, {
+      const response = await fetch(`${API_CONFIG.getBaseUrl()}/admin/users/${selectedUser.id}/reset-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${activeSession.access_token}`,
@@ -873,8 +925,30 @@ export function UserManagementTab() {
       </Card>
 
       {/* Create User Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        if (!isCreating) {
+          setShowCreateDialog(open)
+          if (!open) {
+            // Reset form when closing
+            setCreateForm({
+              email: '',
+              firstName: '',
+              lastName: '',
+              role: 'therapist',
+              institution: '',
+              department: ''
+            })
+            setCreatePasswordForm({
+              useCustomPassword: true,
+              customPassword: '',
+              confirmPassword: '',
+              adminNote: ''
+            })
+            setCreationStep('idle')
+          }
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
             <DialogDescription>
@@ -982,23 +1056,18 @@ export function UserManagementTab() {
               />
             </div>
 
-            {/* Password Configuration Section */}
+            {/* Password Configuration Section (Required) */}
             <div className="border-t pt-4 mt-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <input
-                  type="checkbox"
-                  id="useCustomPassword"
-                  checked={createPasswordForm.useCustomPassword}
-                  onChange={(e) => setCreatePasswordForm(prev => ({ ...prev, useCustomPassword: e.target.checked }))}
-                  className="rounded"
-                />
-                <Label htmlFor="useCustomPassword" className="text-sm font-medium">
-                  Set custom initial password
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-sm font-medium text-red-600">
+                  Set Initial Password (Required) *
                 </Label>
+                <Badge variant="destructive" className="text-xs">
+                  Mandatory
+                </Badge>
               </div>
 
-              {createPasswordForm.useCustomPassword && (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="customPassword" className="text-right">Password</Label>
                     <div className="col-span-3 space-y-2">
@@ -1022,8 +1091,24 @@ export function UserManagementTab() {
                         </Button>
                       </div>
                       {createPasswordForm.customPassword && (
-                        <div className="text-xs text-muted-foreground">
-                          Strength: {createPasswordForm.customPassword.length >= 8 ? '✓ Good' : '⚠ Too short'}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all ${
+                                  getPasswordStrength(createPasswordForm.customPassword).score === 1 ? 'w-1/5 bg-red-500' :
+                                  getPasswordStrength(createPasswordForm.customPassword).score === 2 ? 'w-2/5 bg-orange-500' :
+                                  getPasswordStrength(createPasswordForm.customPassword).score === 3 ? 'w-3/5 bg-yellow-500' :
+                                  getPasswordStrength(createPasswordForm.customPassword).score === 4 ? 'w-4/5 bg-blue-500' :
+                                  getPasswordStrength(createPasswordForm.customPassword).score === 5 ? 'w-full bg-green-500' :
+                                  'w-0'
+                                }`}
+                              />
+                            </div>
+                            <span className={`text-xs font-medium ${getPasswordStrength(createPasswordForm.customPassword).color}`}>
+                              {getPasswordStrength(createPasswordForm.customPassword).label}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1069,26 +1154,38 @@ export function UserManagementTab() {
                     </AlertDescription>
                   </Alert>
                 </div>
-              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateDialog(false)}
+              disabled={isCreating}
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleCreateUser}
               disabled={
-                !!(users.some(user => user.email.toLowerCase() === createForm.email.toLowerCase()) && createForm.email) ||
-                (createPasswordForm.useCustomPassword && (
-                  !createPasswordForm.customPassword || 
-                  !createPasswordForm.confirmPassword || 
-                  createPasswordForm.customPassword !== createPasswordForm.confirmPassword ||
-                  createPasswordForm.customPassword.length < 8
-                ))
+                isCreating ||
+                !createForm.email ||
+                !createForm.firstName ||
+                !createForm.lastName ||
+                !createPasswordForm.customPassword || 
+                !createPasswordForm.confirmPassword || 
+                createPasswordForm.customPassword !== createPasswordForm.confirmPassword ||
+                createPasswordForm.customPassword.length < 8 ||
+                !!(users.some(user => user.email.toLowerCase() === createForm.email.toLowerCase()) && createForm.email)
               }
             >
-              Create User
+              {isCreating ? (
+                <>
+                  <Icons.UpdateIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create User'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
