@@ -39,10 +39,12 @@ const getApiBaseUrl = (): string => {
  * API Configuration object with all backend-related settings
  */
 export const API_CONFIG = {
-  // Backend API base URL - supports both development and production environments
+  // Backend API base URL - dynamically evaluated to support runtime detection
   // Development: Uses '/api' for Vite proxy
   // Production: Auto-detects backend URL on same server or uses VITE_API_URL
-  baseUrl: getApiBaseUrl(),
+  get baseUrl() {
+    return getApiBaseUrl();
+  },
   
   // Request timeout in milliseconds (30 seconds)
   timeout: 30000,

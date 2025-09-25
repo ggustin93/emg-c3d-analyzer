@@ -10,7 +10,10 @@ import { TherapistInfo, TherapistCache } from '../types/therapist';
  * Maintains backward compatibility with direct Supabase for ID-based lookups
  */
 class TherapistService {
-  private apiBaseUrl = API_CONFIG.baseUrl;
+  // Dynamic API URL - evaluated at request time, not import time
+  private get apiBaseUrl() {
+    return API_CONFIG.baseUrl;
+  }
 
   /**
    * Format therapist display name as "Dr. LastName"
