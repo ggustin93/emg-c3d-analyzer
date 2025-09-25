@@ -210,6 +210,9 @@ CORS_ORIGINS = [
     # Production deployments - Vercel
     "https://emg-c3d-analyzer.vercel.app",  # Vercel frontend production
     "https://emg-c3d-analyzer-*.vercel.app",  # Vercel preview deployments
+    # Staging deployments - Digital Ocean/Coolify
+    "http://104.248.143.107:3000",  # Staging frontend
+    "https://104.248.143.107:3000",  # Staging frontend (HTTPS)
 ]
 
 # Add dynamic origins from environment

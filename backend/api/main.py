@@ -171,7 +171,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=CORS_ORIGINS,  # Base list of allowed origins
-        allow_origin_regex="https://emg-c3d-analyzer-.*\\.vercel\\.app",  # Regex for Vercel previews
+        allow_origin_regex=r"https://emg-c3d-analyzer-.*\.vercel\.app|http://104\.248\.143\.107:3000",  # Regex for Vercel previews and staging
         allow_credentials=CORS_CREDENTIALS,
         allow_methods=CORS_METHODS,
         allow_headers=CORS_HEADERS,

@@ -28,7 +28,11 @@ const getApiBaseUrl = (): string => {
   
   // 🧠 SAME-ORIGIN DETECTION: Use same hostname to eliminate CORS
   let result: string;
-  if (currentHost === '104.248.143.107' || currentHost === '127.0.0.1' || currentHost === 'localhost') {
+  if (currentHost === '104.248.143.107') {
+    // Staging deployment - backend is on same server but different port
+    result = `${currentProtocol}//${currentHost}:8080`;
+  } else if (currentHost === '127.0.0.1' || currentHost === 'localhost') {
+    // Development deployment
     result = `${currentProtocol}//${currentHost}:8080`;
   } else {
     // 4. Fallback: For any other hostname, try same-origin approach

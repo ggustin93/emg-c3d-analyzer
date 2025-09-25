@@ -73,7 +73,8 @@ services:
       # Security
       - SECRET_KEY=${SECRET_KEY}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
-      - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000},http://104.248.143.107:3000
+      - ALLOWED_ORIGINS=http://104.248.143.107:3000,https://104.248.143.107:3000
+      - FRONTEND_URL=http://104.248.143.107:3000
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
@@ -106,7 +107,7 @@ services:
       dockerfile: docker/frontend/Dockerfile
       target: production
       args:
-        - VITE_API_URL=${VITE_API_URL:-http://104.248.143.107:8080}
+        - VITE_API_URL=http://104.248.143.107:8080
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
         - VITE_ENVIRONMENT=staging
@@ -127,7 +128,7 @@ services:
     # env_file:
     #   - .env
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://104.248.143.107:8080}
+      - VITE_API_URL=http://104.248.143.107:8080
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - VITE_ENVIRONMENT=staging
