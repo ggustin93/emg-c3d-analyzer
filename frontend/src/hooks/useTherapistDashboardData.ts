@@ -69,6 +69,7 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
       .from('patients')
       .select(`
         patient_code,
+        id,
         patient_medical_info!inner (id)
       `)
       .in('patient_code', patientCodes)
@@ -90,15 +91,18 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
 
     // Create medical info records for missing patients
     const medicalInfoRecords = missingCodes.map(patientCode => {
+      const patient = existingPatients?.find(p => p.patient_code === patientCode)
       // Generate a reasonable name from patient code
       const numericPart = patientCode.replace(/\D/g, '')
       const number = parseInt(numericPart) || 0
       
       return {
-        patient_code: patientCode,
+        patient_id: patient?.id,
         first_name: `Patient`,
         last_name: `${number.toString().padStart(3, '0')}`, // P001 → Patient 001
-        date_of_birth: null // Will be filled by therapist later
+        date_of_birth: '1990-01-01', // Will be filled by therapist later
+        gender: 'NS',
+        created_by: (await supabase.auth.getUser()).data.user?.id
       }
     })
 
@@ -111,7 +115,6 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
     } else {
       console.log(`Successfully created ${medicalInfoRecords.length} patient medical info records`)
     }
-
   } catch (error) {
     console.error('Error in createMissingPatientMedicalInfo:', error)
   }

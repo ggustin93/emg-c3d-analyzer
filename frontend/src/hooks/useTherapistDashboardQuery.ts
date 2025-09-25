@@ -62,6 +62,7 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
       .from('patients')
       .select(`
         patient_code,
+        id,
         patient_medical_info (id)
       `)
       .in('patient_code', patientCodes)
@@ -81,14 +82,17 @@ async function createMissingPatientMedicalInfo(patientCodes: string[]): Promise<
     console.log('Creating medical info records for patients:', missingCodes)
 
     const medicalInfoRecords = missingCodes.map(patientCode => {
+      const patient = existingPatients?.find(p => p.patient_code === patientCode)
       const numericPart = patientCode.replace(/\D/g, '')
       const number = parseInt(numericPart) || 0
       
       return {
-        patient_code: patientCode,
+        patient_id: patient?.id,
         first_name: `Patient`,
         last_name: `${number.toString().padStart(3, '0')}`,
-        date_of_birth: null
+        date_of_birth: '1990-01-01',
+        gender: 'NS',
+        created_by: (await supabase.auth.getUser()).data.user?.id
       }
     })
 
