@@ -114,6 +114,37 @@ done
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
 
+# Cross-platform virtual environment activation
+activate_venv() {
+    # Detect platform and use appropriate activation method
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ -n "$WINDIR" ]]; then
+        # Windows environment (Git Bash, MSYS2, or native Windows)
+        if [[ -f "venv/Scripts/activate" ]]; then
+            source venv/Scripts/activate
+        elif [[ -f "venv\\Scripts\\activate" ]]; then
+            source "venv\\Scripts\\activate"
+        else
+            echo -e "${RED}✗ Windows virtual environment activation script not found${NC}"
+            return 1
+        fi
+    else
+        # Unix-like environment (Linux, macOS, WSL)
+        if [[ -f "venv/bin/activate" ]]; then
+            source venv/bin/activate
+        else
+            echo -e "${RED}✗ Unix virtual environment activation script not found${NC}"
+            return 1
+        fi
+    fi
+}
+
+deactivate_venv() {
+    # Deactivate is the same on all platforms
+    if command -v deactivate &> /dev/null; then
+        deactivate
+    fi
+}
+
 # Lock file management
 acquire_lock() {
     local timeout=30
@@ -658,9 +689,9 @@ check_prerequisites() {
         echo -e "${BLUE}Creating virtual environment...${NC}"
         cd "$BACKEND_DIR"
         python3 -m venv venv
-        source venv/bin/activate
+        activate_venv
         pip install -r requirements.txt
-        deactivate
+        deactivate_venv
         cd - > /dev/null
     else
         echo -e "${GREEN}✓ Python virtual environment found${NC}"
@@ -698,7 +729,7 @@ run_tests() {
     # Backend tests
     echo -e "\n${YELLOW}Running backend tests...${NC}"
     cd "$BACKEND_DIR"
-    source venv/bin/activate
+    activate_venv
     if python -m pytest tests/ -v --tb=short; then
         echo -e "${GREEN}✓ Backend tests passed${NC}"
         log "SUCCESS" "Backend tests passed"
@@ -707,7 +738,7 @@ run_tests() {
         log "ERROR" "Backend tests failed"
         tests_passed=false
     fi
-    deactivate
+    deactivate_venv
     cd - > /dev/null
     
     # Frontend tests
@@ -761,7 +792,7 @@ start_backend() {
     cd "$BACKEND_DIR"
     
     # Activate virtual environment and start server
-    source venv/bin/activate
+    activate_venv
     uvicorn main:app \
         --reload \
         --port ${BACKEND_PORT:-8080} \
@@ -769,7 +800,7 @@ start_backend() {
         > "${LOG_DIR}/backend.log" 2>&1 &
     
     BACKEND_PID=$!
-    deactivate
+    deactivate_venv
     cd - > /dev/null
     
     # Wait for backend to start
