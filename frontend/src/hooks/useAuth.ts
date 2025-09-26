@@ -26,6 +26,7 @@
  * - RLS policy compliance (roles for UI only)
  */
 import { useState, useEffect, useCallback, useRef, useTransition, startTransition } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logout as utilLogout } from '../lib/authUtils'
 import type { User, Session } from '@supabase/supabase-js'
@@ -68,6 +69,7 @@ export const useAuth = (): AuthState & AuthActions => {
   const [userRole, setUserRole] = useState<UserRole>(null)
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null)
   const [isTransitioning, startAuthTransition] = useTransition()
+  const navigate = useNavigate()
   
   // Use ref to prevent multiple simultaneous initializations
   const initializingRef = useRef(false)
@@ -243,6 +245,8 @@ export const useAuth = (): AuthState & AuthActions => {
                 setUserRole(null)
                 setLoading(false)
               })
+              // Navigate to login page after logout
+              navigate('/login')
               break
               
             case 'TOKEN_REFRESHED':
