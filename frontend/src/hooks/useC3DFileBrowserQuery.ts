@@ -36,7 +36,7 @@ export interface C3DFileBrowserData {
 }
 
 // Get bucket name from centralized configuration
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../config/environment';
 const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 // Individual query functions for better separation of concerns
@@ -53,7 +53,37 @@ async function fetchSessionData(filePaths: string[]) {
   if (!filePaths.length) return {}
   
   try {
-    return await TherapySessionsService.getSessionsByFilePaths(filePaths)
+    // Enhanced query with JOIN to performance_scores for better performance
+    const { data, error } = await supabase
+      .from('therapy_sessions')
+      .select(`
+        *,
+        performance_scores (
+          overall_score,
+          compliance_score,
+          symmetry_score,
+          effort_score,
+          game_score
+        )
+      `)
+      .in('file_path', filePaths);
+
+    if (error) {
+      logger.warn(LogCategory.API, 'Failed to load session data:', error);
+      return {};
+    }
+
+    // Transform to expected format with performance data
+    const sessionMap: Record<string, any> = {};
+    data?.forEach(session => {
+      sessionMap[session.file_path] = {
+        ...session,
+        performance_score: session.performance_scores?.[0]?.overall_score || null,
+        processing_status: session.processing_status
+      };
+    });
+
+    return sessionMap;
   } catch (error) {
     logger.warn(LogCategory.API, 'Failed to load session data:', error)
     return {} // Not critical - continue without session data
@@ -72,7 +102,7 @@ async function fetchSessionData(filePaths: string[]) {
  * - Result: Faster, more reliable, and eliminates "Unknown Therapist" issues
  * 
  * 🔄 DATA FLOW:
- * 1. Input: Array of C3D file paths (e.g., ["P001/test_session_123.c3d", "P002/file.c3d"])
+ * 1. Input: Array of C3D file paths (e.g., ["P001/Ghostly_Emg_20250115_10-30-00-1234_test.c3d", "P002/file.c3d"])
  * 2. RPC Call: get_therapists_for_c3d_files(file_paths) 
  * 3. Database Logic: 
  *    - Extract patient codes from file paths using get_patient_code_from_storage_path()
@@ -84,7 +114,7 @@ async function fetchSessionData(filePaths: string[]) {
  * 📊 EXAMPLE RPC RESULT:
  * [
  *   {
- *     file_path: "P001/test_session_1758833248_ad62e529.c3d",
+ *     file_path: "P001/Ghostly_Emg_20250115_10-30-00-1234_test.c3d",
  *     patient_code: "P001", 
  *     therapist_id: "e7b43581-743b-4211-979e-76196575ee99",
  *     therapist_first_name: "Marie-Claire",

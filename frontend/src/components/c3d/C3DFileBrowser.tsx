@@ -41,7 +41,8 @@ import {
   ArchiveIcon, 
   CalendarIcon,
   ViewGridIcon,
-  FileIcon
+  FileIcon,
+  ExclamationTriangleIcon
 } from '@radix-ui/react-icons';
 import {
   Popover,
@@ -68,7 +69,7 @@ import PatientService, { PatientInfo } from '@/services/patientService';
 import { useSessionStore } from '@/store/sessionStore';
 import { supabase } from '@/lib/supabase';
 
-type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
+type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date' | 'overall_performance_score' | 'processing_status';
 type SortDirection = 'asc' | 'desc';
 
 interface ColumnVisibility {
@@ -79,6 +80,8 @@ interface ColumnVisibility {
   session_date: boolean;
   upload_date: boolean;
   clinical_notes: boolean;
+  overall_performance_score: boolean;
+  processing_status: boolean;
 }
 import C3DFilterPanel, { FilterState } from '@/components/c3d/C3DFilterPanel';
 import C3DFileList from '@/components/c3d/C3DFileList';
@@ -93,7 +96,7 @@ import { queryKeys } from '@/lib/queryClient';
 // SimpleCache replaced by TanStack Query intelligent caching
 
 // Get bucket name from centralized configuration
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 interface C3DFileBrowserProps {
@@ -139,21 +142,36 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [filesPerPage] = useState(10);
   
+  // Column limit warning state
+  const [showColumnLimitWarning, setShowColumnLimitWarning] = useState(false);
+  
   // Sort states
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
-  // Column visibility states  
+  // Column visibility states with optimized defaults for 13" desktop
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
     const saved = localStorage.getItem('c3d-visible-columns');
-    return saved ? JSON.parse(saved) : {
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure saved settings don't exceed 8 columns
+      const visibleCount = Object.values(parsed).filter(Boolean).length;
+      if (visibleCount <= 8) {
+        return parsed;
+      }
+    }
+    
+    // Optimized default selection (7 columns for best UX on 13" desktop)
+    return {
       patient_id: true,
       patient_name: userRole === 'ADMIN' || userRole === 'THERAPIST', // Role-based patient name visibility
       therapist_id: true,
       size: true,
       session_date: true,
       upload_date: false,  // Default to false as requested
-      clinical_notes: true   // Enable clinical notes by default
+      clinical_notes: true,   // Enable clinical notes by default
+      overall_performance_score: true,  // Enable performance score by default
+      processing_status: false   // Disable by default to stay within limit
     };
   });
 
@@ -258,6 +276,32 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     
     return '';
   }, [patientCache, loadingStates.patients]);
+
+  // Helper function to get performance score from session data (memoized for performance)
+  const getPerformanceScore = useCallback((file: C3DFile): number | null => {
+    const filePath = `${BUCKET_NAME}/${file.name}`;
+    const session = sessionData[filePath];
+    
+    // Return null if no session data or performance score not available
+    if (!session || !session.performance_score) {
+      return null;
+    }
+    
+    return session.performance_score;
+  }, [sessionData]);
+
+  // Helper function to get processing status from session data (memoized for performance)
+  const getProcessingStatus = useCallback((file: C3DFile): string => {
+    const filePath = `${BUCKET_NAME}/${file.name}`;
+    const session = sessionData[filePath];
+    
+    // Return 'not_processed' if no session data
+    if (!session) {
+      return 'not_processed';
+    }
+    
+    return session.processing_status || 'not_processed';
+  }, [sessionData]);
 
   // Wrapper function to handle file selection with metadata
   const handleFileSelectWithMetadata = useCallback((filename: string, uploadDate?: string, fileData?: C3DFile) => {
@@ -374,6 +418,16 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
         if (!aValue && !bValue) return 0;
         if (!aValue) return sortDirection === 'asc' ? 1 : -1;
         if (!bValue) return sortDirection === 'asc' ? -1 : 1;
+      } else if (sortField === 'overall_performance_score') {
+        aValue = getPerformanceScore(a);
+        bValue = getPerformanceScore(b);
+        // Handle null values - put them at the end
+        if (aValue === null && bValue === null) return 0;
+        if (aValue === null) return sortDirection === 'asc' ? 1 : -1;
+        if (bValue === null) return sortDirection === 'asc' ? -1 : 1;
+      } else if (sortField === 'processing_status') {
+        aValue = getProcessingStatus(a);
+        bValue = getProcessingStatus(b);
       } else {
         // For other fields, use direct property access
         aValue = a[sortField as keyof C3DFile];
@@ -424,8 +478,19 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     }
   };
 
-  // Handle column visibility
+  // Handle column visibility with maximum limit
   const toggleColumnVisibility = (column: keyof ColumnVisibility) => {
+    const currentlyVisible = Object.values(visibleColumns).filter(Boolean).length;
+    const isCurrentlyVisible = visibleColumns[column];
+    
+    // If trying to enable a column and we're at the limit, show warning
+    if (!isCurrentlyVisible && currentlyVisible >= 8) {
+      setShowColumnLimitWarning(true);
+      // Auto-hide warning after 3 seconds
+      setTimeout(() => setShowColumnLimitWarning(false), 3000);
+      return;
+    }
+    
     const newVisibility = {
       ...visibleColumns,
       [column]: !visibleColumns[column]
@@ -653,6 +718,21 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
 
   return (
     <div className="w-full space-y-4">
+      {/* Column Limit Warning */}
+      {showColumnLimitWarning && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-amber-800">
+          <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+          <span className="text-sm">
+            Maximum 8 columns allowed for optimal display on 13" desktop screens. Please disable another column first.
+          </span>
+          <button 
+            onClick={() => setShowColumnLimitWarning(false)}
+            className="ml-auto text-amber-600 hover:text-amber-800"
+          >
+            ×
+          </button>
+        </div>
+      )}
       
       <Card className="w-full">
         <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
@@ -696,28 +776,47 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
                       { key: 'size', label: 'File Size', icon: ArchiveIcon },
                       { key: 'session_date', label: 'Session Date', icon: CalendarIcon },
                       { key: 'upload_date', label: 'Upload Date', icon: CalendarIcon },
-                      { key: 'clinical_notes', label: 'Clinical Notes', icon: FileIcon }
-                    ].map(({ key, label, icon: Icon }) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={key}
-                          checked={visibleColumns[key as keyof ColumnVisibility]}
-                          onCheckedChange={() => toggleColumnVisibility(key as keyof ColumnVisibility)}
-                        />
-                        <label
-                          htmlFor={key}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                        >
-                          <Icon className="w-3 h-3" />
-                          {label}
-                        </label>
-                      </div>
-                    ))}
+                      { key: 'clinical_notes', label: 'Clinical Notes', icon: FileIcon },
+                      { key: 'overall_performance_score', label: 'Performance Score', icon: FileIcon },
+                      { key: 'processing_status', label: 'Processing Status', icon: FileIcon }
+                    ].map(({ key, label, icon: Icon }) => {
+                      const isVisible = visibleColumns[key as keyof ColumnVisibility];
+                      const currentlyVisible = Object.values(visibleColumns).filter(Boolean).length;
+                      const isDisabled = !isVisible && currentlyVisible >= 8;
+                      
+                      return (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={key}
+                            checked={isVisible}
+                            disabled={isDisabled}
+                            onCheckedChange={() => toggleColumnVisibility(key as keyof ColumnVisibility)}
+                          />
+                          <label
+                            htmlFor={key}
+                            className={`text-sm font-medium leading-none flex items-center gap-2 cursor-pointer ${
+                              isDisabled 
+                                ? 'cursor-not-allowed opacity-50' 
+                                : 'peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                            }`}
+                          >
+                            <Icon className="w-3 h-3" />
+                            {label}
+                            {isDisabled && (
+                              <span className="text-xs text-amber-600 ml-1">(limit reached)</span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="pt-2 border-t text-xs text-slate-500">
                     <div className="flex items-center gap-1">
                       <EyeOpenIcon className="w-3 h-3" />
-                      {Object.values(visibleColumns).filter(Boolean).length} of 7 columns visible
+                      {Object.values(visibleColumns).filter(Boolean).length} of 9 columns visible
+                    </div>
+                    <div className="text-xs text-amber-600 mt-1">
+                      ⚠️ Maximum 8 columns recommended for 13" desktop screens
                     </div>
                   </div>
                 </div>
@@ -751,6 +850,8 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
           therapistCache={therapistCache}
           userRole={userRole}
           getPatientName={getPatientName}
+          getPerformanceScore={getPerformanceScore}
+          getProcessingStatus={getProcessingStatus}
           notesIndicators={simpleNotes.notesCount}
           notesLoading={simpleNotes.loading}
         />

@@ -41,11 +41,11 @@ import { TherapistCache } from '@/types/therapist';
 import { therapistService } from '@/services/therapistService';
 
 // Get bucket name from centralized configuration
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
-type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
-type SortDirection = 'asc' | 'desc';
+export type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date' | 'overall_performance_score' | 'processing_status';
+export type SortDirection = 'asc' | 'desc';
 
 export interface ColumnVisibility {
   patient_id: boolean;
@@ -55,6 +55,8 @@ export interface ColumnVisibility {
   session_date: boolean;
   upload_date: boolean;
   clinical_notes: boolean;
+  overall_performance_score: boolean;
+  processing_status: boolean;
 }
 
 interface C3DFileListProps {
@@ -71,6 +73,9 @@ interface C3DFileListProps {
   userRole?: 'ADMIN' | 'THERAPIST' | 'RESEARCHER' | null; // New prop for role-based visibility
   // Patient data
   getPatientName?: (file: C3DFile) => string;
+  // Performance data
+  getPerformanceScore?: (file: C3DFile) => number | null;
+  getProcessingStatus?: (file: C3DFile) => string;
   // Clinical Notes props
   notesIndicators?: Record<string, number>;
   notesLoading?: boolean;
@@ -90,6 +95,9 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   userRole: propUserRole, // Accept userRole from props
   // Patient data
   getPatientName,
+  // Performance data
+  getPerformanceScore,
+  getProcessingStatus,
   // Clinical Notes props
   notesIndicators = {},
   notesLoading = false
@@ -116,11 +124,75 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
     // Try database format first (new system), then full path (legacy)
     return notesIndicators[dbPath] || notesIndicators[fullPath] || 0;
   }, [notesIndicators]);
+
+  // Helper functions for processing status badge styling (memoized for performance)
+  const getProcessingStatusBadgeVariant = useCallback((status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'default';
+      case 'processing':
+        return 'secondary';
+      case 'failed':
+        return 'destructive';
+      case 'pending':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  }, []);
+
+  const getProcessingStatusBadgeClass = useCallback((status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'processing':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'pending':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  }, []);
   
   // Enhanced session date resolver
   const getSessionDate = useCallback((file: C3DFile): string | null => {
     return customResolveSessionDate ? customResolveSessionDate(file) : resolveSessionDate(file);
   }, [customResolveSessionDate]);
+
+  // Memoized performance score display logic for better performance
+  const getPerformanceScoreDisplay = useCallback((file: C3DFile) => {
+    if (!getPerformanceScore) return null;
+    const score = getPerformanceScore(file);
+    return score !== null ? score.toFixed(1) : null;
+  }, [getPerformanceScore]);
+
+  // Memoized processing status display logic for better performance
+  const getProcessingStatusDisplay = useCallback((file: C3DFile) => {
+    if (!getProcessingStatus) return 'not_processed';
+    return getProcessingStatus(file);
+  }, [getProcessingStatus]);
+
+  // Helper function to format processing status for display
+  const formatProcessingStatus = useCallback((status: string): string => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'processing':
+        return 'Processing';
+      case 'failed':
+        return 'Failed';
+      case 'pending':
+        return 'Pending';
+      case 'reprocessing':
+        return 'Reprocessing';
+      case 'not_processed':
+        return 'Not Processed';
+      default:
+        return 'Unknown';
+    }
+  }, []);
 
   // Helper function to resolve patient display based on user role
   const getPatientDisplayName = useCallback((file: C3DFile): string => {
@@ -360,6 +432,36 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
               </div>
             </div>
           )}
+          {visibleColumns.overall_performance_score && (
+            <div className="flex-1 min-w-0">
+              <button 
+                onClick={() => onSort('overall_performance_score')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 3v18h18"/>
+                  <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                </svg>
+                Performance Score
+                {getSortIcon('overall_performance_score')}
+              </button>
+            </div>
+          )}
+          {visibleColumns.processing_status && (
+            <div className="flex-1 min-w-0">
+              <button 
+                onClick={() => onSort('processing_status')}
+                className="flex items-center hover:text-slate-800 transition-colors text-xs"
+              >
+                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+                Processing Status
+                {getSortIcon('processing_status')}
+              </button>
+            </div>
+          )}
           <div className="w-20 text-xs">
             Actions
           </div>
@@ -515,6 +617,29 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                               className="ml-1"
                             />
                           )}
+                        </div>
+                      )}
+                      {visibleColumns.overall_performance_score && (
+                        <div className="flex items-center gap-2">
+                          <span>Performance:</span>
+                          {getPerformanceScoreDisplay(file) !== null ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              {getPerformanceScoreDisplay(file)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-400 text-xs">N/A</span>
+                          )}
+                        </div>
+                      )}
+                      {visibleColumns.processing_status && (
+                        <div className="flex items-center gap-2">
+                          <span>Status:</span>
+                          <Badge 
+                            variant={getProcessingStatusBadgeVariant(getProcessingStatusDisplay(file))}
+                            className={getProcessingStatusBadgeClass(getProcessingStatusDisplay(file))}
+                          >
+                            {formatProcessingStatus(getProcessingStatusDisplay(file))}
+                          </Badge>
                         </div>
                       )}
                     </div>
@@ -721,6 +846,31 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
                               disabled={notesLoading}
                             />
                           )}
+                        </div>
+                      </div>
+                    )}
+                    {visibleColumns.overall_performance_score && (
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <div className="flex items-center">
+                          {getPerformanceScoreDisplay(file) !== null ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              {getPerformanceScoreDisplay(file)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-400 text-xs">N/A</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {visibleColumns.processing_status && (
+                      <div className="px-3 py-2 flex-1 min-w-0">
+                        <div className="flex items-center">
+                          <Badge 
+                            variant={getProcessingStatusBadgeVariant(getProcessingStatusDisplay(file))}
+                            className={getProcessingStatusBadgeClass(getProcessingStatusDisplay(file))}
+                          >
+                            {formatProcessingStatus(getProcessingStatusDisplay(file))}
+                          </Badge>
                         </div>
                       </div>
                     )}
