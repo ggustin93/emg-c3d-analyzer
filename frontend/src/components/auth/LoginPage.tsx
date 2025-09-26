@@ -6,21 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Spinner from '@/components/ui/Spinner';
-import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon, ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 interface LoginPageProps {
   onLoginSuccess?: () => void;
 }
 
 /**
- * Full-page login interface for EMG C3D Analyzer
- * Professional, on-page authentication without modal disruption
+ * Login interface for EMG C3D Analyzer platform
+ * Provides authentication access to the research dashboard
  * 
- * Features:
- * - React Router 7 Form for <200ms navigation
- * - Server-side action handling with instant redirects
- * - Non-blocking authentication state updates
+ * Implementation:
+ * - React Router Form for optimized navigation
+ * - Server-side action handling with redirects
+ * - Responsive design with mobile restrictions
  */
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const actionData = useActionData() as { error?: string } | undefined;
@@ -33,6 +34,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [isDevModeOpen, setIsDevModeOpen] = useState(false);
+
+  // Quick login accounts for development mode
+  const quickLoginAccounts = [
+    {
+      role: 'Admin',
+      email: import.meta.env.VITE_DEMO_ADMIN_EMAIL || 'admin2@ghostly.be',
+      password: import.meta.env.VITE_DEMO_ADMIN_PASSWORD || 'admin',
+      color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700'
+    },
+    {
+      role: 'Researcher',
+      email: import.meta.env.VITE_DEMO_RESEARCHER_EMAIL || 'researcher@ghostly.be',
+      password: import.meta.env.VITE_DEMO_RESEARCHER_PASSWORD || 'ghostly2025',
+      color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700'
+    },
+    {
+      role: 'Therapist',
+      email: import.meta.env.VITE_DEMO_THERAPIST_EMAIL || 'therapist1@example.com',
+      password: import.meta.env.VITE_DEMO_THERAPIST_PASSWORD || 'ghostly2025',
+      color: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700'
+    }
+  ];
 
   // Load saved email from localStorage if available
   useEffect(() => {
@@ -84,45 +108,95 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setRememberMe(e.target.checked);
   }, []);
 
+  // Quick login handler for development mode
+  const handleQuickLogin = useCallback((account: typeof quickLoginAccounts[0]) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setRememberMe(true);
+  }, []);
+
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col px-4">
-        <div className="flex-grow flex items-center justify-center pt-8 pb-4">
+      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 relative overflow-hidden">
+        {/* Decorative pattern backgrounds */}
+        <div className="absolute inset-0">
+          {/* Dot pattern - blue primary color */}
+          <div className="absolute inset-0 opacity-[0.06]" 
+               style={{
+                 backgroundImage: 'radial-gradient(circle, #3b82f6 1.5px, transparent 1.5px)',
+                 backgroundSize: '18px 18px'
+               }} />
+          {/* Grid pattern overlay - blue primary */}
+          <div className="absolute inset-0 opacity-[0.03]"
+               style={{
+                 backgroundImage: `
+                   linear-gradient(to right, #60a5fa 1px, transparent 1px),
+                   linear-gradient(to bottom, #60a5fa 1px, transparent 1px)
+                 `,
+                 backgroundSize: '50px 50px'
+               }} />
+          {/* Diagonal lines pattern - blue accent */}
+          <div className="absolute inset-0 opacity-[0.04]"
+               style={{
+                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(59, 130, 246, 0.3) 30px, rgba(59, 130, 246, 0.3) 31px)',
+               }} />
+          {/* Gradient overlay for depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-50/10 via-transparent to-transparent" />
+        </div>
+        {/* Mobile restriction banner */}
+        <div className="md:hidden bg-red-50 border-b border-red-200 px-4 py-3 flex-shrink-0">
+          <div className="flex items-center justify-center text-red-800 text-sm font-medium">
+            <ExclamationTriangleIcon className="w-4 h-4 mr-2" />
+            This application requires a desktop or tablet device for optimal experience.
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center px-4 relative z-10">
           <div className="w-full max-w-md sm:max-w-lg">
             
             {/* Welcome Card */}
-            <Card className="shadow-2xl border-0">
-              <CardHeader className="text-center pb-3 pt-5 px-4 sm:px-6">
+            <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm relative">
+              <CardHeader className="text-center pb-0 pt-1 px-4 sm:px-6">
+                {/* Application logo */}
+                <div className="flex items-center justify-center mb-1">
+                  <img 
+                    src="/ghostly_logo.png" 
+                    alt="GHOSTLY Logo" 
+                    className="h-32 w-32 object-contain"
+                  />
+                </div>
+                
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <CardTitle className="text-2xl font-bold text-slate-900">
                     Sign In
                   </CardTitle>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InfoCircledIcon className="w-4 h-4 text-blue-500 cursor-help" />
+                      <InfoCircledIcon className="w-4 h-4 text-slate-400 cursor-help hover:text-slate-600 transition-colors" />
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-xs">
+                    <TooltipContent side="right" className="max-w-xs border-slate-200 bg-white/95 backdrop-blur-sm">
                       <div className="space-y-2">
-                        <p className="font-semibold">Platform Features:</p>
-                        <ul className="text-sm space-y-1">
-                          <li>• C3D file processing and EMG analysis</li>
-                          <li>• Research-grade performance metrics</li>
-                          <li>• Real-time visualization and reporting</li>
-                          <li>• Session data management and export</li>
+                        <p className="font-medium text-slate-700">Features:</p>
+                        <ul className="text-sm space-y-1 text-slate-600">
+                          <li>• C3D file processing</li>
+                          <li>• EMG data analysis</li>
+                          <li>• Performance metrics</li>
+                          <li>• Data visualization</li>
+                          <li>• Session management</li>
                         </ul>
                       </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <CardDescription className="text-sm text-slate-600">
-                  Access the Ghostly+ EMG C3D Analysis Platform
+                <CardDescription className="text-sm text-slate-500">
+                  Access the Ghostly+ Dashboard
                 </CardDescription>
               </CardHeader>
 
             <CardContent className="space-y-4 px-4 sm:px-8 pb-5 sm:pb-6">
-              {/* Login Form - Using React Router Form for instant navigation */}
+              {/* Authentication form */}
               <Form method="post" className="space-y-4">
-                {/* Include redirect destination */}
+                {/* Redirect destination */}
                 <input type="hidden" name="from" value={from} />
                 
                 {actionData?.error && (
@@ -149,7 +223,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         value={email}
                         onChange={handleEmailChange}
                         disabled={isSubmitting}
-                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                         autoComplete="email"
                         required
                       />
@@ -157,14 +231,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-sm font-medium text-slate-700">
-                        Password
-                      </Label>
-                      <a href="#" className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
-                        Forgot password?
-                      </a>
-                    </div>
+                    <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                      Password
+                    </Label>
                     <div className="relative">
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
@@ -175,7 +244,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         value={password}
                         onChange={handlePasswordChange}
                         disabled={isSubmitting}
-                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 text-base border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                         autoComplete="current-password"
                         required
                       />
@@ -200,7 +269,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <Button 
                   type="submit" 
                   disabled={isButtonDisabled}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base transition-colors"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -216,47 +285,83 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </Button>
               </Form>
 
-              {/* Footer Links */}
-              <div className="space-y-3 pt-3 border-t">
-                <div className="flex items-center justify-between text-sm">
-                  <p className="text-slate-600">
-                    New researcher? 
-                    <a href="#" className="ml-1 text-blue-600 hover:text-blue-700 hover:underline">
+              {/* Quick Login for Development Mode - Accordion */}
+              {import.meta.env.DEV && (
+                <div className="pt-4 border-t border-slate-200/60">
+                  <Collapsible open={isDevModeOpen} onOpenChange={setIsDevModeOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between p-3 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-md transition-all duration-200">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                          Development Mode - Quick Login
+                        </span>
+                        {isDevModeOpen ? (
+                          <ChevronDownIcon className="w-4 h-4" />
+                        ) : (
+                          <ChevronRightIcon className="w-4 h-4" />
+                        )}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2">
+                      <div className="grid grid-cols-1 gap-2 p-2 bg-slate-50/50 rounded-md">
+                        {quickLoginAccounts.map((account) => (
+                          <button
+                            key={account.role}
+                            type="button"
+                            onClick={() => handleQuickLogin(account)}
+                            className={`w-full px-3 py-2 text-xs font-medium rounded-md border transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${account.color}`}
+                          >
+                            {account.role}
+                          </button>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              )}
+
+              {/* Support and external links */}
+              <div className="space-y-3 pt-4 border-t border-slate-200/60">
+                <div className="text-center text-sm text-slate-600">
+                  <p>
+                    New researcher or therapist? Forgot password or login issues?
+                    <a href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL || 'lubos.omelina@vub.be'}`} 
+                       className="ml-1 text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors">
                       Contact administrator
                     </a>
                   </p>
-                  <a 
-                    href="https://github.com/ggustin93/emg-c3d-analyzer" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors"
-                  >
-                    <GitHubLogoIcon className="w-4 h-4" />
-                    <span>GitHub</span>
-                  </a>
+                </div>
+              </div>
+
+              {/* Institutional footer with GitHub */}
+              <div className="pt-5 mt-4 border-t border-slate-200/40">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src="/vub_etro_logo.png" 
+                      alt="VUB ETRO Logo" 
+                      className="h-10 object-contain opacity-75 hover:opacity-90 transition-opacity duration-300"
+                    />
+                    <a 
+                      href={import.meta.env.VITE_GITHUB_URL || "https://github.com/ggustin93/emg-c3d-analyzer"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-slate-600 hover:text-slate-800 transition-all duration-200 hover:scale-105"
+                    >
+                      <GitHubLogoIcon className="w-5 h-5" />
+                      <span className="font-medium text-sm">GitHub</span>
+                    </a>
+                  </div>
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <p className="font-medium">ETRO Electronics & Informatics • Vrije Universiteit Brussel</p>
+                    <p>© {new Date().getFullYear()} VUB. All rights reserved.</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
         </div>
-        
-        {/* Footer with VUB ETRO */}
-        <footer className="mt-auto pt-8 pb-6">
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="flex items-center gap-2">
-              <img 
-                src="/vub_etro_logo.png" 
-                alt="VUB ETRO Logo" 
-                className="h-12 object-contain"
-              />
-            </div>
-            <div className="text-xs text-slate-500 space-y-1">
-              <p>ETRO Electronics & Informatics • Vrije Universiteit Brussel</p>
-              <p>© {new Date().getFullYear()} VUB. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
       </div>
     </TooltipProvider>
   );

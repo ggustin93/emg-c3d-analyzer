@@ -18,7 +18,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { rootLoader, protectedLoader, publicLoader } from './routes/loaders';
 import { loginAction, logoutAction } from './routes/actions';
 import LoginPage from './components/auth/LoginPage';
-import Header from './components/layout/Header';
 import Spinner from './components/ui/Spinner';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { ErrorBoundary } from './components/errors/ErrorBoundary'
@@ -67,11 +66,10 @@ function RootLayout() {
   );
 }
 
-// Public layout with header for login page
+// Public layout for login page (no header needed - logo is in the login card)
 function PublicLayout() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-      <Header isAuthenticated={false} />
       <main className="flex-1">
         <Outlet />
       </main>

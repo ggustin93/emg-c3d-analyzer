@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({
               />
               <div>
                 <h1 className="text-2xl font-light text-slate-800 tracking-tight">
-                  <i> + Research</i>
+                  <i> + Dashboard</i>
                 </h1>
               </div>
             </div>
