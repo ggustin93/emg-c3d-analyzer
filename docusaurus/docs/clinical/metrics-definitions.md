@@ -214,26 +214,3 @@ Key tables for clinical data management:
 
 [View Complete Schema](https://supabase.com/dashboard/project/egihfsmxphqcsjotmhmm/database/schemas)
 
-### API Endpoints
-
-| Endpoint | Purpose |
-|----------|---------|
-| `/scoring/calculate` | Calculate session scores |
-| `/analysis/session/{id}` | Retrieve complete analysis |
-| `/mvc/calculate` | Calculate MVC thresholds |
-| `/signals` | Get processed EMG signals |
-
-[Interactive API Documentation](http://localhost:8080/docs)
-
-
-## References
-
-### Clinical Standards
-- [Borg CR-10 Scale](https://www.sralab.org/rehabilitation-measures/borg-rating-scale-perceived-exertion) - Perceived exertion measurement
-- [BFR Guidelines](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6530612/) - Blood flow restriction protocols
-- [ISEK EMG Standards](https://isek.org/standards) - EMG measurement standards
-
-### Technical Documentation
-- [Backend Architecture](../backend.md#processing--webhooks) - Processing pipeline details
-- [API Reference](http://localhost:8080/docs) - Interactive API explorer
-- [Development Guide](../development.md) - Setup and deployment
