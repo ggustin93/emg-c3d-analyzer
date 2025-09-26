@@ -126,9 +126,9 @@ class TestWebhookCompleteIntegration:
         from datetime import datetime
         timestamp = int(time.time())
         unique_id = uuid4().hex[:8]
-        # Format: Ghostly_Emg_YYYYMMDD_HH-MM-SS-XXXX_test.c3d
+        # Format: test_session_Ghostly_Emg_YYYYMMDD_HH-MM-SS-XXXX.c3d
         date_str = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H-%M-%S")
-        test_object_path = f"{test_patient_code}/Ghostly_Emg_{date_str}-{unique_id[:4]}_test.c3d"
+        test_object_path = f"{test_patient_code}/test_session_Ghostly_Emg_{date_str}-{unique_id[:4]}.c3d"
         
         try:
             # Attempt to upload test file to storage
