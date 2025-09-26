@@ -32,8 +32,9 @@ import {
 } from '@/services/C3DFileDataResolver';
 import useSimpleNotesCount from '@/hooks/useSimpleNotesCount';
 
-// Get bucket name from environment variable or use default
-const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+// Get bucket name from centralized configuration
+import { ENV_CONFIG } from '@/config/environment';
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';
@@ -296,6 +297,38 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
   if (sortedFiles.length === 0) {
     return (
       <Card className="w-full">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-900">
+                <ViewGridIcon className="w-5 h-5 text-blue-600" />
+                Session History
+              </CardTitle>
+              <p className="text-sm text-slate-600 mt-1">
+                0 sessions recorded for patient {patientCode}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Session Statistics */}
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-1">
+                  <CheckCircledIcon className="h-4 w-4 text-green-600" />
+                  <span className="font-medium">0</span>
+                  <span className="text-muted-foreground">processed</span>
+                </div>
+              </div>
+              
+              {/* Upload Button - Top Right Position */}
+              {showUpload && (
+                <C3DFileUpload
+                  onUploadComplete={onUploadComplete}
+                  onError={onUploadError}
+                  patientId={patientCode}
+                />
+              )}
+            </div>
+          </div>
+        </CardHeader>
         <CardContent className="py-12">
           <div className="text-center">
             <FileIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -343,6 +376,7 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
                 <C3DFileUpload
                   onUploadComplete={onUploadComplete}
                   onError={onUploadError}
+                  patientId={patientCode}
                 />
               )}
             </div>

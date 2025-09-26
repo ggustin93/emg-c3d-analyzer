@@ -28,6 +28,9 @@ import { TherapySessionsService } from '@/services/therapySessionsService'
 import { C3DSessionsService } from '@/services/c3dSessionsService'
 // import { createMissingPatientMedicalInfo } from '@/services/patientMedicalInfoService'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '@/lib/avatarColors'
+import { ENV_CONFIG } from '@/config/environment'
+
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME
 import * as Icons from '@radix-ui/react-icons'
 
 interface SystemMetrics {
@@ -480,7 +483,7 @@ export function OverviewTab() {
       const c3dFiles = await SupabaseStorageService.listC3DFiles()
       
       // Get session metadata for enhanced date resolution
-      const filePaths = c3dFiles.map(file => `c3d-examples/${file.name}`)
+      const filePaths = c3dFiles.map(file => `${BUCKET_NAME}/${file.name}`)
       const sessionMetadataResult = await TherapySessionsService.getSessionsByFilePaths(filePaths)
       const sessionMetadata = sessionMetadataResult ? Object.values(sessionMetadataResult) : []
       

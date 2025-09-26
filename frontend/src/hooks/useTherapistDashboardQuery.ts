@@ -13,6 +13,9 @@ import { AdherenceData } from '../services/adherenceService'
 import { useAdherence } from './useAdherence'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../lib/avatarColors'
 import { queryKeys } from '../lib/queryClient'
+import { ENV_CONFIG } from '../config/environment'
+
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME
 
 export interface RecentC3DFile {
   name: string
@@ -32,6 +35,7 @@ export interface TherapistDashboardData {
   recentC3DFiles: RecentC3DFile[]
   adherence: AdherenceData[]
   patients: Patient[]
+  totalSessions: number
   loading: boolean
   error: Error | null
 }
@@ -41,7 +45,7 @@ function resolveEnhancedSessionDate(
   file: C3DFile, 
   sessionMetadata: Record<string, TherapySession>
 ): string | null {
-  const filePath = `c3d-examples/${file.name}`
+  const filePath = `${BUCKET_NAME}/${file.name}`
   const session = sessionMetadata[filePath]
   
   if (session?.session_date) {
@@ -187,7 +191,7 @@ async function fetchRecentC3DFiles(): Promise<RecentC3DFile[]> {
 
     const c3dFiles = await SupabaseStorageService.listC3DFiles()
     
-    const filePaths = c3dFiles.map(file => `c3d-examples/${file.name}`)
+    const filePaths = c3dFiles.map(file => `${BUCKET_NAME}/${file.name}`)
     const sessionMetadata = await TherapySessionsService.getSessionsByFilePaths(filePaths)
     
     const filesWithDates = c3dFiles.map((file: C3DFile) => ({
@@ -295,6 +299,50 @@ async function fetchSessionCounts(patientCodes: string[]): Promise<Map<string, n
   }
 }
 
+// Query function: Fetch total session counts for therapist's patients
+async function fetchTherapistSessionCounts(patientCodes: string[]): Promise<{ totalSessions: number }> {
+  if (patientCodes.length === 0) {
+    return { totalSessions: 0 }
+  }
+
+  try {
+    // First get patient UUIDs from patient codes (fix for data type mismatch)
+    const { data: patientsData, error: patientsError } = await supabase
+      .from('patients')
+      .select('id')
+      .in('patient_code', patientCodes)
+
+    if (patientsError) {
+      console.error('Error fetching patient UUIDs:', patientsError)
+      return { totalSessions: 0 }
+    }
+
+    const patientUuids = patientsData?.map(p => p.id) || []
+    
+    if (patientUuids.length === 0) {
+      return { totalSessions: 0 }
+    }
+
+    // Get total sessions for therapist's patients
+    const { count: totalSessions, error: sessionsError } = await supabase
+      .from('therapy_sessions')
+      .select('id', { count: 'exact', head: true })
+      .in('patient_id', patientUuids)
+
+    if (sessionsError) {
+      console.error('Error fetching session counts:', sessionsError)
+      return { totalSessions: 0 }
+    }
+
+    return {
+      totalSessions: totalSessions || 0
+    }
+  } catch (error) {
+    console.error('Error fetching therapist session counts:', error)
+    return { totalSessions: 0 }
+  }
+}
+
 /**
  * Hook using TanStack Query for therapist dashboard data
  * Implements stale-while-revalidate pattern with intelligent caching
@@ -323,6 +371,14 @@ export function useTherapistDashboardQuery(therapistId: string | undefined): The
   const sessionCountsQuery = useQuery({
     queryKey: queryKeys.sessions.counts(patientCodes),
     queryFn: () => fetchSessionCounts(patientCodes),
+    enabled: patientCodes.length > 0,
+    // Only refetch when patient list changes
+  })
+
+  // Query 4: Fetch session counts for therapist dashboard metrics
+  const therapistSessionCountsQuery = useQuery({
+    queryKey: ['therapist-session-counts', patientCodes],
+    queryFn: () => fetchTherapistSessionCounts(patientCodes),
     enabled: patientCodes.length > 0,
     // Only refetch when patient list changes
   })
@@ -366,18 +422,20 @@ export function useTherapistDashboardQuery(therapistId: string | undefined): The
     (patientsQuery.isLoading && !patientsQuery.data) ||
     (recentFilesQuery.isLoading && !recentFilesQuery.data) ||
     (sessionCountsQuery.isLoading && !sessionCountsQuery.data && patientCodes.length > 0) ||
+    (therapistSessionCountsQuery.isLoading && !therapistSessionCountsQuery.data && patientCodes.length > 0) ||
     (adherenceLoading) || // Always consider adherence loading state
     (!sessionCountsQuery.data && patientCodes.length > 0) // Loading if session counts not ready
   )
 
   // Collect errors
-  const error = patientsQuery.error || recentFilesQuery.error || sessionCountsQuery.error || null
+  const error = patientsQuery.error || recentFilesQuery.error || sessionCountsQuery.error || therapistSessionCountsQuery.error || null
 
   return {
     activePatients,
     recentC3DFiles: recentFilesQuery.data || [],
     adherence: adherenceData,
     patients: patientsQuery.data || [],
+    totalSessions: therapistSessionCountsQuery.data?.totalSessions || 0,
     loading,
     error: error as Error | null
   }

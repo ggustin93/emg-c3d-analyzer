@@ -603,7 +603,7 @@ const ProgressiveContent = React.memo(function ProgressiveContent({
 // Main TherapistOverview component
 export function TherapistOverview({ className }: TherapistOverviewProps) {
   const { user, userProfile } = useAuth()
-  const { activePatients, recentC3DFiles, adherence, patients, loading, error } = useTherapistDashboardQuery(user?.id)
+  const { activePatients, recentC3DFiles, adherence, patients, totalSessions, loading, error } = useTherapistDashboardQuery(user?.id)
   const [contentLoaded, setContentLoaded] = useState(false)
 
   // Extract and memoize the first name for welcome message
@@ -698,9 +698,9 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
         </ProgressiveContent>
       </ProgressiveContent>
 
-      {/* 3-card summary grid with staggered loading */}
+      {/* 4-card summary grid with staggered loading */}
       <ProgressiveContent delay={ANIMATION_DELAYS.FAST}>
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <ProgressiveContent delay={ANIMATION_DELAYS.IMMEDIATE}>
             <MetricCard
               title="Active Patients"
@@ -760,6 +760,20 @@ export function TherapistOverview({ className }: TherapistOverviewProps) {
                   </ClinicalTooltip>
                 </Suspense>
               }
+            />
+          </ProgressiveContent>
+          
+          <ProgressiveContent delay={ANIMATION_DELAYS.SLOW}>
+            <MetricCard
+              title="Total Sessions"
+              value={totalSessions}
+              icon={Icons.ActivityLogIcon}
+              iconColor="text-orange-600"
+              subtitle="All time"
+              tooltip={{
+                content: "Total therapy sessions completed by your assigned patients",
+                subtext: "Includes all processed C3D files from your patients"
+              }}
             />
           </ProgressiveContent>
           

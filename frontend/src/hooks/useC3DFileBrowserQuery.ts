@@ -35,8 +35,9 @@ export interface C3DFileBrowserData {
   isLoading: boolean
 }
 
-// Get bucket name from environment variable or use default
-const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples'
+// Get bucket name from centralized configuration
+import { ENV_CONFIG } from '@/config/environment';
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 // Individual query functions for better separation of concerns
 async function fetchC3DFiles(): Promise<C3DFile[]> {
