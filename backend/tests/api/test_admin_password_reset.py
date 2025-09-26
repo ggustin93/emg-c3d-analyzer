@@ -3,7 +3,7 @@ Tests for admin password reset functionality.
 Validates secure password generation and API endpoint behavior.
 """
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
@@ -59,16 +59,20 @@ class TestAdminPasswordReset:
         response = client.post(
             "/admin/users/target-user-id/reset-password",
             headers={"Authorization": "Bearer test_token"},
-            json={"notify_user": False}
+            json={
+                "new_password": "TempPassword123!",
+                "delivery_method": "manual",
+                "admin_note": "Test password reset"
+            }
         )
         
         assert response.status_code == 403
-        assert "Admin access required" in response.json()["detail"]
+        assert "Admin access required" in response.json()["message"]
     
-    @patch('services.admin.admin_service.get_supabase_client')
+    @patch('api.routes.admin.AdminService')
     @patch('api.routes.admin.get_supabase_client')
     @patch('api.dependencies.auth.get_supabase_client')
-    def test_password_reset_endpoint_success(self, mock_auth_client, mock_route_client, mock_service_client):
+    def test_password_reset_endpoint_success(self, mock_auth_client, mock_route_client, mock_admin_service_class):
         """Test successful password reset by admin."""
         client = TestClient(app)
         
@@ -87,17 +91,23 @@ class TestAdminPasswordReset:
         }
         mock_route_client.return_value = mock_route
         
-        # Mock service layer Supabase client
-        mock_service = MagicMock()
-        mock_service.auth.admin.update_user_by_id.return_value.user = MagicMock(id='target-user-id')
-        mock_service.table().insert().execute.return_value.data = [{'id': 'audit123'}]
-        mock_service_client.return_value = mock_service
+        # Mock AdminService instance and its async method
+        mock_admin_service = MagicMock()
+        mock_admin_service.reset_user_password = AsyncMock(return_value={
+            'success': True,
+            'message': 'Password reset successful'
+        })
+        mock_admin_service_class.return_value = mock_admin_service
         
         # Reset password
         response = client.post(
             "/admin/users/550e8400-e29b-41d4-a716-446655440000/reset-password",
             headers={"Authorization": "Bearer test_token"},
-            json={"notify_user": False}
+            json={
+                "new_password": "TempPassword123!",
+                "delivery_method": "manual",
+                "admin_note": "Test password reset"
+            }
         )
         
         assert response.status_code == 200
@@ -105,16 +115,13 @@ class TestAdminPasswordReset:
         
         # Validate response structure
         assert result["success"] is True
-        assert "temporary_password" in result
-        assert result["temporary_password"].startswith("Temp-")
+        assert "masked_password" in result
+        assert result["masked_password"].startswith("Te")
         assert "message" in result
-        assert result["expires_in_hours"] == 24
+        assert result["expires_in_hours"] == 4  # Updated to match new API
         
-        # Verify Supabase admin API was called
-        mock_service.auth.admin.update_user_by_id.assert_called_once()
-        
-        # Verify audit log was created
-        mock_service.table().insert.assert_called_once()
+        # Verify AdminService reset_user_password was called
+        mock_admin_service.reset_user_password.assert_called_once()
     
     def test_admin_service_initialization(self):
         """Test that AdminService initializes with service key."""

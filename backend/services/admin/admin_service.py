@@ -206,8 +206,9 @@ class AdminService:
             if 'user_id' in locals():
                 try:
                     self.supabase.auth.admin.delete_user(user_id)
-                except:
-                    pass
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to cleanup user {user_id} after profile creation failure: {cleanup_error}")
+                    # Continue execution - cleanup failure shouldn't block error reporting
             
             return {
                 'success': False,
