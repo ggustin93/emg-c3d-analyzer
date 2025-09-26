@@ -77,6 +77,10 @@ while [[ $# -gt 0 ]]; do
             KILL_PORTS=false
             shift
             ;;
+        --frontend-port)
+            FRONTEND_PORT="$2"
+            shift 2
+            ;;
         --help|-h)
             cat << EOF
 Usage: $0 [OPTIONS]
@@ -87,18 +91,20 @@ Options:
   --verbose         Enable verbose output
   --kill-ports      Kill processes on required ports before starting (default)
   --no-kill-ports   Skip port cleanup (use existing processes)
+  --frontend-port   Set frontend server port (default: auto-detect from 3000)
   --help            Show this help message
 
 Environment Variables:
   BACKEND_PORT   Backend server port (default: 8080)
-  FRONTEND_PORT  Frontend dev server port (default: 5173)
+  FRONTEND_PORT  Frontend dev server port (default: auto-detect from 3000)
   REDIS_PORT     Redis server port (default: 6379)
   LOG_LEVEL      Logging level (default: INFO)
 
 Examples:
-  $0                       # Start with automatic port cleanup
+  $0                       # Start with automatic port cleanup and smart port detection
   $0 --no-kill-ports       # Start without killing existing processes
   $0 --webhook --verbose   # Start with webhook support and verbose output
+  $0 --frontend-port 3005  # Start frontend on port 3005 (or next available)
 
 EOF
             exit 0
@@ -262,6 +268,15 @@ acquire_lock() {
     fi
     
     echo $$ > "$LOCK_FILE"
+}
+
+release_lock() {
+    if [[ -f "$LOCK_FILE" ]]; then
+        rm -f "$LOCK_FILE"
+        if [[ "$VERBOSE" == "true" ]]; then
+            log "INFO" "Released lock file"
+        fi
+    fi
 }
 
 
@@ -480,6 +495,36 @@ cleanup() {
     echo -e "${GREEN}✓ All servers stopped successfully${NC}"
 }
 
+# Smart port detection function
+find_available_port() {
+    local base_port=$1
+    local port=$base_port
+    local max_attempts=10
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        log "INFO" "Looking for available port starting from $base_port"
+    fi
+    
+    while [[ $port -lt $((base_port + max_attempts)) ]]; do
+        local processes=($(get_port_processes "$port"))
+        if [[ ${#processes[@]} -eq 0 ]]; then
+            if [[ "$VERBOSE" == "true" ]]; then
+                log "SUCCESS" "Found available port: $port"
+            fi
+            echo "$port"
+            return 0
+        fi
+        if [[ "$VERBOSE" == "true" ]]; then
+            log "INFO" "Port $port is busy, trying $((port + 1))"
+        fi
+        ((port++))
+    done
+    
+    log "WARNING" "No available ports found in range $base_port-$((base_port + max_attempts - 1)), using $base_port"
+    echo "$base_port"
+    return 1
+}
+
 # Port management functions
 get_port_processes() {
     local port=$1
@@ -692,10 +737,13 @@ cleanup_development_ports() {
     
     log "INFO" "Starting port cleanup for development servers..."
     
+    # Determine frontend port for cleanup
+    local frontend_base_port=${FRONTEND_PORT:-3000}
+    local frontend_cleanup_port=$frontend_base_port
+    
     local ports_to_check=(
         "${BACKEND_PORT:-8080}:Backend"
-        "${FRONTEND_PORT:-5173}:Frontend (Vite)"
-        "3000:Frontend (React)"
+        "${frontend_cleanup_port}:Frontend (React)"
         "${REDIS_PORT:-6379}:Redis"
         "4040:Ngrok API"
     )
@@ -936,18 +984,27 @@ start_frontend() {
     echo -e "\n${BLUE}Starting frontend server...${NC}"
     cd "$FRONTEND_DIR"
     
-    # Start Vite dev server
-    npm run dev > "${LOG_DIR}/frontend.log" 2>&1 &
+    # Smart port detection for frontend
+    local frontend_base_port=${FRONTEND_PORT:-3000}
+    ACTUAL_FRONTEND_PORT=$(find_available_port $frontend_base_port)
+    
+    if [[ "$ACTUAL_FRONTEND_PORT" != "$frontend_base_port" ]]; then
+        echo -e "${YELLOW}Port $frontend_base_port is busy, using port $ACTUAL_FRONTEND_PORT${NC}"
+        log "INFO" "Frontend port changed from $frontend_base_port to $ACTUAL_FRONTEND_PORT"
+    fi
+    
+    # Start Vite dev server with detected port
+    npm run dev -- --port $ACTUAL_FRONTEND_PORT > "${LOG_DIR}/frontend.log" 2>&1 &
     FRONTEND_PID=$!
     cd - > /dev/null
     
-    # Wait for frontend to start (Frontend runs on port 3000)
-    echo -n "Waiting for frontend to start"
+    # Wait for frontend to start
+    echo -n "Waiting for frontend to start on port $ACTUAL_FRONTEND_PORT"
     local count=0
     while [[ $count -lt 60 ]]; do  # Increased timeout for Vite
-        if curl -s -o /dev/null http://localhost:3000; then
-            echo -e "\n${GREEN}✓ Frontend started (PID: $FRONTEND_PID)${NC}"
-            log "SUCCESS" "Frontend started with PID $FRONTEND_PID"
+        if curl -s -o /dev/null http://localhost:$ACTUAL_FRONTEND_PORT; then
+            echo -e "\n${GREEN}✓ Frontend started (PID: $FRONTEND_PID) on port $ACTUAL_FRONTEND_PORT${NC}"
+            log "SUCCESS" "Frontend started with PID $FRONTEND_PID on port $ACTUAL_FRONTEND_PORT"
             return 0
         fi
         echo -n "."
@@ -955,8 +1012,8 @@ start_frontend() {
         ((count++))
     done
     
-    echo -e "\n${RED}✗ Frontend failed to start${NC}"
-    log "ERROR" "Frontend failed to start after 60 seconds"
+    echo -e "\n${RED}✗ Frontend failed to start on port $ACTUAL_FRONTEND_PORT${NC}"
+    log "ERROR" "Frontend failed to start after 60 seconds on port $ACTUAL_FRONTEND_PORT"
     ((RETRY_COUNT++))
     
     if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
@@ -1018,10 +1075,12 @@ start_health_monitoring() {
                 ((ERROR_COUNT++))
             fi
             
-            # Check frontend health (Frontend runs on port 3000)
-            if ! curl -s -o /dev/null http://localhost:3000; then
-                log "ERROR" "Frontend health check failed"
-                ((ERROR_COUNT++))
+            # Check frontend health
+            if [[ -n "$ACTUAL_FRONTEND_PORT" ]]; then
+                if ! curl -s -o /dev/null http://localhost:$ACTUAL_FRONTEND_PORT; then
+                    log "ERROR" "Frontend health check failed on port $ACTUAL_FRONTEND_PORT"
+                    ((ERROR_COUNT++))
+                fi
             fi
             
             # Rotate logs if needed
@@ -1061,7 +1120,14 @@ echo -e "\n${GREEN}════════════════════�
 echo -e "${GREEN}       ✓ Development Environment Started Successfully    ${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}Backend:${NC}  http://localhost:${BACKEND_PORT:-8080}"
-echo -e "${BLUE}Frontend:${NC} http://localhost:3000"
+if [[ -n "$ACTUAL_FRONTEND_PORT" ]]; then
+    echo -e "${BLUE}Frontend:${NC} http://localhost:$ACTUAL_FRONTEND_PORT"
+    if [[ "$ACTUAL_FRONTEND_PORT" != "${FRONTEND_PORT:-3000}" ]]; then
+        echo -e "${YELLOW}  (Port changed from ${FRONTEND_PORT:-3000} to $ACTUAL_FRONTEND_PORT)${NC}"
+    fi
+else
+    echo -e "${BLUE}Frontend:${NC} http://localhost:3000"
+fi
 if [[ "$USE_WEBHOOK" == "true" ]] && [[ -n "$NGROK_PID" ]]; then
     echo -e "${BLUE}Webhook:${NC}  Check ngrok dashboard at http://localhost:4040"
 fi
