@@ -64,7 +64,7 @@ describe('ExportActions Component', () => {
       expect(downloadButtons.length).toBeGreaterThanOrEqual(1);
       expect(downloadButtons[0]).toBeInTheDocument();
       
-      const exportButtons = screen.getAllByRole('button', { name: /export json data/i });
+      const exportButtons = screen.getAllByRole('button', { name: /export json/i });
       expect(exportButtons.length).toBeGreaterThanOrEqual(1);
       expect(exportButtons[0]).toBeInTheDocument();
     });
@@ -118,7 +118,7 @@ describe('ExportActions Component', () => {
     it('should call onDownloadExport when clicked', async () => {
       renderComponent();
       
-      const buttons = screen.getAllByRole('button', { name: /export json data/i });
+      const buttons = screen.getAllByRole('button', { name: /export json/i });
       const button = buttons[0]; // Use first button from multiple renders
       fireEvent.click(button);
       
@@ -130,7 +130,7 @@ describe('ExportActions Component', () => {
     it('should be disabled when no data is selected', () => {
       renderComponent({ hasSelectedData: false });
       
-      const buttons = screen.getAllByRole('button', { name: /export json data/i });
+      const buttons = screen.getAllByRole('button', { name: /export json/i });
       // Find the first disabled button from multiple renders
       const disabledButton = buttons.find(btn => btn.hasAttribute('disabled'));
       expect(disabledButton).toBeDefined();
