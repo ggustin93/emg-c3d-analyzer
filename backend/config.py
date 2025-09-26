@@ -268,8 +268,8 @@ PROCESSING_VERSION = "2.1.0"
 # File processing behavior
 ENABLE_FILE_HASH_DEDUPLICATION = os.getenv("ENABLE_FILE_HASH_DEDUPLICATION", "true").lower() == "true"
 
-# Storage configuration
-STORAGE_BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", "c3d-examples")  # Supabase storage bucket for C3D files
+# Storage configuration - REQUIRED from .env
+STORAGE_BUCKET_NAME = os.getenv("VITE_STORAGE_BUCKET_NAME")  # Supabase storage bucket for C3D files
 
 
 # =============================================================================
@@ -331,13 +331,11 @@ def validate_configuration() -> bool:
         if not (min_contractions <= defaults.TARGET_CONTRACTIONS_CH2 <= max_contractions):
             raise ValueError(f"Invalid TARGET_CONTRACTIONS_CH2: {defaults.TARGET_CONTRACTIONS_CH2}")
         
-        # Validate required environment variables in production
-        env = os.getenv("ENVIRONMENT", "development").lower()
-        if env == "production":
-            required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"]
-            missing = [var for var in required_vars if not os.getenv(var)]
-            if missing:
-                raise ValueError(f"Missing production environment variables: {missing}")
+        # Validate required environment variables
+        required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY", "VITE_STORAGE_BUCKET_NAME"]
+        missing = [var for var in required_vars if not os.getenv(var)]
+        if missing:
+            raise ValueError(f"Missing required environment variables: {missing}. Create a .env file with these variables.")
         
         return True
         

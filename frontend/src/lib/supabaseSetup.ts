@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase';
  * Setup utility for Supabase storage bucket
  * This helps create the required bucket and set proper policies
  */
+import { ENV_CONFIG } from '@/config/environment';
+
 export class SupabaseSetup {
-  // Get bucket name from environment variable or use default
-  private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+  // Get bucket name from centralized configuration
+  private static readonly BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
   /**
    * Create the storage bucket if it doesn't exist

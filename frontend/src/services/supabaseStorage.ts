@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { logger, LogCategory } from './logger';
+import { ENV_CONFIG } from '../config/environment';
 
 export interface C3DFileInfo {
   id: string;
@@ -16,8 +17,8 @@ export interface C3DFileInfo {
 }
 
 export class SupabaseStorageService {
-  // Get bucket name from environment variable or use default
-  private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+  // Get bucket name from centralized configuration
+  private static readonly BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
   /**
    * Check if Supabase is properly configured
@@ -450,10 +451,26 @@ export class SupabaseStorageService {
       throw new Error('Supabase not configured');
     }
 
+    // Check if user is authenticated
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      logger.error(LogCategory.AUTH, 'Session error:', sessionError);
+      throw new Error('Authentication error. Please sign in again.');
+    }
+
+    if (!session) {
+      logger.warn(LogCategory.AUTH, 'No active session found');
+      throw new Error('Please sign in to upload files.');
+    }
+
+    logger.info(LogCategory.AUTH, `User authenticated: ${session.user.email}`);
+
     // Construct file path based on patient ID
     const filePath = options?.patientId 
       ? `${options.patientId}/${file.name}`
       : file.name;
+
+    logger.info(LogCategory.API, `Uploading file to: ${filePath}`);
 
     const { data, error } = await supabase.storage
       .from(this.BUCKET_NAME)
@@ -465,6 +482,12 @@ export class SupabaseStorageService {
 
     if (error) {
       logger.error(LogCategory.API, 'Error uploading file:', error);
+      
+      // Provide more specific error messages
+      if (error.message.includes('row-level security')) {
+        throw new Error('Permission denied. Please ensure you have access to upload files for this patient.');
+      }
+      
       throw new Error(`Failed to upload file: ${error.message}`);
     }
 
@@ -472,6 +495,7 @@ export class SupabaseStorageService {
       throw new Error('No data received from file upload');
     }
 
+    logger.info(LogCategory.API, `✅ File uploaded successfully: ${data.path}`);
     const publicUrl = this.getPublicUrl(data.path);
 
     return {

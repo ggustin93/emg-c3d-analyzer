@@ -12,6 +12,9 @@ import {
 import { AdherenceData } from '../services/adherenceService'
 import { useAdherence } from './useAdherence'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '../lib/avatarColors'
+import { ENV_CONFIG } from '../config/environment'
+
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME
 
 export interface RecentC3DFile {
   name: string
@@ -42,7 +45,7 @@ function resolveEnhancedSessionDate(
   file: C3DFile, 
   sessionMetadata: Record<string, TherapySession>
 ): string | null {
-  const filePath = `c3d-examples/${file.name}`
+  const filePath = `${BUCKET_NAME}/${file.name}`
   const session = sessionMetadata[filePath]
   
   // Priority 1: Processed session timestamp from therapy_sessions table
@@ -201,7 +204,7 @@ async function fetchRecentC3DFiles(): Promise<RecentC3DFile[]> {
     const c3dFiles = await SupabaseStorageService.listC3DFiles()
     
     // Get session metadata for enhanced date resolution
-    const filePaths = c3dFiles.map(file => `c3d-examples/${file.name}`)
+    const filePaths = c3dFiles.map(file => `${BUCKET_NAME}/${file.name}`)
     const sessionMetadata = await TherapySessionsService.getSessionsByFilePaths(filePaths)
     
     // Add enhanced dates and sort by most recent session

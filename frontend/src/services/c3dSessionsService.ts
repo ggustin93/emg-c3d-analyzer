@@ -6,6 +6,9 @@ import {
   resolveTherapistId,
   resolveSessionDateTime 
 } from './C3DFileDataResolver'
+import { ENV_CONFIG } from '../config/environment'
+
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME
 
 export interface PatientSessionData {
   patient_code: string
@@ -61,7 +64,7 @@ export class C3DSessionsService {
       }
 
       // Get session metadata for enhanced date resolution
-      const filePaths = allC3DFiles.map(file => `c3d-examples/${file.name}`)
+      const filePaths = allC3DFiles.map(file => `${BUCKET_NAME}/${file.name}`)
       const sessionMetadata = await TherapySessionsService.getSessionsByFilePaths(filePaths)
 
       // Process each patient individually (matches PatientSessionBrowser logic exactly)
@@ -120,7 +123,7 @@ export class C3DSessionsService {
     file: C3DFile, 
     sessionMetadata: Record<string, TherapySession>
   ): string | null {
-    const filePath = `c3d-examples/${file.name}`
+    const filePath = `${BUCKET_NAME}/${file.name}`
     const session = sessionMetadata[filePath]
     
     // Priority 1: Processed session timestamp from therapy_sessions table
@@ -172,7 +175,7 @@ export class C3DSessionsService {
       }
 
       // Get session metadata for enhanced date resolution
-      const filePaths = patientFiles.map(file => `c3d-examples/${file.name}`)
+      const filePaths = patientFiles.map(file => `${BUCKET_NAME}/${file.name}`)
       const sessionMetadata = await TherapySessionsService.getSessionsByFilePaths(filePaths)
 
       // Find most recent session date
@@ -214,7 +217,7 @@ export class C3DSessionsService {
       }
 
       // Get session metadata for enhanced date resolution
-      const filePaths = allFiles.map(file => `c3d-examples/${file.name}`)
+      const filePaths = allFiles.map(file => `${BUCKET_NAME}/${file.name}`)
       const sessionMetadata = await TherapySessionsService.getSessionsByFilePaths(filePaths)
 
       // Add enhanced dates and sort by most recent

@@ -35,6 +35,7 @@ import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
 import { API_CONFIG } from '@/config/apiConfig';
+import { ENV_CONFIG } from '@/config/environment';
 
 // Import hooks
 import { useDataDownsampling } from "./hooks/useDataDownsampling";
@@ -401,17 +402,17 @@ export function AppContent() {
       
       // ONLY use Supabase storage - no local samples fallback
       if (!SupabaseStorageService.isConfigured()) {
-        const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+        const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
         throw new Error(`Supabase not configured. Cannot access ${bucketName} bucket.`);
       }
 
-      const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+      const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
       logger.info(LogCategory.API, `📥 Downloading from Supabase ${bucketName} bucket:`, filename);
       
       // Check if the file exists in Supabase
       const fileExists = await SupabaseStorageService.fileExists(filename);
       if (!fileExists) {
-        const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+        const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
         throw new Error(`File '${filename}' not found in ${bucketName} bucket.`);
       }
 
