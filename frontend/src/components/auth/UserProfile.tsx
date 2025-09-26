@@ -55,13 +55,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
       
       if (result.error) {
         logger.error(LogCategory.AUTH, 'Logout failed:', result.error);
-        // Still navigate to login even on error
-        navigate('/login');
       } else {
         logger.info(LogCategory.AUTH, 'Logout successful');
-        // Let the useAuth hook handle navigation via onAuthStateChange
-        // This prevents race conditions with multiple navigation calls
       }
+      
+      // Always navigate to login after logout (success or error)
+      // This ensures user is taken to a safe state
+      navigate('/login');
     } catch (error) {
       logger.error(LogCategory.AUTH, 'Logout failed:', error);
       // Navigate to login on error

@@ -89,13 +89,13 @@ export function SideNav({
       
       if (result.error) {
         console.error('Logout failed:', result.error)
-        // Navigate to login on error
-        navigate('/login')
       } else {
-        // Let the useAuth hook handle navigation via onAuthStateChange
-        // This prevents race conditions with multiple navigation calls
-        console.log('Logout successful, waiting for auth state change')
+        console.log('Logout successful')
       }
+      
+      // Always navigate to login after logout (success or error)
+      // This ensures user is taken to a safe state
+      navigate('/login')
     } catch (error) {
       console.error('Logout failed:', error)
       // Navigate to login on error
