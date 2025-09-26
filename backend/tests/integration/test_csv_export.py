@@ -23,7 +23,7 @@ class TestCSVExport:
             'session_metadata': {
                 'export_timestamp': '2025-01-10T15:30:00Z',
                 'analysis_result': type('MockResult', (), {
-                    'source_filename': 'test_session.c3d'
+                    'source_filename': 'Ghostly_Emg_20250115_10-30-00-1234_test.c3d'
                 })(),
                 'analytics': {
                     'CH1': {'mvc_value': 150.5},

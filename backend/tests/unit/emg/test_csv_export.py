@@ -122,7 +122,7 @@ class TestCSVExport(unittest.TestCase):
         # Sample metadata
         self.metadata = {
             'exportDate': '2025-01-15T10:30:00.000Z',
-            'fileName': 'test_session.c3d',
+            'fileName': 'Ghostly_Emg_20250115_10-30-00-1234_test.c3d',
             'exportVersion': '1.2.0'
         }
 
@@ -224,7 +224,7 @@ class TestCSVExport(unittest.TestCase):
         export_data = self._create_export_data()
         
         # Generate CSV content
-        csv_content = mock_csv_generation(export_data, 'test_session.c3d')
+        csv_content = mock_csv_generation(export_data, 'Ghostly_Emg_20250115_10-30-00-1234_test.c3d')
         
         # Parse CSV sections
         sections = self._parse_csv_content(csv_content)
@@ -406,7 +406,7 @@ class TestCSVExport(unittest.TestCase):
             
             return '\n'.join(rows)
         
-        csv_content = mock_complete_csv(export_data, 'test_session.c3d')
+        csv_content = mock_complete_csv(export_data, 'Ghostly_Emg_20250115_10-30-00-1234_test.c3d')
         
         # Validate overall structure
         self.assertTrue(csv_content.startswith('# EMG Analysis Export Report'))

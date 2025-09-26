@@ -121,11 +121,14 @@ class TestWebhookCompleteIntegration:
             pytest.skip("E2E tests disabled - set SKIP_E2E_TESTS=false to enable")
         
         # Step 1: Upload sample C3D file to Supabase Storage (if configured)
-        # Use timestamp + UUID to ensure unique paths and prevent duplicate processing
+        # Use proper Ghostly naming format with timestamp + UUID to ensure unique paths and prevent duplicate processing
         import time
+        from datetime import datetime
         timestamp = int(time.time())
         unique_id = uuid4().hex[:8]
-        test_object_path = f"{test_patient_code}/test_session_{timestamp}_{unique_id}.c3d"
+        # Format: Ghostly_Emg_YYYYMMDD_HH-MM-SS-XXXX_test.c3d
+        date_str = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H-%M-%S")
+        test_object_path = f"{test_patient_code}/Ghostly_Emg_{date_str}-{unique_id[:4]}_test.c3d"
         
         try:
             # Attempt to upload test file to storage
