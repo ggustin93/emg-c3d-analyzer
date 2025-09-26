@@ -438,6 +438,11 @@ async def get_patient_adherence(patient_code: str, sessions_completed: int = Non
         patient_id = patient_result.data[0]["id"]
         
         # Calculate protocol day based on treatment start date (production-ready with error handling)
+        # 
+        # IMPORTANT: This uses treatment_start_date from database, not actual session dates
+        # For demo data, this may cause date mismatches with C3D file upload dates
+        # In production, ensure treatment_start_date matches actual therapy start
+        #
         from datetime import datetime, timezone
         import logging
         
