@@ -387,7 +387,9 @@ The system provides auto-generated, interactive API documentation:
 - Authentication testing support
 
 **Supabase Database API**
-- Dashboard: https://supabase.com/dashboard/project/[your-project-id]/api
+- Dashboard: 
+  - Cloud-hosted: https://supabase.com/dashboard/project/[your-project-id]/api
+  - Self-hosted: http://localhost:8000/project/default/api
 - Auto-generated REST endpoints for all public tables
 - PostgREST filtering, sorting, and pagination
 - Real-time subscriptions documentation
