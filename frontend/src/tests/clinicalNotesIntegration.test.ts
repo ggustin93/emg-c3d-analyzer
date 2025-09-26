@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { supabase } from '../lib/supabase';
 import { ClinicalNotesService } from '../services/clinicalNotesService';
 import { API_CONFIG } from '../config/apiConfig';
+import { ENV_CONFIG } from '../config/environment';
 
 interface TestResult {
   step: string;
@@ -24,8 +25,8 @@ export class ClinicalNotesTestSuite {
   private createdNoteId: string | null = null;
   
   constructor() {
-    // Use configurable bucket name
-    const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+    // Use centralized bucket name configuration
+    const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
     this.testFilePath = `${bucketName}/Ghostly_Emg_20230321_17-50-17-0881.c3d`;
   }
 
@@ -156,8 +157,8 @@ export class ClinicalNotesTestSuite {
     console.log('\n📦 Test 3: Testing bucket configuration...');
     
     try {
-      const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
-      const backendBucket = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+      const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
+      const backendBucket = ENV_CONFIG.STORAGE_BUCKET_NAME;
       
       const match = bucketName === backendBucket;
       
@@ -401,7 +402,7 @@ export class ClinicalNotesTestSuite {
     console.log('\n📦 Test 9: Testing batch loading...');
     
     try {
-      const bucketName = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+      const bucketName = ENV_CONFIG.STORAGE_BUCKET_NAME;
       const testPaths = [
         `${bucketName}/Ghostly_Emg_20230321_17-23-09-0409.c3d`,
         `${bucketName}/Ghostly_Emg_20230321_17-28-14-0160.c3d`,

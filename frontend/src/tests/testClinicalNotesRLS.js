@@ -7,6 +7,9 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { ENV_CONFIG } from '../config/environment';
+
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 async function testClinicalNotesRLS() {
   console.log('🔬 CLINICAL NOTES RLS PRODUCTION TEST');
@@ -36,7 +39,7 @@ async function testClinicalNotesRLS() {
     results.auth = true;
     
     // Test file path
-    const testFilePath = `c3d-examples/test_rls_${Date.now()}.c3d`;
+    const testFilePath = `${BUCKET_NAME}/test_rls_${Date.now()}.c3d`;
     let createdNoteId = null;
     
     // 2. Test CREATE (INSERT policy)

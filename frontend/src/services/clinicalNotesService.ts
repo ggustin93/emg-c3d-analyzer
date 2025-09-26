@@ -16,9 +16,11 @@ import type {
  * Handles all Clinical Notes API operations with hybrid patient identification.
  * Supports both file notes (file_path) and patient notes (patient_code → patient_id).
  */
+import { ENV_CONFIG } from '@/config/environment';
+
 export class ClinicalNotesService {
-  // Get bucket name from environment variable or use default
-  private static readonly BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples'
+  // Get bucket name from centralized configuration
+  private static readonly BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
   /**
    * Create a file note (linked to C3D file path)

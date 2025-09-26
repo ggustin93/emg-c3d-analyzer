@@ -29,7 +29,8 @@ vi.mock('../../services/logger', () => ({
 // Mock API_CONFIG
 vi.mock('../../config/apiConfig', () => ({
   API_CONFIG: {
-    baseUrl: 'http://localhost:8080'
+    baseUrl: 'http://localhost:8080',
+    getBaseUrl: () => 'http://localhost:8080'  // Add missing method mock
   }
 }));
 
@@ -63,7 +64,7 @@ describe('useAnalysisQuery Cache Behavior', () => {
     const mockBlob = new Blob(['fake file content'], { type: 'application/octet-stream' });
     mockedSupabaseStorageService.downloadFile.mockResolvedValue(mockBlob);
     
-    // Mock successful API response
+    // Mock successful API response - match AnalysisResult interface
     const mockAnalysisResponse = {
       analytics: {
         CH1: { rms: [1, 2, 3] },
@@ -71,9 +72,10 @@ describe('useAnalysisQuery Cache Behavior', () => {
       },
       metadata: {
         score: 85,
-        level: 2
-      },
-      processingTime: 150  // Add mock processing time in milliseconds
+        level: 2,
+        processedAt: new Date().toISOString(),
+        version: '1.0.0'
+      }
     };
     
     mockedFetch.mockImplementation(() => {
