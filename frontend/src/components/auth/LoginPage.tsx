@@ -8,7 +8,8 @@ import { Alert } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Spinner from '@/components/ui/Spinner';
-import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon, ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, LockClosedIcon, ExclamationTriangleIcon, PersonIcon, InfoCircledIcon, GitHubLogoIcon, ChevronDownIcon, ChevronRightIcon, DesktopIcon, MobileIcon } from '@radix-ui/react-icons';
+import { useScreenSize } from '@/hooks/useScreenSize';
 
 interface LoginPageProps {
   onLoginSuccess?: () => void;
@@ -28,6 +29,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
   const from = searchParams.get('from') || '/dashboard';
+  const { isSmartphone, isMobile } = useScreenSize();
   
   const isSubmitting = navigation.state === 'submitting';
   
@@ -98,10 +100,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     return Boolean(email && password);
   }, [email, password]);
 
-  // Memoize button disabled state
+  // Memoize button disabled state - also disable on mobile devices
   const isButtonDisabled = useMemo(() => {
-    return isSubmitting || !isFormValid;
-  }, [isSubmitting, isFormValid]);
+    return isSubmitting || !isFormValid || isSmartphone;
+  }, [isSubmitting, isFormValid, isSmartphone]);
 
   // Memoized remember me handler
   const handleRememberMeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +116,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setPassword(account.password);
     setRememberMe(true);
   }, []);
+
+  // Prevent form submission on mobile devices
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    if (isSmartphone) {
+      e.preventDefault();
+      return false;
+    }
+  }, [isSmartphone]);
 
   return (
     <TooltipProvider>
@@ -143,15 +153,90 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Gradient overlay for depth */}
           <div className="absolute inset-0 bg-gradient-to-t from-blue-50/10 via-transparent to-transparent" />
         </div>
-        {/* Mobile restriction banner */}
-        <div className="md:hidden bg-red-50 border-b border-red-200 px-4 py-3 flex-shrink-0">
-          <div className="flex items-center justify-center text-red-800 text-sm font-medium">
-            <ExclamationTriangleIcon className="w-4 h-4 mr-2" />
-            This application requires a desktop or tablet device for optimal experience.
+        {/* Mobile device blocking overlay */}
+        {isSmartphone && (
+          <div className="fixed inset-0 bg-gradient-to-br from-red-50 via-orange-50/20 to-yellow-50/30 z-50 flex flex-col items-center justify-center px-4 text-center">
+            {/* Background pattern for mobile block */}
+            <div className="absolute inset-0">
+              <div className="absolute inset-0 opacity-[0.08]" 
+                   style={{
+                     backgroundImage: 'radial-gradient(circle, #ef4444 1.5px, transparent 1.5px)',
+                     backgroundSize: '20px 20px'
+                   }} />
+              <div className="absolute inset-0 opacity-[0.04]"
+                   style={{
+                     backgroundImage: `
+                       linear-gradient(to right, #f87171 1px, transparent 1px),
+                       linear-gradient(to bottom, #f87171 1px, transparent 1px)
+                     `,
+                     backgroundSize: '40px 40px'
+                   }} />
+            </div>
+            
+            {/* Mobile block content */}
+            <div className="relative z-10 max-w-md mx-auto space-y-6">
+              {/* Icon and title */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="p-4 bg-red-100 rounded-full">
+                    <MobileIcon className="w-12 h-12 text-red-600" />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-bold text-red-900">
+                    Mobile Access Not Supported
+                  </h1>
+                  <p className="text-red-700 text-lg">
+                    This application requires a desktop or tablet device for optimal experience.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Explanation */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-red-200">
+                <div className="space-y-4 text-left">
+                  <div className="flex items-start gap-3">
+                    <DesktopIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Why desktop/tablet only?</h3>
+                      <p className="text-sm text-slate-600 mt-1">
+                        The EMG analysis dashboard requires precise data visualization and complex interactions that are optimized for larger screens.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Recommended devices:</h3>
+                      <ul className="text-sm text-slate-600 mt-1 space-y-1">
+                        <li>• Desktop computer (Windows, Mac, Linux)</li>
+                        <li>• Laptop computer (13" or larger)</li>
+                        <li>• Tablet device (iPad, Android tablet)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Contact information */}
+              <div className="text-sm text-slate-600">
+                <p>
+                  Need help? Contact your administrator at{' '}
+                  <a 
+                    href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL || 'lubos.omelina@vub.be'}`}
+                    className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                  >
+                    {import.meta.env.VITE_ADMIN_EMAIL || 'lubos.omelina@vub.be'}
+                  </a>
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
         
-        <div className="flex-1 flex items-center justify-center px-4 relative z-10">
+        <div className={`flex-1 flex items-center justify-center px-4 relative z-10 ${isSmartphone ? 'hidden' : ''}`}>
           <div className="w-full max-w-md sm:max-w-lg">
             
             {/* Welcome Card */}
@@ -195,7 +280,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             <CardContent className="space-y-4 px-4 sm:px-8 pb-5 sm:pb-6">
               {/* Authentication form */}
-              <Form method="post" className="space-y-4">
+              <Form method="post" className="space-y-4" onSubmit={handleFormSubmit}>
                 {/* Redirect destination */}
                 <input type="hidden" name="from" value={from} />
                 
