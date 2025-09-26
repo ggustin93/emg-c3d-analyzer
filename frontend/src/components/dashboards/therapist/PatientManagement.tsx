@@ -53,7 +53,7 @@ import { usePatientCodeGeneration } from '../../../hooks/usePatientCodeGeneratio
 import { PatientTable } from './PatientTable'
 import { PatientModals } from './PatientModals'
 
-export type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend'
+export type SortField = 'patient_code' | 'display_name' | 'session_count' | 'last_session' | 'age' | 'active' | 'treatment_start_date' | 'adherence_score' | 'protocol_day' | 'progress_trend' | 'therapist'
 export type SortDirection = 'asc' | 'desc'
 
 export interface FilterState {
