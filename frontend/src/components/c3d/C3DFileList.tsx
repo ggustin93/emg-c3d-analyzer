@@ -40,8 +40,9 @@ import {
 import { TherapistCache } from '@/types/therapist';
 import { therapistService } from '@/services/therapistService';
 
-// Get bucket name from environment variable or use default (consistent with C3DFileBrowser)
-const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+// Get bucket name from centralized configuration
+import { ENV_CONFIG } from '@/config/environment';
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
 type SortDirection = 'asc' | 'desc';

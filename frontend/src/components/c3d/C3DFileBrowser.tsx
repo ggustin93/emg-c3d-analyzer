@@ -92,8 +92,9 @@ import { queryKeys } from '@/lib/queryClient';
 
 // SimpleCache replaced by TanStack Query intelligent caching
 
-// Get bucket name from environment variable or use default
-const BUCKET_NAME = import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples';
+// Get bucket name from centralized configuration
+import { ENV_CONFIG } from '@/config/environment';
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 interface C3DFileBrowserProps {
   onFileSelect: (filename: string, uploadDate?: string) => void;
