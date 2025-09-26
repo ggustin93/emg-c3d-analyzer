@@ -28,7 +28,7 @@ import { TherapySessionsService } from '@/services/therapySessionsService'
 import { C3DSessionsService } from '@/services/c3dSessionsService'
 // import { createMissingPatientMedicalInfo } from '@/services/patientMedicalInfoService'
 import { getAvatarColor, getPatientIdentifier, getPatientAvatarInitials } from '@/lib/avatarColors'
-import { ENV_CONFIG } from '@/config/environment'
+import { ENV_CONFIG } from '../../../../config/environment'
 
 const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME
 import * as Icons from '@radix-ui/react-icons'
@@ -42,7 +42,7 @@ interface SystemMetrics {
   }
   totalPatients: number
   activePatients: number
-  sessionsToday: number
+  totalSessions: number
   sessionsThisWeek: number
 }
 
@@ -296,7 +296,7 @@ export function OverviewTab() {
     usersByRole: { admin: 0, therapist: 0, researcher: 0 },
     totalPatients: 0,
     activePatients: 0,
-    sessionsToday: 0,
+    totalSessions: 0,
     sessionsThisWeek: 0
   })
   const [clinicalMetrics, setClinicalMetrics] = useState<ClinicalMetrics>({
@@ -352,7 +352,7 @@ export function OverviewTab() {
       const [
         usersResult,
         patientsResult,
-        todaySessionsResult,
+        totalSessionsResult,
         weekSessionsResult
       ] = await Promise.all([
         // User metrics - use RPC function to bypass RLS restrictions
@@ -368,11 +368,10 @@ export function OverviewTab() {
           .from('patients')
           .select('active'),
         
-        // Today's sessions
+        // Total sessions (all time)
         supabase
           .from('therapy_sessions')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', dateRanges.today),
+          .select('id', { count: 'exact', head: true }),
         
         // This week's sessions
         supabase
@@ -398,7 +397,7 @@ export function OverviewTab() {
         usersByRole,
         totalPatients: patients.length,
         activePatients,
-        sessionsToday: todaySessionsResult.count || 0,
+        totalSessions: totalSessionsResult.count || 0,
         sessionsThisWeek: weekSessionsResult.count || 0
       })
       
@@ -730,15 +729,15 @@ export function OverviewTab() {
         />
 
         <MetricCard
-          title="Sessions Today"
-          value={metrics.sessionsToday}
+          title="Total Sessions"
+          value={metrics.totalSessions}
           icon={Icons.ActivityLogIcon}
           subtitle={sessionSubtitle}
           iconColor="text-purple-600"
           loading={metricsLoading}
           tooltip={{
-            content: "Therapy sessions completed today",
-            subtext: "Includes all processed C3D files"
+            content: "Total therapy sessions completed across all patients",
+            subtext: "Includes all processed C3D files from all time"
           }}
         />
 
@@ -751,7 +750,7 @@ export function OverviewTab() {
           loading={clinicalLoading}
           tooltip={{
             content: "Average adherence score across eligible patients (≥3 trial days)",
-            subtext: "Calculated as game sessions completed vs expected based on GHOSTLY+ protocol"
+            subtext: "⚠️ DEMO DATA WARNING: Adherence dates may be outdated. This is demo data that needs updating with real patient information. Calculated as game sessions completed vs expected based on GHOSTLY+ protocol"
           }}
         />
 

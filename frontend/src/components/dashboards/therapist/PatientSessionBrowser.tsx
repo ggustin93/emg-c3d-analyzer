@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Spinner from '@/components/ui/Spinner';
-import C3DFileList, { ColumnVisibility } from '@/components/c3d/C3DFileList';
+import C3DFileList, { ColumnVisibility, SortField, SortDirection } from '@/components/c3d/C3DFileList';
 import C3DPagination from '@/components/c3d/C3DPagination';
 import C3DFileUpload from '@/components/c3d/C3DFileUpload';
 
@@ -33,11 +33,10 @@ import {
 import useSimpleNotesCount from '@/hooks/useSimpleNotesCount';
 
 // Get bucket name from centralized configuration
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../../config/environment';
 const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
-type SortField = 'name' | 'size' | 'created_at' | 'patient_id' | 'therapist_id' | 'session_date';
-type SortDirection = 'asc' | 'desc';
+// SortField and SortDirection types are now imported from C3DFileList
 
 interface PatientSessionBrowserProps {
   patientCode: string;
@@ -81,7 +80,9 @@ const PatientSessionBrowser: React.FC<PatientSessionBrowserProps> = ({
     size: true,
     session_date: true,
     upload_date: false,
-    clinical_notes: true
+    clinical_notes: true,
+    overall_performance_score: true, // Show performance score for patient view
+    processing_status: true // Show processing status for patient view
   });
   
   // Simple notes count hook

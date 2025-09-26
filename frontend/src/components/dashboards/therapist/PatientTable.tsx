@@ -68,13 +68,42 @@ import {
   InfoCircledIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  DashIcon
+  DashIcon,
+  ExclamationTriangleIcon
 } from '@radix-ui/react-icons'
 import * as Icons from '@radix-ui/react-icons'
 import { Patient } from './types'
 import { AdherenceData } from '../../../services/adherenceService'
 import { getAvatarColor, getPatientIdentifier } from '../../../lib/avatarColors'
 import { SortField, SortDirection, FilterState, ColumnVisibility } from './PatientManagement'
+
+// Utility function to safely compare dates with error handling
+// QUICK WIN #1: Added robust error handling for date parsing and comparison
+// - Handles invalid date strings gracefully
+// - Logs warnings for debugging
+// - Returns false on any error (fail-safe approach)
+function hasDateMismatch(treatmentStartDate: string | null, lastSession: string | null, thresholdDays: number = 7): boolean {
+  try {
+    if (!treatmentStartDate || !lastSession) return false
+    
+    const startDate = new Date(treatmentStartDate)
+    const sessionDate = new Date(lastSession)
+    
+    // Check if dates are valid
+    if (isNaN(startDate.getTime()) || isNaN(sessionDate.getTime())) {
+      console.warn('Invalid dates detected:', { treatmentStartDate, lastSession })
+      return false
+    }
+    
+    const timeDiff = Math.abs(sessionDate.getTime() - startDate.getTime())
+    const daysDiff = timeDiff / (24 * 60 * 60 * 1000)
+    
+    return daysDiff > thresholdDays
+  } catch (error) {
+    console.warn('Date comparison failed:', error)
+    return false
+  }
+}
 
 // Format date for display with European/French format (DD/MM/YYYY)
 function formatLastSession(dateString: string | null): string {
@@ -222,48 +251,99 @@ function PatientRow({ patient, visibleColumns, adherence, therapistName, userRol
       {visibleColumns.adherence && (
         <TableCell className="hidden lg:table-cell text-center">
           {adherence?.adherence_score !== null && adherence?.adherence_score !== undefined ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge 
-                    variant={
-                      adherence.clinical_threshold === 'Excellent' ? 'default' : 
-                      adherence.clinical_threshold === 'Good' ? 'secondary' : 
-                      adherence.clinical_threshold === 'Moderate' ? 'outline' :
-                      'destructive'
-                    }
-                    className={
-                      adherence.adherence_score >= 85 ? 'bg-green-100 text-green-800 border-green-200 cursor-help' : // TODO: Move to configuration - adherence thresholds
-                      adherence.adherence_score >= 70 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 cursor-help' : 
-                      adherence.adherence_score >= 50 ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-help' :
-                      'bg-red-100 text-red-800 border-red-200 cursor-help'
-                    }
-                  >
-                    {Math.round(adherence.adherence_score)}%
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div className="text-sm">
-                    <p className="font-semibold">{adherence.clinical_threshold}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {adherence.sessions_completed} of {adherence.sessions_expected} sessions completed
-                    </p>
-                    {adherence.clinical_threshold === 'Excellent' && (
-                      <p className="text-xs mt-1">Patient is following protocol consistently</p>
-                    )}
-                    {adherence.clinical_threshold === 'Good' && (
-                      <p className="text-xs mt-1">Minor gaps in therapy schedule</p>
-                    )}
-                    {adherence.clinical_threshold === 'Moderate' && (
-                      <p className="text-xs mt-1">Consider reaching out to patient</p>
-                    )}
-                    {adherence.clinical_threshold === 'Poor' && (
-                      <p className="text-xs mt-1">Intervention recommended</p>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center justify-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant={
+                        adherence.clinical_threshold === 'Excellent' ? 'default' : 
+                        adherence.clinical_threshold === 'Good' ? 'secondary' : 
+                        adherence.clinical_threshold === 'Moderate' ? 'outline' :
+                        'destructive'
+                      }
+                      className={
+                        adherence.adherence_score >= 85 ? 'bg-green-100 text-green-800 border-green-200 cursor-help' : // TODO: Move to configuration - adherence thresholds
+                        adherence.adherence_score >= 70 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 cursor-help' : 
+                        adherence.adherence_score >= 50 ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-help' :
+                        'bg-red-100 text-red-800 border-red-200 cursor-help'
+                      }
+                    >
+                      {Math.round(adherence.adherence_score)}%
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-sm">
+                      <p className="font-semibold">{adherence.clinical_threshold}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {adherence.sessions_completed} of {adherence.sessions_expected} sessions completed
+                      </p>
+                      {adherence.clinical_threshold === 'Excellent' && (
+                        <p className="text-xs mt-1">Patient is following protocol consistently</p>
+                      )}
+                      {adherence.clinical_threshold === 'Good' && (
+                        <p className="text-xs mt-1">Minor gaps in therapy schedule</p>
+                      )}
+                      {adherence.clinical_threshold === 'Moderate' && (
+                        <p className="text-xs mt-1">Consider reaching out to patient</p>
+                      )}
+                      {adherence.clinical_threshold === 'Poor' && (
+                        <p className="text-xs mt-1">Intervention recommended</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {/* TODO: DEVELOPERS - Date Mismatch Warning (Demo Data)
+                   
+                   ISSUE: This warning appears when treatment_start_date and last_session 
+                   dates are significantly different (>7 days), indicating demo data 
+                   inconsistencies.
+                   
+                   HOW TO FIX:
+                   1. Update patient records in Supabase with consistent dates:
+                      - Set treatment_start_date to match actual therapy start
+                      - Ensure last_session dates align with treatment timeline
+                   2. Or update the adherence calculation logic in adherenceService.ts
+                      to use session-based dates instead of treatment_start_date
+                   3. Remove this warning once real patient data is integrated
+                   
+                   CURRENT BEHAVIOR:
+                   - Adherence scores are calculated using treatment_start_date from database
+                   - Session data comes from C3D file uploads (last_session)
+                   - Demo data has mismatched dates causing this warning
+                   
+                   The adherenceService.ts is working correctly - the issue is data consistency. */}
+              {(() => {
+                // Check for date mismatch using utility function with error handling
+                const dateMismatch = hasDateMismatch(patient.treatment_start_date, patient.last_session, 7)
+                
+                return dateMismatch ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-sm max-w-xs">
+                          <p className="font-semibold text-yellow-800">Demo Data Warning</p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            Adherence dates may be outdated. This is demo data that needs updating with real patient information.
+                          </p>
+                          <p className="text-xs text-yellow-600 mt-2">
+                            Treatment start: {patient.treatment_start_date ? new Date(patient.treatment_start_date).toLocaleDateString() : 'N/A'}
+                          </p>
+                          <p className="text-xs text-yellow-600">
+                            Last session: {patient.last_session ? new Date(patient.last_session).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : null
+              })()}
+            </div>
           ) : (
             <span className="text-xs text-muted-foreground">No Data</span>
           )}
@@ -664,6 +744,22 @@ export function PatientTable({
             else bValue = Math.round(bPercent/5) * 0.1 // Steady: small value
           }
           break
+        case 'therapist':
+          // Sort by therapist name - get therapist data from therapistMap
+          const aTherapist = a.therapist_id ? therapistMap.get(a.therapist_id) : null
+          const bTherapist = b.therapist_id ? therapistMap.get(b.therapist_id) : null
+          
+          // Create sortable therapist names
+          const aTherapistName = aTherapist 
+            ? `${aTherapist.first_name || ''} ${aTherapist.last_name || ''}`.trim() || 'Unknown'
+            : 'Unassigned'
+          const bTherapistName = bTherapist 
+            ? `${bTherapist.first_name || ''} ${bTherapist.last_name || ''}`.trim() || 'Unknown'
+            : 'Unassigned'
+          
+          aValue = aTherapistName
+          bValue = bTherapistName
+          break
         default:
           aValue = a.last_session ? new Date(a.last_session).getTime() : 0
           bValue = b.last_session ? new Date(b.last_session).getTime() : 0
@@ -997,8 +1093,12 @@ export function PatientTable({
                       variant="ghost"
                       size="sm"
                       className="h-8 data-[state=open]:bg-accent"
+                      onClick={() => handleSort('therapist')}
                     >
                       Therapist
+                      {sortField === 'therapist' && (
+                        sortDirection === 'asc' ? <SortAsc className="ml-2 h-4 w-4" /> : <ChevronDownIcon className="ml-2 h-4 w-4" />
+                      )}
                     </Button>
                   </TableHead>
                 )}
