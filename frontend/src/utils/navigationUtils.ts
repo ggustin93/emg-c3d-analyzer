@@ -14,7 +14,7 @@ import { NavigateFunction } from 'react-router-dom';
  * @param filename - C3D filename (may include patient folder prefix)
  * 
  * Note: Session timestamp is embedded in the filename itself
- * Example: test_session_1758297752_65757a7d.c3d contains timestamp 1758297752
+ * Example: Ghostly_Emg_20250115_10-30-00-1234_test.c3d contains timestamp 20250115
  * No need for separate date parameter (SSoT principle)
  */
 export const navigateToAnalysis = (navigate: NavigateFunction, filename: string): void => {

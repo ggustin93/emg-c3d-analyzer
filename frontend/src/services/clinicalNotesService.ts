@@ -16,7 +16,7 @@ import type {
  * Handles all Clinical Notes API operations with hybrid patient identification.
  * Supports both file notes (file_path) and patient notes (patient_code → patient_id).
  */
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../config/environment';
 
 export class ClinicalNotesService {
   // Get bucket name from centralized configuration

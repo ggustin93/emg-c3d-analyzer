@@ -1,6 +1,22 @@
 /**
  * Adherence Service - Reusable service for fetching adherence data
  * Used by both therapists and researchers following DRY/SOLID principles
+ * 
+ * HOW IT WORKS:
+ * - Fetches adherence data from backend API (/scoring/adherence/{patient_code})
+ * - Backend calculates adherence based on treatment_start_date from database
+ * - Session counts come from C3D file uploads (passed as sessions_completed parameter)
+ * - Adherence score = (sessions_completed / sessions_expected) * 100
+ * 
+ * DATE CONSISTENCY:
+ * - treatment_start_date: From patients table (set when patient is created)
+ * - last_session: From C3D file uploads (actual session dates)
+ * - If these dates don't match, adherence calculations may be inaccurate
+ * 
+ * DEMO DATA ISSUE:
+ * - Demo data often has mismatched dates between treatment_start and actual sessions
+ * - This causes warnings in PatientTable.tsx when dates differ by >7 days
+ * - Solution: Update patient records with consistent dates or use session-based dates
  */
 
 import { API_CONFIG } from '@/config/apiConfig';

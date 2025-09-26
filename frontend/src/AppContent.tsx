@@ -35,7 +35,7 @@ import type { EMGAnalysisResult } from './types/emg';
 import { GameSessionTabs } from "./components/tabs/shared";
 import Spinner from "./components/ui/Spinner";
 import { API_CONFIG } from '@/config/apiConfig';
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from './config/environment';
 
 // Import hooks
 import { useDataDownsampling } from "./hooks/useDataDownsampling";

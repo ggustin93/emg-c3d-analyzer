@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
  * Setup utility for Supabase storage bucket
  * This helps create the required bucket and set proper policies
  */
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../config/environment';
 
 export class SupabaseSetup {
   // Get bucket name from centralized configuration
