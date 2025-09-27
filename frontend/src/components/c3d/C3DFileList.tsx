@@ -36,9 +36,9 @@ import {
 } from '@/services/C3DFileDataResolver';
 import { therapistService } from '@/services/therapistService';
 
-// Get bucket name from centralized configuration with fallback
+// Get bucket name from centralized configuration
 import { ENV_CONFIG } from '../../config/environment';
-const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME || 'c3d-examples'; // Fallback to default bucket
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
 
 // Component constants following CLAUDE.md DRY principle
 const FILENAME_COLUMN_DEFAULTS = {

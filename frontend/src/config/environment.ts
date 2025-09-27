@@ -11,8 +11,8 @@ export const ENV_CONFIG = {
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
   SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
   
-  // Storage Configuration - REQUIRED from .env
-  STORAGE_BUCKET_NAME: import.meta.env.VITE_STORAGE_BUCKET_NAME,
+  // Storage Configuration - REQUIRED from .env with fallback
+  STORAGE_BUCKET_NAME: import.meta.env.VITE_STORAGE_BUCKET_NAME || 'c3d-examples',
   
   // API Configuration - REQUIRED from .env
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
