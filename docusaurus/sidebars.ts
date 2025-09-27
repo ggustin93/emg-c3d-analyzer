@@ -59,7 +59,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
-      id: 'roadmap/work-in-progress',
+      id: 'roadmap/ghostly-dashboards-handover',
       label: '📍 Roadmap',
     },
   ],

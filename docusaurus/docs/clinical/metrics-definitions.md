@@ -71,9 +71,9 @@ graph TD
 
 ### Overall Performance Score
 
-<div style={{backgroundColor: '#f0f7ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>
-<strong>Formula</strong>: <code style={{color: '#1976d2'}}>P<sub>overall</sub></code> = (<code style={{color: '#d32f2f'}}>w<sub>c</sub></code> × <code style={{color: '#388e3c'}}>S<sub>compliance</sub></code> + <code style={{color: '#d32f2f'}}>w<sub>s</sub></code> × <code style={{color: '#388e3c'}}>S<sub>symmetry</sub></code> + <code style={{color: '#d32f2f'}}>w<sub>e</sub></code> × <code style={{color: '#388e3c'}}>S<sub>effort</sub></code> + <code style={{color: '#d32f2f'}}>w<sub>g</sub></code> × <code style={{color: '#388e3c'}}>S<sub>game</sub></code>) × <code style={{color: '#f57c00'}}>C<sub>BFR</sub></code>
-</div>
+**Overall Performance Formula:**
+
+$$P_{\text{overall}} = (w_c \times S_{\text{compliance}} + w_s \times S_{\text{symmetry}} + w_e \times S_{\text{effort}} + w_g \times S_{\text{game}}) \times C_{\text{BFR}}$$
 
 | **Metric** | **Weight** | **Clinical Purpose** |
 |------------|------------|---------------------|
@@ -88,9 +88,9 @@ graph TD
 
 Measures whether prescribed exercise intensity and duration achieve therapeutic effect.
 
-<div style={{backgroundColor: '#e8f5e9', padding: '0.75rem', borderRadius: '6px', marginBottom: '0.5rem'}}>
-<strong>Formula</strong>: <code style={{color: '#388e3c'}}>S<sub>compliance</sub></code> = (<code style={{color: '#2e7d32'}}>S<sub>left</sub></code> + <code style={{color: '#2e7d32'}}>S<sub>right</sub></code>) / 2
-</div>
+**Therapeutic Compliance Formula:**
+
+$$S_{\text{compliance}} = \frac{S_{\text{left}} + S_{\text{right}}}{2}$$
 
 Each leg score combines three components:
 
@@ -106,9 +106,9 @@ Each leg score combines three components:
 
 Quantifies performance balance between legs.
 
-<div style={{backgroundColor: '#fff3e0', padding: '0.75rem', borderRadius: '6px', marginBottom: '0.5rem'}}>
-<strong>Formula</strong>: <code style={{color: '#f57c00'}}>S<sub>symmetry</sub></code> = (1 - |<code style={{color: '#ff6f00'}}>S<sub>left</sub></code> - <code style={{color: '#ff6f00'}}>S<sub>right</sub></code>| / (<code style={{color: '#ff6f00'}}>S<sub>left</sub></code> + <code style={{color: '#ff6f00'}}>S<sub>right</sub></code>)) × 100
-</div>
+**Muscle Symmetry Formula:**
+
+$$S_{\text{symmetry}} = \left(1 - \frac{|S_{\text{left}} - S_{\text{right}}|}{S_{\text{left}} + S_{\text{right}}}\right) \times 100$$
 
 | **Score Range** | **Clinical Interpretation** | **Recommended Action** |
 |-----------------|----------------------------|------------------------|
@@ -136,9 +136,9 @@ Based on Borg CR-10 Scale (0-10 rating of perceived exertion).
 
 Optional metric for patient engagement assessment.
 
-<div style={{backgroundColor: '#f3e5f5', padding: '0.75rem', borderRadius: '6px', marginBottom: '0.5rem'}}>
-<strong>Formula</strong>: <code style={{color: '#7b1fa2'}}>S<sub>game</sub></code> = (<code style={{color: '#6a1b9a'}}>points<sub>achieved</sub></code> / <code style={{color: '#6a1b9a'}}>points<sub>max</sub></code>) × 100
-</div>
+**Game Performance Formula:**
+
+$$S_{\text{game}} = \frac{\text{points}_{\text{achieved}}}{\text{points}_{\text{max}}} \times 100$$
 
 **Note**: Weighted at 0% by default. Game performance does not correlate directly with therapeutic benefit.
 

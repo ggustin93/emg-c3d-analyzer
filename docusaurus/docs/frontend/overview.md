@@ -3,11 +3,11 @@ sidebar_position: 1
 title: Frontend Overview
 ---
 
-# GHOSTLY+ EMG C3D Analyzer - Frontend
+# GHOSTLY+ Dashboard - Frontend
 
 ## Overview
 
-This frontend application serves as the user interface for the GHOSTLY+ EMG C3D Analyzer system. It processes electromyography data from C3D files generated during rehabilitation therapy sessions. The application supports three user roles - therapists who manage patient care, researchers who analyze clinical data, and administrators who configure the system. The interface is designed for medical professionals working with elderly patients in hospital rehabilitation settings.
+This frontend application serves as the user interface for the GHOSTLY+ Dashboard system. It processes electromyography data from C3D files generated during rehabilitation therapy sessions. The application supports three user roles - therapists who manage patient care, researchers who analyze clinical data, and administrators who configure the system. The interface is designed for medical professionals working with elderly patients in hospital rehabilitation settings.
 
 ## Architecture
 
@@ -36,6 +36,10 @@ graph TD
 The application uses React 18.3 with TypeScript 4.9 to provide type safety during development. React Router v7 handles navigation with its data loader pattern, ensuring data is fetched before components render - eliminating loading states and providing sub-200ms page transitions. Vite 5.4 serves as our build tool, offering fast development server startup and hot module replacement.
 
 For state management, we use TanStack Query to cache server responses and handle data synchronization, while Zustand 4.5 manages client-side UI state like session parameters. The visual layer combines Tailwind CSS for utility-first styling with shadcn/ui components built on Radix UI primitives, ensuring accessibility compliance out of the box. Recharts powers our EMG signal visualization, handling up to 10,000 data points efficiently through intelligent downsampling. The Supabase client provides authentication and real-time features when needed.
+
+:::info State Management
+We use **Zustand** for UI state and **TanStack Query** for server state. While the application has evolved significantly, our store and caching strategy might need optimization. We welcome contributions and suggestions to improve our store structure and caching strategies.
+:::
 
 ### Directory Structure
 

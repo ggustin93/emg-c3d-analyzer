@@ -14,25 +14,38 @@ This project optionally integrates with [SuperClaude](https://github.com/NomenAK
 
 **References**: [Claude Code Docs](https://docs.claude.com/en/docs/claude-code/overview) | [MCP Protocol](https://modelcontextprotocol.io) | [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook)
 
+## Recommended IDE
+
+For the best development experience with this project, we recommend using [Cursor](https://cursor.sh), an AI-powered code editor built on VS Code. Cursor's intelligent code completion, natural language editing capabilities, and Agent Mode for end-to-end task completion work seamlessly with the project's MCP architecture, making it an ideal choice for modern development workflows.
+
+## Video Tutorial
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/amEUIuBKwvg?si=vud7gXUWbCIfRuAm&start=383" title="Claude Code Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Quick Start
 
 ```bash
-# Install Claude Code globally
+# Docker Development (Recommended - all platforms)
+docker compose -f docker/compose/docker-compose.dev.yml --env-file .env up -d --build
+docker compose -f docker/compose/docker-compose.dev.yml logs -f
+docker compose -f docker/compose/docker-compose.dev.yml down
+
+# Native Development  
+./start_dev_simple.sh              # Start backend + frontend
+./start_dev_simple.sh --test       # Run full test suite
+
+# Documentation Server
+cd docusaurus && npm install && npm start                    # Development mode
+cd docusaurus && npm run build && npm run serve             # With search functionality
+./start_dev_simple.sh --webhook    # Enable webhook testing
+
+# Docker (alternative)
+./start_dev_docker.sh               # Linux/macOS
+docker compose -f docker/compose/docker-compose.dev.yml --env-file .env up -d --build  # Windows
+
+# Claude Code integration
 npm install -g @anthropic-ai/claude-code
-
-# Navigate to project and start
-cd emg-c3d-analyzer
-claude
-
-# Native development (recommended)
-./start_dev_simple.sh              # Backend + Frontend
-./start_dev_simple.sh --test       # With test suite
-./start_dev_simple.sh --webhook    # With ngrok tunnel
-
-# Docker development
-./start_dev_docker.sh               # Containerized stack
-./start_dev_docker.sh --build       # Rebuild images
-./start_dev_docker.sh logs          # View all logs
+claude  # Start Claude Code in project directory
 ```
 
 ## MCP Architecture
@@ -81,12 +94,14 @@ graph LR
 
 | Task | Command | Description |
 |------|---------|-------------|
+| **Start Dev (Docker)** | `docker compose -f docker/compose/docker-compose.dev.yml --env-file .env up -d --build` | **Recommended** - All platforms |
+| **View Logs** | `docker compose -f docker/compose/docker-compose.dev.yml logs -f` | Monitor services |
+| **Stop Services** | `docker compose -f docker/compose/docker-compose.dev.yml down` | Clean shutdown |
 | **Start Dev (Native)** | `./start_dev_simple.sh` | Backend and frontend servers |
-| **Start Dev (Docker)** | `./start_dev_docker.sh` | Containerized development |
 | **Run Tests** | `./start_dev_simple.sh --test` | Complete test suite |
+| **Documentation** | `cd docusaurus && npm install && npm start` | Local docs server (port 3200) |
+| **Docs + Search** | `cd docusaurus && npm run build && npm run serve` | Full docs with search functionality |
 | **Webhooks** | `./start_dev_simple.sh --webhook` | Includes ngrok tunnel |
-| **Backend Only** | `cd backend && uvicorn main:app --reload` | FastAPI on port 8080 |
-| **Frontend Only** | `cd frontend && npm start` | Vite dev server on port 3000 |
 
 ### Claude Code Commands
 
@@ -169,6 +184,9 @@ Configure in Supabase Dashboard:
 2. URL: `https://YOUR_NGROK_URL.ngrok-free.app/webhooks/storage/c3d-upload`
 3. Events: `storage.objects.create`
 4. Bucket: `c3d-examples`
+5. **Secret**: Use your `WEBHOOK_SECRET` value for authentication
+
+**Security Note**: WEBHOOK_SECRET provides cryptographic verification that webhook requests are authentic and haven't been tampered with. Essential for production to prevent unauthorized C3D file processing.
 
 ## Production Deployment
 
@@ -186,20 +204,26 @@ Configure in Supabase Dashboard:
 
 ### Environment Variables
 
-**Backend (.env)**:
+**Root (.env)**:
 ```env
+# Backend configuration (without VITE_ prefix)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your-service-key
-WEBHOOK_SECRET=your-webhook-secret
-REDIS_URL=redis://localhost:6379  # Optional
-```
+WEBHOOK_SECRET=your-webhook-secret  # Required for production
 
-**Frontend (.env.local)**:
-```env
+# Frontend configuration (with VITE_ prefix)  
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_API_URL=http://localhost:8080  # Production differs
+VITE_API_BASE_URL=http://localhost:8080  # Set to production URL for deployment
 ```
+
+#### Configuration Architecture
+
+The system uses intelligent configuration management through two main files:
+- **Frontend**: `frontend/src/config/apiConfig.ts` - Environment-aware API routing with automatic development/production detection
+- **Backend**: `backend/config.py` - EMG processing parameters, clinical defaults, and infrastructure settings
+
+These files automatically adapt to your environment variables and provide production-ready configuration patterns for deployment.
 
 ## Docker Operations
 
@@ -232,10 +256,10 @@ VITE_API_URL=http://localhost:8080  # Production differs
 docker build -f backend/Dockerfile -t emg-backend .
 docker run -p 8080:8080 --env-file .env emg-backend
 
-# Docker Compose (if using directly)
-docker compose -f docker/compose/docker-compose.dev.yml up -d
-docker compose logs -f backend
-docker compose down -v
+# Direct Docker Compose (Windows 11 users - bypasses shell script issues)
+docker compose -f docker/compose/docker-compose.dev.yml --env-file .env up -d --build
+docker compose -f docker/compose/docker-compose.dev.yml logs -f
+docker compose -f docker/compose/docker-compose.dev.yml down
 ```
 
 ### Docker Features
@@ -265,10 +289,6 @@ rm -rf backend/venv frontend/node_modules
 rm -rf frontend/node_modules/.cache
 find backend -name __pycache__ -exec rm -r {} +
 ```
-
-## Video Tutorial
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/amEUIuBKwvg?si=vud7gXUWbCIfRuAm&start=383" title="Claude Code Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Additional Resources
 

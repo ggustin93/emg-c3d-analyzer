@@ -3,17 +3,20 @@ sidebar_position: 2
 title: Backend Architecture
 ---
 
-# GHOSTLY+ EMG C3D Analyzer - Backend
+# GHOSTLY+ Dashboard - Backend
 
 ## Overview
 
-The backend serves as the computational engine for the GHOSTLY+ EMG C3D Analyzer system. It processes electromyography data from rehabilitation therapy sessions, calculating clinical metrics that help therapists assess patient progress. The system handles complex signal analysis tasks that can't run in the browser - like processing 175 seconds of EMG data sampled at 990Hz - while delegating simple data operations directly to Supabase for efficiency.
+The backend serves as the computational engine for the GHOSTLY+ Dashboard system. It processes electromyography data from rehabilitation therapy sessions, calculating clinical metrics that help therapists assess patient progress. The system handles complex signal analysis tasks that can't run in the browser - like processing 175 seconds of EMG data sampled at 990Hz - while delegating simple data operations directly to Supabase for efficiency.
 
 Built with FastAPI and Python, the backend specializes in three core responsibilities: processing C3D motion capture files, analyzing EMG signals for clinical metrics, and orchestrating therapy session workflows. The architecture follows domain-driven design principles, organizing services by their business purpose rather than technical function, which makes the codebase intuitive to navigate and maintain.
 
 ## Architecture
 
 ### Technology Stack
+
+<details>
+<summary><strong>Technology Stack Overview</strong> - Python ecosystem with modern web technologies</summary>
 
 The backend combines Python's scientific computing ecosystem with modern web technologies:
 
@@ -24,6 +27,8 @@ The backend combines Python's scientific computing ecosystem with modern web tec
 | **Database** | PostgreSQL via Supabase | Stores clinical data with Row Level Security for authorization |
 | **Caching** | Redis (Python client 6.4.0) | Caches expensive calculations and session data |
 | **Authentication** | Supabase Auth | Manages user sessions and JWT tokens |
+
+</details>
 
 ### Service Architecture
 
@@ -73,6 +78,9 @@ backend/
 The most critical code lives in `services/c3d/processor.py` (1,505 lines) which handles the complex C3D parsing and EMG extraction, and `services/clinical/therapy_session_processor.py` (1,840 lines) which orchestrates the entire analysis workflow.
 
 ## API Design
+
+<details>
+<summary><strong>Three API Integration Approaches</strong> - Direct Supabase, Backend routes, or Frontend→FastAPI→Supabase</summary>
 
 ### Three API Integration Approaches
 
@@ -175,6 +183,11 @@ async def process_c3d_file(file: UploadFile):
 
 **Works well for:** EMG processing, file analysis, complex workflows
 
+</details>
+
+<details>
+<summary><strong>FastAPI Endpoints</strong> - Specialized backend endpoints and usage patterns</summary>
+
 ### FastAPI Endpoints
 
 The custom FastAPI backend provides these specialized endpoints:
@@ -197,6 +210,8 @@ The custom FastAPI backend provides these specialized endpoints:
 
 **Repository Pattern for Data Access**: Services use repository classes to abstract database operations, enabling clean separation between business logic and data access. Each domain has its own repositories that handle CRUD operations and complex queries.
 
+</details>
+
 ## Authentication & Database
 
 ### Authentication Flow
@@ -214,6 +229,9 @@ graph LR
     RLS --> |Filtered Data| FastAPI
     FastAPI --> |Response| Frontend
 ```
+
+<details>
+<summary><strong>Core Database Tables</strong> - Complete schema overview</summary>
 
 ### Core Database Tables
 
@@ -239,17 +257,31 @@ The system uses a comprehensive set of tables for clinical data management. You 
 - `audit_log` - User action tracking for compliance and security
 - `export_history` - Data export tracking for research purposes
 
-### Repository Pattern
+</details>
 
-All database operations go through repository classes that provide a clean interface. The backend uses the synchronous Supabase Python client for simplicity (following KISS principle), with repositories abstracting database operations for each domain. This pattern enables easy testing through dependency injection and keeps business logic separate from data access.
+### Database Security
 
-## Row Level Security (RLS) - The Authorization Layer
+The system includes **some basic security measures** to help protect healthcare data through database access rules and utility functions.
+
+**Access Policies**: 37 database rules that control what users can see:
+- **Therapists**: Their assigned patients only (with active account checks)
+- **Researchers**: Anonymized research data (names/details hidden)
+- **Admins**: Management access where needed
+
+**Utility Functions**: 20 database functions that help with routine tasks:
+- User checks (`get_user_role()`, account verification)
+- Clinical calculations (scoring, BMI tracking)
+- File connections (linking C3D files to patient records)
+- Cleanup tasks (removing expired data)
 
 Row Level Security (RLS) enforces data access control at the database level, ensuring HIPAA compliance and patient data privacy. While FastAPI validates JWT tokens (authentication), RLS policies control who can access what data (authorization).
 
 **📊 View All Policies**: [Supabase RLS Dashboard](https://supabase.com/dashboard/project/egihfsmxphqcsjotmhmm/auth/policies)
 
-### How RLS Works
+<details>
+<summary><strong>Technical Details</strong> - RLS implementation specifics</summary>
+
+#### How RLS Works
 
 ```mermaid
 graph LR
@@ -266,7 +298,7 @@ graph LR
     style Block fill:#ffcdd2
 ```
 
-### Security Roles
+#### Security Roles
 
 | Role | Access Level | Use Case |
 |------|--------------|----------|
@@ -275,39 +307,29 @@ graph LR
 | **researcher** | Anonymized read-only | Research analysis |
 | **service_role** | Backend operations | C3D processing, automated tasks |
 
-### Key Security Functions
+#### Key Security Functions
 
 - **`get_user_role()`** - Returns user's role (therapist/admin/researcher)
 - **`get_current_therapist_id()`** - Validates therapist identity
 - **`auth.uid()`** - Gets authenticated user's ID
 
-### Policy Patterns
+#### Important Notes
 
-The system uses **30+ RLS policies** across all tables with these common patterns:
+**⚠️ Developer Notes:**
+- Service role bypasses security rules - use carefully
+- Test access by switching user roles in development
 
-1. **Ownership-Based**: Users access only their own data
-2. **Role-Based**: Admins have full access
-3. **Relationship-Based**: Therapists access their assigned patients
-4. **Composite**: Combined conditions for complex scenarios
+</details>
 
-### Important Points
+### Repository Pattern
 
-**✅ Strengths:**
-- Database-level enforcement (unbypassable)
-- HIPAA compliant patient data isolation
-- Complete audit trail in `audit_log` table
-- Zero-trust architecture
-
-**⚠️ Remember:**
-- Service role bypasses RLS - use sparingly
-- All sensitive tables have RLS enabled
-- Test policies by impersonating roles
+All database operations go through repository classes that provide a clean interface. The backend uses the synchronous Supabase Python client for simplicity (following KISS principle), with repositories abstracting database operations for each domain. This pattern enables easy testing through dependency injection and keeps business logic separate from data access.
 
 ## Processing & Webhooks
 
 ### Processing Pipeline
 
-The system processes C3D files through a sophisticated pipeline: validation → channel detection → signal processing → contraction detection → metric calculation → performance scoring → database persistence. This pipeline handles both direct uploads and webhook-triggered processing from Supabase Storage events.
+The system processes C3D files through a pipeline: validation → channel detection → signal processing → contraction detection → metric calculation → performance scoring → database persistence. This pipeline handles both direct uploads and webhook-triggered processing from Supabase Storage events.
 
 ### Webhook Processing
 
@@ -329,7 +351,7 @@ The webhook endpoint verifies signatures for security, extracts file information
 
 ### Caching Strategy
 
-Redis caches expensive EMG calculations with a 1-hour TTL to maintain fast response times. The caching layer significantly improves performance for repeated analysis requests and session data retrieval.
+Redis caches expensive EMG calculations with a 1-hour TTL to maintain response times. The caching implementation aims to improve performance for repeated analysis requests and session data retrieval.
 
 ## Development
 
@@ -359,6 +381,9 @@ uvicorn main:app --reload --port 8080
 
 The backend includes a comprehensive test suite using pytest, covering unit tests for core EMG algorithms, integration tests for component interactions, and end-to-end tests with real clinical data. Tests focus on EMG processing accuracy, API endpoint validation, and database operations, ensuring the reliability of clinical metrics and therapy session workflows.
 
+<details>
+<summary><strong>Testing Commands</strong> - Comprehensive test execution</summary>
+
 **Testing Commands:**
 ```bash
 # Quick test execution
@@ -372,6 +397,8 @@ python -m pytest tests/unit/ -v      # Unit tests only
 python -m pytest tests/api/ -v       # API endpoint tests
 python -m pytest tests/ --cov=.      # With coverage report
 ```
+
+</details>
 
 ## API Documentation & Resources
 
@@ -395,6 +422,9 @@ The system provides auto-generated, interactive API documentation:
 - Real-time subscriptions documentation
 - SQL query builder interface
 
+<details>
+<summary><strong>Essential Backend Resources</strong> - Key documentation and guides</summary>
+
 ### Essential Backend Resources
 
 - **FastAPI**: [Official Documentation](https://fastapi.tiangolo.com/) - Web framework and async patterns
@@ -402,6 +432,8 @@ The system provides auto-generated, interactive API documentation:
 - **NumPy/SciPy**: [Scientific Computing](https://numpy.org/doc/stable/) - Signal processing algorithms
 - **ezc3d**: [C3D Processing](https://github.com/pyomeca/ezc3d) - Motion capture file parsing
 - **Redis Python**: [Caching Guide](https://redis-py.readthedocs.io/) - Performance optimization
+
+</details>
 
 ## Contributing
 
@@ -415,3 +447,15 @@ When working on the backend, follow these patterns:
 6. **Documentation**: Update this file for significant architecture changes
 
 The backend prioritizes clarity and maintainability over premature optimization. When in doubt, choose the simpler approach that clearly expresses the business logic.
+
+:::info Areas for Improvement
+While the current architecture serves our clinical workflows well, there are several areas that could benefit from further development:
+
+- **Redis Performance**: Validate claimed performance improvements with production metrics
+- **Cache Strategy**: Optimize TTL and cache patterns based on actual usage data
+- **Error Handling**: Enhance error recovery and graceful degradation patterns
+- **Monitoring**: Expand observability for better production insights
+- **Testing**: Increase coverage in edge cases and failure scenarios
+
+We welcome contributions that address these areas while maintaining the system's clinical reliability and code clarity.
+:::

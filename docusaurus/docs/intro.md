@@ -5,7 +5,9 @@ title: Introduction
 
 # Ghostly+ Dashboard Documentation
 
-The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation game sessions. It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly patients (65+ years) undergoing Blood Flow Restriction therapy.
+The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation game sessions. It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly patients (65+ years) undergoing rehabilitation therapy in combination with BFR in the context of a clinical trial.
+
+The system supports three distinct user roles: **Therapists** monitor patient progress with access restricted to assigned patients, **Researchers** request analysis data with pseudonymized access only, and **Administrators** manage users and system configuration.
 
 ## Video Demo
 
@@ -33,4 +35,4 @@ The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation
 | **[🧪 Testing](./testing.md)** | Test suites and quality assurance |
 | **[🚀 DevOps](./devops/devops.md)** | Deployment and CI/CD pipelines |
 | **[🛠️ Development](./development.md)** | Development workflow and Claude Code integration |
-| **[📍 Roadmap](./roadmap/work-in-progress.md)** | Upcoming features and improvements |
+| **[📍 Roadmap](./roadmap/ghostly-dashboards-handover.md)** | Upcoming features and improvements |

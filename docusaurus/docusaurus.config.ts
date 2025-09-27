@@ -59,6 +59,23 @@ const config: Config = {
     ],
   ],
 
+  // Add search plugin
+  plugins: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        // Basic configuration options
+        indexBlog: false, // Since blog is disabled
+        indexDocs: true, // Index documentation pages
+        indexPages: false, // Don't index standalone pages
+        language: 'en', // Language for search
+        // Disable search page to avoid SearchPage component issues
+        searchResultLimits: 8,
+        searchResultContextMaxLength: 50,
+      },
+    ],
+  ],
+
   // Enable Mermaid diagrams
   markdown: {
     mermaid: true,
@@ -106,15 +123,19 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/intro',
+              to: '/docs/getting-started',
+            },
+            {
+              label: 'Architecture',
+              to: '/docs/architecture',
+            },
+            {
+              label: 'Clinical',
+              to: '/docs/clinical/metrics-definitions',
             },
             {
               label: 'Signal Processing',
               to: '/docs/signal-processing/overview',
-            },
-            {
-              label: 'Architecture',
-              to: '/docs/architecture/overview',
             },
           ],
         },
@@ -123,15 +144,23 @@ const config: Config = {
           items: [
             {
               label: 'Backend',
-              to: '/docs/backend/api-design',
+              to: '/docs/backend',
             },
             {
               label: 'Frontend',
-              to: '/docs/frontend/react-architecture',
+              to: '/docs/frontend/overview',
             },
             {
-              label: 'Examples',
-              to: '/docs/examples/markdown-features',
+              label: 'Testing',
+              to: '/docs/testing',
+            },
+            {
+              label: 'DevOps',
+              to: '/docs/devops/devops',
+            },
+            {
+              label: 'Development',
+              to: '/docs/development',
             },
           ],
         },
@@ -139,12 +168,41 @@ const config: Config = {
           title: 'Resources',
           items: [
             {
-              label: 'GitHub',
-              href: 'https://github.com/ggustin93/emg-c3d-analyzer',
+              label: 'Roadmap',
+              to: '/docs/roadmap/ghostly-dashboards-handover',
             },
             {
               label: 'Supabase',
               href: 'https://supabase.com',
+            },
+            {
+              label: 'Coolify',
+              href: 'https://coolify.io',
+            },
+            {
+              label: 'Docker',
+              href: 'https://docker.com',
+            },
+            {
+              label: 'React',
+              href: 'https://react.dev',
+            },
+            {
+              label: 'FastAPI',
+              href: 'https://fastapi.tiangolo.com',
+            },
+          ],
+        },
+        {
+          title: 'Contact',
+          items: [
+            {
+              label: 'hello@pwablo.be',
+              href: 'mailto:hello@pwablo.be',
+            },
+            {
+              label: 'LinkedIn',
+              href: 'https://www.linkedin.com/in/guillaume-gustin?originalSubdomain=be',
             },
           ],
         },

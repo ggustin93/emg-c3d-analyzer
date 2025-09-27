@@ -3,7 +3,7 @@ sidebar_position: 3
 title: Testing Architecture
 ---
 
-# GHOSTLY+ EMG C3D Analyzer - Testing
+# GHOSTLY+ Dashboard - Testing
 
 ## Overview
 

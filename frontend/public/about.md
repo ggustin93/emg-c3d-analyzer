@@ -1,5 +1,4 @@
 # About Trial information
-<!-- Updated for deployment test -->
 
 ## hero
 Advanced rehabilitation technology for evidence-based therapy assessment targeting muscle strength loss in hospitalized older adults.

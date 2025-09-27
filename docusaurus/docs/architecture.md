@@ -3,7 +3,7 @@ sidebar_position: 1
 title: Architecture
 ---
 
-# GHOSTLY+ EMG C3D Analyzer - Architecture
+# GHOSTLY+ Dashboard - Architecture
 
 ## Overview
 
@@ -29,9 +29,24 @@ The system combines modern frameworks selected for reliability and developer exp
 
 > **Note**: When deploying with Coolify, the built-in Traefik proxy handles SSL/TLS termination, domain routing, and load balancing automatically - no separate NGINX required.
 
+## User Roles & System Architecture
+
+The system supports **4 user types** with role-based access control:
+
+<div style={{textAlign: 'center', marginBottom: '2rem'}}>
+  <img src="/emg-c3d-analyzer/img/user_roles.png" alt="User Roles and System Architecture" style={{maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}} />
+</div>
+
+- **Patients** share C3D and BFR data through rehabilitation games
+- **Therapists** monitor patient progress with access restricted to assigned patients  
+- **Researchers** request analysis data with pseudonymized access only
+- **Administrators** manage users and system configuration
+
+The central back-end handles authentication, data capture, secure storage, and signal processing.
+
 ## System Architecture
 
-The GHOSTLY+ system uses a sophisticated 6-layer architecture with three API integration approaches:
+The GHOSTLY+ system uses a 6-layer architecture with three API integration approaches:
 
 ```mermaid
 graph TB
@@ -86,92 +101,7 @@ graph TB
     style DB fill:#e8f5e9
 ```
 
-## Three API Integration Approaches
-
-The system offers three complementary approaches for accessing data and functionality. Each approach works well for different scenarios:
-
-```mermaid
-graph TB
-    A1["🎯 Approach 1: Frontend → Direct Supabase"]
-    A1 --> F1[React App]
-    F1 -->|User JWT| S1[Supabase REST API]
-    S1 -->|Auto-generated endpoints| DB1[(PostgreSQL + RLS)]
-    
-    A2["🔧 Approach 2: Backend → Direct Supabase"]
-    A2 --> B2[Python Service]
-    B2 -->|Service Key/User Token| S2[Supabase Client]
-    S2 --> DB2[(PostgreSQL)]
-    
-    A3["⚙️ Approach 3: Frontend → FastAPI → Supabase"]
-    A3 --> F3[React App]
-    F3 --> API3[Custom FastAPI Route]
-    API3 -->|Business Logic| S3[Supabase Client]
-    S3 --> DB3[(PostgreSQL)]
-    
-    style A1 fill:#e8f5e9
-    style A2 fill:#fff3e0
-    style A3 fill:#fce4ec
-    style F1 fill:#e3f2fd
-    style S1 fill:#c8e6c9
-    style DB1 fill:#fff3e0
-    style B2 fill:#fce4ec
-    style S2 fill:#c8e6c9
-    style DB2 fill:#fff3e0
-    style F3 fill:#e3f2fd
-    style API3 fill:#ffebee
-    style S3 fill:#c8e6c9
-    style DB3 fill:#fff3e0
-```
-
-### When to Use Each Approach
-
-#### 🎯 **Approach 1: Frontend → Direct Supabase**
-*Simple CRUD operations, authentication, real-time updates*
-
-**Works well for:** Patient lists, clinical notes, profile updates, file uploads  
-**Benefits:** Lower latency, reduced backend load, automatic RLS security
-
-#### 🔧 **Approach 2: Backend → Direct Supabase**  
-*Administrative operations, background tasks*
-
-**Works well for:** User management, admin operations, system tasks  
-**Benefits:** Service key access, administrative privileges, system operations
-
-#### ⚙️ **Approach 3: Frontend → FastAPI → Supabase**
-*Complex business logic, multi-step workflows*
-
-**Works well for:** EMG processing, file analysis, complex workflows  
-**Benefits:** Complex logic handling, data transformation, error recovery
-
-### Decision Criteria
-
-```
-Need EMG/C3D processing? ──Yes──► FastAPI (Approach 3)
-       │
-       No
-       ▼
-Need business logic?     ──Yes──► FastAPI (Approach 3)
-       │
-       No
-       ▼
-Is it simple CRUD?       ──Yes──► Direct Supabase (Approach 1)
-       │
-       No
-       ▼
-Real-time updates?       ──Yes──► Direct Supabase (Approach 1)
-       │
-       No
-       ▼
-Backend admin task?      ──Yes──► Backend → Supabase (Approach 2)
-       │
-       No
-       ▼
-External webhook?        ──Yes──► FastAPI (Approach 3)
-```
-
-> **📖 Detailed Implementation**: For complete code examples, endpoint documentation, and implementation patterns, see the [Backend Architecture](./backend.md#api-design) documentation.
-
-## Layer Descriptions
+### Layer Descriptions
 
 #### 1. Presentation Layer
 - **React Components**: User interface and interactions
@@ -202,6 +132,41 @@ External webhook?        ──Yes──► FastAPI (Approach 3)
 - **PostgreSQL Database**: Structured data with Row Level Security
 - **Redis Cache**: Session data and performance optimization
 - **File Storage**: C3D files in Supabase buckets
+
+## API Integration Architecture
+
+The GHOSTLY+ system uses three complementary integration patterns optimized for medical data processing and rehabilitation workflows. Each approach serves distinct operational requirements while maintaining security through Supabase's Row Level Security.
+
+```mermaid
+graph TD
+    Frontend[React Frontend] --> Route{Operation Type?}
+    
+    Route -->|Simple CRUD| Direct[Direct Supabase]
+    Route -->|Admin Operations| Backend[Backend Service]
+    Route -->|EMG Processing| API[FastAPI Pipeline]
+    
+    Direct --> Auth[Supabase Auth + RLS]
+    Backend --> Service[Service Key Client]
+    API --> Processing[EMG Analysis]
+    
+    Auth --> Database[(PostgreSQL)]
+    Service --> Database
+    Processing --> Database
+    
+    style Direct fill:#e8f5e9
+    style Backend fill:#e3f2fd
+    style API fill:#fff3e0
+```
+
+### Integration Patterns
+
+| Approach | Route | Authentication | Use Cases |
+|----------|-------|----------------|-----------|
+| **Frontend Direct** | React → Supabase | User JWT + RLS | Patient lists, clinical notes, file uploads |
+| **Backend Direct** | Python → Supabase | Service key / JWT | Admin operations, complex workflows |
+| **API Pipeline** | React → FastAPI → Supabase | JWT validation | EMG processing, business logic |
+
+> **📖 Detailed Implementation**: For complete code examples, endpoint documentation, and implementation patterns, see the [Backend Architecture](./backend.md#api-design) documentation.
 
 ## Key System Files
 
@@ -305,50 +270,15 @@ Webhook endpoints enable background processing without blocking user interaction
 
 ## Deep Dive Resources
 
-For detailed information about specific areas:
-
-### 🔧 Backend Development
-→ [Backend Architecture](./backend.md)
-- FastAPI patterns and best practices
-- Domain service organization
-- EMG processing pipeline details
-- Database and repository patterns
-
-### 🎨 Frontend Development  
-→ [Frontend Overview](./frontend/overview.md)
-- React component architecture
-- State management with Zustand
-- TanStack Query patterns
-- UI/UX implementation details
-
-### 🚀 DevOps & Deployment
-→ [DevOps Guide](./devops/devops.md)
-- Environment configurations
-- Docker and Coolify setup
-- CI/CD pipeline
-- Production deployment
-
-### 🧪 Testing
-→ [Testing Architecture](./testing.md)
-- 227+ comprehensive tests
-- Testing strategies and patterns
-- E2E validation approaches
-
-## Quick Start
-
-```bash
-# Start both frontend and backend
-./start_dev_simple.sh
-
-# Or start individually:
-cd backend && uvicorn main:app --reload --port 8080
-cd frontend && npm start
-```
-
-For detailed setup instructions, see the specialized documentation linked above.
+| Area | Documentation | Coverage |
+|------|---------------|----------|
+| **Backend** | [Backend Architecture](./backend.md) | FastAPI patterns, domain services, EMG processing |
+| **Frontend** | [Frontend Overview](./frontend/overview.md) | React components, state management, UI patterns |
+| **DevOps** | [DevOps Guide](./devops/devops.md) | Environment setup, Docker, deployment |
+| **Testing** | [Testing Architecture](./testing.md) | Test strategies, validation approaches |
 
 ## Summary
 
-The GHOSTLY+ system uses a sophisticated 6-layer architecture with three API integration approaches that separate concerns across presentation, API gateway, application orchestration, domain logic, infrastructure services, and persistence. The key architectural decision is choosing between direct Supabase access, backend Supabase operations, and FastAPI processing based on complexity and requirements.
+The GHOSTLY+ system uses a 6-layer architecture with three API integration approaches that separate concerns across presentation, API gateway, application orchestration, domain logic, infrastructure services, and persistence. The key architectural decision is choosing between direct Supabase access, backend Supabase operations, and FastAPI processing based on complexity and requirements.
 
 For implementation details and best practices, refer to the specialized documentation for your area of interest.
