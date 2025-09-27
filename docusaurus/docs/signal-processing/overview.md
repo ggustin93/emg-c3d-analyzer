@@ -198,35 +198,14 @@ The pipeline processes EMG data from C3D files (990 Hz sampling rate) through th
 
 </details>
 
-## Parameter Implementation Notes
+## Reference Files
 
-The system uses a multi-layer parameter configuration approach for flexibility and scientific accuracy:
+| Parameter Type | Source File | Key Parameters |
+|----------------|-------------|----------------|
+| **Detection Thresholds** | `backend/config.py` | Threshold factors, merge timing, refractory periods |
+| **Signal Processing** | `backend/emg/signal_processing.py` | Filter frequencies (20Hz, 10Hz), smoothing window (50ms) |
+| **EMG Analysis** | `backend/emg/emg_analysis.py` | Imports detection parameters from config.py |
 
-### Parameter Sources and Usage
-
-**Config File (`backend/config.py`)**:
-- `ACTIVATED_THRESHOLD_FACTOR = 0.05` → Used by processor for "Activated" signal detection
-- `MERGE_THRESHOLD_MS = 200` → Used by processor (matches EMG function default)
-- `REFRACTORY_PERIOD_MS = 0` → Used by processor (disabled for elderly rehabilitation)
-
-**EMG Function Defaults (`backend/emg/emg_analysis.py`)**:
-- `merge_threshold_ms = MERGE_THRESHOLD_MS` → Imports from config.py
-- `refractory_period_ms = REFRACTORY_PERIOD_MS` → Imports from config.py
-
-**Signal Processing Constants (`backend/emg/signal_processing.py`)**:
-- High-pass filter: 20Hz (removes baseline drift)
-- Low-pass filter: 10Hz (smooth envelope extraction)
-- Smoothing window: 50ms (clinical standard)
-
-### Parameter Consistency
-
-The system ensures that **all EMG analysis uses identical parameter values** regardless of how the analysis is performed:
-
-- **Consistent Results**: Whether analyzing a single patient session or comparing data across multiple sessions, the same detection thresholds and measurement criteria are applied
-- **Reliable Comparisons**: Patient progress tracking and research comparisons use standardized parameters, ensuring meaningful data interpretation
-- **Scientific Validation**: Core signal processing values (filter frequencies, smoothing windows) follow established clinical research standards
-
-This consistency means that clinical staff can trust that EMG metrics calculated at different times or by different system components will be directly comparable and scientifically valid.
 
 ## Summary
 
