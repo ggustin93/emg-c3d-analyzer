@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   root: '.',
+  envDir: '../', // Load environment variables from project root
   resolve: {
     alias: {
       // This directly replaces your craco alias configuration
