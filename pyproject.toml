@@ -22,7 +22,7 @@ supabase = "^2.0.0"
 python-dotenv = "^1.0.0"
 structlog = "^25.4.0"
 python-json-logger = "^3.3.0"
-cryptography = "^41.0.8"
+cryptography = "^41.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.0.0"
