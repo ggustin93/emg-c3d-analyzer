@@ -36,9 +36,9 @@ import {
 } from '@/services/C3DFileDataResolver';
 import { therapistService } from '@/services/therapistService';
 
-// Get bucket name from centralized configuration
+// Get bucket name from centralized configuration with fallback
 import { ENV_CONFIG } from '../../config/environment';
-const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME;
+const BUCKET_NAME = ENV_CONFIG.STORAGE_BUCKET_NAME || 'c3d-examples'; // Fallback to default bucket
 
 // Component constants following CLAUDE.md DRY principle
 const FILENAME_COLUMN_DEFAULTS = {
@@ -146,7 +146,7 @@ const C3DFileList: React.FC<C3DFileListProps> = ({
   const getNotesCount = useCallback((fileName: string): number => {
     // Files in database are stored as "P001/file.c3d" but components reference "c3d-examples/P001/file.c3d"
     // We need to check both formats for compatibility during transition
-    const fullPath = `${BUCKET_NAME}/${fileName}`;
+    const fullPath = BUCKET_NAME ? `${BUCKET_NAME}/${fileName}` : fileName;
     const dbPath = fileName; // Database format without bucket prefix
     
     // Try database format first (new system), then full path (legacy)

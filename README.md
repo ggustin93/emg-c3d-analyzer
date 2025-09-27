@@ -40,7 +40,7 @@ A rehabilitation technology platform for analyzing Electromyography (EMG) data f
 ## What It Does
 
 The Ghostly+ Dashboard processes electromyography (EMG) data from rehabilitation game sessions.  
-It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly participants (65+) undergoing Blood Flow Restriction therapy.
+It analyzes C3D motion capture files to provide therapists with muscle activity measurements, compliance scores, and session performance metrics for elderly patients (65+ years) undergoing rehabilitation therapy in combination with BFR in the context of a clinical trial.
 
 ### Key Features
 - **EMG Signal Processing** – Contraction detection, RMS, MAV, frequency analysis, fatigue indices  
@@ -48,6 +48,10 @@ It analyzes C3D motion capture files to provide therapists with muscle activity 
 - **Clinical Metrics** – Compliance, symmetry, effort, and rehabilitation performance analysis  
 - **Research Tools** – Data export capabilities and detailed analytics  
 - **Healthcare-Oriented Design** – Role-based access, audit logging, HIPAA considerations (research-level, not production-certified)  
+
+### User Roles
+
+The system supports three distinct user roles: **Therapists** monitor patient progress with access restricted to assigned patients, **Researchers** request analysis data with pseudonymized access only, and **Administrators** manage users and system configuration.
 
 ---
 
@@ -89,7 +93,7 @@ For detailed setup instructions, see [Getting Started Guide](docusaurus/docs/get
 | **[🧪 Testing](docusaurus/docs/testing.md)** | Test suites and quality assurance |
 | **[🚀 DevOps](docusaurus/docs/devops/devops.md)** | Deployment and CI/CD pipelines |
 | **[🛠️ Development](docusaurus/docs/development.md)** | Development workflow and Claude Code integration |
-| **[📍 Roadmap](docusaurus/docs/roadmap/work-in-progress.md)** | Upcoming features and improvements |
+| **[📍 Roadmap](docusaurus/docs/roadmap/ghostly-dashboards-handover.md)** | Upcoming features and improvements |
 
 
 ---

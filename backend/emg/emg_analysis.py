@@ -41,7 +41,9 @@ from config import (
     DEFAULT_TEMPORAL_OVERLAP_PERCENTAGE,
     DEFAULT_TEMPORAL_WINDOW_SIZE_MS,
     MAX_CONTRACTION_DURATION_MS,
+    MERGE_THRESHOLD_MS,
     MIN_TEMPORAL_WINDOWS_REQUIRED,
+    REFRACTORY_PERIOD_MS,
 )
 from scipy.signal import welch
 
@@ -56,8 +58,8 @@ def analyze_contractions(
     smoothing_window: int,
     mvc_amplitude_threshold: float | None = None,
     contraction_duration_threshold_ms: float | None = None,
-    merge_threshold_ms: int = 200,
-    refractory_period_ms: int = 0,
+    merge_threshold_ms: int = MERGE_THRESHOLD_MS,
+    refractory_period_ms: int = REFRACTORY_PERIOD_MS,
     temporal_signal: np.ndarray | None = None,
 ) -> dict:
     """Analyzes EMG signals to detect contractions using dual-signal approach when available.

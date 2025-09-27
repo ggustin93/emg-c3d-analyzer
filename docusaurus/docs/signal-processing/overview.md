@@ -12,19 +12,11 @@ This document describes the signal processing pipeline we've implemented to tran
 The pipeline processes EMG signals sampled at 990 Hz from C3D files. These files contain both raw EMG data and pre-processed signals from the GHOSTLY system, which we utilize in complementary ways to extract muscle activation patterns and therapeutic metrics.
 
 <details>
-<summary><strong>Development & Validation Notes</strong></summary>
+<summary><strong>Development Notes</strong></summary>
 
-### How This System Was Built
-We developed this EMG signal processing system with assistance from AI tools to help with research and technical implementation:
+This EMG signal processing system was developed with AI assistance (Perplexity for research, Claude for code) to help with biomedical literature review and implementation.
 
-- **Perplexity MCP**: Helped us research biomedical literature and clinical standards
-- **Claude 3.5 Sonnet**: Assisted with code development and documentation
-
-### Important Medical Disclaimer
-⚠️ **Please note**: This system requires validation by qualified medical professionals before any clinical use. While we've based our approach on established research, the specific parameters and thresholds need professional review for different patient populations and clinical settings.
-
-### Current Status
-This is a research and development tool. We've tried to follow best practices from EMG literature, but we acknowledge that proper clinical validation is essential. The system is open source so medical professionals can review and adapt it as needed.
+⚠️ **Important**: This is a research tool requiring medical professional validation before clinical use. While we've followed established research patterns, the specific parameters need professional review for different patient populations.
 
 </details>
 
@@ -43,7 +35,7 @@ graph LR
 
 ### Stage 1: Signal Quality Validation
 
-Before processing, we validate signal quality to ensure meaningful analysis:
+Before processing, we validate signal quality to support reliable analysis:
 
 - **Duration Requirements**: 10 seconds minimum (sufficient for pattern analysis), 600 seconds maximum (prevents fatigue artifacts)
 - **Sample Requirements**: Minimum 1,000 samples at 1 kHz sampling rate
@@ -89,7 +81,7 @@ Final smoothing refines the envelope for analysis:
 
 ## Contraction Detection Algorithm
 
-The contraction detection algorithm attempts to address the inherent challenges of EMG signal analysis through a dual-signal approach when the data permits.
+The contraction detection algorithm is designed to address the inherent challenges of EMG signal analysis through a dual-signal approach when the data permits.
 
 ### Dual-Signal Strategy
 
@@ -103,7 +95,7 @@ The GHOSTLY system provides multiple signal types in the C3D file, which we leve
    
    - **Amplitude Signal**: We use our computed RMS envelope
      - Derived from the raw EMG signal through our processing pipeline
-     - Provides accurate amplitude measurements for MVC compliance assessment
+     - Aims to provide amplitude measurements for MVC compliance assessment
      - Used exclusively for intensity quantification, not timing
    
    - **Rationale**: This separation acknowledges that timing detection and amplitude measurement have different optimal processing requirements
@@ -114,7 +106,7 @@ The GHOSTLY system provides multiple signal types in the C3D file, which we leve
 
 ### Detection Process
 
-The algorithm follows a systematic approach to identify meaningful muscle contractions:
+The algorithm uses a systematic approach that attempts to identify potential muscle contractions:
 
 1. **Signal Preparation**
    - Rectification of timing signal
@@ -122,12 +114,12 @@ The algorithm follows a systematic approach to identify meaningful muscle contra
    - Threshold calculation (10% of maximum amplitude)
 
 2. **Contraction Identification**
-   - Detection of signal regions above threshold
+   - Attempted detection of signal regions above threshold
    - Filtering by minimum duration (100ms default)
    - Merging closely-spaced contractions (200ms gap tolerance)
    - Optional refractory period enforcement
 
-3. **Quality Assessment**
+3. **Preliminary Quality Assessment**
    Each detected contraction is evaluated against therapeutic criteria:
    - **MVC Compliance**: Maximum amplitude ≥ 75% of Maximum Voluntary Contraction
    - **Duration Compliance**: Duration meets session-specific requirements
@@ -158,13 +150,13 @@ These metrics quantify muscle activation intensity:
 - **Mean Absolute Value (MAV)**: Average of absolute signal values. Similar to RMS but more stable in presence of artifacts.
 
 <details>
-<summary><strong>Fatigue Analysis Metrics</strong> - Frequency-domain fatigue detection methods</summary>
+<summary><strong>Experimental Fatigue Analysis Metrics</strong> - Frequency-domain fatigue assessment methods</summary>
 
-Muscle fatigue manifests as spectral compression toward lower frequencies. We implement three complementary metrics:
+Muscle fatigue may manifest as spectral compression toward lower frequencies. We implement three complementary metrics:
 
-- **Mean Power Frequency (MPF)**: Weighted average frequency of the power spectrum. >10% decrease from baseline indicates fatigue.
+- **Mean Power Frequency (MPF)**: Weighted average frequency of the power spectrum. >10% decrease from baseline may suggest fatigue.
 - **Median Frequency (MDF)**: Frequency dividing the power spectrum into equal halves. More robust to noise than MPF.
-- **Dimitrov's Fatigue Index (FI_nsm5)**: Ratio of spectral moment M₋₁ to M₅. Increasing values indicate progressing fatigue (Dimitrov et al., 2006).
+- **Dimitrov's Fatigue Index (FI_nsm5)**: Ratio of spectral moment M₋₁ to M₅. Increasing values may indicate progressing fatigue (Dimitrov et al., 2006).
 
 Spectral analysis requires minimum 256 samples (≈260ms at 990 Hz) using Welch's periodogram with 50% overlapping windows.
 
@@ -205,6 +197,36 @@ These parameters may need adjustment for specific patient populations and muscle
 The pipeline processes EMG data from C3D files (990 Hz sampling rate) through the five-stage pipeline, performs contraction detection and metric calculation, then stores results in Supabase. The system includes signal quality validation, handles edge cases gracefully, and provides fallback modes for degraded signal conditions.
 
 </details>
+
+## Parameter Implementation Notes
+
+The system uses a multi-layer parameter configuration approach for flexibility and scientific accuracy:
+
+### Parameter Sources and Usage
+
+**Config File (`backend/config.py`)**:
+- `ACTIVATED_THRESHOLD_FACTOR = 0.05` → Used by processor for "Activated" signal detection
+- `MERGE_THRESHOLD_MS = 200` → Used by processor (matches EMG function default)
+- `REFRACTORY_PERIOD_MS = 0` → Used by processor (disabled for elderly rehabilitation)
+
+**EMG Function Defaults (`backend/emg/emg_analysis.py`)**:
+- `merge_threshold_ms = MERGE_THRESHOLD_MS` → Imports from config.py
+- `refractory_period_ms = REFRACTORY_PERIOD_MS` → Imports from config.py
+
+**Signal Processing Constants (`backend/emg/signal_processing.py`)**:
+- High-pass filter: 20Hz (removes baseline drift)
+- Low-pass filter: 10Hz (smooth envelope extraction)
+- Smoothing window: 50ms (clinical standard)
+
+### Parameter Consistency
+
+The system ensures that **all EMG analysis uses identical parameter values** regardless of how the analysis is performed:
+
+- **Consistent Results**: Whether analyzing a single patient session or comparing data across multiple sessions, the same detection thresholds and measurement criteria are applied
+- **Reliable Comparisons**: Patient progress tracking and research comparisons use standardized parameters, ensuring meaningful data interpretation
+- **Scientific Validation**: Core signal processing values (filter frequencies, smoothing windows) follow established clinical research standards
+
+This consistency means that clinical staff can trust that EMG metrics calculated at different times or by different system components will be directly comparable and scientifically valid.
 
 ## Summary
 

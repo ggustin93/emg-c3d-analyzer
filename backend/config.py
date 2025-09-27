@@ -43,8 +43,8 @@ DEFAULT_CONTRACTION_DURATION_THRESHOLD_MS = 250  # Detection threshold
 DEFAULT_THERAPEUTIC_DURATION_THRESHOLD_MS = 2000  # Therapeutic goal (patient-specific)
 
 # Advanced contraction detection
-MERGE_THRESHOLD_MS = 150  # Maximum gap to merge contractions
-REFRACTORY_PERIOD_MS = 50  # Minimum time between contractions
+MERGE_THRESHOLD_MS = 200  # Maximum gap to merge contractions (matches EMG function default)
+REFRACTORY_PERIOD_MS = 0  # Minimum time between contractions (disabled for elderly rehabilitation)
 MAX_CONTRACTION_DURATION_MS = 10000  # Maximum contraction duration (10s)
 
 # MVC analysis

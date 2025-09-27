@@ -57,5 +57,6 @@ if (ENV_CONFIG.IS_DEVELOPMENT) {
     console.error('📝 Create a .env file with the required variables. See .env.example for reference.')
   } else {
     console.log('✅ Environment configuration is valid')
+    console.log('🔧 Storage bucket:', ENV_CONFIG.STORAGE_BUCKET_NAME || 'NOT SET')
   }
 }

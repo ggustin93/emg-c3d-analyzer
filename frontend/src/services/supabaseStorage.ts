@@ -36,6 +36,12 @@ export class SupabaseStorageService {
       return [];
     }
 
+    // Check if bucket name is configured
+    if (!this.BUCKET_NAME) {
+      logger.error(LogCategory.API, 'Storage bucket name not configured (VITE_STORAGE_BUCKET_NAME missing)');
+      throw new Error('Storage bucket name not configured. Please set VITE_STORAGE_BUCKET_NAME environment variable.');
+    }
+
     try {
       logger.info(LogCategory.API, `📂 Attempting to list files from bucket: ${this.BUCKET_NAME}`);
       
