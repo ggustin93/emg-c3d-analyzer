@@ -114,7 +114,7 @@ ENVIRONMENT=development
 DEBUG=true
 LOG_LEVEL=INFO
 SECRET_KEY=your-secret-key-here
-WEBHOOK_SECRET=your-webhook-secret
+WEBHOOK_SECRET=your-webhook-secret  # Required for production webhook security
 
 # Redis Configuration
 REDIS_URL=redis://redis:6379/0

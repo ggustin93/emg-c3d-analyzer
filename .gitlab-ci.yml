@@ -2,7 +2,7 @@
 # 🚀 EMG C3D Analyzer - GitLab CI/CD Pipeline
 # =============================================================================
 #
-# Professional CI/CD pipeline for EMG C3D Analyzer project
+# CI/CD pipeline for EMG C3D Analyzer project
 # Equivalent to GitHub Actions workflow with GitLab best practices
 #
 # Features:
