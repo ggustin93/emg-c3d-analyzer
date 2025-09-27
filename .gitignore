@@ -48,8 +48,6 @@ Thumbs.db
 frontend/node_modules/
 frontend/dist/
 frontend/build/
-frontend/.env
-frontend/.env.*
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
@@ -199,3 +197,6 @@ KNOWLEDGE_TRANSFER_IDEAS.md
 EXPORT_FINAL_ENHANCEMENT_MD.md 
 PLAN_SIMPLIFY_SESSION_SETTINGS.md 
 /archive/*
+
+# Tasks folder - project management and task documentation
+tasks/
