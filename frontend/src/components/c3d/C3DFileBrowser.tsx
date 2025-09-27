@@ -161,17 +161,17 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
       }
     }
     
-    // Optimized default selection (7 columns for best UX on 13" desktop)
+    // Optimized default selection (6 columns for best UX on 13" desktop)
     return {
       patient_id: true,
       patient_name: userRole === 'ADMIN' || userRole === 'THERAPIST', // Role-based patient name visibility
       therapist_id: true,
-      size: true,
+      size: false,  // Hidden by default - Session Date is more important
       session_date: true,
       upload_date: false,  // Default to false as requested
       clinical_notes: true,   // Enable clinical notes by default
-      overall_performance_score: true,  // Enable performance score by default
-      processing_status: false   // Disable by default to stay within limit
+      overall_performance_score: false,  // Enable performance score by default
+      processing_status: false   // Disabled by default as requested
     };
   });
 
@@ -478,7 +478,7 @@ const C3DFileBrowser: React.FC<C3DFileBrowserProps> = ({
     }
   };
 
-  // Handle column visibility with maximum limit
+  // Handle column visibility with maximum limit (8 columns for 13" desktop)
   const toggleColumnVisibility = (column: keyof ColumnVisibility) => {
     const currentlyVisible = Object.values(visibleColumns).filter(Boolean).length;
     const isCurrentlyVisible = visibleColumns[column];
